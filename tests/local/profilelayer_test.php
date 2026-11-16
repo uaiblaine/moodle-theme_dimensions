@@ -245,11 +245,13 @@ final class profilelayer_test extends \advanced_testcase {
         $this->person();
         $menu = $this->usermenu();
 
+        // Core and Boost Union put Log out last, so every order keeps it there; the rest is shuffled.
+        $others = array_values(array_diff(array_keys($menu['items']), ['logout']));
         $orders = [
             array_keys($menu['items']),
-            array_reverse(array_keys($menu['items'])),
-            ['logout', 'smartmenu', 'preferences', 'divider', 'grades', 'profile', 'language', 'switchrole', 'files',
-                'invalid', 'external', 'calendar'],
+            array_merge(array_reverse($others), ['logout']),
+            ['smartmenu', 'preferences', 'divider', 'grades', 'profile', 'language', 'switchrole', 'files',
+                'invalid', 'external', 'calendar', 'logout'],
         ];
         foreach ($orders as $order) {
             $items = array_map(fn(string $name) => $menu['items'][$name], $order);
@@ -317,6 +319,65 @@ final class profilelayer_test extends \advanced_testcase {
         }
         $this->assertSame((new \moodle_url('/user/profile.php', ['id' => $user->id]))->out(false), $context['profileurl']);
         $this->assertContains('Grades', $this->labels($context)[profilelayer::GROUP_MYAREA], 'Control: its neighbour stays.');
+    }
+
+    /**
+     * Only the session user's own profile address is lifted: another user's, from a custom item, stays a row.
+     *
+     * @return void
+     */
+    public function test_a_profile_item_of_another_user_stays_a_row(): void {
+        $this->resetAfterTest();
+        $user = $this->person();
+        $other = (int) $user->id + 1;
+
+        $context = $this->context(['items' => [
+            $this->item('Profile of the dean', '/user/profile.php?id=' . $other, 'Profile of the dean'),
+            $this->item('Profile', '/user/profile.php?id=' . $user->id, 'profile,moodle'),
+            $this->item('Grades', '/grade/report/mygrades.php', 'grades,grades'),
+        ], 'submenus' => []]);
+
+        $this->assertSame(['Profile of the dean', 'Grades'], $this->labels($context)[profilelayer::GROUP_MYAREA]);
+    }
+
+    /**
+     * Core's Log out is the foot because it is the menu's last item at the address; another item at the same
+     * address, or at the way back's, is an ordinary row of "My area".
+     *
+     * @return void
+     */
+    public function test_a_second_logout_path_item_stays_a_row_while_cores_is_the_foot(): void {
+        $this->resetAfterTest();
+        $this->person();
+
+        $context = $this->context(['items' => [
+            $this->item('Sign out of the portal', '/login/logout.php?x=1', 'Sign-out'),
+            $this->item('Back to my account', '/course/loginas.php', 'Back'),
+            $this->item('Grades', '/grade/report/mygrades.php', 'grades,grades'),
+            $this->item('Log out', '/login/logout.php?sesskey=x', 'logout,moodle'),
+        ], 'submenus' => []]);
+
+        $this->assertSame(
+            ['Sign out of the portal', 'Back to my account', 'Grades'],
+            $this->labels($context)[profilelayer::GROUP_MYAREA]
+        );
+        $this->assertSame('Log out', $context['foot']['label']);
+        $this->assertStringContainsString('sesskey=x', $context['foot']['url']);
+        $this->assertFalse($context['loggedinas'], 'Control: a row at the way back\'s address is no notice.');
+
+        // Control: the last item at the address is the foot, whatever its title.
+        $context = $this->context(['items' => [
+            $this->item('Grades', '/grade/report/mygrades.php', 'grades,grades'),
+            $this->item('Leave', '/login/logout.php?sesskey=y', 'logout,moodle'),
+        ], 'submenus' => []]);
+        $this->assertSame('Leave', $context['foot']['label']);
+
+        // And an unrecognised last item leaves no foot: position alone decides nothing.
+        $context = $this->context(['items' => [
+            $this->item('Log out', '/login/logout.php?sesskey=y', 'logout,moodle'),
+            $this->item('Grades', '/grade/report/mygrades.php', 'grades,grades'),
+        ], 'submenus' => []]);
+        $this->assertFalse($context['foot']);
     }
 
     /**
@@ -449,6 +510,24 @@ final class profilelayer_test extends \advanced_testcase {
         $this->assertSame($nologin->id, $USER->id);
         $this->assertStringContainsString('/user/edit.php', (string) $core(), 'Precondition: core asks the plugin.');
         $this->assertSame($core(), $ours(), 'Another authentication plugin.');
+    }
+
+    /**
+     * The link is for the session's own record only: another user's, even for an administrator who could edit them,
+     * gets none.
+     *
+     * @return void
+     */
+    public function test_edit_profile_is_answered_for_the_sessions_own_record_only(): void {
+        global $USER;
+        $this->resetAfterTest();
+        $other = self::getDataGenerator()->create_user();
+        $this->setAdminUser();
+
+        $own = profilelayer::edit_url($USER);
+        $this->assertNotNull($own, 'Control: the administrator gets a link for their own record.');
+        $this->assertStringContainsString('/user/editadvanced.php', $own->out(false));
+        $this->assertNull(profilelayer::edit_url(get_complete_user_data('id', $other->id)), 'Another user\'s record.');
     }
 
     /**

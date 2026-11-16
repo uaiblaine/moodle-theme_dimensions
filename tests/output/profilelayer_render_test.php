@@ -366,6 +366,54 @@ final class profilelayer_render_test extends \advanced_testcase {
     }
 
     /**
+     * A row label, a sub-view title and the notice's link, each holding an ampersand and markup, are escaped exactly
+     * once by the real template.
+     *
+     * The labels are plain text by then (the builder decodes a core title's entities), so one escaping is the
+     * template's alone; a second one would print "&amp;amp;".
+     *
+     * @return void
+     */
+    public function test_a_label_with_an_ampersand_and_markup_is_escaped_once(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        $this->person();
+        $renderer = $this->renderer();
+
+        $usermenu = ['items' => [
+            (object) ['itemtype' => 'link', 'link' => true, 'url' => new \moodle_url('/my/courses.php'),
+                'title' => 'R&amp;D &lt;b&gt;row&lt;/b&gt;', 'titleidentifier' => 'rd'],
+            (object) ['link' => false, 'submenulink' => true, 'submenuid' => 'sm1',
+                'title' => 'Q&amp;A &lt;b&gt;view&lt;/b&gt;', 'text' => 'Q&amp;A'],
+            (object) ['itemtype' => 'link', 'link' => true, 'url' => new \moodle_url('/login/logout.php'),
+                'title' => 'Log out', 'titleidentifier' => 'logout,moodle'],
+        ], 'submenus' => [
+            (object) ['id' => 'sm1', 'title' => 'Q&amp;A', 'items' => [
+                ['title' => 'Docs', 'url' => 'https://example.com/docs', 'itemtype' => 'link'],
+            ]],
+        ]];
+        $context = profilelayer::context($usermenu, $PAGE, $renderer, null);
+        $context['loggedinas'] = [
+            'text' => 'Notice',
+            'returnurl' => 'https://example.com/course/loginas.php',
+            'returnlabel' => 'Return to Ana & <b>Ribeiro</b>',
+        ];
+
+        $html = $renderer->render_from_template('theme_dimensions/profile_layer', $context);
+
+        $this->assertStringContainsString('<span>R&amp;D &lt;b&gt;row&lt;/b&gt;</span>', $html, 'The row label.');
+        $this->assertMatchesRegularExpression(
+            '~<h2 class="dimensions-layer-subtitle" id="[^"]+">Q&amp;A &lt;b&gt;view&lt;/b&gt;</h2>~',
+            $html,
+            'The sub-view title.'
+        );
+        $this->assertStringContainsString('>Return to Ana &amp; &lt;b&gt;Ribeiro&lt;/b&gt;</a>', $html, 'The notice.');
+        $this->assertStringNotContainsString('&amp;amp;', $html);
+        $this->assertStringNotContainsString('&amp;lt;', $html);
+        $this->assertStringNotContainsString('<b>', $html);
+    }
+
+    /**
      * The template, from its own example, carries the dialog's roles and core's colour mode hooks.
      *
      * The main view is headed lists, never a menu; a sub-view of choices is a menu of menuitemradio links with the

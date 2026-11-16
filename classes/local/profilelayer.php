@@ -39,9 +39,12 @@ namespace theme_dimensions\local;
  * configures the list (customusermenuitems), the extend_user_menu hook adds to it and Boost Union appends its smart
  * menus:
  *
- * - Profile (/user/profile.php) leaves the list: the header's "View profile" button carries it.
+ * - Profile (/user/profile.php, with no id or the session user's) leaves the list: the header's "View profile"
+ *   button carries it. A profile address of another user is an ordinary row.
  * - Preferences and the two switch role items go to "Account".
- * - Log out, or under "log in as" core's way back (/course/loginas.php, also titled Log out), goes to the foot.
+ * - Log out, or under "log in as" core's way back (/course/loginas.php, also titled Log out), goes to the foot:
+ *   core's own item, which is the last of the menu (core appends it last and Boost Union re-appends it last) and
+ *   is known by its address as well. Any other item at those addresses is an ordinary row.
  * - The language submenu and the theme's Look become rows of "Display", beside the colour mode control.
  * - Every other row that has an address goes to "My area" in core's order; a Boost Union smart menu with children
  *   becomes a row that opens a sub-view of its items. Dividers, and items with no address (core's text and header
@@ -246,11 +249,20 @@ final class profilelayer {
      * same. An authentication plugin that is no longer installed draws no link, where core's page would throw.
      * profilelayer_test compares the answer with core's own tree.
      *
+     * Only the session's own record is answered: the rule reads the viewer's capabilities, lacks core's
+     * is_siteadmin() clause for a record that is not the viewer's, and applies moodle/user:editownprofile to whoever
+     * is passed, so any other record gets null.
+     *
      * @param \stdClass $user The session's user record.
      * @return \moodle_url|null
      */
     public static function edit_url(\stdClass $user): ?\moodle_url {
+        global $USER;
+
         if (!isloggedin() || isguestuser($user) || is_mnet_remote_user($user)) {
+            return null;
+        }
+        if ((int) $user->id !== (int) $USER->id) {
             return null;
         }
         $system = \context_system::instance();
@@ -285,10 +297,15 @@ final class profilelayer {
      *
      * @param array $items The usermenu's items: core's objects, Boost Union's smart menus (objects or arrays).
      * @param array $submenus The usermenu's submenus, by which a submenu link is resolved.
+     *      Core's language submenu has no stable mark: its id is a uniqid() per request (lib/classes/navigation/output/
+     *      primary.php), so it is found by its title, core's languageselector string, as
+     *      core_renderer::look_position() finds it.
      * @return array myarea and account (rows), foot (array|null: url, label), revert (the way back's url, or null)
      *      and subviews (the smart menus').
      */
     private static function sort(array $items, array $submenus): array {
+        $items = array_values($items);
+        $lastindex = count($items) - 1;
         $byid = [];
         $languageid = null;
         foreach ($submenus as $submenu) {
@@ -302,7 +319,7 @@ final class profilelayer {
 
         $sorted = [self::GROUP_MYAREA => [], self::GROUP_ACCOUNT => [], 'foot' => null, 'revert' => null, 'subviews' => []];
         $counter = 0;
-        foreach ($items as $item) {
+        foreach ($items as $index => $item) {
             $item = (object) $item;
             $type = (string) ($item->itemtype ?? '');
             if ($type === 'divider' || $type === 'invalid') {
@@ -327,10 +344,12 @@ final class profilelayer {
             }
             $path = self::local_path($url);
             $identifier = (string) ($item->titleidentifier ?? '');
-            if ($path === self::PROFILE_PATH) {
+            if ($path === self::PROFILE_PATH && self::is_own_profile($url)) {
                 continue;
             }
-            if ($path === self::LOGOUT_PATH || $path === self::REVERT_PATH) {
+            // Core appends its Log out (or the way back) last and Boost Union re-appends it last: any other item at
+            // the same address is an ordinary row.
+            if ($index === $lastindex && ($path === self::LOGOUT_PATH || $path === self::REVERT_PATH)) {
                 $sorted['foot'] = ['url' => $url->out(false), 'label' => self::label($item)];
                 $sorted['revert'] = $path === self::REVERT_PATH ? $url->out(false) : null;
                 continue;
@@ -347,6 +366,20 @@ final class profilelayer {
         }
 
         return $sorted;
+    }
+
+    /**
+     * Whether a profile address is the session user's own: no id, or the session's id.
+     *
+     * @param \moodle_url $url The address of an item whose path is the profile page's.
+     * @return bool
+     */
+    private static function is_own_profile(\moodle_url $url): bool {
+        global $USER;
+
+        $id = $url->get_param('id');
+
+        return $id === null || (string) $id === (string) $USER->id;
     }
 
     /**

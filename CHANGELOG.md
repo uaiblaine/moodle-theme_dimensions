@@ -5,7 +5,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
-- **The user button opens the profile layer** (2026100622). A new setting on the *Identity* tab, `profilelayer`
+- **The user button opens the profile layer** (2026100623). A new setting on the *Identity* tab, `profilelayer`
   (on by default), prints on every page of a logged-in account a side layer built from Moodle's own user menu: the
   person's picture with the title and further lines chosen in the identity settings (masked on the server), "View
   profile" and "Edit profile" by Moodle's own rule, a notice with the way back under "log in as", the site's user menu

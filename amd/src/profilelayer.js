@@ -45,6 +45,7 @@ import {Dropdown} from 'bootstrap';
 import {init as initColourMode} from 'theme_boost/colourmode';
 import {trapFocus, untrapFocus} from 'core/local/aria/focuslock';
 import Drawers from 'theme_boost/drawers';
+import Log from 'core/log';
 import Pending from 'core/pending';
 
 const SELECTORS = {
@@ -415,12 +416,13 @@ const takeOver = (toggle, layer) => {
         dropdown.hide();
         dropdown.dispose();
     }
-    toggle.removeAttribute('data-bs-toggle');
     toggle.setAttribute('aria-haspopup', 'dialog');
     toggle.setAttribute('aria-controls', layer.id);
     toggle.setAttribute('aria-expanded', 'false');
     toggle.addEventListener('click', onToggle);
     toggle.addEventListener('keydown', onToggleKey);
+    // The last step: once Bootstrap's attribute is gone the dropdown no longer answers, so nothing that can throw follows.
+    toggle.removeAttribute('data-bs-toggle');
 };
 
 /**
@@ -436,26 +438,37 @@ export const init = () => {
     if (!layer || !backdrop || !toggle || layer.classList.contains(CLASSES.ARMED)) {
         return;
     }
+    const main = layer.querySelector(SELECTORS.MAIN);
+    if (!main) {
+        return;
+    }
     state.layer = layer;
     state.backdrop = backdrop;
     state.toggle = toggle;
 
-    takeOver(toggle, layer);
+    // Everything that can throw comes first: either the layer is fully armed or the dropdown works as before.
+    const modes = layer.querySelector(SELECTORS.MODES);
+    if (modes) {
+        try {
+            initColourMode();
+            const chosen = modes.querySelector(`${SELECTORS.MODE}[aria-checked="true"]`);
+            if (chosen) {
+                rove(chosen);
+            }
+            document.body.classList.add(CLASSES.MODES);
+        } catch (error) {
+            // The layer works without the control's behaviour, and the navbar keeps its own colour mode menu.
+            Log.error(error);
+        }
+    }
     layer.addEventListener('click', onClick);
     layer.addEventListener('keydown', onKey);
     backdrop.addEventListener('click', () => close());
     // Another drawer opening takes the screen: the layer goes without taking the focus back.
     document.addEventListener(Drawers.eventTypes.drawerShow, () => close(false));
 
-    const modes = layer.querySelector(SELECTORS.MODES);
-    if (modes) {
-        initColourMode();
-        const chosen = modes.querySelector(`${SELECTORS.MODE}[aria-checked="true"]`);
-        if (chosen) {
-            rove(chosen);
-        }
-        document.body.classList.add(CLASSES.MODES);
-    }
+    // The last step: the user button leaves Boost Union's dropdown only when the layer is ready to answer it.
+    takeOver(toggle, layer);
 
     layer.classList.add(CLASSES.ARMED);
     layer.dispatchEvent(new CustomEvent(EVENTS.ARMED, {bubbles: true}));

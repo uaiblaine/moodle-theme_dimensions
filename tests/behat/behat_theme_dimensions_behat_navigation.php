@@ -28,7 +28,6 @@
 
 require_once(__DIR__ . '/../../../boost_union/tests/behat/behat_theme_boost_union_behat_navigation.php');
 
-use Behat\Mink\Exception\ElementNotFoundException;
 use Behat\Mink\Exception\ExpectationException;
 
 /**
@@ -50,33 +49,49 @@ class behat_theme_dimensions_behat_navigation extends behat_theme_boost_union_be
      * Click on an entry in the user menu: in the profile layer, where the theme's module took the user button over.
      *
      * Core's step presses the user button and then clicks the link in Boost Union's dropdown, which the button no longer
-     * opens once the layer is armed. So the button is pressed, which opens the layer, and the link is clicked there.
-     * An entry the layer does not draw as a link of its own (Profile, which is its header's "View profile" button, or
-     * an item core shows as text) is followed by its address in Boost Union's dropdown, which stays on the page. Without
-     * JavaScript, or where no layer is armed, core's step runs unchanged.
+     * opens once the layer is armed. So the button is pressed (unless the layer is already open), which opens the
+     * layer, and the link is clicked there. The one item the layer does not draw as a row is core's Profile, which is
+     * the header's "View profile" button: that button is clicked. Any other entry the layer does not carry fails the
+     * step, so a layer that dropped an item shows. Without JavaScript, or where no layer is armed, core's step runs
+     * unchanged.
      *
-     * @Given /^I follow "(?P<nodetext_string>(?:[^"]|\\")*)" in the user menu$/
+     * This overrides the METHOD of core's step `I follow "..." in the user menu` (lib/tests/behat/behat_navigation.php);
+     * the step annotation is inherited on purpose and must not be repeated here, or Behat sees the definition twice
+     * and every step fails.
      *
      * @param string $nodetext The entry's text, or part of it.
      * @return void
      */
     public function i_follow_in_the_user_menu($nodetext) {
-        if (!$this->running_javascript() || !$this->getSession()->getPage()->find('css', self::ARMED_LAYER)) {
+        if (!$this->running_javascript()) {
+            parent::i_follow_in_the_user_menu($nodetext);
+            return;
+        }
+        $layer = $this->getSession()->getPage()->find('css', self::ARMED_LAYER);
+        if ($layer === null) {
             parent::i_follow_in_the_user_menu($nodetext);
             return;
         }
 
-        $this->execute('behat_general::i_click_on', ['#user-menu-toggle', 'css_element']);
+        // A layer that is already open stays open: pressing the button again would close it.
+        if ($layer->hasAttribute('hidden')) {
+            $this->execute('behat_general::i_click_on', ['#user-menu-toggle', 'css_element']);
+        }
         if ($this->link_in(self::LAYER, $nodetext, true)) {
             $this->execute('behat_general::i_click_on_in_the', [$nodetext, 'link', self::LAYER, 'css_element']);
             return;
         }
 
-        $fallback = $this->link_in('.usermenu .dropdown-menu', $nodetext, false);
-        if ($fallback === null || (string) $fallback->getAttribute('href') === '') {
-            throw new ElementNotFoundException($this->getSession(), 'link', 'text', $nodetext);
+        // Core's Profile item is lifted out of the list into the header's button, which carries the same address.
+        if (trim($nodetext) === get_string('profile')) {
+            $this->execute('behat_general::i_click_on_in_the', [get_string('viewprofile'), 'link', self::LAYER, 'css_element']);
+            return;
         }
-        $this->execute('behat_general::i_visit', [(string) $fallback->getAttribute('href')]);
+
+        throw new ExpectationException(
+            'The profile layer is armed and carries no link "' . $nodetext . '": the entry is missing from the layer.',
+            $this->getSession()
+        );
     }
 
     /**

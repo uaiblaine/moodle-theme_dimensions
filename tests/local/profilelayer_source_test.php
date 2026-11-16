@@ -165,6 +165,56 @@ final class profilelayer_source_test extends \basic_testcase {
     }
 
     /**
+     * The takeover is the last step of init(): every node is found, the colour mode is initialised in a try of its own
+     * that only logs, and every listener is bound before Boost Union's dropdown is given up, so either the layer is
+     * armed or the dropdown works as before.
+     *
+     * @return void
+     */
+    public function test_the_takeover_is_the_last_thing_that_can_fail(): void {
+        $init = $this->body('init');
+        $take = strpos($init, 'takeOver(toggle, layer);');
+        $this->assertNotFalse($take);
+
+        $main = strpos($init, 'const main = layer.querySelector(SELECTORS.MAIN);');
+        $this->assertNotFalse($main, 'The main view is looked for in init().');
+        $this->assertStringContainsString("if (!main) {\n        return;\n    }", $init);
+        $this->assertLessThan($take, strpos($init, "if (!main) {\n        return;"), 'Required nodes before the takeover.');
+        $this->assertLessThan($take, $main);
+
+        $colour = strpos($init, 'initColourMode();');
+        $this->assertNotFalse($colour);
+        $this->assertLessThan($take, $colour, 'The colour mode before the takeover.');
+        $this->assertMatchesRegularExpression(
+            '~try \{\s*initColourMode\(\);.*?\} catch \(error\) \{\s*(?://[^\n]*\s*)?Log\.error\(error\);\s*\}~s',
+            $init,
+            'Guarded, and only logged.'
+        );
+        $this->assertStringContainsString("import Log from 'core/log';", $this->source());
+
+        $bounds = [
+            'layer.addEventListener(\'click\', onClick);',
+            'layer.addEventListener(\'keydown\', onKey);',
+            'backdrop.addEventListener(\'click\'',
+            'document.addEventListener(Drawers.eventTypes.drawerShow',
+        ];
+        foreach ($bounds as $bound) {
+            $at = strpos($init, $bound);
+            $this->assertNotFalse($at, $bound);
+            $this->assertLessThan($take, $at, $bound . ' is bound before the takeover.');
+        }
+        $this->assertGreaterThan($take, strpos($init, 'layer.classList.add(CLASSES.ARMED);'));
+
+        // Inside the takeover, Bootstrap's attribute goes last: nothing that can throw follows it.
+        $body = $this->body('takeOver');
+        $remove = strpos($body, "toggle.removeAttribute('data-bs-toggle');");
+        $this->assertNotFalse($remove);
+        $this->assertGreaterThan(strpos($body, 'dropdown.dispose();'), $remove);
+        $this->assertGreaterThan(strpos($body, "toggle.addEventListener('keydown', onToggleKey);"), $remove);
+        $this->assertSame('', trim(substr($body, $remove + strlen("toggle.removeAttribute('data-bs-toggle');"))));
+    }
+
+    /**
      * Opening shows the main view, holds the focus in the layer and puts it on the main view's close button; closing
      * releases the focus before it gives it back to the user button.
      *
@@ -271,8 +321,8 @@ final class profilelayer_source_test extends \basic_testcase {
     public function test_the_colour_mode_is_cores_and_the_twin_class_follows_the_control(): void {
         $init = $this->body('init');
         $this->assertMatchesRegularExpression(
-            '~const modes = layer\.querySelector\(SELECTORS\.MODES\);\s*if \(modes\) \{\s*initColourMode\(\);'
-                . '.*?document\.body\.classList\.add\(CLASSES\.MODES\);\s*\}~s',
+            '~const modes = layer\.querySelector\(SELECTORS\.MODES\);\s*if \(modes\) \{\s*try \{\s*initColourMode\(\);'
+                . '.*?document\.body\.classList\.add\(CLASSES\.MODES\);\s*\} catch \(error\) \{~s',
             $init
         );
         $this->assertSame(1, substr_count($this->source(), 'classList.add(CLASSES.MODES)'), 'Written in that branch alone.');

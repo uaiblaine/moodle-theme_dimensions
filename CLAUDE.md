@@ -793,10 +793,12 @@ it, `scss/profilelayer.scss` styles it and `amd/src/profilelayer.js` opens it. T
   `usermenu.items`, gate `profilelayer_shape_guard`), from the menu as core and Boost Union wrote it, before the
   theme adds its Look link. `flavourchoice::menu()` is asked once per renderer, through `core_renderer::look_menu()`,
   for the user menu's Look submenu and the layer's Look sub-view together; never call it a second time for the layer.
-- **Rows are classified by address and title identifier, never by position**: Profile leaves the list, Preferences
-  and the switch role items go to "Account", Log out or core's `/course/loginas.php` to the foot, the language
-  submenu (found by core's `languageselector` title) and the Look are "Display", everything else with an address is
-  "My area" in core's order. A new kind of core item gets its place in `profilelayer::sort()` by its address.
+- **Rows are classified by address and title identifier, never by position**: Profile leaves the list only with no
+  `id` or the session user's (another user's is a row), Preferences and the switch role items go to "Account", Log out
+  or core's `/course/loginas.php` to the foot only as the menu's LAST item (core appends it last, Boost Union
+  re-appends it last; any other item at those addresses is a row), the language submenu (found by core's
+  `languageselector` title: its id is a `uniqid()`, so there is no stabler mark) and the Look are "Display",
+  everything else with an address is "My area" in core's order. A new kind of core item gets its place in `profilelayer::sort()` by its address.
 - **Colour mode, Look and Language come from `drawernav`'s builders** (`appearance()`, `look_from()`, `language()`):
   the drawer keeps its own copies until stage S4, which moves the builders here; until then a change to one of them
   changes both surfaces.
@@ -818,7 +820,9 @@ it, `scss/profilelayer.scss` styles it and `amd/src/profilelayer.js` opens it. T
   (Boost Union's `templates/core/user_menu.mustache`) does `takeOver()` remove `data-bs-toggle` (Bootstrap's data API
   is delegated from the document and matches that attribute at event time, so the dropdown stops answering), dispose a
   dropdown already opened, and set `aria-haspopup="dialog"`, `aria-controls` and `aria-expanded` (gates
-  `js_profilelayer_takeover_guard`, `js_profilelayer_takeover_bootstrap`). A module that fails to load leaves the
+  `js_profilelayer_takeover_guard`, `js_profilelayer_takeover_bootstrap`). The takeover is the LAST step of `init()` (after the main view is found, the colour mode is
+  initialised in a try that only logs, and the listeners are bound; `removeAttribute` is the last line of `takeOver()`;
+  gates `js_profilelayer_takeover_last`, `js_profilelayer_main_guard`). A module that fails to load leaves the
   dropdown working. Core's `core/usermenu` and Boost Union's `smartmenu_usermenu` listen on the dropdown's
   `show.bs.dropdown` and `shown.bs.dropdown`, which no longer fire: harmless.
 - **Who else hears the same press or key.** Core's `theme_boost/drawers` closes every drawer on a press in the navbar
@@ -851,8 +855,9 @@ it, `scss/profilelayer.scss` styles it and `amd/src/profilelayer.js` opens it. T
   Behat site does not drop the animation (only its `optional-animation` mixin does, and the layer's selectors cannot
   carry `body.behat-site`), which is why the token exists.
 - **Behat.** `tests/behat/behat_theme_dimensions_behat_navigation.php` overrides core's `I follow "..." in the user
-  menu`: on an armed layer it presses the user button and clicks the link in the layer, or follows the address of the
-  dropdown's link where the layer draws none (Profile, which is the header's "View profile"). Core's `I log out` visits
+  menu`: on an armed layer it presses the user button and clicks the link in the layer, (not pressing it when the layer is
+  already open) or, for core's Profile alone, clicks the header's "View profile"; any other entry the layer lacks fails
+  the step. Core's `I log out` visits
   a URL and is unaffected; `"..." should exist in the user menu` reads the dropdown's markup, which stays. A step that
   presses `#user-menu-toggle` and then reads `#user-action-menu`, or `I should see "..." user submenu`, needs the
   layer off (`theme_dimensions_servicename.feature` does so) or the layer's own selectors.

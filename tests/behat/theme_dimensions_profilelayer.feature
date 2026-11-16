@@ -19,8 +19,8 @@ Feature: The profile layer of a logged-in account
       | student1    | Sam       | Student  | Cadet Student |
       | 12345678909 | Ana       | Souza    | Cap. Souza    |
 
-  # The plan names the Language sub-view; Look is used instead because a second language needs a language pack that
-  # Behat downloads only where remote langimport tests are enabled, and both are the same sub-view of the module.
+  # Look is the sub-view walked here because it needs nothing from the network; the Language sub-view has the
+  # scenario after this one, which runs only where remote langimport tests are enabled.
   Scenario: A student opens the layer from the user button, walks into a sub-view and leaves it with Escape twice
     Given I log in as "student1"
     When I click on "#user-menu-toggle" "css_element"
@@ -37,6 +37,25 @@ Feature: The profile layer of a logged-in account
     And I press the escape key
     And the focused element is "Look" "button" in the "[data-region='dimensions-profile']" "css_element"
     And "[data-region='dimensions-profile'] [data-view='look']" "css_element" should not be visible
+    And I press the escape key
+    And "[data-region='dimensions-profile']" "css_element" should not be visible
+    And the focused element is "#user-menu-toggle" "css_element"
+
+  # A second language needs a language pack, which Behat downloads only on a site that defines
+  # TOOL_LANGIMPORT_REMOTE_TESTS in config.php: without it this scenario is skipped, as core's own language menu
+  # feature is.
+  Scenario: A student opens the Language sub-view, sees the languages and leaves with Escape twice
+    Given remote langimport tests are enabled
+    And the following "language pack" exists:
+      | language | en_ar |
+    And I log in as "student1"
+    When I click on "#user-menu-toggle" "css_element"
+    And I click on "Language" "button" in the "[data-region='dimensions-profile']" "css_element"
+    Then I should see "English (pirate)" in the "[data-region='dimensions-profile'] [data-view='language']" "css_element"
+    And "[data-region='dimensions-profile'] [data-view='language'] [role='menuitemradio'][aria-checked='true']" "css_element" should exist
+    And the focused element is "[data-region='dimensions-profile'] [data-view='language'] [data-action='dimensions-layer-back']" "css_element"
+    And I press the escape key
+    And the focused element is "Language" "button" in the "[data-region='dimensions-profile']" "css_element"
     And I press the escape key
     And "[data-region='dimensions-profile']" "css_element" should not be visible
     And the focused element is "#user-menu-toggle" "css_element"
