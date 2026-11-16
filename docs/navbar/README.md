@@ -76,10 +76,10 @@ Mechanism:
 
 | Idea | What ships |
 |---|---|
-| B2 | The mobile drawer of a logged-in real account (not a visitor, not the guest account, not the Moodle app) is the theme's own: the identity, labelled sections with icons, the current page marked (`aria-current="page"`, a tint and a 3px mark), and a footer with appearance and language. |
+| B2 | The mobile drawer of a logged-in real account (not a visitor, not the guest account, not the Moodle app) is the theme's own and holds the site's navigation alone: labelled sections with icons, the current page marked (`aria-current="page"`, the brand's tint and ink, no edge mark). The person's things (the identity, the colour mode, the Look, the language, the phone's navbar entries) are the profile layer's, which the user button opens (D72 of the fleet Design System, `moodle-dev/docs/design-system/plans/user-menu-theme.md`). |
 | B3 | A row with children opens a sub-panel that slides in, with a back control naming the parent. Three levels and more. |
 | B4 | "Continue where you left off": the first block, filled the first time the drawer is shown. |
-| D4 | Light, Dark and System in the footer, through core's own colour mode machinery. |
+| D4 | Light, Dark and System through core's own colour mode machinery: in the profile layer's "Display" group, not in the drawer. |
 | B1 | Deferred to phase 3 (below). |
 
 Visitors and the guest account keep Boost Union's list with the "New here?" card of phase 1, unchanged. Giving
@@ -89,20 +89,18 @@ Mechanism:
 
 - One class decides and builds, `classes/local/drawernav.php`, renderer-free: the setting `navbardrawer` (default
   on; only a stored `'0'` is off), a logged-in real account, guestnav's excluded layouts, not the Moodle app. Its
-  `context()` reads only what core and Boost Union already put in the layout context - `mobileprimarynav` and
-  `usermenu` - plus three cheap facts of the session.
+  `context()` reads only the primary navigation core and Boost Union already put in the layout context
+  (`mobileprimarynav`) and the page (for the calendar row), and answers `rootid`, `sections` and `panels`.
 - `render_from_template()`, guarded by the SHAPE of a logged-in account's layout (`mobileprimarynav` beside
   `usermenu.avatardata`), writes `dimensionsdrawer`. The override of `theme_boost/primary-drawer-mobile` draws
   `theme_dimensions/drawer_nav` while that key is set and Boost Union's list otherwise; Boost Union's child partial,
   navbar and drawers stay theirs, uncopied.
-- The identity is core's: the avatars, `usermenu.userfullname` and the metadata lines (under "log in as", the real
-  user's name with core's "You are logged in as" line), printed as core's `user_menu_metadata` prints them. The
-  theme composes no name and reads no profile field.
-- **The role line's rule**: "Site administrator" while `is_siteadmin()` (a read of `$CFG->siteadmins`, no statement)
-  at render time, and the number of courses in progress added when the drawer is first shown, from the deferred
-  call - core's own timeline classification, the "In progress" filter of My courses
-  (`course_filter_courses_by_timeline_classification()`). A per-course role ("Student") is not a site fact and is
-  not shown.
+- **The drawer holds nothing about the person** (D72): no name, no role line, no colour mode, Look or language, and it
+  reads nothing of the user menu (`drawernav_test::test_the_drawer_holds_nothing_about_the_person`,
+  `drawer_scss_test::test_nothing_about_the_person_is_styled`). Those are the profile layer's
+  (`classes/local/profilelayer.php`, printed by the core renderer's `standard_after_main_region_html()`), whose title
+  and further lines are the fields the administrator chose (`classes/local/identity.php`); the theme's `CLAUDE.md`,
+  sections "The identity fields" and "The profile layer", holds its rules.
 - **Sections**: core's primary nodes and the custom menu are "Browse"; each Boost Union smart menu in submenu mode
   is a section of its own, labelled with the menu's title, its items as the rows (inline smart menus are already
   merged into the top level by Boost Union). **Icons**: a key-to-Font Awesome map for core's nodes (`home` house,
@@ -115,7 +113,10 @@ Mechanism:
   JavaScript to open, so this is the case of the theme's module failing). The module turns the blocks into layers:
   the current one visible, every other one `inert`, moved aside and hidden once its slide has ended; the focus goes
   to the new panel's back control and returns to the row that opened it; Escape inside a sub-panel goes back one
-  level; closing the drawer puts it back on the root. The slide exists only under
+  level, and Escape at the root (or on the drawer band's close button) closes Boost's primary drawer through Boost's
+  own instance (`drawer.js` `closeOnEscape()`, `Drawers.getDrawerInstanceForNode().closeDrawer()`), which gives the
+  focus back to the menu button: Boost's drawers module listens for no key of its own (D71); closing the drawer puts
+  it back on the root. Boost's drawer holds no focus trap, and the theme adds none. The slide exists only under
   `prefers-reduced-motion: no-preference`.
 - **"Continue where you left off"** is one web service, `theme_dimensions_get_drawer_summary`
   (`classes/external/get_drawer_summary.php`, read-only, `readonlysession`, no parameter, the session's own user
@@ -125,9 +126,16 @@ Mechanism:
   module it links (`uservisible` now, in a course the reader can access); else the course entered last (core's
   `course_get_recent_courses()`); else no card. Either way "X of Y completed" while completion is enabled and the
   person is tracked, from the counts core's progress percentage divides. The helper records nothing under "log in
-  as", so that session gets the course card. A skeleton while loading; a failure removes the card quietly.
+  as", so that session gets the course card. A skeleton while loading; a failure removes the card quietly. The
+  service answers the card alone (`resume`) and counts nothing about the person (D77).
 - The stylesheet is `scss/drawer.scss`, every rule nested under `.dimensions-drawer`, colours from the family tokens
-  with Bootstrap's as the fallback, every control a 44px target with the theme's 3px ring.
+  with Bootstrap's as the fallback. The rows are the side layer's: 40px, 44px under a coarse pointer, at 0.875rem; the
+  current row in the brand's tint and ink, with no mark on its edge; every control carries the theme's 3px ring.
+- **The drawer's width is the theme's `$dimensions-drawer-width`** (20rem, 320px, at most 85vw), set in
+  `scss/post.scss` on `#theme_boost-drawers-primary.drawer-primary.drawer-left` below md and read by the compact
+  navbar's copy of the geometry (`scss/compactnav.scss`, phase 4). Core's `$drawer-left-width` (285px) is never
+  redefined: it also places the course index's docked drawer from lg up
+  (`post_scss_test::test_the_navigation_drawer_is_the_side_layers_width`).
 
 **The colour mode finding.** Core 5.3's `\theme_boost\colour_mode` is public: `can_choose_mode()` (the experimental
 `theme_boost/enablecolourmodes`, off by default, and a session that can store a preference), `get_current_mode()`,
@@ -135,10 +143,16 @@ Mechanism:
 `theme_boost_user_preferences()` declares so the preference web service may write it. Core's AMD
 `theme_boost/colourmode` listens on the document for `[data-action="set-colourmode"]` and writes `data-bs-theme`,
 `aria-checked` and `.active` in every `[data-region="colourmode-menu"]` (which must carry
-`data-cookieattributes`), the preference and the cookie; it registers only after `init()`. So the drawer's switch is
-a radio group carrying those hooks, drawn only while `can_choose_mode()`, and the theme writes nothing: the arrow keys
-press core's option. Language follows `\core\output\language_menu` (the `langmenu` setting, a course that forces its
-language, fewer than two languages) with the addresses it builds.
+`data-cookieattributes`), the preference and the cookie; it registers only after `init()`. So a switch of the theme's
+is a radio group carrying those hooks, drawn only while `can_choose_mode()`, and the theme writes nothing: the arrow
+keys press core's option. That switch is the profile layer's (`profilelayer::appearance()`), not the drawer's.
+`amd/src/profilelayer.js` calls core's `init()` where the layer carries it and then writes
+`dimensions-profilelayer-modes` on the body, by which `scss/post.scss` hides the navbar's own colour mode menu and the
+divider after it at every width, since the user button opens the layer everywhere; a page the module never ran on
+keeps the navbar's menu. The drawer carries no colour mode control, so no rule keys on it
+(`post_scss_test::test_the_phone_navbar_is_quiet_and_carries_no_twin_control`). Language follows
+`\core\output\language_menu` (the `langmenu` setting, a course that forces its language, fewer than two languages)
+with the addresses it builds, in the layer's Language sub-view (`profilelayer::language()`).
 
 **B1 is deferred to phase 3.** The course index already has core's trigger, the floating toggle at the page's left
 edge (`drawer-toggles` in Boost Union's `theme_boost/drawers`). Its place in this design is the context bar (C2),
@@ -296,9 +310,10 @@ verified is at the end of this section).
   stays, so core goes on measuring the same room with the hamburger shown. With `display: none` core reads a 0-high
   container, sends nothing to "More", and the module would read that as a fit and leave the mode, every frame.
 - **The hold (2026100585).** Hiding in place is not enough, because the two modes lay the bar out differently: the
-  hamburger takes about 40px, and where the drawer carries the appearance switch the colour mode menu and its divider
-  leave the navbar (`post.scss`), giving about 60px back. On the calendar page at 1089px (an admin, three candidates)
-  the compact layout let the navigation fit two items in "More", the full bar wrapped and sent three, and the module
+  hamburger takes about 40px, and, when this was measured, the colour mode menu and its divider left the compact
+  navbar alone, giving about 60px back (today they leave at every width wherever the profile layer carries the colour
+  mode, so they no longer tell the two layouts apart; the hamburger still does). On the calendar page at 1089px (an
+  admin, three candidates) the compact layout let the navigation fit two items in "More", the full bar wrapped and sent three, and the module
   flipped between them about 45 times a second, so a reader saw the menu button and the navigation come and go after a
   resize, and two looks a moment apart caught a compact body with a hidden button. A split the navigation makes while
   compact therefore says nothing of the full bar, and the module does not act on it: once compact, the bar stays so at
@@ -409,13 +424,15 @@ while the browser waits); twenty-three mutation gates (`compactnav_*`, `js_compa
 `.pagelayout-standard` and `body.limitedwidth` (`boost/scss/moodle/drawer.scss`, "Anchored drawers": `left: auto`,
 `right: $drawer-anchor-none`, `width: 0`, `overflow: clip`, an anchored `top`, a border radius, a width transition) for
 the course index. `#theme_boost-drawers-primary` carries `drawer-left`, so in compact mode it opened 58px wide, cut at
-the left edge. `scss/compactnav.scss` makes it core's own below-md overlay drawer again (`left: 0` open and
-`calc(-285px - 10px)` closed, `right: auto`, 285px, `top` and height from `$navbar-height`, no radius, no clip, core's
-slide), under `#theme_boost-drawers-primary.drawer-primary.drawer-left`, which outranks the anchored selectors without
-`!important`. Measured at 1024x768 (the real incourse header and the compiled sheet in headless Chromium, the compact
-classes applied by hand, other layouts by swapping the body class): open, x=0 and 285 wide, y=60, 708 high (before, on
-the standard and limitedwidth layouts: x=-216, 285 by 238, y=100, radius 6px, clipped; closed: 0 wide); closed, x=-295,
-fully offscreen, hidden.
+the left edge. `scss/compactnav.scss` makes it the theme's below-md overlay drawer again (`left: 0` open and
+`calc(-$dimensions-drawer-width - 10px)` closed, `right: auto`, the theme's drawer width, 320px, rather than core's
+285px `$drawer-left-width`, the full height of the viewport, no radius, no clip, core's slide), under
+`#theme_boost-drawers-primary.drawer-primary.drawer-left`, which outranks the anchored selectors without `!important`.
+The measurement below is of the earlier geometry (core's 285px, under the navbar) and has not been taken again since.
+Measured at 1024x768 (the real incourse header and the compiled sheet in headless Chromium, the compact classes applied
+by hand, other layouts by swapping the body class): open, x=0 and 285 wide, y=60, 708 high (before, on the standard and
+limitedwidth layouts: x=-216, 285 by 238, y=100, radius 6px, clipped; closed: 0 wide); closed, x=-295, fully offscreen,
+hidden.
 
 **Not verified**: anything in a real browser driving the module (the compact mode's decision against core's React
 navigation, the drawer's scrim and press outside, the sheets' motion), the Behat feature (written, not run), the

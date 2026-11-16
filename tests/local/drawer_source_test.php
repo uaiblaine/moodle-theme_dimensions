@@ -32,8 +32,9 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  *
  * No unit test runs the AMD modules (Jest covers js/esm alone), so the properties whose loss costs a
  * reader rather than a screenshot are pinned by spelling, each assertion scoped to the one function it is about: a hidden
- * panel is inert, the focus follows the panels both ways, Escape goes back one level, and the summary is
- * asked for when the primary drawer is shown and never before. The Behat feature
+ * panel is inert, the focus follows the panels both ways, Escape goes back one level and closes the drawer at the
+ * root, the drawer holds nothing about the person, and the summary is asked for when the primary drawer is shown and
+ * never before. The Behat feature
  * theme_dimensions_drawer.feature is what runs the module. The build-currency assertion at the foot is
  * the only one about what a browser is served.
  *
@@ -122,17 +123,56 @@ final class drawer_source_test extends \basic_testcase {
     }
 
     /**
-     * Escape inside a sub-panel goes back one level, and is not handed on; at the root it is left alone.
+     * Escape inside a sub-panel goes back one level, and is not handed on; at the root it goes on to the drawer.
      *
      * @return void
      */
     public function test_escape_goes_back_one_level(): void {
         $key = $this->body('onKey');
 
-        $this->assertStringContainsString("if (event.key === 'Escape') {", $key);
+        $this->assertStringContainsString("if (event.key !== 'Escape') {", $key);
         $this->assertStringContainsString('if (panel && panel.dataset.parent) {', $key);
         $this->assertStringContainsString('event.stopPropagation();', $key);
         $this->assertStringContainsString('leave(root);', $key);
+    }
+
+    /**
+     * Escape that no sub-panel took closes Boost's primary drawer through Boost's own instance, whose closeDrawer()
+     * gives the focus back to the menu button (D71); a key the sub-panel took, another key, or a drawer already closed
+     * is left alone. The listener is on Boost's primary drawer, so Escape on its header's close button closes it too.
+     *
+     * Changes that must make it fail: closing the drawer any other way (a click on the close button, a class removed),
+     * dropping the sub-panel's claim (defaultPrevented), or listening on the drawer's root panel alone.
+     *
+     * @return void
+     */
+    public function test_escape_at_the_root_closes_the_drawer_and_gives_the_focus_back(): void {
+        $close = $this->body('closeOnEscape');
+        $this->assertStringContainsString(
+            "if (event.key !== 'Escape' || event.defaultPrevented || !drawer.classList.contains(SHOWN)) {",
+            $close
+        );
+        $this->assertStringContainsString('Drawers.getDrawerInstanceForNode(drawer).closeDrawer();', $close);
+        $this->assertStringNotContainsString('focusOnOpenButton', $close, 'Boost\'s default gives the focus back.');
+        $this->assertStringContainsString("const SHOWN = 'show';", $this->source());
+
+        $init = $this->body('init');
+        $this->assertStringContainsString("const drawer = root.closest('#' + DRAWER);", $init);
+        $this->assertStringContainsString("drawer.addEventListener('keydown', (event) => closeOnEscape(drawer, event));", $init);
+        $this->assertSame(1, substr_count($this->source(), 'closeOnEscape(drawer, event)'), 'One listener, on the drawer.');
+    }
+
+    /**
+     * The module holds nothing about the person (D72, D77): no colour mode option, no role line, no count of courses.
+     *
+     * @return void
+     */
+    public function test_the_module_holds_nothing_about_the_person(): void {
+        $source = $this->source();
+        $this->assertStringContainsString('paintResume(card, summary.resume);', $this->body('load'), 'Control: the card.');
+        foreach (['colourmode', 'radiogroup', 'inprogress', 'dimensions-drawer-role', 'ArrowDown'] as $absent) {
+            $this->assertStringNotContainsString($absent, $source, $absent);
+        }
     }
 
     /**
@@ -149,8 +189,8 @@ final class drawer_source_test extends \basic_testcase {
         $this->assertStringContainsString('document.addEventListener(Drawers.eventTypes.drawerShown, onShown);', $arm);
         $this->assertStringContainsString('if (!event.target || event.target.id !== DRAWER) {', $arm);
         $this->assertStringContainsString('document.removeEventListener(Drawers.eventTypes.drawerShown, onShown);', $arm);
-        $this->assertSame(1, substr_count($this->source(), 'load(root, card);'), 'One call of load(), the listener\'s.');
-        $this->assertStringContainsString('load(root, card);', $arm);
+        $this->assertSame(1, substr_count($this->source(), 'load(card);'), 'One call of load(), the listener\'s.');
+        $this->assertStringContainsString('load(card);', $arm);
         $this->assertStringNotContainsString('load(', $this->body('init'));
         $this->assertStringContainsString("const DRAWER = 'theme_boost-drawers-primary';", $this->source());
     }
@@ -169,18 +209,6 @@ final class drawer_source_test extends \basic_testcase {
         $this->assertStringContainsString('card.remove();', $paint, 'Nothing to continue: no card.');
         $this->assertStringContainsString('.textContent = resume.name;', $paint);
         $this->assertStringNotContainsString('innerHTML', $this->source());
-    }
-
-    /**
-     * The arrow keys move the appearance switch by pressing core's option, which is what applies the mode.
-     *
-     * @return void
-     */
-    public function test_the_arrows_press_cores_option(): void {
-        $step = $this->body('stepMode');
-
-        $this->assertStringContainsString('options[next].focus();', $step);
-        $this->assertStringContainsString('options[next].click();', $step);
     }
 
     /**

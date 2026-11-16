@@ -31,7 +31,7 @@ use core_external\external_value;
 use theme_dimensions\local\drawersummary;
 
 /**
- * The mobile drawer's deferred summary: the "Continue where you left off" card and the courses in progress.
+ * The mobile drawer's deferred summary: the "Continue where you left off" card.
  *
  * Asked by amd/src/drawer.js the first time Boost's primary drawer is shown, never on page load. Every
  * decision is {@see drawersummary}'s; this class is the door.
@@ -63,7 +63,7 @@ class get_drawer_summary extends external_api {
     /**
      * The current user's summary.
      *
-     * @return array resume, inprogress and inprogresstext.
+     * @return array resume.
      * @throws \require_login_exception Without a session.
      * @throws \moodle_exception For the guest account.
      */
@@ -96,8 +96,6 @@ class get_drawer_summary extends external_api {
                 'total' => new external_value(PARAM_INT, 'Activities to complete, 0 without a count.'),
                 'percent' => new external_value(PARAM_INT, 'The completed share, floored, 0 without a count.'),
             ]),
-            'inprogress' => new external_value(PARAM_INT, 'How many of the user\'s courses are in progress.'),
-            'inprogresstext' => new external_value(PARAM_TEXT, 'The role line\'s sentence for that number, empty for none.'),
         ]);
     }
 }

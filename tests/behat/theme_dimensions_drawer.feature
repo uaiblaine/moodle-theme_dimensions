@@ -2,7 +2,7 @@
 Feature: The mobile drawer of a logged-in account
   In order to find my way and pick up where I stopped on a phone
   As a logged-in learner
-  I need the side menu to say who I am, offer what I was doing and let me walk into a menu and back
+  I need the side menu to offer what I was doing, let me walk into a menu and back, and close on Escape
 
   Background:
     Given the following config values are set as admin:
@@ -10,6 +10,9 @@ Feature: The mobile drawer of a logged-in account
       | forcelogin      | 0          |
       | registerauth    | email      |
       | enablemycourses | 1          |
+    # Core's colour modes on: the drawer once carried a switch for them, which is the profile layer's now.
+    And the following config values are set as admin:
+      | enablecolourmodes | 1 | theme_boost |
     And the following "courses" exist:
       | fullname | shortname | enablecompletion | startdate     | enddate        |
       | Algebra  | ALG       | 1                | ##1 day ago## | ##+1 month##   |
@@ -37,12 +40,14 @@ Feature: The mobile drawer of a logged-in account
       | itemtype | Dynamic courses |
       | itemmode | Submenu         |
 
-  Scenario: A student sees who is logged in, continues where they left off and walks into a sub-panel and back
+  Scenario: A student continues where they left off, walks into a sub-panel and back, and closes the drawer with Escape
     Given I change window size to "mobile"
     And I am on the "Reading one" "page activity" page logged in as "student1"
     When I click on "[data-target='theme_boost-drawers-primary']" "css_element"
-    Then I should see "Ana Souza" in the "[data-region='dimensions-drawer-identity']" "css_element"
-    And I should see "1 course in progress" in the "[data-region='dimensions-drawer-role']" "css_element"
+    # The drawer holds nothing about the person: the name and the colour mode are the profile layer's.
+    Then I should not see "Ana Souza" in the "[data-region='dimensions-drawer']" "css_element"
+    And "[data-region='dimensions-drawer'] [data-action='set-colourmode']" "css_element" should not exist
+    And "[data-region='dimensions-profile'] [data-action='set-colourmode']" "css_element" should exist
     And I should see "Continue where you left off" in the "[data-region='dimensions-drawer-resume']" "css_element"
     And I should see "Reading one" in the "[data-region='dimensions-drawer-resume']" "css_element"
     And I should see "0 of 1 completed" in the "[data-region='dimensions-drawer-resume']" "css_element"
@@ -61,6 +66,11 @@ Feature: The mobile drawer of a logged-in account
     And I click on "Course list" "link" in the "#dimensions-drawer-panel-root" "css_element"
     And I press the escape key
     And the focused element is "Course list" "link" in the "#dimensions-drawer-panel-root" "css_element"
+    And "#theme_boost-drawers-primary.show" "css_element" should exist
+    # Escape at the root closes the drawer, and the focus goes back to the menu button.
+    And I press the escape key
+    And "#theme_boost-drawers-primary.show" "css_element" should not exist
+    And the focused element is "[data-action='toggle'][data-target='theme_boost-drawers-primary']" "css_element"
 
   Scenario: A visitor keeps the "New here?" card and gets none of the account's drawer
     Given I change window size to "mobile"

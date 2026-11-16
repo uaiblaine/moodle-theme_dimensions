@@ -25,12 +25,12 @@
 namespace theme_dimensions\local;
 
 /**
- * The deferred half of the mobile drawer ({@see drawernav}): the "Continue where you left off" card and
- * the number of courses in progress on the role line.
+ * The deferred half of the mobile drawer ({@see drawernav}): the "Continue where you left off" card.
  *
- * Both cost statements per course, which is why the page never pays them: the drawer asks for them through
+ * It costs statements per course, which is why the page never pays them: the drawer asks for it through
  * theme_dimensions_get_drawer_summary the first time it is shown. Everything here is about the session's
- * own user and reads nothing of anybody else.
+ * own user and reads nothing of anybody else. The drawer counts nothing about the person (D77): the
+ * summary carries the card alone.
  *
  * The card's rule:
  *
@@ -64,15 +64,11 @@ final class drawersummary {
     /**
      * The whole summary of the current user.
      *
-     * @return array resume (see {@see self::empty_resume()}), inprogress (int) and inprogresstext (string).
+     * @return array resume (see {@see self::empty_resume()}).
      */
     public static function build(): array {
-        $inprogress = self::in_progress();
-
         return [
             'resume' => self::resume(),
-            'inprogress' => $inprogress,
-            'inprogresstext' => self::in_progress_text($inprogress),
         ];
     }
 
@@ -220,45 +216,6 @@ final class drawersummary {
             'completed' => $info->count_modules_completed($userid, array_keys($activities)),
             'total' => count($activities),
         ];
-    }
-
-    /**
-     * How many of this person's courses are in progress: core's own timeline classification.
-     *
-     * The courses My courses lists under "In progress" - enrolled, not hidden from the overview by the
-     * person, not finished, not ended, started - through the function block_myoverview and core's
-     * timeline web service filter with.
-     *
-     * @return int
-     */
-    public static function in_progress(): int {
-        global $CFG;
-        require_once($CFG->dirroot . '/course/lib.php');
-
-        $courses = enrol_get_my_courses(['enddate', 'startdate', 'enablecompletion']);
-        if (!$courses) {
-            return 0;
-        }
-        [$inprogress] = course_filter_courses_by_timeline_classification($courses, COURSE_TIMELINE_INPROGRESS);
-
-        return count($inprogress);
-    }
-
-    /**
-     * The role line's sentence for a number of courses in progress, or '' for none.
-     *
-     * @param int $count The number.
-     * @return string
-     */
-    public static function in_progress_text(int $count): string {
-        if ($count < 1) {
-            return '';
-        }
-        if ($count === 1) {
-            return get_string('drawer_inprogress_one', self::COMPONENT);
-        }
-
-        return get_string('drawer_inprogress_many', self::COMPONENT, $count);
     }
 
     /**
