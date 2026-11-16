@@ -99,7 +99,8 @@ final class profilelayer_scss_test extends \advanced_testcase {
         $checked = 0;
         foreach ($matches[1] as $prelude) {
             $prelude = trim($prelude);
-            if ($prelude === '' || $prelude[0] === '@') {
+            // An at-rule, or a stop of the layer's own keyframes, is no selector.
+            if ($prelude === '' || $prelude[0] === '@' || preg_match('~^(from|to|\d+(\.\d+)?%)$~', $prelude)) {
                 continue;
             }
             foreach (explode(',', $prelude) as $selector) {
@@ -131,6 +132,34 @@ final class profilelayer_scss_test extends \advanced_testcase {
         preg_match_all('~@media \(prefers-reduced-motion: no-preference\)\s*\{\s*transition\s*:~', $scss, $guarded);
         $this->assertNotEmpty($all[0], 'Precondition: the sheet has a transition.');
         $this->assertCount(count($all[0]), $guarded[0]);
+        // The opening: the backdrop and the layer animate only while shown and only under the same media query, in the
+        // theme's base motion token, and every keyframes rule is the layer's own.
+        preg_match_all('~animation\s*:~', $scss, $animations);
+        preg_match_all(
+            '~@media \(prefers-reduced-motion: no-preference\)\s*\{\s*&:not\(\[hidden\]\)\s*\{\s*animation\s*:~',
+            $scss,
+            $shown
+        );
+        $this->assertCount(2, $animations[0], 'The backdrop\'s fade and the layer\'s slide.');
+        $this->assertCount(2, $shown[0]);
+        $this->assertStringContainsString(
+            'animation: dimensions-layer-in var(--dim-layer-motion-base) var(--dim-layer-motion-ease);',
+            $scss
+        );
+        $this->assertStringContainsString('--dim-layer-motion-base: var(--dimensions-motion-base, 250ms);', $scss);
+        preg_match_all('~@keyframes ([a-z-]+)~', $scss, $keyframes);
+        $this->assertSame(['dimensions-layer-in', 'dimensions-layer-fade'], $keyframes[1]);
+        $this->assertMatchesRegularExpression(
+            '~@media \(max-width: 575\.98px\)\s*\{\s*\.dimensions-layer\.dimensions-layer--end\s*\{\s*'
+                . '--dim-layer-from: translateY\(100%\);~',
+            $css,
+            'The sheet rises from the bottom.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~@media \(min-width: 768px\)\s*\{\s*\.dimensions-layer \.dimensions-layer-phone\s*\{\s*display: none;~',
+            $css,
+            'The phone\'s entries are a phone\'s group alone (D75).'
+        );
         $this->assertMatchesRegularExpression(
             '~\.dimensions-layer :focus-visible\s*\{\s*outline: var\(--dim-layer-ring-width\) solid var\(--dim-layer-ring\);'
                 . '\s*outline-offset: -2px;~',

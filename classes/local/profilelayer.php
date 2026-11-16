@@ -28,7 +28,8 @@ namespace theme_dimensions\local;
  * Whether the page gets the profile layer, and the template data it is drawn from.
  *
  * The layer is theme_dimensions/profile_layer, printed once per page after the content by the core renderer's
- * standard_end_of_body_html_endtoken(), closed (moodle-dev/docs/design-system/components/side-layer.md). Nothing
+ * standard_after_main_region_html(), closed, and opened by amd/src/profilelayer.js, which the renderer arms beside
+ * the print (moodle-dev/docs/design-system/components/side-layer.md). Nothing
  * here renders: the builder reads the user menu core and Boost Union already put in the layout context
  * (core\navigation\output\primary::get_user_menu(), Boost Union's smart menus merged in), the session's user for
  * the identity ({@see identity}), and the three preferences {@see drawernav} already builds, so every clause is

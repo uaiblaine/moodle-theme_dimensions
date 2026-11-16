@@ -48,6 +48,9 @@ final class profilelayer_render_test extends \advanced_testcase {
     /** @var string Boost Union's user menu toggle, the layer's fallback, which stays on the page. */
     private const TOGGLE = 'id="user-menu-toggle"';
 
+    /** @var string The layer's client module, as the page's AMD calls name it. */
+    private const MODULE = 'theme_dimensions/profilelayer';
+
     /**
      * This theme's renderer on a fresh page of the standard layout.
      *
@@ -97,6 +100,23 @@ final class profilelayer_render_test extends \advanced_testcase {
         $this->setUser($complete);
 
         return $complete;
+    }
+
+    /**
+     * How many of the AMD calls the page has queued arm the layer's module.
+     *
+     * @return int One per js_call_amd(), whose snippet names the module more than once.
+     */
+    private function armed(): int {
+        global $PAGE;
+
+        $property = new \ReflectionProperty($PAGE->requires, 'amdjscode');
+        $calls = array_filter(
+            (array) $property->getValue($PAGE->requires),
+            static fn($code): bool => str_contains((string) $code, "'" . self::MODULE . "'")
+        );
+
+        return count($calls);
     }
 
     /**
@@ -252,6 +272,55 @@ final class profilelayer_render_test extends \advanced_testcase {
     }
 
     /**
+     * The layer's client module is armed on a page that prints the layer, once, and on no other: a visitor, the guest
+     * account and a site that switched the layer off keep Boost Union's dropdown on the user button.
+     *
+     * @return void
+     */
+    public function test_the_module_is_armed_only_where_the_layer_is_printed(): void {
+        $this->resetAfterTest();
+
+        $this->person();
+        [, $footer] = $this->halves();
+        $this->assertStringContainsString(self::LAYER, $footer, 'Precondition: the layer is printed.');
+        $this->assertSame(1, $this->armed(), 'Armed once, beside the print.');
+
+        set_config(profilelayer::SETTING, '0', profilelayer::COMPONENT);
+        $this->halves();
+        $this->assertSame(0, $this->armed(), 'Switched off.');
+        set_config(profilelayer::SETTING, '1', profilelayer::COMPONENT);
+
+        $this->setUser(null);
+        $this->halves();
+        $this->assertSame(0, $this->armed(), 'A visitor.');
+
+        $this->setGuestUser();
+        $this->halves();
+        $this->assertSame(0, $this->armed(), 'The guest account.');
+    }
+
+    /**
+     * A second print of the region after the main content arms nothing more: the module is armed with the layer.
+     *
+     * @return void
+     */
+    public function test_a_second_call_arms_nothing(): void {
+        $this->resetAfterTest();
+        $this->person();
+        $renderer = $this->renderer();
+        $renderer->header();
+        $before = $this->armed();
+
+        $renderer->standard_after_main_region_html();
+        $this->assertSame($before, $this->armed(), 'Nothing stored: nothing armed.');
+
+        $context = ['usermenu' => ['avatardata' => [['content' => '', 'classes' => 'current']], 'items' => []]];
+        $renderer->render_from_template('theme_dimensions/look_mark', $context + ['url' => null, 'colour' => null]);
+        $this->assertStringContainsString(self::LAYER, $renderer->standard_after_main_region_html());
+        $this->assertSame($before + 1, $this->armed(), 'Control: armed with the print.');
+    }
+
+    /**
      * A masked identity value never reaches the page whole; an unmasked field beside it does.
      *
      * @return void
@@ -349,6 +418,12 @@ final class profilelayer_render_test extends \advanced_testcase {
         $this->assertStringContainsString('data-region="dimensions-layer-loggedinas"', $html);
         $this->assertStringContainsString('Return to Admin User</a>', $html);
         $this->assertStringContainsString('class="dimensions-layer-row dimensions-layer-row--danger"', $html);
+        $this->assertMatchesRegularExpression(
+            '~<div class="dimensions-layer-scroll">\s*<div class="dimensions-layer-phone" data-region="dimensions-layer-phone"'
+                . ' hidden>\s*<ul class="dimensions-layer-list" data-region="dimensions-layer-phone-list"></ul>~',
+            $html,
+            'The phone\'s group comes first, empty and hidden, for amd/src/phonemenu.js to fill.'
+        );
 
         $context = $this->example_context('profile_layer');
         $context['editurl'] = false;

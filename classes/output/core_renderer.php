@@ -557,6 +557,10 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * stylesheet hides from sm up and core's popover copies by innerHTML on every opening. The stored context is
      * dropped as it is printed, so a second call prints core's output alone.
      *
+     * The layer's client module (amd/src/profilelayer.js), which takes the user button over from Boost Union's
+     * dropdown, is armed here and nowhere else: only a page that prints the layer arms it, so a visitor, the guest
+     * account and a site that switched the layer off keep the dropdown untouched.
+     *
      * @return string HTML fragment.
      */
     public function standard_after_main_region_html() {
@@ -566,6 +570,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         if ($layer === null) {
             return $output;
         }
+        $this->page->requires->js_call_amd('theme_dimensions/profilelayer', 'init');
 
         return $output . $this->render_from_template('theme_dimensions/profile_layer', $layer);
     }

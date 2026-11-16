@@ -1082,6 +1082,17 @@ body.dimensions-nav-compact:has(.dimensions-drawer-modes) #usernavigation {
     }
 }
 
+/* Where the profile layer carries the colour mode control (theme_dimensions\local\profilelayer), the navbar's own menu
+   is the same control twice at every width, since the user button opens the layer everywhere. Keyed on the class
+   amd/src/profilelayer.js writes on the body once it has armed such a layer, never on the layer's markup alone: a page
+   the module never ran on keeps the navbar's menu, the only one it can open. */
+body.dimensions-profilelayer-modes #usernavigation {
+    .colourmodemenu,
+    .colourmodemenu + .divider {
+        display: none;
+    }
+}
+
 /* The logo keeps a margin of the bar around it: 8px above and below, where core's 52px left it 4px from the band. One
    height for the navbar's brand and the drawer's header, which lies over it (below). Set on the image: Boost Union's
    brand link carries m-0 and p-0, which are !important. Boost Union's "Maximal width of logo in navbar" setting

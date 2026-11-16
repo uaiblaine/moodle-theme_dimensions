@@ -292,10 +292,15 @@ the logged-in person: their picture with the title and further lines above, "Vie
 latter where Moodle's profile page offers it), a notice with the way back while an administrator is logged in as
 somebody, the site's user menu items under "My area" (Boost Union's user menu smart menus among them), Preferences
 and the role switch under "Account", the colour mode, the look and the language under "Display", and Log out at
-its foot. It is built from Moodle's own user menu on the server and printed once per page, closed; this release
-does not open it yet (the client that takes the user button over comes next), so Boost Union's user menu is still
-the one people use, and stays on the page as the layer's fallback. Visitors, the guest account and the Moodle app
-never get it; switched off, the user menu is Boost Union's alone. It stores nothing.
+its foot. It is built from Moodle's own user menu on the server and printed once per page, closed, and the user
+button opens it: at the side of the page, a bottom sheet on a phone, with Look and Language as sub-views inside it.
+It is a dialog: the keyboard stays inside it while it is open, Escape leaves a sub-view first and then closes it, and
+closing gives the focus back to the user button. On a phone the navbar's controls that make room there (messages,
+local_mail's inbox, focus mode, the edit mode switch) are its first group. Where it carries the colour mode, the
+navbar's own colour mode menu is hidden at every width. Boost Union's user menu stays on the page as the fallback: if
+the layer's script does not run, the user button opens Boost Union's menu as before. Visitors, the guest account and
+the Moodle app never get it; switched off, the user menu is Boost Union's alone. It stores nothing: the colour mode,
+the look and the language keep Moodle's and the theme's existing preferences.
 
 - **The fields**: the full name in the site's format (`fullname`), the alternate name (`alternatename`), the first
   name (`firstname`), the username (`username`), the email address (`email`), the ID number (`idnumber`) and each

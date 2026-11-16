@@ -18,11 +18,16 @@
     @template theme_dimensions/profile_layer
 
     The profile layer of a logged-in account (moodle-dev/docs/design-system/components/side-layer.md), printed once
-    per page after the content by the core renderer's standard_end_of_body_html_endtoken() from
-    theme_dimensions\local\profilelayer::context(). It is printed closed: the backdrop and the dialog are hidden,
-    and nothing in this template opens them. Every destination it holds is a link to a page of its own (the
-    profile, Preferences, core's ?lang= address, the Look choice page), so the layer adds nothing a person needs
-    JavaScript to reach.
+    per page after the content by the core renderer's standard_after_main_region_html() from
+    theme_dimensions\local\profilelayer::context(). It is printed closed: the backdrop and the dialog are hidden.
+    amd/src/profilelayer.js, armed by the renderer beside this print, takes the user button over and opens it; the
+    data-region, data-view and data-action hooks below are what it addresses. Every destination it holds is a link
+    to a page of its own (the profile, Preferences, core's ?lang= address, the Look choice page), so the layer adds
+    nothing a person needs JavaScript to reach.
+
+    The group dimensions-layer-phone is empty and hidden as printed: amd/src/phonemenu.js fills it with the navbar's
+    controls that move to the user button on a phone (theme_dimensions\local\phonenav), once the layer is armed,
+    and the stylesheet draws it below md only.
 
     The main view is headed lists of links and buttons (a dialog of links, not a menu); a sub-view of choices is a
     role="menu" of menuitemradio links, a Boost Union smart menu's sub-view one of menuitem links. The colour mode
@@ -169,6 +174,10 @@
         </div>
         {{/loggedinas}}
         <div class="dimensions-layer-scroll">
+            <div class="dimensions-layer-phone" data-region="dimensions-layer-phone" hidden>
+                <ul class="dimensions-layer-list" data-region="dimensions-layer-phone-list"></ul>
+                <div class="dimensions-layer-sep" role="separator"></div>
+            </div>
             {{#groups}}
             {{^first}}<div class="dimensions-layer-sep" role="separator"></div>{{/first}}
             <h3 class="dimensions-layer-head" id="{{uniqid}}-group-{{key}}">{{label}}</h3>
