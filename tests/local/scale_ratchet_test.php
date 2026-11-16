@@ -89,7 +89,7 @@ final class scale_ratchet_test extends \basic_testcase {
     private const SHEETS = [
         'calendar.scss', 'category.scss', 'categoryhero.scss', 'compactnav.scss', 'competency.scss',
         'coursenotice.scss', 'drawer.scss', 'focusmode.scss', 'keycolour.scss', 'landing.scss', 'loginshell.scss',
-        'look.scss', 'phonenav.scss', 'post.scss', 'pre.scss', 'readingbar.scss', 'sheets.scss',
+        'look.scss', 'phonenav.scss', 'post.scss', 'pre.scss', 'profilelayer.scss', 'readingbar.scss', 'sheets.scss',
     ];
 
     /**

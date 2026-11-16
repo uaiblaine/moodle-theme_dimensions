@@ -158,8 +158,9 @@ final class phonenav_source_test extends \basic_testcase {
     }
 
     /**
-     * The module marks the nav only after the entries are in the menu, so nothing is hidden before its stand-in exists;
-     * focus mode is submitted through its own form, so focusmode.js intercepts it; the counts are read on each opening.
+     * The module marks the nav only after the entries are in the menu or the armed profile layer, so nothing is hidden
+     * before its stand-in exists; focus mode is submitted through its own form, so focusmode.js intercepts it; the
+     * counts are read on each opening of either.
      *
      * @return void
      */
@@ -167,11 +168,16 @@ final class phonenav_source_test extends \basic_testcase {
         $js = $this->file('amd/src/phonemenu.js');
 
         $moved = strpos($js, 'holder.remove();');
+        $placed = strpos($js, 'intoMenu(main, fragment);');
         $marked = strpos($js, "nav.classList.add('dimensions-phonenav-' + entry.dataset.dimensionsPhone);");
         $this->assertNotFalse($moved);
+        $this->assertNotFalse($placed);
         $this->assertNotFalse($marked);
         $this->assertGreaterThan($moved, $marked);
-        $this->assertStringContainsString("main.querySelectorAll(SELECTORS.ENTRY).forEach((entry) => {", $js);
+        $this->assertGreaterThan($placed, $marked, 'Marked once the entries are in the menu or the layer.');
+        $this->assertSame(1, substr_count($js, 'dimensions-phonenav-'), 'One place marks the nav.');
+        $this->assertStringContainsString('entries.forEach((entry) => {', $js);
+        $this->assertStringContainsString('document.addEventListener(LAYER.SHOWNEVENT, () => {', $js);
 
         $this->assertStringContainsString('control.form.requestSubmit(control);', $js);
         // Core's message drawer closes on the click that would open it, unless the opening waits for it to finish.
