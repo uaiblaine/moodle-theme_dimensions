@@ -112,14 +112,44 @@ final class criteria {
     /** @var string Query parameter: the child category whose panel of courses is drawn under its poster. */
     public const PARAM_OPEN = 'open';
 
-    /** @var string Query parameter: the order of that panel, '' for the newest first or 'name' for A-Z. */
+    /**
+     * @var string Query parameter: the order while the listing is grouped, '' for the newest first or 'name' for A-Z.
+     *
+     * The order of an open panel, and kept with no panel open, so the grouped page holds the order the
+     * reader chose under "Sort by" until a panel opens in it ({@see organisation()}).
+     */
     public const PARAM_PSORT = 'psort';
 
     /**
-     * @var string[] Every order a panel may be asked for. '' is the default (the newest first) and
+     * @var string[] Every order a grouped listing may be asked for. '' is the default (the newest first) and
      *   names itself with no parameter at all, as the grouped organisation does in {@see SORTS}.
      */
     public const PSORTS = ['', self::SORT_NAME];
+
+    /**
+     * @var string Query parameter: how the listing is grouped, one of {@see GROUPS}.
+     *
+     * What the toolbar's "Group by" posts beside "Sort by", which then posts the order in
+     * {@see PARAM_SORT}; read by {@see organisation()}. The addresses the theme writes spell the
+     * organisation the older way ({@see sort_params()}, {@see order_params()}), which every address
+     * already in the world uses.
+     */
+    public const PARAM_GROUP = 'group';
+
+    /** @var string The grouping by area: the posters of this category's children. */
+    public const GROUP_CATEGORY = 'category';
+
+    /** @var string No grouping: one flat list in the chosen order. */
+    public const GROUP_NONE = 'none';
+
+    /**
+     * @var string[] Every grouping a request may name, in the order "Group by" offers them: an open list
+     *   (fleet Design System D65), so a grouping added here needs no new parameter.
+     */
+    public const GROUPS = [self::GROUP_CATEGORY, self::GROUP_NONE];
+
+    /** @var string[] Every order "Sort by" offers, in its order: the flat organisations of {@see SORTS}. */
+    public const ORDERS = [self::SORT_NAME, self::SORT_RECENT];
 
     /** @var string The grouped organisation: the posters of this category's children. */
     public const SORT_CATEGORY = 'category';
@@ -264,7 +294,12 @@ final class criteria {
      */
     public int $open = 0;
 
-    /** @var string The panel's order: '' (the newest first) or {@see SORT_NAME}; always '' while no panel is open. */
+    /**
+     * @var string The order while grouped: '' (the newest first) or {@see SORT_NAME}; always '' under a flat organisation.
+     *
+     * The order of the open panel, and the order "Sort by" holds while no panel is open, so the next
+     * panel opens in it; a flat organisation carries its order in {@see $sort} itself.
+     */
     public string $psort = '';
 
     /**
@@ -285,9 +320,10 @@ final class criteria {
      * @param array $options Any of page (int), pagesize (int|null), search (string), state (string|null),
      *   favourites (bool), fields (array fieldid => value), sort (string), datefrom (string, YYYY-MM-DD), dateto (string,
      *   YYYY-MM-DD), cat (int, the tree's category), withcategories (bool),
-     *   anonymous (bool), open (int, the child whose panel is drawn), psort (string, the panel's
+     *   anonymous (bool), open (int, the child whose panel is drawn), psort (string, the grouped
      *   order), withposters (bool), defaultsort (string, the organisation in force when sort is ''
-     *   or unknown), remembered (bool, see {@see $remembered}). Unknown keys are refused; an
+     *   or unknown), remembered (bool, see {@see $remembered}), group (string, one of {@see GROUPS},
+     *   which makes sort the order: {@see organisation()}). Unknown keys are refused; an
      *   unknown state, an unknown sort or default, an unknown panel order, a field that is not one of
      *   the site's filter fields ({@see facets::fields()}) or a value none of its options has, and a
      *   malformed date are dropped, and a pair of dates given backwards is put in order, because they arrive from a
@@ -314,6 +350,7 @@ final class criteria {
             'withposters',
             'defaultsort',
             'remembered',
+            'group',
         ];
         $unknown = array_diff(array_keys($options), $known);
         if ($unknown) {
@@ -353,8 +390,11 @@ final class criteria {
            about the organisation in force. */
         $default = (string) ($options['defaultsort'] ?? '');
         $this->defaultsort = in_array($default, self::SORTS, true) ? $default : '';
-        $sort = (string) ($options['sort'] ?? '');
-        $sort = in_array($sort, self::SORTS, true) ? $sort : '';
+        [$sort, $psort] = self::organisation(
+            (string) ($options['group'] ?? ''),
+            (string) ($options['sort'] ?? ''),
+            (string) ($options['psort'] ?? '')
+        );
         $this->sort = $sort !== '' ? $sort : $this->defaultsort;
         $datefrom = self::parse_date((string) ($options['datefrom'] ?? ''));
         $dateto = self::parse_date((string) ($options['dateto'] ?? ''));
@@ -381,13 +421,78 @@ final class criteria {
         $this->anonymous = (bool) ($options['anonymous'] ?? false);
 
         /* The panel, dropped exactly as the tree's criterion is dropped above: a flat organisation
-           draws no poster, so an open arriving with it names nothing on the page. Its order means
-           nothing without it, and an order outside the vocabulary is the default one. */
+           draws no poster, so an open arriving with it names nothing on the page. The grouped order
+           holds with no panel open (the next panel opens in it) and means nothing under a flat
+           organisation, which carries its order in the sort itself. */
         $this->open = $this->is_grouped() ? max(0, (int) ($options['open'] ?? 0)) : 0;
-        $psort = (string) ($options['psort'] ?? '');
-        $this->psort = ($this->open > 0 && in_array($psort, self::PSORTS, true)) ? $psort : '';
+        $this->psort = $this->is_grouped() ? $psort : '';
         $this->withposters = (bool) ($options['withposters'] ?? false);
         $this->remembered = (bool) ($options['remembered'] ?? false);
+    }
+
+    /**
+     * The organisation and the grouped order a request names, read from both of its spellings.
+     *
+     * "Group by" and "Sort by" are two independent choices (fleet Design System D49): a grouping by
+     * name ({@see GROUPS}) and an order ({@see ORDERS}). The addresses spell the pair the older way,
+     * one organisation in `sort` ({@see SORTS}: the grouped one, or a flat order) and the grouped order
+     * in `psort`, so every address and remembered state written before the two choices keeps meaning
+     * what it meant. This reads both:
+     *
+     * | group    | sort           | psort | organisation      | grouped order             |
+     * |----------|----------------|-------|-------------------|---------------------------|
+     * | (none)   | '' or category | p     | that sort         | p                         |
+     * | (none)   | name or recent | -     | that sort         | - (a flat order)          |
+     * | category | name           | -     | category          | name                      |
+     * | category | recent or ''   | p     | category          | recent, or p when no sort |
+     * | none     | name or recent | -     | that sort         | -                         |
+     * | none     | ''             | p     | p, else recent    | -                         |
+     *
+     * A group outside the vocabulary is no group at all, so the older reading applies, exactly as
+     * an unknown sort is no sort; a sort outside its vocabulary is none. The order travels across a
+     * change of grouping, because choosing in one section never changes the other.
+     *
+     * @param string $group The grouping named, '' for none.
+     * @param string $sort The organisation (no grouping named) or the order (a grouping named).
+     * @param string $psort The grouped order the request names, '' for the newest first.
+     * @return array [sort, psort]: sort one of {@see SORTS} ('' when nothing names one), psort one of {@see PSORTS}.
+     */
+    public static function organisation(string $group, string $sort, string $psort): array {
+        $psort = in_array($psort, self::PSORTS, true) ? $psort : '';
+        if (!in_array($group, self::GROUPS, true)) {
+            return [in_array($sort, self::SORTS, true) ? $sort : '', $psort];
+        }
+        $order = in_array($sort, self::ORDERS, true)
+            ? $sort
+            : ($psort === self::SORT_NAME ? self::SORT_NAME : self::SORT_RECENT);
+        if ($group === self::GROUP_NONE) {
+            return [$order, ''];
+        }
+        return [self::SORT_CATEGORY, $order === self::SORT_NAME ? self::SORT_NAME : ''];
+    }
+
+    /**
+     * The grouping in force, by name: what "Group by" shows chosen.
+     *
+     * @return string One of {@see GROUPS}.
+     */
+    public function group(): string {
+        return $this->is_grouped() ? self::GROUP_CATEGORY : self::GROUP_NONE;
+    }
+
+    /**
+     * The order in force, whatever the grouping: what "Sort by" shows chosen.
+     *
+     * The grouped order while grouped ({@see $psort}, the newest first by default), the flat
+     * organisation itself otherwise.
+     *
+     * @return string One of {@see ORDERS}.
+     */
+    public function order(): string {
+        if ($this->is_grouped()) {
+            return $this->psort === self::SORT_NAME ? self::SORT_NAME : self::SORT_RECENT;
+        }
+        return $this->sort;
     }
 
     /**
@@ -489,6 +594,8 @@ final class criteria {
             'favourites' => $favourites && self::can_favourite($anonymous),
             'fields' => $fields,
             'sort' => optional_param(self::PARAM_SORT, '', PARAM_ALPHA),
+            // What the toolbar's "Group by" posts without JavaScript; the addresses the page mints never carry it.
+            'group' => optional_param(self::PARAM_GROUP, '', PARAM_ALPHA),
             'defaultsort' => self::default_sort($categoryid),
             /* PARAM_RAW_TRIMMED and then the strict shape below, rather than a cleaner that would
                turn a typed date into a different, plausible date: what is not YYYY-MM-DD is no
@@ -522,9 +629,10 @@ final class criteria {
     /**
      * A request's options with the reader's remembered state filled in where the address names none of it.
      *
-     * The state is one whole: it fills in a bare address - one that names no organisation, no panel
-     * and nothing that narrows (a term, a state, the favourites, a field, a bound of the period, the
-     * tree's category) - and nothing else, so an address that names any of these is read as written,
+     * The state is one whole: it fills in a bare address - one that names no organisation (a sort, a
+     * grouping or the grouped A-Z order), no panel and nothing that narrows (a term, a state, the
+     * favourites, a field, a bound of the period, the tree's category) - and nothing else, so an
+     * address that names any of these is read as written,
      * with the category's default for whatever it leaves out. That keeps a shared address meaning the
      * same to whoever opens it: every address the page mints for a reader with a remembered state
      * names its organisation ({@see $remembered}, set here whether or not anything was filled in), so
@@ -541,6 +649,8 @@ final class criteria {
         $options['remembered'] = true;
         $sort = (string) ($options['sort'] ?? '');
         $named = ($sort !== '' && in_array($sort, self::SORTS, true))
+            || in_array((string) ($options['group'] ?? ''), self::GROUPS, true)
+            || (string) ($options['psort'] ?? '') === self::SORT_NAME
             || (int) ($options['open'] ?? 0) > 0
             || trim((string) ($options['search'] ?? '')) !== ''
             || ($options['state'] ?? null) !== null
@@ -553,6 +663,7 @@ final class criteria {
             return $options;
         }
         $options['sort'] = (string) ($entry[remembered::KEY_SORT] ?? '');
+        $options['psort'] = (string) ($entry[remembered::KEY_PSORT] ?? '');
         $options['state'] = $entry[remembered::KEY_STATE] ?? null;
         $options['favourites'] = !empty($entry[remembered::KEY_FAVOURITES]);
         $options['fields'] = (array) ($entry[remembered::KEY_FIELDS] ?? []);
@@ -597,27 +708,24 @@ final class criteria {
         /* The open panel travels with every address the page mints from here - the pager, the
            quick dates, the hero's fold form, the forward - so none of them closes it. */
         $params += $this->panel_params();
+        $params += $this->order_params();
         return $params;
     }
 
     /**
-     * The query parameters naming the open panel and its order, empty when no panel is open.
+     * The query parameter naming the open panel, empty when no panel is open.
+     *
+     * The panel's order is the grouped order, which holds with no panel open too, so it is named by
+     * {@see order_params()}, after it, wherever the organisation is named.
      *
      * @return array name => value.
      */
     public function panel_params(): array {
-        if ($this->open <= 0) {
-            return [];
-        }
-        $params = [self::PARAM_OPEN => $this->open];
-        if ($this->psort === self::SORT_NAME) {
-            $params[self::PARAM_PSORT] = $this->psort;
-        }
-        return $params;
+        return $this->open > 0 ? [self::PARAM_OPEN => $this->open] : [];
     }
 
     /**
-     * What "clear filters" carries: the organisation and the open panel, and nothing that narrows.
+     * What "clear filters" carries: the organisation, the open panel and the grouped order, and nothing that narrows.
      *
      * Opening a panel hides nothing, so clearing the filters leaves it open, for the reason
      * {@see sort_params()} gives about the organisation.
@@ -625,7 +733,7 @@ final class criteria {
      * @return array name => value.
      */
     public function keep_params(): array {
-        return $this->sort_params() + $this->panel_params();
+        return $this->sort_params() + $this->panel_params() + $this->order_params();
     }
 
     /**
@@ -689,6 +797,19 @@ final class criteria {
             return [];
         }
         return [self::PARAM_SORT => $this->sort];
+    }
+
+    /**
+     * The query parameter naming the grouped order, for every address that names the organisation.
+     *
+     * The grouped A-Z order is never a default - the grouped order is the newest first, whatever the
+     * category's default organisation - so it is named whenever it is in force, with a panel open or
+     * not, and the newest first never is. It is '' under a flat organisation ({@see $psort}).
+     *
+     * @return array name => value, empty for the newest first.
+     */
+    public function order_params(): array {
+        return $this->psort === self::SORT_NAME ? [self::PARAM_PSORT => self::SORT_NAME] : [];
     }
 
     /**

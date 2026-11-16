@@ -21,8 +21,8 @@
  */
 
 import {
-    buildUrl, catOf, dropCriterion, favOf, filterArgs, narrows, pageSizeOf, periodOf, readUrl, rootOnly, sortOf, syncFold,
-    withPanel,
+    buildUrl, catOf, dropCriterion, favOf, filterArgs, groupOf, narrows, orderOf, organise, organisationOf, pageSizeOf,
+    periodOf, readUrl, rootOnly, sortOf, syncFold, withPanel,
 } from '../../src/listing/address';
 import type {ListingState} from '../../src/listing/address';
 
@@ -33,7 +33,8 @@ import type {ListingState} from '../../src/listing/address';
  * @returns {object}
  */
 const stateOf = (changes: Partial<ListingState> = {}): ListingState => ({
-    categoryid: 7, page: 0, query: '', chip: '', fav: false, filters: {}, sort: '', defaultsort: '', remembered: false,
+    categoryid: 7, page: 0, query: '', chip: '', fav: false, filters: {}, sort: '', psort: '', defaultsort: '',
+    remembered: false,
     datefrom: '', dateto: '', cat: 0, view: 'cards', viewchosen: false, pagesize: 0, ...changes,
 });
 
@@ -85,8 +86,52 @@ describe('theme_dimensions/listing/address', () => {
 
     it('keeps the page size and the open panel, and drops the panel into a flat order', () => {
         at('?categoryid=7&perpage=6&open=9&psort=name&cf_4=1&page=3');
-        expect(searchOf(stateOf())).toBe('?categoryid=7&perpage=6&open=9&psort=name');
+        expect(searchOf(stateOf({psort: 'name'}))).toBe('?categoryid=7&perpage=6&open=9&psort=name');
         expect(searchOf(stateOf({sort: 'recent'}))).toBe('?categoryid=7&perpage=6&sort=recent');
+    });
+
+    it('writes the grouped order from the state, with a panel open or not, and never the grouping by name', () => {
+        // The state is the one holder of the grouped order the store writes; the newest first is named by nothing.
+        expect(searchOf(stateOf({psort: 'name'}))).toBe('?categoryid=7&psort=name');
+        at('?categoryid=7&psort=name');
+        expect(searchOf(stateOf())).toBe('?categoryid=7');
+        // What the toolbar's form posts without JavaScript is written back in the older spelling.
+        at('?categoryid=7&group=none&sort=name');
+        expect(searchOf(stateOf({sort: 'name'}))).toBe('?categoryid=7&sort=name');
+        const remembered = stateOf({sort: 'category', psort: 'name', remembered: true});
+        expect(searchOf(remembered)).toBe('?categoryid=7&sort=category&psort=name');
+    });
+
+    it('reads both spellings of the organisation as the server does (criteria::organisation())', () => {
+        const read = (search: string, defaultsort = ''): object => organisationOf(new URLSearchParams(search), defaultsort);
+        expect(read('')).toEqual({sort: '', psort: ''});
+        expect(read('', 'name')).toEqual({sort: 'name', psort: ''});
+        expect(read('sort=category')).toEqual({sort: 'category', psort: ''});
+        expect(read('open=9&psort=name')).toEqual({sort: '', psort: 'name'});
+        expect(read('psort=name')).toEqual({sort: '', psort: 'name'});
+        expect(read('sort=recent&psort=name')).toEqual({sort: 'recent', psort: ''});
+        expect(read('group=category&sort=name')).toEqual({sort: 'category', psort: 'name'});
+        expect(read('group=category&sort=recent&psort=name')).toEqual({sort: 'category', psort: ''});
+        expect(read('group=category&psort=name')).toEqual({sort: 'category', psort: 'name'});
+        expect(read('group=none&sort=recent')).toEqual({sort: 'recent', psort: ''});
+        expect(read('group=none&psort=name')).toEqual({sort: 'name', psort: ''});
+        expect(read('group=none&sort=category')).toEqual({sort: 'recent', psort: ''});
+        expect(read('group=bogus&sort=name')).toEqual({sort: 'name', psort: ''});
+    });
+
+    it('keeps each choice of Organise as the other one left it', () => {
+        const state = stateOf({sort: 'name'});
+        expect([groupOf(state), orderOf(state)]).toEqual(['none', 'name']);
+        organise(state, 'category', orderOf(state));
+        expect([state.sort, state.psort, groupOf(state), orderOf(state)]).toEqual(['category', 'name', 'category', 'name']);
+        organise(state, groupOf(state), 'recent');
+        expect([state.sort, state.psort]).toEqual(['category', '']);
+        // Within the grouping the spelling stays: a reorder names no organisation the address did not.
+        const bare = stateOf();
+        organise(bare, 'category', 'name');
+        expect([bare.sort, bare.psort]).toEqual(['', 'name']);
+        organise(state, 'none', orderOf(state));
+        expect([state.sort, state.psort]).toEqual(['recent', '']);
     });
 
     it('reads an address as the server reads it', () => {

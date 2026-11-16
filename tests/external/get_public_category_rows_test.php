@@ -514,6 +514,12 @@ final class get_public_category_rows_test extends \advanced_testcase {
         $cases = [
             'grouped, at rest' => [[], []],
             'flat by name' => [['sort' => 'name'], ['sort' => 'name']],
+            // The grouping by name, as the client and the toolbar's form send it: the order in sort.
+            'flat by name, the grouping named' => [['group' => 'none', 'sort' => 'name'], ['group' => 'none', 'sort' => 'name']],
+            'grouped A-Z under a search, the grouping named' => [
+                ['group' => 'category', 'sort' => 'name', 'query' => 'Curso'],
+                ['group' => 'category', 'sort' => 'name', 'q' => 'Curso'],
+            ],
             'flat by date under a search' => [['sort' => 'recent', 'query' => 'Curso'], ['sort' => 'recent', 'q' => 'Curso']],
             'grouped under a search' => [['query' => 'Curso'], ['q' => 'Curso']],
             // A chip in the row under the line: the period's, from the toolbar's one builder.
@@ -622,8 +628,9 @@ final class get_public_category_rows_test extends \advanced_testcase {
      *
      * Refused before the gates, so a public category, a merely listed one and an id nothing holds
      * answer alike: invalidparameter, not the category refusal, and no statement read. A slice is
-     * flat, the first page, no panel request, no tree criterion, never at the root and never
-     * negative; the empty organisation is read as the newest first and is the control.
+     * flat (the older spelling or the grouping by name), the first page, no panel request, no tree
+     * criterion, never at the root and never negative; the empty organisation is read as the newest
+     * first and is the control, with no grouping named beside it.
      */
     public function test_a_request_that_cannot_be_a_slice_is_malformed_whatever_the_category(): void {
         global $DB;
@@ -632,6 +639,8 @@ final class get_public_category_rows_test extends \advanced_testcase {
         $missing = (int) $DB->get_field_sql('SELECT MAX(id) FROM {course_categories}') + 1000;
         $shapes = [
             'the grouped organisation' => ['sort' => 'category', 'slice' => $listed],
+            'the grouping by area named' => ['group' => 'category', 'sort' => 'name', 'slice' => $listed],
+            'an unknown grouping' => ['group' => 'bogus', 'sort' => 'name', 'slice' => $listed],
             'a panel request' => ['sort' => 'name', 'withcategories' => true, 'slice' => $listed],
             'a tree criterion' => ['sort' => 'name', 'cat' => $listed, 'slice' => $listed],
             'a later page' => ['sort' => 'name', 'page' => 1, 'slice' => $listed],
@@ -646,9 +655,12 @@ final class get_public_category_rows_test extends \advanced_testcase {
             }
         }
         $this->assertSame('invalidparameter', $this->refused(['categoryid' => 0, 'slice' => $listed])->errorcode);
+        $this->assertSame('invalidparameter', $this->refused(['categoryid' => 0, 'group' => 'category'])->errorcode, 'The root.');
 
         $answer = $this->ask(['categoryid' => $this->ids['root'], 'sort' => '', 'slice' => $listed]);
         $this->assertSame($listed, $answer['panel']['id'], 'Control: the empty organisation is a slice.');
+        $named = $this->ask(['categoryid' => $this->ids['root'], 'group' => 'none', 'sort' => 'name', 'slice' => $listed]);
+        $this->assertSame($listed, $named['panel']['id'], 'Control: no grouping named is a slice too.');
     }
 
     /**

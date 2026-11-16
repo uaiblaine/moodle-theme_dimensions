@@ -356,6 +356,56 @@ final class get_category_rows_test extends \advanced_testcase {
     }
 
     /**
+     * "Group by" and "Sort by" by name reach the listing: the order of a flat list, and the grouped order of a grouped one.
+     *
+     * The client sends the grouping by name with the order in sort (criteria::organisation()); an older client sends
+     * the organisation alone, and both are answered. A grouped page's order moves no card, so what tells it arrived is
+     * the address the answer mints: "clear" keeps the A-Z order, and the newest first beside it is the control.
+     *
+     * Changes that must make it fail: the group parameter not declared or not handed to the listing; the order of a
+     * named grouping read as an organisation; the grouped A-Z order lost from the answer's addresses; an unknown
+     * grouping, or an organisation sent as the order of a named one, answered.
+     */
+    public function test_the_grouping_by_name_and_its_order_reach_the_listing(): void {
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $day = criteria::day_start('2026-09-17');
+        $generator->create_course(['category' => $category->id, 'fullname' => 'Alpha', 'startdate' => $day]);
+        $generator->create_course(['category' => $category->id, 'fullname' => 'Zulu', 'startdate' => $day + (30 * DAYSECS)]);
+        $this->become($generator->create_user());
+        $id = (int) $category->id;
+
+        $byname = $this->data(['categoryid' => $id, 'group' => 'none', 'sort' => 'name']);
+        $this->assertSame(['Alpha', 'Zulu'], array_column($byname['cards'], 'fullname'));
+        $this->newpage();
+        self::forget();
+        $byrecent = $this->data(['categoryid' => $id, 'group' => 'none', 'sort' => 'recent']);
+        $this->assertSame(['Zulu', 'Alpha'], array_column($byrecent['cards'], 'fullname'), 'The newest start date first.');
+        $this->newpage();
+        self::forget();
+        $older = $this->data(['categoryid' => $id, 'sort' => 'recent']);
+        $this->assertSame(['Zulu', 'Alpha'], array_column($older['cards'], 'fullname'), 'The older spelling is answered alike.');
+
+        $this->newpage();
+        self::forget();
+        $grouped = $this->data(['categoryid' => $id, 'group' => 'category', 'sort' => 'name', 'query' => 'Alpha']);
+        $this->assertStringContainsString('psort=name', $grouped['clearurl'], 'The grouped A-Z order is kept.');
+        $this->newpage();
+        self::forget();
+        $recent = $this->data(['categoryid' => $id, 'group' => 'category', 'sort' => 'recent', 'query' => 'Alpha']);
+        $this->assertStringNotContainsString('psort', $recent['clearurl'], 'The newest first is named by nothing.');
+
+        $bads = [['group' => 'bogus'], ['group' => 'none', 'sort' => 'category'], ['group' => 'Category', 'sort' => 'name']];
+        foreach ($bads as $bad) {
+            $this->newpage();
+            $this->assertSame('invalidparameter', $this->refusal(['categoryid' => $id] + $bad)->errorcode, json_encode($bad));
+        }
+        $this->newpage();
+        $this->assertSame('invalidparameter', $this->refusal(['categoryid' => 0, 'group' => 'category'])->errorcode, 'The root.');
+    }
+
+    /**
      * Every number the page prints is counted after both gates had their say.
      */
     public function test_the_total_counts_what_the_viewer_may_see_and_what_the_chip_kept(): void {

@@ -321,6 +321,33 @@ class behat_theme_dimensions extends behat_base {
     }
 
     /**
+     * Press a submit button whose name a hidden field earlier in its form also carries.
+     *
+     * A browser posts both fields in document order and PHP reads the last, the button's: that is
+     * how the Organise menu changes one half of the organisation and keeps the other. The driver
+     * without JavaScript holds one value per name and keeps the hidden field's, so "I press" would
+     * post the choice already in force. The step posts what the server reads from a browser: the
+     * form's own values, the button's in place of the field of its name.
+     *
+     * @When /^I press "(?P<label>(?:[^"]|\\")*)" over the hidden field of its name$/
+     * @param string $label The button's label.
+     * @return void
+     * @throws \Behat\Mink\Exception\DriverException When the scenario runs in a real browser, which needs no such step.
+     */
+    public function i_press_over_the_hidden_field_of_its_name(string $label): void {
+        if ($this->running_javascript()) {
+            throw new \Behat\Mink\Exception\DriverException('A real browser posts both fields: use "I press".');
+        }
+        $button = $this->find_button($label);
+        $crawler = $this->getSession()->getDriver()->getClient()->getCrawler();
+        $form = $crawler->filterXPath($button->getXpath())->form();
+        $values = $form->getPhpValues();
+        $values[$button->getAttribute('name')] = (string) $button->getAttribute('value');
+        $address = explode('?', $form->getUri())[0];
+        $this->getSession()->visit($address . '?' . http_build_query($values, '', '&'));
+    }
+
+    /**
      * Leave a mark on the window of the page in the browser, which any page load takes away.
      *
      * A change made in place and one made by loading the page can draw the same markup: the

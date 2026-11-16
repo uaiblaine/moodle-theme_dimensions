@@ -162,6 +162,7 @@ const Areas = (props: Props) => {
             [document, EVENTS.pending, (event: Event) => panel.onPending((event as CustomEvent).detail || {}), false],
             [document, EVENTS.failed, panel.onFailed, false],
             [document, EVENTS.criteria, (event: Event) => panel.criteria((event as CustomEvent<Criteria>).detail || {}), false],
+            [areas, EVENTS.order, (event: Event) => panel.onOrder((event as CustomEvent).detail || {}), false],
         ];
         listeners.forEach(([target, type, listener, capture]) => target.addEventListener(type, listener, capture));
         const queries = [WIDE, PHONE].map((query) => window.matchMedia(query));

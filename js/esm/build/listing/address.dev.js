@@ -21,6 +21,7 @@ const PARAM = {
   perpage: "perpage",
   view: "view",
   sort: "sort",
+  group: "group",
   from: "from",
   to: "to",
   cat: "cat",
@@ -45,6 +46,41 @@ const CHIP_PERIOD = "period";
 const LEGACY_FAVOURITES = "favourites";
 const GROUPED_SORTS = ["", "category"];
 const SORTS = ["", "category", "name", "recent"];
+const GROUPS = ["category", "none"];
+const ORDERS = ["name", "recent"];
+const ORDER_NAME = "name";
+const organisationOf = /* @__PURE__ */ __name((params, defaultsort) => {
+  const group = params.get(PARAM.group) || "";
+  const named = params.get(PARAM.sort) || "";
+  let psort = params.get(PARAM.psort) === ORDER_NAME ? ORDER_NAME : "";
+  let sort = SORTS.indexOf(named) > 0 ? named : "";
+  if (GROUPS.indexOf(group) >= 0) {
+    let order = psort === ORDER_NAME ? ORDER_NAME : "recent";
+    if (ORDERS.indexOf(named) >= 0) {
+      order = named;
+    }
+    sort = group === "none" ? order : "category";
+    psort = group === "none" || order !== ORDER_NAME ? "" : ORDER_NAME;
+  }
+  sort = sort || defaultsort || "";
+  return { sort, psort: GROUPED_SORTS.indexOf(sort) >= 0 ? psort : "" };
+}, "organisationOf");
+const groupOf = /* @__PURE__ */ __name((state) => GROUPED_SORTS.indexOf(state.sort) >= 0 ? "category" : "none", "groupOf");
+const orderOf = /* @__PURE__ */ __name((state) => {
+  if (GROUPED_SORTS.indexOf(state.sort) >= 0) {
+    return state.psort === ORDER_NAME ? ORDER_NAME : "recent";
+  }
+  return state.sort;
+}, "orderOf");
+const organise = /* @__PURE__ */ __name((state, group, order) => {
+  if (group === "none") {
+    state.sort = order;
+    state.psort = "";
+    return;
+  }
+  state.sort = isGrouped(state.sort) ? state.sort : "category";
+  state.psort = order === ORDER_NAME ? ORDER_NAME : "";
+}, "organise");
 const isRoot = /* @__PURE__ */ __name((state) => state.categoryid === 0, "isRoot");
 const rootOnly = /* @__PURE__ */ __name((state) => {
   if (!isRoot(state)) {
@@ -64,10 +100,7 @@ const pageSizeOf = /* @__PURE__ */ __name((params) => {
   const size = Number(params.get(PARAM.perpage));
   return Number.isInteger(size) && size > 0 ? size : 0;
 }, "pageSizeOf");
-const sortOf = /* @__PURE__ */ __name((params, defaultsort) => {
-  const sort = params.get(PARAM.sort) || "";
-  return SORTS.indexOf(sort) > 0 ? sort : defaultsort || "";
-}, "sortOf");
+const sortOf = /* @__PURE__ */ __name((params, defaultsort) => organisationOf(params, defaultsort).sort, "sortOf");
 const isGrouped = /* @__PURE__ */ __name((sort) => GROUPED_SORTS.indexOf(sort) >= 0, "isGrouped");
 const catOf = /* @__PURE__ */ __name((params, sort) => {
   const cat = Number(params.get(PARAM.cat));
@@ -83,7 +116,7 @@ const buildUrl = /* @__PURE__ */ __name((state) => {
   const url = new URL(window.location.href);
   const params = url.searchParams;
   Array.from(params.keys()).filter((key) => key.startsWith(PARAM.fieldprefix)).forEach((key) => params.delete(key));
-  [PARAM.query, PARAM.chip, PARAM.fav, PARAM.page, PARAM.view, PARAM.sort, PARAM.from, PARAM.to, PARAM.cat].forEach((key) => params.delete(key));
+  [PARAM.query, PARAM.chip, PARAM.fav, PARAM.page, PARAM.view, PARAM.sort, PARAM.group, PARAM.from, PARAM.to, PARAM.cat].forEach((key) => params.delete(key));
   if (state.query !== "") {
     params.set(PARAM.query, state.query);
   }
@@ -121,6 +154,10 @@ const buildUrl = /* @__PURE__ */ __name((state) => {
   }
   if (!isGrouped(state.sort)) {
     params.delete(PARAM.open);
+    params.delete(PARAM.psort);
+  } else if (state.psort === ORDER_NAME) {
+    params.set(PARAM.psort, ORDER_NAME);
+  } else {
     params.delete(PARAM.psort);
   }
   return url;
@@ -170,7 +207,9 @@ const readUrl = /* @__PURE__ */ __name((state) => {
   state.query = params.get(PARAM.query) || "";
   state.chip = chipOf(params);
   state.fav = favOf(params);
-  state.sort = sortOf(params, state.defaultsort);
+  const organisation = organisationOf(params, state.defaultsort);
+  state.sort = organisation.sort;
+  state.psort = organisation.psort;
   const period = periodOf(params);
   state.datefrom = period.from;
   state.dateto = period.to;
@@ -216,6 +255,8 @@ const dropCriterion = /* @__PURE__ */ __name((state, param) => {
 export {
   CHIP_PERIOD,
   GROUPED_SORTS,
+  GROUPS,
+  ORDERS,
   PARAM,
   SCOPE,
   buildUrl,
@@ -224,9 +265,13 @@ export {
   dropCriterion,
   favOf,
   filterArgs,
+  groupOf,
   isGrouped,
   isRoot,
   narrows,
+  orderOf,
+  organisationOf,
+  organise,
   pageSizeOf,
   periodOf,
   readUrl,

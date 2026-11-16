@@ -1890,6 +1890,14 @@ final class category_listing_test extends \advanced_testcase {
             $this->assertStringContainsString('perpage=2', $panel[$key], $key . ' keeps the page size.');
         }
         $this->assertStringNotContainsString('open=', $panel['closeurl'], 'Close is the page without the panel.');
+        /* The grouped A-Z order holds with no panel open: Close and every other poster keep it, so the next panel
+           opens in it; only the panel's own "Recent" link drops it (asserted below). */
+        $this->assertStringContainsString('psort=name', $panel['closeurl'], 'Close keeps the grouped order.');
+        $this->assertStringContainsString(
+            'psort=name',
+            array_column($open->areas['posters'], null, 'name')['Defesa']['controlurl'],
+            'Another poster opens its panel in it.'
+        );
         $this->assertStringContainsString('open=' . $areas['Transito'], $panel['sorturlrecent']);
         $this->assertStringNotContainsString('psort=', $panel['sorturlrecent']);
         $this->assertStringContainsString('psort=name', $panel['sorturlname']);
@@ -1906,6 +1914,16 @@ final class category_listing_test extends \advanced_testcase {
             ],
             $open->toolbar->openfields,
             'The toolbar carries the panel, so a filter submitted without JavaScript keeps it open.'
+        );
+
+        // A panel the page does not draw is dropped, and the grouped order with it stays (it needs no panel).
+        self::forget();
+        $stale = $this->export(['open' => $root, 'psort' => 'name']);
+        $this->assertFalse($stale->areas['isopen']);
+        $this->assertSame(
+            [['name' => 'psort', 'value' => 'name', 'region' => 'dim-psort-field']],
+            $stale->toolbar->openfields,
+            'The grouped order travels without the panel.'
         );
 
         // Under a criterion the call to action carries what narrows, and nothing else of the page.

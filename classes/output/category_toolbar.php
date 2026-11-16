@@ -38,17 +38,24 @@ use theme_dimensions\local\landing\links;
  * and the web services. The scope cells and the panel's options are radio
  * inputs with labels drawn as cells or pills - a native radio group already
  * moves with the arrow keys and announces itself, so no roving tabindex is
- * needed. A "Filter" submit at the foot of the panel and an "Apply" submit in
- * the Organise menu are drawn for the no-JavaScript reader and hidden once a
- * listing client marks the body; the view toggle is a pair of submit buttons
- * carrying the view parameter, so a choice made without JavaScript still
- * reaches the server and is remembered.
+ * needed. A "Filter" submit at the foot of the panel is drawn for the
+ * no-JavaScript reader and hidden once a listing client marks the body.
+ *
+ * Organise and View are the fleet Design System's menus (`role="menu"`), each in
+ * a native `details`: Organise holds "Group by" and "Sort by", two independent
+ * radio groups of `menuitemradio` items ({@see organise_menu()}); View one, "Show
+ * as", cards or list. Every item is a submit button carrying its own parameter
+ * (`group`, `sort`, `view`), so a choice made without JavaScript reaches the server
+ * at a press, and the view is remembered. The two halves of the organisation are
+ * independent, so the form carries both as hidden fields before every control
+ * ({@see organise_fields()}): an item's own value comes later in the form, which
+ * is the one PHP reads, and the other half travels unchanged.
  *
  * One line, the fleet Design System's compact bar, in the filter line's slot order:
  * the scope (the state chip's values {@see criteria::SCOPE}, counted, for a
  * logged-in reader with the state sort on), a spacer, the cluster - the result
  * count and a capsule of the favourites star, the Filters disclosure, the date
- * button, the Organise menu and the view toggle - and the search's own capsule
+ * button, the Organise menu and the View menu - and the search's own capsule
  * with the managers' menu. Under it a second row exists only while something narrows:
  * the count sentence, then one chip per criterion the line does not show
  * ({@see chips()}), "Clear all" from two criteria up, "See all as a list" and
@@ -110,16 +117,19 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
     public const VIEW_LIST = 'list';
 
     /**
-     * @var array The organisation chips in display order, sort value => label string key.
+     * @var array The items of "Group by", in {@see criteria::GROUPS}' order: grouping => [label string key, icon].
      *
-     * The grouped default is named 'category' rather than '' so that the chip the reader
-     * presses posts a value: a radio with an empty value and a radio with no value at all
-     * are the same thing to a form, and the default has to be pressable like the others.
+     * An open list (fleet Design System D65): a grouping criteria adds is an item here.
      */
-    private const SORTS = [
-        criteria::SORT_CATEGORY => 'category_sort_category',
-        criteria::SORT_NAME => 'category_sort_name',
-        criteria::SORT_RECENT => 'category_sort_recent',
+    private const GROUPINGS = [
+        criteria::GROUP_CATEGORY => ['category_group_category', 'fa-layer-group'],
+        criteria::GROUP_NONE => ['category_group_none', 'fa-grip-lines'],
+    ];
+
+    /** @var array The items of "Sort by", in {@see criteria::ORDERS}' order: order => [label string key, icon]. */
+    private const ORDERINGS = [
+        criteria::SORT_NAME => ['category_sortby_name', 'fa-arrow-down-a-z'],
+        criteria::SORT_RECENT => ['category_sortby_recent', 'fa-clock-rotate-left'],
     ];
 
     /**
@@ -198,7 +208,6 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
            id travels as a hidden field or in the route's own path, never in the action. The
            category id only reaches the ids of the controls below. */
         $form = links::showcase_form($this->categoryid, $this->anonymous);
-        $sortgroup = $this->sort_group();
         $hasperiod = $this->criteria->datefrom !== '' || $this->criteria->dateto !== '';
         $period = $hasperiod ? self::period_label($this->criteria) : '';
         $datelegend = get_string('category_dategroup', self::COMPONENT);
@@ -241,9 +250,9 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             'pagesize' => $this->criteria->pagesize,
             'haspagesize' => $this->criteria->pagesize !== null,
             'openfields' => self::open_fields($this->criteria),
-            'sortgroup' => $sortgroup,
-            'sortlabel' => $sortgroup['legend'],
-            'sortapplylabel' => get_string('category_apply', self::COMPONENT),
+            'organisefields' => $this->organise_fields(),
+            'organise' => $this->organise_menu(),
+            'organiselabel' => get_string('category_sortgroup', self::COMPONENT),
             'datefromid' => 'dim-datefrom-' . $this->categoryid,
             'datetoid' => 'dim-dateto-' . $this->categoryid,
             'datefromname' => criteria::PARAM_DATEFROM,
@@ -277,6 +286,10 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             'filtercountlabel' => get_string('category_filtercount', self::COMPONENT, $this->criteria->filter_count()),
             'viewname' => self::PARAM_VIEW,
             'viewlabel' => get_string('category_view', self::COMPONENT),
+            'viewheading' => get_string('category_showas', self::COMPONENT),
+            'viewheadid' => 'dim-view-' . $this->categoryid . '-head',
+            // The View button draws the view in force: its icon, then the chevron of a menu.
+            'viewicon' => $this->view === self::VIEW_LIST ? 'fa-list' : 'fa-border-all',
             // List first, as the filter line's contract draws it.
             'views' => [
                 [
@@ -578,19 +591,21 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
     }
 
     /**
-     * The open panel as hidden fields of the form, so a submission without JavaScript keeps it open.
+     * The open panel and the grouped order as hidden fields of the form, so a submission without JavaScript keeps them.
      *
-     * Drawn only while a panel is open, and each field carries a region of its own, because the
-     * panel module writes the panel into the address after the server drew this form and has to
-     * keep the two in step - creating the fields, changing them or taking them out.
+     * Drawn only while a panel is open or the grouped order is A-Z, and each field carries a region
+     * of its own, because the panel module writes both into the address after the server drew this
+     * form and has to keep the two in step - creating the fields, changing them or taking them out.
+     * On a category's toolbar the grouped order travels in {@see organise_fields()} too, which a
+     * named grouping makes the one read; the root's search line has no organisation but this.
      *
      * @param criteria $criteria The request whose panel it is.
      * @return array Entries of ['name' => string, 'value' => int|string, 'region' => string], empty
-     *   when no panel is open.
+     *   when no panel is open and the grouped order is the newest first.
      */
     private static function open_fields(criteria $criteria): array {
         $fields = [];
-        foreach ($criteria->panel_params() as $name => $value) {
+        foreach ($criteria->panel_params() + $criteria->order_params() as $name => $value) {
             $fields[] = [
                 'name' => $name,
                 'value' => $value,
@@ -601,33 +616,56 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
     }
 
     /**
-     * The organisation group: three chips, exactly one of them pressed.
+     * The Organise menu: "Group by", then "Sort by", each a radio group of menu items with one chosen.
      *
-     * A radio group rather than three links, because it is one question with
-     * three answers and a native radio group already says so to a screen
-     * reader and moves with the arrow keys. The visible label IS the legend:
-     * one element names the group for assistive technology and for the eye
-     * alike, rather than a hidden legend beside an aria-hidden copy of it.
+     * The two are independent (fleet Design System D49): the grouping and the order in force are
+     * {@see criteria::group()} and {@see criteria::order()}, and choosing in one section never changes
+     * the other ({@see organise_fields()} carries the other half of a press). Each item is a submit
+     * button posting its section's parameter, `group` or `sort`, which {@see criteria::organisation()}
+     * reads as the pair; the addresses the page mints spell the same pair the older way.
      *
-     * @return array ['legend' => plain, 'name' => string, 'options' => [...]] with one radio per option.
+     * @return array ['sections' => [...]]: two sections of ['id', 'label', 'name', 'items' => [...]], the
+     *   first one carrying 'first' so the separator is drawn between them.
      */
-    private function sort_group(): array {
-        $options = [];
-        foreach (self::SORTS as $value => $key) {
-            $options[] = [
-                'id' => 'dim-sort-' . $this->categoryid . '-' . $value,
-                'value' => $value,
-                'label' => get_string($key, self::COMPONENT),
-                // An empty sort and 'category' are one request, and the default chip is pressed for both.
-                'checked' => $value === criteria::SORT_CATEGORY
-                    ? $this->criteria->is_grouped()
-                    : $this->criteria->sort === $value,
+    private function organise_menu(): array {
+        $section = function (string $name, string $label, array $items, string $chosen): array {
+            $entries = [];
+            foreach ($items as $value => [$key, $icon]) {
+                $entries[] = [
+                    'name' => $name,
+                    'value' => $value,
+                    'label' => get_string($key, self::COMPONENT),
+                    'icon' => $icon,
+                    'checked' => $value === $chosen,
+                ];
+            }
+            return [
+                'id' => 'dim-organise-' . $this->categoryid . '-' . $name,
+                'label' => get_string($label, self::COMPONENT),
+                'name' => $name,
+                'items' => $entries,
             ];
-        }
+        };
+        $groupby = $section(criteria::PARAM_GROUP, 'category_groupby', self::GROUPINGS, $this->criteria->group());
+        $sortby = $section(criteria::PARAM_SORT, 'category_sortby', self::ORDERINGS, $this->criteria->order());
+        return ['sections' => [$groupby + ['first' => true], $sortby + ['first' => false]]];
+    }
+
+    /**
+     * The organisation in force as two hidden fields of the form, before every control that submits it.
+     *
+     * Every submission without JavaScript posts the grouping and the order in force, so a filter,
+     * a search or a view keeps them, and a press of a menu item posts its own section's value after
+     * them, which is the one PHP reads (the favourites toggle's arrangement): pressing "No grouping"
+     * keeps the order, pressing "Name" keeps the grouping. Each names a region, which the listing's
+     * painter keeps in step with the organisation on screen (listing/paint.ts paintOrganise()).
+     *
+     * @return array Entries of ['name' => string, 'value' => string, 'region' => string].
+     */
+    private function organise_fields(): array {
         return [
-            'legend' => get_string('category_sortgroup', self::COMPONENT),
-            'name' => criteria::PARAM_SORT,
-            'options' => $options,
+            ['name' => criteria::PARAM_GROUP, 'value' => $this->criteria->group(), 'region' => 'dim-group-field'],
+            ['name' => criteria::PARAM_SORT, 'value' => $this->criteria->order(), 'region' => 'dim-order-field'],
         ];
     }
 

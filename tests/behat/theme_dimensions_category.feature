@@ -247,22 +247,25 @@ Feature: The category showcase lists what a person may discover, and its filters
     And "//li[@hidden]/article[@data-name='Area 01']" "xpath_element" should exist
     And I should see "Nothing for “Vinte” in 24 other areas" in the "[data-region='dim-nomatch-summary']" "css_element"
 
-  Scenario: The organisation chips reorder the whole listing without JavaScript
-    # One chip at a time, and each one is a different first card over the same three courses: the
-    # alphabet puts Combate first and the start date puts the course of tomorrow first. Asserting
-    # only one of them would pass against a page that never reordered anything.
+  Scenario: The Organise menu groups and reorders the whole listing without JavaScript
+    # Each item of the menu is a submit button that keeps the other section's choice. "No grouping" keeps
+    # the grouped page's order, the newest first, which puts the course of tomorrow first; "Name" then
+    # puts Combate first and keeps the flat list. Asserting only one of them would pass against a page
+    # that never reordered anything. The other section's choice travels in a hidden field of the same
+    # name as the buttons, which the driver without JavaScript cannot post twice: hence the step.
     Given the following "courses" exist:
       | fullname   | shortname | category | customfield_dimensions_model | startdate    |
       | Zulu Curso | ZULU      | TESTCAT  | 1                          | ##tomorrow## |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    When I set the field "A-Z" to "1"
-    And I press "Apply"
+    When I press "No grouping" over the hidden field of its name
+    Then "//ul[@data-region='dim-vitrine-grid']/li[1][contains(., 'Zulu Curso')]" "xpath_element" should exist
+    And "[data-region='dim-areas']" "css_element" should not exist
+    And "//button[@data-action='dim-organise'][@value='recent'][@aria-checked='true']" "xpath_element" should exist
+    When I press "Name" over the hidden field of its name
     Then "//ul[@data-region='dim-vitrine-grid']/li[1][contains(., 'Combate a Incendio')]" "xpath_element" should exist
     And "[data-region='dim-areas']" "css_element" should not exist
-    When I set the field "Recent" to "1"
-    And I press "Apply"
-    Then "//ul[@data-region='dim-vitrine-grid']/li[1][contains(., 'Zulu Curso')]" "xpath_element" should exist
+    And "//button[@data-action='dim-organise'][@value='none'][@aria-checked='true']" "xpath_element" should exist
 
   Scenario: A quick date option narrows the listing to the courses starting then
     # The quick options are ordinary links carrying the same two parameters the date fields carry,

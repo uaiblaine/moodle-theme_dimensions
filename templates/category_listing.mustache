@@ -166,17 +166,35 @@
             "hasquery": false,
             "searchtooshort": false,
             "searchtooshortlabel": "Type at least 2 characters to search.",
-            "sortgroup": {
-                "legend": "Organise",
-                "name": "sort",
-                "options": [
-                    {"id": "dim-sort-7-category", "value": "category", "label": "By category", "checked": true},
-                    {"id": "dim-sort-7-name", "value": "name", "label": "A-Z", "checked": false},
-                    {"id": "dim-sort-7-recent", "value": "recent", "label": "Recent", "checked": false}
+            "organiselabel": "Organise",
+            "organisefields": [
+                {"name": "group", "value": "category", "region": "dim-group-field"},
+                {"name": "sort", "value": "recent", "region": "dim-order-field"}
+            ],
+            "organise": {
+                "sections": [
+                    {
+                        "id": "dim-organise-7-group",
+                        "label": "Group by",
+                        "name": "group",
+                        "first": true,
+                        "items": [
+                            {"name": "group", "value": "category", "label": "Area", "icon": "fa-layer-group", "checked": true},
+                            {"name": "group", "value": "none", "label": "No grouping", "icon": "fa-grip-lines", "checked": false}
+                        ]
+                    },
+                    {
+                        "id": "dim-organise-7-sort",
+                        "label": "Sort by",
+                        "name": "sort",
+                        "first": false,
+                        "items": [
+                            {"name": "sort", "value": "name", "label": "Name", "icon": "fa-arrow-down-a-z", "checked": false},
+                            {"name": "sort", "value": "recent", "label": "Most recent", "icon": "fa-clock-rotate-left", "checked": true}
+                        ]
+                    }
                 ]
             },
-            "sortlabel": "Organise",
-            "sortapplylabel": "Apply",
             "scope": {
                 "legend": "Status",
                 "name": "chip",
@@ -209,6 +227,9 @@
             "haspagesize": false,
             "viewname": "view",
             "viewlabel": "View",
+            "viewheading": "Show as",
+            "viewheadid": "dim-view-7-head",
+            "viewicon": "fa-border-all",
             "views": [
                 {"value": "list", "label": "List", "current": false, "icon": "fa-list"},
                 {"value": "cards", "label": "Cards", "current": true, "icon": "fa-border-all"}

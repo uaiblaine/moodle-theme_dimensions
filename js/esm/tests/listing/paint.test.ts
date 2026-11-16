@@ -34,7 +34,8 @@ import type {ListingState} from '../../src/listing/address';
  * @returns {object}
  */
 const stateOf = (changes: Partial<ListingState> = {}): ListingState => ({
-    categoryid: 7, page: 0, query: '', chip: '', fav: false, filters: {}, sort: 'name', defaultsort: '', remembered: false,
+    categoryid: 7, page: 0, query: '', chip: '', fav: false, filters: {}, sort: 'name', psort: '', defaultsort: '',
+    remembered: false,
     datefrom: '', dateto: '', cat: 0, view: 'cards', viewchosen: false, pagesize: 0, ...changes,
 });
 
@@ -287,7 +288,8 @@ describe('theme_dimensions/listing/paint', () => {
     });
 
     it('tells a drawn line its state instead of writing into it, and paints the server\'s line otherwise', () => {
-        const root = page('<div data-region="dim-line"><button data-action="dim-view" value="list" aria-pressed="false"></button>'
+        const root = page('<div data-region="dim-line"><i class="fa fa-border-all" data-region="dim-view-icon"></i>'
+            + '<button data-action="dim-view" value="list" aria-checked="false"></button>'
             + '<button data-region="dim-line-star" value="1"><i class="fa-star fa-regular"></i></button></div>'
             + '<input type="hidden" data-region="dim-fav-field" disabled>');
         const line = root.querySelector<HTMLElement>('[data-region="dim-line"]') as HTMLElement;
@@ -295,7 +297,8 @@ describe('theme_dimensions/listing/paint', () => {
         const views: string[] = [];
         document.addEventListener(LISTING.view, (event) => views.push((event as CustomEvent).detail.view));
         paintView(root, 'list');
-        expect(button.getAttribute('aria-pressed')).toBe('true');
+        expect(button.getAttribute('aria-checked')).toBe('true');
+        expect(root.querySelector('[data-region="dim-view-icon"]')?.className).toBe('fa fa-list');
         expect(root.classList.contains('dim-vitrine--list')).toBe(true);
         expect(views).toEqual(['list']);
         paintFavToggle(root, true);
@@ -307,21 +310,36 @@ describe('theme_dimensions/listing/paint', () => {
         line.addEventListener(LINE.state, (event) => told.push((event as CustomEvent).detail));
         paintView(root, 'cards');
         paintFavToggle(root, false);
-        expect(button.getAttribute('aria-pressed')).toBe('true');
+        expect(button.getAttribute('aria-checked')).toBe('true');
+        expect(root.querySelector('[data-region="dim-view-icon"]')?.className).toBe('fa fa-list');
         expect(told).toEqual([{view: 'cards'}, {fav: false}]);
         // The hidden field is the form's, outside the line: painted on both shells.
         expect(root.querySelector<HTMLInputElement>('[data-region="dim-fav-field"]')?.disabled).toBe(true);
     });
 
     it('puts a state back onto the controls and marks exactly one tree entry', () => {
+        const item = (name: string, value: string): string =>
+            `<button data-action="dim-organise" name="${name}" value="${value}" aria-checked="false"></button>`;
         const root = page('<input type="search" value="old"><button data-action="dim-search-clear"></button>'
-            + '<fieldset data-region="dim-sort">' + pill('sort', 'category') + pill('sort', 'name') + '</fieldset>'
+            + '<input type="hidden" name="group" value="none" data-region="dim-group-field">'
+            + '<input type="hidden" name="sort" value="recent" data-region="dim-order-field">'
+            + '<div data-region="dim-organise-menu">' + item('group', 'category') + item('group', 'none')
+            + item('sort', 'name') + item('sort', 'recent') + '</div>'
             + '<nav data-region="dim-vitrine-tree"><a data-region="dim-tree-link" data-categoryid="7"></a>'
             + '<a data-region="dim-tree-link" data-categoryid="9" class="dim-tree__link--on"></a></nav>');
-        paintControls(root, stateOf({query: '', sort: ''}));
+        const chosen = (): string[] => Array.from(root.querySelectorAll<HTMLButtonElement>('[aria-checked="true"]'))
+            .map((button) => `${button.name}=${button.value}`);
+        const fields = (): string[] => Array.from(root.querySelectorAll<HTMLInputElement>('input[type="hidden"]'))
+            .map((field) => `${field.name}=${field.value}`);
+        paintControls(root, stateOf({query: '', sort: '', psort: 'name'}));
         expect(root.querySelector<HTMLInputElement>('input[type="search"]')?.value).toBe('');
         expect(root.querySelector<HTMLElement>('[data-action="dim-search-clear"]')?.hidden).toBe(true);
-        expect(root.querySelector<HTMLInputElement>('input[value="category"]')?.checked).toBe(true);
+        // The two sections independent: the grouping by area, in the grouped A-Z order; and the form's two fields.
+        expect(chosen()).toEqual(['group=category', 'sort=name']);
+        expect(fields()).toEqual(['group=category', 'sort=name']);
+        paintControls(root, stateOf({sort: 'recent', psort: ''}));
+        expect(chosen()).toEqual(['group=none', 'sort=recent']);
+        expect(fields()).toEqual(['group=none', 'sort=recent']);
         const marked = (): string[] => Array.from(root.querySelectorAll<HTMLElement>('.dim-tree__link--on'))
             .map((link) => link.dataset.categoryid || '');
         expect(marked()).toEqual(['7']);

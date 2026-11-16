@@ -32,6 +32,7 @@ use core_external\external_value;
 use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\guard;
 use theme_dimensions\local\category\remembered;
+use theme_dimensions\local\category\rows;
 
 /**
  * Store the organisation, the view and the filters the reader left one category's listing in.
@@ -72,7 +73,8 @@ class remember_category_state extends external_api {
             'categoryid' => new external_value(PARAM_INT, 'The category whose listing the state is of.'),
             'sort' => new external_value(
                 PARAM_ALPHA,
-                'The organisation in force: category, name or recent; empty for the theme\'s default, the grouped one.',
+                'With a group, the order in force: name or recent. Without one, the organisation in force: category, '
+                    . 'name or recent; empty for the theme\'s default, the grouped one.',
                 VALUE_DEFAULT,
                 ''
             ),
@@ -99,6 +101,13 @@ class remember_category_state extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            // After fav, for the same reason: a client that names no group is read as before it existed.
+            'group' => new external_value(
+                PARAM_ALPHA,
+                'How the listing is grouped: category or none; empty when sort names the organisation alone.',
+                VALUE_DEFAULT,
+                ''
+            ),
         ]);
     }
 
@@ -106,13 +115,15 @@ class remember_category_state extends external_api {
      * Remember a category's state for the reader of the session.
      *
      * @param int $categoryid The category.
-     * @param string $sort The organisation in force, '' for the theme's default.
+     * @param string $sort The order (a group named) or the organisation (none named), '' for the default.
      * @param string $view The view, '' to keep the remembered one.
      * @param string $chip The state chip, '' for none.
      * @param array $filters The custom field filters, as fieldid and value pairs.
      * @param bool $fav Whether the favourites toggle is on.
+     * @param string $group The grouping, one of criteria::GROUPS, '' when sort names the organisation alone.
      * @return array Whether the category is remembered now.
-     * @throws \invalid_parameter_exception For the root, which remembers nothing.
+     * @throws \invalid_parameter_exception For the root, which remembers nothing, and for a named grouping or its order
+     *         outside the vocabulary.
      * @throws \moodle_exception The one refusal, for the guest and for every category this reader may not discover.
      */
     public static function execute(
@@ -121,7 +132,8 @@ class remember_category_state extends external_api {
         string $view = '',
         string $chip = '',
         array $filters = [],
-        bool $fav = false
+        bool $fav = false,
+        string $group = ''
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'categoryid' => $categoryid,
@@ -130,6 +142,7 @@ class remember_category_state extends external_api {
             'chip' => $chip,
             'filters' => $filters,
             'fav' => $fav,
+            'group' => $group,
         ]);
         if ($params['categoryid'] <= 0) {
             // A shape check, alike for every reader: the root reads its search alone and remembers nothing.
@@ -147,9 +160,23 @@ class remember_category_state extends external_api {
         foreach ($params['filters'] as $filter) {
             $fields[(int) $filter['fieldid']] = (int) $filter['value'];
         }
+        /* The pair "Group by" and "Sort by" chose, in the spelling the entry keeps (criteria::organisation()).
+           Without a group the sort is the organisation as sent, so one outside the vocabulary is refused by
+           the delegate and the entry keeps what it held, as before the group existed. */
+        $organisation = (string) $params['sort'];
+        $psort = '';
+        if ($params['group'] !== '') {
+            // A named grouping is held to the listing services' vocabulary: nothing is remembered from a guess.
+            rows::require_known_organisation((string) $params['group'], $organisation);
+        }
+        if (in_array($params['group'], criteria::GROUPS, true)) {
+            [$organisation, $psort] = criteria::organisation((string) $params['group'], $organisation, '');
+        }
         $changes = [
             // The empty organisation is the grouped one, and is remembered as such.
-            remembered::KEY_SORT => $params['sort'] === '' ? criteria::SORT_CATEGORY : $params['sort'],
+            remembered::KEY_SORT => $organisation === '' ? criteria::SORT_CATEGORY : $organisation,
+            // The newest first is the grouped default, remembered as no key; a flat organisation keeps none either.
+            remembered::KEY_PSORT => $psort === criteria::SORT_NAME ? criteria::SORT_NAME : null,
             remembered::KEY_STATE => $params['chip'] === '' ? null : $params['chip'],
             // The toggle's one stored value is true; off is the key forgotten.
             remembered::KEY_FAVOURITES => $params['fav'] ? true : null,
