@@ -34,6 +34,7 @@ use theme_dimensions\local\darklogo;
 use theme_dimensions\local\drawernav;
 use theme_dimensions\local\flavourchoice;
 use theme_dimensions\local\guestnav;
+use theme_dimensions\local\identity;
 use theme_dimensions\local\phonenav;
 use theme_dimensions\local\readingbar;
 
@@ -424,14 +425,22 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * The guard that called this method is the full name being in the context, which is exactly
      * when the override draws it.
      *
+     * The name the override draws beside the avatar is the theme's own key, dimensionsnavname: the field the
+     * administrator chose, masked ({@see identity::navbar()}), of the session's user, which under "log in as" is
+     * the account logged in as. Core's userfullname stays as core wrote it (the real user's name there), because
+     * Boost Union's name block in the open menu reads it.
+     *
      * @param array $context The layout template context.
      * @return array
      */
     protected function apply_name_in_usermenu(array $context): array {
+        global $USER;
+
         if (empty($context['showfullnameinusermenu'])) {
             $context['showfullnameinusermenu'] = true;
         }
         unset($context['usermenu']['userfirstname']);
+        $context['usermenu']['dimensionsnavname'] = identity::navbar($USER);
 
         return $context;
     }
