@@ -70,7 +70,7 @@ Feature: The mobile drawer of a logged-in account
     # Escape at the root closes the drawer, and the focus goes back to the menu button.
     And I press the escape key
     And "#theme_boost-drawers-primary.show" "css_element" should not exist
-    And the focused element is "[data-action='opendrawer'][data-target='theme_boost-drawers-primary']" "css_element"
+    And the focused element is "[data-action='toggle'][data-target='theme_boost-drawers-primary']" "css_element"
 
   Scenario: A visitor keeps the "New here?" card and gets none of the account's drawer
     Given I change window size to "mobile"
