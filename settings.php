@@ -44,6 +44,7 @@ use theme_dimensions\local\identity;
 use theme_dimensions\local\identitypatterns_setting;
 use theme_dimensions\local\landing\heroformat;
 use theme_dimensions\local\landingdefaults;
+use theme_dimensions\local\profilelayer;
 use theme_dimensions\local\readingbar;
 use theme_dimensions\local\related\band;
 use theme_dimensions\local\yesno;
@@ -389,6 +390,14 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $title = get_string('identitypatterns', 'theme_dimensions', null, true);
         $description = get_string('identitypatterns_desc', 'theme_dimensions', null, true);
         $setting = new identitypatterns_setting($name, $title, $description, '', PARAM_RAW, 60, 4);
+        $tab->add($setting);
+
+        // Setting: The profile layer of a logged-in account, which carries the title and lines above. Default on, and
+        // read as on unless an explicit '0' was stored ({@see profilelayer::enabled()}), so no upgrade step writes it.
+        $name = 'theme_dimensions/' . profilelayer::SETTING;
+        $title = get_string('profilelayer', 'theme_dimensions', null, true);
+        $description = get_string('profilelayer_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
         $tab->add($setting);
 
         // Add tab to settings page.

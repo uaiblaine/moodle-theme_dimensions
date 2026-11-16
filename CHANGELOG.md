@@ -13,6 +13,20 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   one destination for the viewer will be that destination's own pill, a group with none is left out, and a viewer
   whose only destination is the category page itself (a learner) will get no row. Five new strings name the
   navigation and its four groups; "More" is Moodle's own word.
+- **The user button opens the profile layer** (2026100623). A new setting on the *Identity* tab, `profilelayer`
+  (on by default), prints on every page of a logged-in account a side layer built from Moodle's own user menu: the
+  person's picture with the title and further lines chosen in the identity settings (masked on the server), "View
+  profile" and "Edit profile" by Moodle's own rule, a notice with the way back under "log in as", the site's user menu
+  items under "My area", Preferences and the role switch under "Account", the colour mode, the look and the language
+  under "Display", and Log out at its foot; on a phone it is a bottom sheet. A new script (`amd/src/profilelayer.js`)
+  takes the user button over and opens it as a dialog: the focus stays inside, Look and Language open as sub-views,
+  Escape leaves a sub-view and then closes the layer, the focus returns to the user button, and the opening slides in
+  unless the person asked for reduced motion. On a phone the navbar's controls that make room there are the layer's
+  first group, and wherever the layer carries the colour mode the navbar's own colour mode menu is hidden. Boost
+  Union's user menu stays on the page and opens as before whenever the script does not run. The layer is printed
+  once, after the page's content, and asks for nothing more per page: the look menu is asked once for the user menu
+  and the layer together. Visitors, the guest account and the Moodle app never get it. Behat: core's "I follow ... in
+  the user menu" goes through the layer on this theme.
 - **The category showcase's filter bar hides Filters when it has nothing to open, and its layers and tooltips behave**
   (2026100622). A category with no custom field in the filter list and no "More statuses" option shows no Filters
   button, for a visitor and for a signed-in reader alike; the button comes back as soon as one of the two exists, also

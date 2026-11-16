@@ -317,6 +317,9 @@ templates/core/user_menu_metadata.mustache  Adds the name beside the avatar, md 
 classes/local/identity.php     Which field identifies a person (navbar name; the profile layer's title and lines),
                                its fallbacks and a custom field's visibility; identitypattern.php is the mask,
                                identitypatterns_setting.php the validated setting. See "The identity fields".
+classes/local/profilelayer.php The profile layer: whether a page gets it and its data, from core's user menu;
+                               templates/profile_layer.mustache, scss/profilelayer.scss, amd/src/profilelayer.js.
+                               See "The profile layer".
 classes/local/upstream.php     The copies of core and Boost Union code and today's upstream of each; the snapshots
                                (*.upstream beside each copy), tests/local/upstream_test.php, scripts/upstream-merge.sh.
 tests/output/core_renderer_test.php  Renders real pages through a real header: the login layout (Boost Union's, or
@@ -738,8 +741,8 @@ to the alternate name site-wide (tried and abandoned: other plugins and certific
 ## The identity fields
 
 `classes/local/identity.php` (which field, its fallbacks, the visibility of a custom field) and
-`classes/local/identitypattern.php` (the mask, pure) feed the navbar's name today and the profile layer's title and
-lines next (`moodle-dev/docs/design-system/plans/user-menu-theme.md`, decisions D73, D74, D76).
+`classes/local/identitypattern.php` (the mask, pure) feed the navbar's name and the profile layer's title and
+lines (section "The profile layer"; `moodle-dev/docs/design-system/plans/user-menu-theme.md`, decisions D73, D74, D76).
 
 - **The values are the session's.** `identity` takes the user record as a parameter and the renderer hands it
   `$USER`, which under "log in as" is the account logged in as (D76; core's `userfullname` names the real user and
@@ -771,6 +774,100 @@ lines next (`moodle-dev/docs/design-system/plans/user-menu-theme.md`, decisions 
   value outside its choices without an error.
 - **A test's person is `get_complete_user_data()`**, never the generator's row (it has no `profile`), and the
   generator's `create_custom_profile_field()` fires no event: trigger core's event to see the cache emptied.
+
+## The profile layer
+
+`classes/local/profilelayer.php` decides (`applies()`) and builds (`context()`) the profile layer of
+`moodle-dev/docs/design-system/components/side-layer.md` from core's user menu; `templates/profile_layer.mustache` draws
+it, `scss/profilelayer.scss` styles it and `amd/src/profilelayer.js` opens it. The plan is
+`moodle-dev/docs/design-system/plans/user-menu-theme.md`; the server prints the layer closed.
+
+- **It is printed by `core_renderer::standard_after_main_region_html()`, once, never by the end-of-body token.** Boost
+  Union's footer partial prints the end-of-body token inside its footer popover's content whenever its footer button is
+  on: core's stylesheet hides that container from sm up and core's popover copies it by `innerHTML`, so a layer there
+  is invisible on a desktop and duplicated (ids included) when the popover opens. Boost Union's drawers and columns2
+  layouts, the only ones that build the user menu, call the after-main-region method exactly once each, outside the nav
+  and the footer. The stored context is dropped as it is printed (gate `profilelayer_print_once`). Re-read both
+  layouts and `footer.mustache` on every Boost Union update.
+- **The layer's context is stored by shape, beside and before the Look guard** (`usermenu.avatardata` and
+  `usermenu.items`, gate `profilelayer_shape_guard`), from the menu as core and Boost Union wrote it, before the
+  theme adds its Look link. `flavourchoice::menu()` is asked once per renderer, through `core_renderer::look_menu()`,
+  for the user menu's Look submenu and the layer's Look sub-view together; never call it a second time for the layer.
+- **Rows are classified by address and title identifier, never by position**: Profile leaves the list only with no
+  `id` or the session user's (another user's is a row), Preferences and the switch role items go to "Account", Log out
+  or core's `/course/loginas.php` to the foot only as the menu's LAST item (core appends it last, Boost Union
+  re-appends it last; any other item at those addresses is a row), the language submenu (found by core's
+  `languageselector` title: its id is a `uniqid()`, so there is no stabler mark) and the Look are "Display",
+  everything else with an address is "My area" in core's order. A new kind of core item gets its place in `profilelayer::sort()` by its address.
+- **Colour mode, Look and Language come from `drawernav`'s builders** (`appearance()`, `look_from()`, `language()`):
+  the drawer keeps its own copies until stage S4, which moves the builders here; until then a change to one of them
+  changes both surfaces.
+- **"Edit profile" is a copy of core's rule for the profile page's `editprofile` node** (`lib/myprofilelib.php`),
+  asked for one's own record on the site profile, with the own-profile capability asked first so the common case
+  reads no user context. `profilelayer_test::test_edit_profile_follows_cores_profile_page` builds core's tree beside
+  it: re-read `core_myprofile_navigation()` when it reddens.
+- **The identity is `identity::title($USER)` and `identity::lines($USER)`, always `$USER`**: plain, masked, escaped once
+  by the template's double stash. Under "log in as" it is the account logged in as; the notice's link is core's way
+  back taken from the menu's items, labelled `returntooriginaluser` with the real user's name.
+- **No statement per page**: with the settings at their defaults the builder reads nothing a page has not already
+  read (`test_a_page_with_default_settings_costs_no_statement`). Nothing is stored: the layer is the session's data
+  and core's menu, printed.
+- **The module is armed only beside the print** (`standard_after_main_region_html()`, gates `profilelayer_armed_wired`,
+  `profilelayer_armed_only_printed`): a page without the layer never loads it, so a visitor, the guest and the switch
+  off keep Boost Union's dropdown untouched. Never arm it from the layout context or a hook.
+- **The takeover is the module's and is its own fallback.** Boost Union's dropdown stays in the page, Look submenu
+  included (`apply_look_menu()` stays). Only once `init()` has found the layer, its backdrop and `#user-menu-toggle`
+  (Boost Union's `templates/core/user_menu.mustache`) does `takeOver()` remove `data-bs-toggle` (Bootstrap's data API
+  is delegated from the document and matches that attribute at event time, so the dropdown stops answering), dispose a
+  dropdown already opened, and set `aria-haspopup="dialog"`, `aria-controls` and `aria-expanded` (gates
+  `js_profilelayer_takeover_guard`, `js_profilelayer_takeover_bootstrap`). The takeover is the LAST step of `init()` (after the main view is found, the colour mode is
+  initialised in a try that only logs, and the listeners are bound; `removeAttribute` is the last line of `takeOver()`;
+  gates `js_profilelayer_takeover_last`, `js_profilelayer_main_guard`). A module that fails to load leaves the
+  dropdown working. Core's `core/usermenu` and Boost Union's `smartmenu_usermenu` listen on the dropdown's
+  `show.bs.dropdown` and `shown.bs.dropdown`, which no longer fire: harmless.
+- **Who else hears the same press or key.** Core's `theme_boost/drawers` closes every drawer on a press in the navbar
+  below 992px and on a focus moving out of a drawer; `compactnav.js` closes the tablet drawer on a press in the navbar;
+  `open()` also closes Boost's primary drawer if it is still shown, and the layer closes (without taking the focus
+  back) on any `theme_boost/drawers:show`. The backdrop (z 1050) covers the navbar (1030), so the hamburger cannot be
+  pressed while the layer is open. `readingbar.js` holds the navbar while an element of the nav is
+  `aria-expanded="true"`, which the user button is while the layer is open. Escape is listened for on the layer alone
+  and stopped there; `drawer.js` listens on its own root, Bootstrap's dropdown on its toggles. The focus is held with
+  `core/local/aria/focuslock`, released BEFORE it is given back (`close()`), or focuslock pulls it in again.
+- **Escape closes a sub-view first, then the layer; the focus returns to the row, then to the user button** (gates
+  `js_profilelayer_escape_order`, `js_profilelayer_subview_focus_return`, `js_profilelayer_focus_return`). The dialog's
+  `aria-labelledby` follows the shown view's `h2[id]`: a new view needs its title as an `h2` with an id.
+- **Colour mode is core's.** The module calls `theme_boost/colourmode`'s `init()` (idempotent) where the layer has the
+  control; core's `applyMode()` marks `aria-checked` and `.active` on every `[data-region="colourmode-menu"]` of the
+  page, the layer's included. The module then writes `dimensions-profilelayer-modes` on the body, by which
+  `scss/post.scss` hides the navbar's own colour mode menu at every width (gates `colourmode_layer_twin`,
+  `js_profilelayer_twin_class_guarded`). The drawer's clauses of that rule (`.dimensions-drawer-modes`) stay until S4.
+- **Look is `flavourchoice.js`'s**, delegated from the document on `data-dimensions-flavour`; the layer's click
+  handler must never `preventDefault()` a Look option. The checked option (`aria-checked="true"`) does nothing, as
+  the user menu's `aria-current` one (gate `js_flavourchoice_checked_current`).
+- **The phone's entries (D75) follow the armed layer, in either arming order** (`phonemenu.js`, gate
+  `js_phonemenu_layer_follow`): armed first, they go straight into `[data-region="dimensions-layer-phone-list"]`;
+  otherwise into the dropdown, and on to the layer on its `theme_dimensions/profilelayer:armed` event. The class
+  `dimensions-layer-js` and the event names are spelt in both modules (`profilelayer_source_test` holds them equal).
+  The nav is marked `dimensions-phonenav-<key>` only once the entries are placed. The group is hidden from md up. A
+  press on an entry closes the layer, so the messaging drawer it opens is not under the layer's backdrop.
+- **The opening motion is a CSS animation on `:not([hidden])`**, under `prefers-reduced-motion: no-preference`, with a
+  Pending token until `animationend` (bounded by 600 ms; gate `js_profilelayer_pending`). Closing is at once. Core's
+  Behat site does not drop the animation (only its `optional-animation` mixin does, and the layer's selectors cannot
+  carry `body.behat-site`), which is why the token exists.
+- **Behat.** `tests/behat/behat_theme_dimensions_behat_navigation.php` overrides core's `I follow "..." in the user
+  menu`: on an armed layer it presses the user button and clicks the link in the layer, (not pressing it when the layer is
+  already open) or, for core's Profile alone, clicks the header's "View profile"; any other entry the layer lacks fails
+  the step. Core's `I log out` visits
+  a URL and is unaffected; `"..." should exist in the user menu` reads the dropdown's markup, which stays. A step that
+  presses `#user-menu-toggle` and then reads `#user-action-menu`, or `I should see "..." user submenu`, needs the
+  layer off (`theme_dimensions_servicename.feature` does so) or the layer's own selectors.
+- **S4 still has to** remove the drawer's appearance switch, Look and Language (plan section 5), and with them the
+  `.dimensions-drawer-modes` clauses of the twin rule; then `colourmode_phone_twin` goes with them and
+  `colourmode_layer_twin` is the only one. Touch nothing of the drawer's template, module or sheet before that.
+- **Every selector of `scss/profilelayer.scss` starts with one of the layer's own classes** and every colour reads a
+  `--dim-layer-*` token declared on `.dimensions-layer` over a family token (`profilelayer_scss_test`); the family's
+  dark half is the layer's dark mode. A view is `display: flex` and `hidden` at once: Bootstrap's reboot keeps
+  `[hidden]` at `display: none !important`, which is what keeps it closed.
 
 ## The user profile page
 

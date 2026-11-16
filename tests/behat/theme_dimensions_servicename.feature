@@ -18,6 +18,10 @@ Feature: The user's name in the navigation bar
     # 'yes'/'no', while this theme's store 1/0.
     And the following config values are set as admin:
       | showfullnameinusermenu | no | theme_boost_union |
+    # These scenarios are about Boost Union's user menu dropdown, which the user button opens only while the theme's
+    # profile layer is off (theme_dimensions_profilelayer.feature covers the layer's identity).
+    And the following config values are set as admin:
+      | profilelayer | 0 | theme_dimensions |
 
   @javascript
   Scenario: The navigation bar shows the name beside the avatar

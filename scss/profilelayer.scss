@@ -1,0 +1,473 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// Theme Dimensions - The profile layer of a logged-in account.
+//
+// templates/profile_layer.mustache (theme_dimensions\local\profilelayer), printed once per page after the content,
+// closed; moodle-dev/docs/design-system/components/side-layer.md is the part list and the measures. This file is
+// concatenated into the theme's main SCSS and reaches every page of the site: every top-level selector is one of the
+// layer's own classes, which nothing core or Boost Union ships carries (tests/local/profilelayer_scss_test.php).
+//
+// The layer's tokens are declared on its root and read the theme's family tokens, each with Bootstrap's own as the
+// fallback, so the colour mode and a flavour's brand colour move them: the family's dark half (post.scss) is the
+// layer's dark mode, and no literal colour is written here. Below sm the layer is a bottom sheet, the theme's sheet
+// step (scss/sheets.scss). Every motion runs only under prefers-reduced-motion: no-preference: a row's hover, and the
+// opening, in the theme's base motion token: the backdrop fades in and the layer slides in from its side, the sheet
+// rises from the bottom. amd/src/profilelayer.js holds Behat until the opening ends. Closing is at once.
+//
+// A view is display: flex and hidden at once: Bootstrap's reboot keeps [hidden] at display: none !important, so the
+// attribute wins over every rule below and a hidden view or a closed layer is never drawn.
+
+.dimensions-layer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    background: var(--dimensions-backdrop, rgba(var(--bs-black-rgb, 0, 0, 0), .5));
+
+    @media (prefers-reduced-motion: no-preference) {
+        &:not([hidden]) {
+            animation: dimensions-layer-fade var(--dimensions-motion-base, 250ms) var(--dimensions-motion-ease, ease);
+        }
+    }
+}
+
+.dimensions-layer {
+    --dim-layer-surface: var(--dimensions-surface, var(--bs-body-bg));
+    --dim-layer-surface-alt: var(--dimensions-surface-alt, var(--bs-tertiary-bg));
+    --dim-layer-surface-inset: var(--dimensions-surface-inset, var(--bs-secondary-bg));
+    --dim-layer-line: var(--dimensions-line, var(--bs-border-color));
+    --dim-layer-ink: var(--dimensions-ink, var(--bs-body-color));
+    --dim-layer-ink-muted: var(--dimensions-ink-muted, var(--bs-secondary-color));
+    --dim-layer-brand-ink: var(--dimensions-brand-ink, var(--bs-primary-text-emphasis));
+    --dim-layer-danger-ink: var(--dimensions-danger-ink, var(--bs-danger-text-emphasis));
+    --dim-layer-danger-tint: var(--dimensions-danger-tint, var(--bs-danger-bg-subtle));
+    --dim-layer-info-ink: var(--dimensions-info-ink, var(--bs-info-text-emphasis));
+    --dim-layer-info-tint: var(--dimensions-info-tint, var(--bs-info-bg-subtle));
+    --dim-layer-info-edge: var(--dimensions-info-edge, var(--bs-info-border-subtle));
+    --dim-layer-ring: var(--dimensions-focus-ring, var(--bs-emphasis-color));
+    --dim-layer-ring-width: var(--dimensions-focus-width, 2px);
+    --dim-layer-radius-md: var(--dimensions-radius-md, 8px);
+    --dim-layer-radius-lg: var(--dimensions-radius-lg, 12px);
+    --dim-layer-radius-xl: var(--dimensions-radius-xl, 16px);
+    --dim-layer-elevation-sm: var(--dimensions-elevation-sm, 0 1px 2px rgba(7, 0, 147, .08), 0 1px 3px rgba(7, 0, 147, .06));
+    --dim-layer-elevation-lg: var(--dimensions-elevation-lg, 0 12px 32px rgba(7, 0, 147, .14));
+    --dim-layer-motion-fast: var(--dimensions-motion-fast, 150ms);
+    --dim-layer-motion-ease: var(--dimensions-motion-ease, cubic-bezier(.4, 0, .2, 1));
+    --dim-layer-motion-base: var(--dimensions-motion-base, 250ms);
+    // Where the opening starts: off the end side, the start side in a right-to-left page, the bottom on a phone.
+    --dim-layer-from: translateX(100%);
+    // The unread count of a phone entry keeps the navbar's own pair (scss/phonenav.scss): a counter inside a row is
+    // not decided (moodle-dev/docs/design-system/components/counter.md, "Open").
+    --dim-layer-count-fill: var(--dim-ds-accent-highlight);
+    --dim-layer-count-ink: var(--dim-ds-text-inverse);
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+    background: var(--dim-layer-surface);
+    box-shadow: var(--dim-layer-elevation-lg);
+    color: var(--dim-layer-ink);
+
+    &:dir(rtl) {
+        --dim-layer-from: translateX(-100%);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        &:not([hidden]) {
+            animation: dimensions-layer-in var(--dim-layer-motion-base) var(--dim-layer-motion-ease);
+        }
+    }
+
+    // ---- The frame ------------------------------------------------------------------------------------
+    &.dimensions-layer--end {
+        inset-inline-end: 0;
+        width: 22.5rem;
+        border-inline-start: 1px solid var(--dim-layer-line);
+
+        // The phone's bottom sheet: the full width, at most 88 % of the viewport's height, the xl radius on the
+        // top corners only and no side border. It rises from the bottom, in either direction.
+        @include media-breakpoint-down(sm) {
+            --dim-layer-from: translateY(100%);
+            top: auto;
+            inset-inline: 0;
+            width: auto;
+            max-height: 88vh;
+            overflow: hidden;
+            border: 0;
+            border-radius: var(--dim-layer-radius-xl) var(--dim-layer-radius-xl) 0 0;
+        }
+    }
+
+    .dimensions-layer-view {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .dimensions-layer-scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: .5rem;
+    }
+
+    .dimensions-layer-foot {
+        flex: none;
+        padding: .5rem;
+        border-top: 1px solid var(--dim-layer-line);
+    }
+
+    // ---- The identity header --------------------------------------------------------------------------
+    .dimensions-layer-top {
+        border-bottom: 1px solid var(--dim-layer-line);
+        background: var(--dim-layer-surface-alt);
+    }
+
+    .dimensions-layer-id {
+        display: flex;
+        align-items: flex-start;
+        gap: .75rem;
+        padding: 1rem 1rem .75rem;
+    }
+
+    // Core's picture is an image or, for a person without one, the initials in a span: both at 48px, round.
+    .dimensions-layer-avatar img,
+    .dimensions-layer-avatar .userinitials {
+        width: 3rem;
+        height: 3rem;
+        margin: 0;
+        border-radius: 50%;
+    }
+
+    .dimensions-layer-who {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .dimensions-layer-title,
+    .dimensions-layer-line {
+        margin: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dimensions-layer-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--dim-layer-ink);
+    }
+
+    .dimensions-layer-line {
+        font-size: .875rem;
+        color: var(--dim-layer-ink);
+    }
+
+    .dimensions-layer-line ~ .dimensions-layer-line {
+        font-size: .8125rem;
+        font-variant-numeric: tabular-nums;
+        color: var(--dim-layer-ink-muted);
+    }
+
+    // Core's small outline buttons, held at 2rem, side by side; one alone spans both columns.
+    .dimensions-layer-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .5rem;
+        padding: 0 1rem 1rem;
+
+        > .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .375rem;
+            min-height: 2rem;
+        }
+
+        > .btn:only-child {
+            grid-column: 1 / -1;
+        }
+
+        > .btn > .icon {
+            margin: 0;
+        }
+    }
+
+    .dimensions-layer-iconbtn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        border: 0;
+        border-radius: var(--dim-layer-radius-md);
+        background: transparent;
+        color: var(--dim-layer-ink-muted);
+
+        &:hover {
+            background: var(--dim-layer-surface-inset);
+            color: var(--dim-layer-ink);
+        }
+
+        > .icon {
+            margin: 0;
+        }
+    }
+
+    // ---- The "logged in as" notice ----------------------------------------------------------------------
+    .dimensions-layer-notice {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        margin: .5rem .5rem 0;
+        padding: .5rem .75rem;
+        border: 1px solid var(--dim-layer-info-edge);
+        border-radius: var(--dim-layer-radius-md);
+        background: var(--dim-layer-info-tint);
+        font-size: .8125rem;
+        color: var(--dim-layer-info-ink);
+
+        > .icon {
+            margin: 0;
+        }
+
+        a {
+            margin-inline-start: auto;
+            font-weight: 600;
+            white-space: nowrap;
+            color: inherit;
+        }
+    }
+
+    // ---- Groups and rows ------------------------------------------------------------------------------
+    .dimensions-layer-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dimensions-layer-head {
+        margin: 0;
+        padding: .375rem .5rem .125rem;
+        font-size: .75rem;
+        font-weight: 600;
+        color: var(--dim-layer-ink-muted);
+    }
+
+    .dimensions-layer-sep {
+        height: 1px;
+        margin: .25rem 0;
+        background: var(--dim-layer-line);
+    }
+
+    .dimensions-layer-row {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        width: 100%;
+        min-height: 2.5rem;
+        padding: .25rem .5rem;
+        border: 0;
+        border-radius: var(--dim-layer-radius-md);
+        background: transparent;
+        font-size: .875rem;
+        text-align: start;
+        color: var(--dim-layer-ink);
+        text-decoration: none;
+
+        @media (pointer: coarse) {
+            min-height: 2.75rem;
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            transition: background-color var(--dim-layer-motion-fast) var(--dim-layer-motion-ease);
+        }
+
+        &:hover {
+            background: var(--dim-layer-surface-alt);
+            color: var(--dim-layer-ink);
+        }
+
+        > .icon:first-child {
+            margin: 0;
+            color: var(--dim-layer-ink-muted);
+        }
+
+        // A look's mark stands where the icon would.
+        > .dimensions-look-mark {
+            flex: none;
+        }
+
+        // The tick of a sub-view's option, shown on the chosen one only.
+        &[role="menuitemradio"] > .icon:last-child {
+            margin: 0;
+            margin-inline-start: auto;
+            color: var(--dim-layer-brand-ink);
+            visibility: hidden;
+        }
+
+        &[aria-checked="true"] {
+            font-weight: 600;
+        }
+
+        &[aria-checked="true"] > .icon:last-child {
+            visibility: visible;
+        }
+    }
+
+    .dimensions-layer-value {
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+        margin-inline-start: auto;
+        font-size: .8125rem;
+        color: var(--dim-layer-ink-muted);
+
+        > .icon {
+            margin: 0;
+        }
+    }
+
+    // ---- The phone's entries (D75), amd/src/phonemenu.js's, the first group on a phone only -------------
+    .dimensions-layer-phone {
+        @include media-breakpoint-up(md) {
+            display: none;
+        }
+    }
+
+    .dimensions-phonemenu-label {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .dimensions-phonemenu-count {
+        flex: 0 0 auto;
+        min-width: 1.25rem;
+        padding: 0 .375rem;
+        // Round, a counter's shape: a circle for one digit, the ellipse of the same box for more.
+        border-radius: 50%;
+        background-color: var(--dim-layer-count-fill);
+        color: var(--dim-layer-count-ink);
+        font-size: .75rem;
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+        line-height: 1.25rem;
+        text-align: center;
+    }
+
+    .dimensions-layer-row--danger,
+    .dimensions-layer-row--danger > .icon:first-child {
+        color: var(--dim-layer-danger-ink);
+    }
+
+    .dimensions-layer-row--danger:hover {
+        background: var(--dim-layer-danger-tint);
+        color: var(--dim-layer-danger-ink);
+    }
+
+    // ---- The colour mode, a segmented control on a row of its own ---------------------------------------
+    .dimensions-layer-mode {
+        padding: .25rem .5rem .5rem;
+    }
+
+    .dimensions-layer-seg {
+        display: flex;
+        gap: .125rem;
+        padding: .1875rem;
+        border: 1px solid transparent;
+        border-radius: var(--dim-layer-radius-lg);
+        background: var(--dim-layer-surface-inset);
+    }
+
+    .dimensions-layer-seg-cell {
+        display: inline-flex;
+        flex: 1 1 0;
+        align-items: center;
+        justify-content: center;
+        gap: .375rem;
+        height: 2rem;
+        padding: 0 .75rem;
+        border: 0;
+        border-radius: var(--dim-layer-radius-md);
+        background: transparent;
+        font-size: .875rem;
+        font-weight: 500;
+        color: var(--dim-layer-ink-muted);
+
+        @media (pointer: coarse) {
+            height: 2.25rem;
+        }
+
+        > .icon {
+            margin: 0;
+        }
+
+        &[aria-checked="true"] {
+            background: var(--dim-layer-surface);
+            color: var(--dim-layer-ink);
+            font-weight: 600;
+            box-shadow: var(--dim-layer-elevation-sm);
+        }
+    }
+
+    // ---- The sub-view header --------------------------------------------------------------------------
+    .dimensions-layer-sub {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .75rem .5rem;
+        border-bottom: 1px solid var(--dim-layer-line);
+    }
+
+    .dimensions-layer-subtitle {
+        flex: 1 1 auto;
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    // ---- Focus: the theme's ring, inside the scroll region, which clips ---------------------------------
+    :focus-visible {
+        outline: var(--dim-layer-ring-width) solid var(--dim-layer-ring);
+        outline-offset: -2px;
+    }
+}
+
+@keyframes dimensions-layer-in {
+    from {
+        transform: var(--dim-layer-from);
+    }
+
+    to {
+        transform: none;
+    }
+}
+
+@keyframes dimensions-layer-fade {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
