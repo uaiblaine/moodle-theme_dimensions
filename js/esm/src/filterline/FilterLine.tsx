@@ -37,8 +37,8 @@
  *
  * - `dim-line:state`, detail {query, chip, fav, view} or any part of it: the listing's own state, after a
  *   press it handled, Back, a clear or a removed chip;
- * - `dim-line:answer`, detail {total, scope, favourites, filtercount, filtercountlabel, period}: an answer's
- *   numbers and its period chip's sentence;
+ * - `dim-line:answer`, detail {total, scope, favourites, filtercount, filtercountlabel, filtergroups, period}: an
+ *   answer's numbers, whether the Filters panel still holds a group, and its period chip's sentence;
  * - `dim-line:dropterm`, sent by the line before it presses the control a suggestion names, so the one
  *   request that control causes carries no term;
  * - `dim-line:mounted`, sent once the line is drawn, after it marked itself drawn (data-line-drawn), which
@@ -457,6 +457,11 @@ const FilterLine = ({form}: FilterLineProps) => {
      */
     const setSearching = (on: boolean): void => {
         st.searching = on;
+        if (on) {
+            // The managers' menu is hidden while the search is open (the stylesheet): an open one goes shut with it.
+            const toggle = manage.current?.querySelector<HTMLElement>('[aria-expanded="true"]');
+            toggle?.click();
+        }
         drawSearch();
         rerender();
     };
@@ -847,8 +852,8 @@ const FilterLine = ({form}: FilterLineProps) => {
     };
 
     /**
-     * A press anywhere: outside the line it closes the search, outside the bottom sheet it closes the sheet, and
-     * outside the date layer and its button it closes the date layer, at every step.
+     * A press anywhere: outside the line it closes the search, and outside an open layer of the capsule (Filters, the
+     * date layer, Organise) and its button it closes that layer, at every step.
      *
      * @param {PointerEvent} event The press.
      * @returns {void}
@@ -864,13 +869,15 @@ const FilterLine = ({form}: FilterLineProps) => {
                 closeSearch(false);
             }
         }
-        // The bottom sheet has no summary beside it to press again, so a press outside it closes it.
-        if (twolines() && filters.current && filters.current.open && !filters.current.contains(target)) {
-            filters.current.open = false;
-        }
-        if (period.current && period.current.open && !period.current.contains(target)) {
-            period.current.open = false;
-        }
+        // One rule for the three layers: a press outside an open one closes it. Its own summary is inside the
+        // details, so the press that closes it natively is not closed twice; nothing is moved and the press is
+        // let through, so a card or a link outside still acts. The bottom sheet is the same layer: the dimmed
+        // page around it is outside it.
+        [filters.current, period.current, organise.current].forEach((layer) => {
+            if (layer && layer.open && !layer.contains(target)) {
+                layer.open = false;
+            }
+        });
     };
 
     /**
@@ -952,6 +959,10 @@ const FilterLine = ({form}: FilterLineProps) => {
     const onAnswer = (event: Event): void => {
         const answer = ((event as CustomEvent).detail || {}) as Answer;
         setModel((current) => (current ? answered(current, answer) : current));
+        // A panel with no group left has nothing to show: its control goes and takes an open panel with it.
+        if (answer.filtergroups === false && filters.current) {
+            filters.current.open = false;
+        }
         setAnswers((count) => count + 1);
     };
 
@@ -1279,17 +1290,16 @@ const FilterLine = ({form}: FilterLineProps) => {
                 {model.manage ? (
                     <div ref={manage} className="dim-toolbar__manage" data-region="dim-line-manage"></div>
                 ) : null}
+                <button
+                    ref={closer}
+                    type="button"
+                    className="dim-line__iconbtn dim-line__searchclose"
+                    data-action="dim-search-close"
+                    aria-label={model.closelabel}
+                    data-dim-tip={model.closelabel}
+                    onClick={() => closeSearch(true)}
+                ><i className="fa fa-xmark" aria-hidden="true"></i></button>
             </div>
-            <button
-                key="closer"
-                ref={closer}
-                type="button"
-                className="dim-line__iconbtn dim-line__searchclose"
-                data-action="dim-search-close"
-                aria-label={model.closelabel}
-                data-dim-tip={model.closelabel}
-                onClick={() => closeSearch(true)}
-            ><i className="fa fa-xmark" aria-hidden="true"></i></button>
             {scopedown ? scopenode : null}
             {drawList(model, listbox, listed ? st.items : [], st.active, pick)}
         </>
@@ -1390,7 +1400,12 @@ const drawFilters = (
     ref: RefObject<HTMLDetailsElement | null>,
     panel: RefObject<HTMLDivElement | null>
 ): ReactNode => (
-    <details ref={ref} className="dim-toolbar__filters dim-line__filters" data-region="dim-filters">
+    <details
+        ref={ref}
+        className="dim-toolbar__filters dim-line__filters"
+        data-region="dim-filters"
+        hidden={!model.filters.available}
+    >
         <summary className="dim-toolbar__filterstoggle dim-line__iconbtn" data-dim-tip={model.filters.label}>
             <i className="fa fa-sliders" aria-hidden="true"></i>
             {' '}

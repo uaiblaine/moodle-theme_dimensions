@@ -68,8 +68,9 @@
     rest at every width, and the stylesheet shows the button only on a line the
     component drew. Three more parts belong to the component alone and are
     drawn by the stylesheet only once it has folded the line into one of its
-    steps (dim-line--s1, s2): the button that closes the search where it has
-    grown over the line (dim-search-close), the line's last control; the
+    steps (dim-line--s1, s2): the button that closes the search while it is
+    open, in place or over the line (dim-search-close), the last control of the
+    search's capsule where the managers' menu sits at rest; the
     listbox of suggestions (dim-line-suggest), which the client gives its role
     and name and fills, carrying its id and its two headings so the client
     composes no word of it; and the panel foot's "Show" (dim-filters-show,
@@ -102,7 +103,11 @@
     sighted readers see and the sentence a screen reader is read - carries a
     region, because the client rewrites both after every request. The panel
     holds option groups only - "More statuses" and one group per allowlisted
-    custom field - and its foot (dim-filters-foot): "Clear filters"
+    custom field. The control carries the hidden attribute while no group is
+    drawn (hasfiltergroups false: no facet and no "More statuses" option), so a
+    panel of nothing but its foot has no button; it stays in the document, and
+    the client moves the attribute with the same rule after every answer. Its
+    foot (dim-filters-foot): "Clear filters"
     (dim-filters-clear), a link carrying the clear link's own address and
     action, drawn while something narrows; "Show"; and the no-JavaScript
     "Filter" submit. The badge does not count the period, which the date button
@@ -226,6 +231,7 @@
             ]
         },
         "favourites": {"name": "fav", "value": 1, "pressed": false, "count": 2, "label": "Favourites"},
+        "hasfiltergroups": true,
         "facets": [
             {
                 "legend": "Modality",
@@ -327,7 +333,7 @@
                 {{#favourites}}
                 <button type="submit" class="dim-toolbar__star dim-line__iconbtn" name="{{name}}" value="{{value}}" aria-pressed="{{#pressed}}true{{/pressed}}{{^pressed}}false{{/pressed}}" data-dim-tip="{{label}}" data-action="dim-fav" data-region="dim-line-star"><i class="{{#pressed}}fa-solid{{/pressed}}{{^pressed}}fa-regular{{/pressed}} fa-star" aria-hidden="true"></i><span class="visually-hidden">{{label}} <span data-region="dim-fav-count">{{count}}</span></span></button>
                 {{/favourites}}
-                <details class="dim-toolbar__filters dim-line__filters" data-region="dim-filters">
+                <details class="dim-toolbar__filters dim-line__filters" data-region="dim-filters"{{^hasfiltergroups}} hidden{{/hasfiltergroups}}>
                     <summary class="dim-toolbar__filterstoggle dim-line__iconbtn" data-dim-tip="{{filterslabel}}"><i class="fa fa-sliders" aria-hidden="true"></i> <span class="visually-hidden dim-line__label dim-toolbar__filterslabel">{{filterslabel}}</span> <span class="dim-toolbar__filtercount" data-region="dim-filtercount"{{^hasfiltercount}} hidden{{/hasfiltercount}}><span aria-hidden="true" data-region="dim-filtercount-number">{{filtercount}}</span><span class="visually-hidden" data-region="dim-filtercount-label">{{filtercountlabel}}</span></span></summary>
                     <div class="dim-toolbar__panel" data-region="dim-filters-panel">
                         {{#more}}
@@ -425,8 +431,8 @@
             {{#hasmanageactions}}
             <div class="dim-toolbar__manage" data-region="dim-line-manage">{{{manageactions}}}</div>
             {{/hasmanageactions}}
+            <button type="button" class="dim-line__iconbtn dim-line__searchclose" data-action="dim-search-close" aria-label="{{searchcloselabel}}" data-dim-tip="{{searchcloselabel}}"><i class="fa fa-xmark" aria-hidden="true"></i></button>
         </div>
-        <button type="button" class="dim-line__iconbtn dim-line__searchclose" data-action="dim-search-close" aria-label="{{searchcloselabel}}" data-dim-tip="{{searchcloselabel}}"><i class="fa fa-xmark" aria-hidden="true"></i></button>
         {{#suggestid}}
         <div class="dim-line__suggest" id="{{suggestid}}" data-region="dim-line-suggest" data-label-filters="{{suggestfilterslabel}}" data-label-start="{{suggeststartlabel}}" hidden></div>
         {{/suggestid}}

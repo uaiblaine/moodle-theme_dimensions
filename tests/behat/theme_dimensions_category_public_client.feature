@@ -13,16 +13,19 @@ Feature: A visitor's public category page narrows in place once the site opens i
   # read off a mark left on the browser's window, which only a page load takes away.
 
   Background:
+    # The allowlisted modality field gives the Filters panel a group: the control is drawn only while its panel
+    # holds one, and the two scenarios that open it need it to exist.
     Given the following config values are set as admin:
-      | theme              | dimensions |                            |
+      | theme                | dimensions |                  |
+      | categoryfilterfields | dimensions_modality | theme_dimensions |
     And the following "categories" exist:
       | name            | category | idnumber |
       | Public category | 0        | PUBCAT   |
     And the following "courses" exist:
-      | fullname        | shortname | category | customfield_dimensions_model | startdate     |
-      | Curso Online    | ONLINE    | PUBCAT   | 1                          | ##yesterday## |
-      | Curso Futuro    | FUTURO    | PUBCAT   | 1                          | ##+2 days##   |
-      | Curso Interno   | INTERNO   | PUBCAT   | 1                          | ##+2 days##   |
+      | fullname        | shortname | category | customfield_dimensions_model | customfield_dimensions_modality | startdate     |
+      | Curso Online    | ONLINE    | PUBCAT   | 1                          | 1                      | ##yesterday## |
+      | Curso Futuro    | FUTURO    | PUBCAT   | 1                          | 1                      | ##+2 days##   |
+      | Curso Interno   | INTERNO   | PUBCAT   | 1                          | 1                      | ##+2 days##   |
     And the course "ONLINE" is "public" for discoverability
     And the course "FUTURO" is "public" for discoverability
     And the category "PUBCAT" is "public" for discoverability

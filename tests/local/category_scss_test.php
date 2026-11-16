@@ -2003,7 +2003,7 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression(
             '~\.dim-line\[data-line-drawn\]\.dim-line--open,\s*\.dim-line\[data-line-drawn\]\.dim-line--searching \{\s*'
                 . '> \.dim-line__searchcap > \.dim-line__searchopen \{\s*display:\s*none;\s*\}\s*'
-                . '> \.dim-line__searchcap > \.dim-line__search \{\s*display:\s*inline-flex;\s*\}\s*\}~',
+                . '> \.dim-line__searchcap > \.dim-line__search \{\s*display:\s*inline-flex;\s*\}~',
             $scss,
             'Open, in place or over the line, the field takes the button\'s place.'
         );
@@ -2036,9 +2036,15 @@ final class category_scss_test extends \basic_testcase {
             $scss
         );
         $this->assertMatchesRegularExpression(
-            '~> \.dim-line__searchcap \{\s*flex:\s*1 1 auto;\s*\}\s*> \.dim-line__searchclose \{\s*display:\s*inline-flex;~',
+            '~> \.dim-line__searchcap \{\s*flex:\s*1 1 auto;\s*\}~',
             $this->rule_body($scss, '.dim-line--searching'),
-            'Over the line the search\'s capsule takes it, and the close button its last place.'
+            'Over the line the search\'s capsule takes it.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-line\[data-line-drawn\]\.dim-line--open,\s*\.dim-line\[data-line-drawn\]\.dim-line--searching \{'
+                . '.*?> \.dim-line__searchcap > \.dim-line__searchclose \{\s*display:\s*inline-flex;\s*\}~s',
+            $scss,
+            'The close button is drawn in the capsule in both open states, in the managers\' menu\'s place.'
         );
         $motion = null;
         $offset = 0;
@@ -2131,9 +2137,10 @@ final class category_scss_test extends \basic_testcase {
     /**
      * The bar's tooltip is the stylesheet's, drawn from data-dim-tip after 100ms of rest, and out of the way when it must be.
      *
-     * tooltip.md's balloon above the control: the body ink as its ground and the surface as its text (so the dark
-     * mode turns it), radius sm, .75rem, at most 16.25rem wide, 8px above, with its 5px arrow. It shows on hover and
-     * on keyboard focus after D51's 100ms, never under a pointer that cannot hover, never while its control's layer
+     * tooltip.md's balloon, drawn below the control (the category hero's tab row stacks over the toolbar): the body
+     * ink as its ground and the surface as its text (so the dark mode turns it), radius sm, .75rem, at most 16.25rem
+     * wide, 8px below, with its 5px arrow pointing up. It shows on hover and on keyboard focus after D51's 100ms,
+     * never under a pointer that cannot hover, never while its control's layer
      * is open (aria-expanded, an open details) and never while Escape has put the line's tooltips off. The open
      * values of tooltip.md are block_compass's: .25rem .5rem of padding, no shadow, z 5.
      *
@@ -2145,7 +2152,7 @@ final class category_scss_test extends \basic_testcase {
         $balloon = $this->rule_body($scss, '.dim-line [data-dim-tip]::after');
         $declarations = [
             'content:\s*attr\(data-dim-tip\);',
-            'bottom:\s*calc\(100% \+ \.5rem\);',
+            'top:\s*calc\(100% \+ \.5rem\);',
             'max-width:\s*16\.25rem;',
             'padding:\s*\.25rem \.5rem;',
             'border-radius:\s*var\(--dim-radius-sm\);',
@@ -2172,7 +2179,22 @@ final class category_scss_test extends \basic_testcase {
         // The arrow's own rule: its selector also heads the shared rule above, which rule_body() would find first.
         $this->assertMatchesRegularExpression(
             '~\n    \.dim-line \[data-dim-tip\]::before \{\s*content:\s*"";[^}]*border:\s*5px solid transparent;\s*'
-                . 'border-top-color:\s*var\(--dim-ink\);~',
+                . 'border-bottom-color:\s*var\(--dim-ink\);~',
+            $scss
+        );
+        $this->assertStringNotContainsString(
+            'bottom: calc(100% + .5rem)',
+            $balloon,
+            'Above the control the tab row of the hero covers the balloon.'
+        );
+        // The far end of the line opens towards the line, with the arrow on the control's centre.
+        $end = $this->rule_body(
+            $scss,
+            ".dim-line__searchcap [data-dim-tip]::after,\n    .dim-line__searchclose[data-dim-tip]::after"
+        );
+        $this->assertMatchesRegularExpression('~right:\s*0;\s*left:\s*auto;\s*transform:\s*none;~', $end);
+        $this->assertMatchesRegularExpression(
+            '~\.dim-line__searchclose\[data-dim-tip\]::before \{\s*right:\s*calc\(var\(--dim-bar-inner\) / 2 - 5px\);~',
             $scss
         );
 
@@ -2194,6 +2216,46 @@ final class category_scss_test extends \basic_testcase {
                 . '\.dim-line \[data-dim-tip\]:not\(:focus-visible\):hover::before \{\s*visibility:\s*hidden;\s*\}\s*\}~',
             $scss,
             'A tap leaves no tooltip stuck on a touch screen; a keyboard\'s focus still shows it.'
+        );
+    }
+
+    /**
+     * A Filters control drawn hidden (no group to open) takes no room in the capsule.
+     *
+     * The attribute is the only switch; a plugin-owned selector keeps any display a later rule gives the disclosure
+     * from showing it, and the fold's measure, which reads boxes, then counts nothing for it.
+     *
+     * Changes that must make it fail: the rule dropped, or the disclosure given a display that shows it.
+     */
+    public function test_the_filters_control_takes_no_room_while_hidden(): void {
+        $this->assertMatchesRegularExpression(
+            '~display:\s*none;~',
+            $this->rule_body($this->stylesheet('category.scss'), '.dim-toolbar__filters[hidden]'),
+            'A Filters control with no group to open takes no room in the capsule.'
+        );
+    }
+
+    /**
+     * While the search is open the managers' menu is gone from its capsule, and the fold's measure sees the same.
+     *
+     * The field with its eraser is all the capsule shows, in place (dim-line--open) and over the line
+     * (dim-line--searching), the close button taking the menu's place. The rule is not gated on the measuring
+     * class, so the open state is measured as it is drawn.
+     *
+     * Changes that must make it fail: either state left out; the rule gated on the client's measuring class.
+     */
+    public function test_the_managers_menu_waits_while_the_search_is_open(): void {
+        $scss = $this->stylesheet('category.scss');
+        $this->assertMatchesRegularExpression(
+            '~\.dim-line\[data-line-drawn\]\.dim-line--open,\s*\.dim-line\[data-line-drawn\]\.dim-line--searching \{\s*'
+                . '> \.dim-line__searchcap > \.dim-toolbar__manage \{\s*display:\s*none;\s*\}\s*\}~',
+            $scss,
+            'More actions is hidden while the search is open, in place and over the line.'
+        );
+        $this->assertStringNotContainsString(
+            'dim-line--measuring) > .dim-line__searchcap > .dim-toolbar__manage',
+            $scss,
+            'The measure reads the open state as drawn.'
         );
     }
 

@@ -93,7 +93,8 @@ const filtersOf = /* @__PURE__ */ __name((line) => {
     label: text(filters ? filters.querySelector(SELECTORS.filterslabel) : null),
     count: text(badge ? badge.querySelector(SELECTORS.badgenumber) : null),
     countlabel: text(badge ? badge.querySelector(SELECTORS.badgelabel) : null),
-    hascount: badge !== null && !badge.hidden
+    hascount: badge !== null && !badge.hidden,
+    available: filters !== null && !filters.hidden
   };
 }, "filtersOf");
 const PERIOD = "{period}";
@@ -204,6 +205,9 @@ const answered = /* @__PURE__ */ __name((model, answer) => {
       countlabel: answer.filtercountlabel || "",
       hascount: count !== 0
     });
+  }
+  if (typeof answer.filtergroups === "boolean") {
+    next.filters = Object.assign({}, next.filters, { available: answer.filtergroups });
   }
   if (model.date && typeof answer.period === "string") {
     next.date = Object.assign({}, model.date, { name: dateName(model.date, answer.period), set: answer.period !== "" });

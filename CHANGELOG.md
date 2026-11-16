@@ -5,6 +5,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The category showcase's filter bar hides Filters when it has nothing to open, and its layers and tooltips behave**
+  (2026100622). A category with no custom field in the filter list and no "More statuses" option shows no Filters
+  button, for a visitor and for a signed-in reader alike; the button comes back as soon as one of the two exists, also
+  after a search or a filter changes what is offered, and an open panel goes with it. A press anywhere outside an open
+  layer of the bar (Filters, the date button, Organise) now closes it, also on a phone where the layer is a sheet,
+  without stealing the press from a card or link and without moving the keyboard focus; Escape still returns to the
+  button. The tooltips of the bar open below their button, where the category's tab row no longer covers them, and the
+  ones at the far end open towards the middle of the bar. While the search is open, in place or over the bar, its capsule
+  holds the field and a "Close search" button where the "More actions" menu sits at rest; the menu waits out of the way
+  (an open one is closed) and returns when the search folds.
 - **The administrator chooses what identifies a person in the navbar** (2026100621). Four new settings on the
   *Identity* tab: the field shown beside the avatar (`identitynavbar`), the field that will be the title of the
   profile layer (`identitytitle`), the further lines under it (`identitylines`) and the display patterns

@@ -31,6 +31,6 @@ export {writeUrl} from './history';
 export {focusTarget, mountAreas, mountCalendar, mountLine, tellAnswer} from './mounts';
 export {
     armTreebox, closestOf, markTree, paintChips, paintControls, paintCount, paintDates, paintDirect, paintEraser,
-    paintFavToggle, paintFavourites, paintFilterBadge, paintGrid, paintGroups, paintPager, paintView, renderCards,
-    restoreMore,
+    paintFavToggle, paintFavourites, paintFilterBadge, paintFiltersControl, paintGrid, paintGroups, paintPager, paintView,
+    renderCards, restoreMore,
 } from './paint';
