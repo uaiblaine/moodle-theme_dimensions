@@ -1278,12 +1278,7 @@ final class population {
 
         $probe = $relatedunlisted + array_slice($unrelated, 0, self::PROBE_CAP, true);
         if ($probe) {
-            /* The plugin asks each probed course's context of core (its relationship check), one statement per
-               course on a cold cache; the rows carry the preload columns, so the contexts are put in the cache
-               first. From a clone, as course_context() does: the rows must keep their columns for page_contexts(). */
-            foreach ($probe as $row) {
-                context_helper::preload_from_record(clone $row);
-            }
+            // The plugin reads the probed courses' contexts itself, in one statement (its prime_probe()).
             foreach (access::filter_courses($probe) as $courseid => $row) {
                 $kept[(int) $courseid] = $row;
             }
@@ -2361,10 +2356,7 @@ final class population {
             }
         }
         $probe = $related + array_slice($unrelated, 0, self::PROBE_CAP, true);
-        // The plugin reads each probed course's context: in the cache first, as gate() puts them (no statement each).
-        foreach ($probe as $row) {
-            context_helper::preload_from_record(clone $row);
-        }
+        // As in gate(): the plugin reads the probed courses' contexts itself, in one statement.
         $admitted = array_map('intval', array_keys(access::filter_courses($probe)));
         return array_slice($admitted, 0, self::RESCUE_CAP);
     }

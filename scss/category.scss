@@ -1231,9 +1231,10 @@ body.dim-category {
             font-weight: 600;
         }
 
+        // Inwards: the items touch each other, so a ring drawn outside one would cover its neighbours.
         &:focus-visible {
             outline: 3px solid var(--dim-ring);
-            outline-offset: 2px;
+            outline-offset: -2px;
         }
     }
 
@@ -5145,6 +5146,21 @@ body.dim-category {
         .dim-line__cells {
             flex-wrap: nowrap;
             width: max-content;
+        }
+
+        // A menu is wider than what is left of the screen before its button there: it hangs from the
+        // line's end instead, as the date layer does, so the disclosure is no longer its positioned box.
+        .dim-line__organise,
+        .dim-line__viewmenu {
+            position: static;
+        }
+    }
+
+    // The same where no client measures the line: a phone's width.
+    @media (max-width: 575.98px) {
+        .dim-line:not([data-line-drawn]) .dim-line__organise,
+        .dim-line:not([data-line-drawn]) .dim-line__viewmenu {
+            position: static;
         }
     }
 

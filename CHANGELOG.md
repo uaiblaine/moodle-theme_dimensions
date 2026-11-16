@@ -5,6 +5,13 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **On a phone the Organise menu no longer leaves the screen, and a menu item's focus ring no longer covers its
+  neighbours** (2026100627). On the filter bar's two-line step the Organise and View menus hang from the line's end, as
+  the date layer does; under its own button Organise started 21 px before the screen's edge at 375 px. The ring of a
+  menu item is drawn inwards, since the items touch. The theme no longer preloads the contexts of the unlisted courses
+  it asks `local_unlistedcourses` about: the plugin reads them in one statement itself (since its v5.3-r3), so the
+  theme's loops and their two mutation gates held nothing. `identity_test` starts from a site with no custom profile
+  field, so it passes on a site where another plugin creates fields on install.
 - **The side menu is the site's navigation alone, and Escape closes it** (2026100626). The side menu of a logged-in
   account no longer shows the person's name, picture and role line, nor the colour mode switch, the look and the
   language: those are in the profile layer the user button opens. It keeps the "Continue where you left off" card,
