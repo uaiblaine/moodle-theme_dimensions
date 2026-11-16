@@ -68,8 +68,24 @@ export const VISITOR_TOOLBAR = `<form class="dim-toolbar" id="dim-vitrine-form-8
                                     <label class="dim-pill" for="dim-cf-51-1">Self-paced <span class="dim-pill__count" data-region="dim-pill-count">100</span></label>
                                 </div>
                             </fieldset>
-                            <fieldset class="dim-toolbar__group dim-toolbar__group--date" data-region="dim-date" data-firstday="1" data-today="2026-11-15">
-                                <legend class="dim-toolbar__grouplabel">Start date</legend>
+                            <div class="dim-toolbar__actions dim-toolbar__foot" data-region="dim-filters-foot">
+                                <a class="btn btn-sm btn-outline-secondary dim-toolbar__footclear" href="https://example.com/theme_dimensions/category/8" data-region="dim-filters-clear" data-action="dim-clear" hidden>Clear filters</a>
+                                <button type="button" class="btn btn-sm btn-primary dim-toolbar__footshow dim-live-only" data-action="dim-filters-show" data-dim-template="Show {n}">Show 100</button>
+                                <button type="submit" class="dim-toolbar__submit dim-nojs-only">Filter</button>
+                            </div>
+                        </div>
+                    </details>
+                    <details class="dim-line__date" data-region="dim-period">
+                        <summary class="dim-line__iconbtn dim-line__datetoggle" aria-label="Start date" data-dim-tip="Start date" data-dim-template="Start date: {period}" data-region="dim-period-button"><i class="fa fa-calendar-days" aria-hidden="true"></i><span class="dim-line__dot" data-region="dim-period-dot" aria-hidden="true" hidden></span></summary>
+                        <div class="dim-datelayer" data-region="dim-period-layer">
+                            <fieldset class="dim-datelayer__group" data-region="dim-date" data-firstday="1" data-today="2026-11-16">
+                                <legend class="dim-datelayer__head">Start date</legend>
+                                <ul class="dim-toolbar__quick" role="list">
+                                    <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-11-16&amp;to=2026-11-16" data-action="dim-quick" data-from="2026-11-16" data-to="2026-11-16">Today</a></li>
+                                    <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-11-17&amp;to=2026-11-17" data-action="dim-quick" data-from="2026-11-17" data-to="2026-11-17">Tomorrow</a></li>
+                                    <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-11-16&amp;to=2026-11-22" data-action="dim-quick" data-from="2026-11-16" data-to="2026-11-22">This week</a></li>
+                                    <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-11-23&amp;to=2026-11-29" data-action="dim-quick" data-from="2026-11-23" data-to="2026-11-29">Next week</a></li>
+                                </ul>
                                 <div class="dim-toolbar__daterange" data-region="dim-daterange"></div>
                                 <div class="dim-toolbar__dates" data-region="dim-dateinputs">
                                     <div class="dim-toolbar__datefield">
@@ -81,16 +97,10 @@ export const VISITOR_TOOLBAR = `<form class="dim-toolbar" id="dim-vitrine-form-8
                                         <input class="form-control dim-toolbar__dateinput" type="date" id="dim-dateto-8" name="to" value="">
                                     </div>
                                 </div>
-                                <ul class="dim-toolbar__quick" role="list">
-                                    <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-11-15&amp;to=2026-11-15" data-action="dim-quick" data-from="2026-11-15" data-to="2026-11-15">Today</a></li>
-                                    <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-11-16&amp;to=2026-11-16" data-action="dim-quick" data-from="2026-11-16" data-to="2026-11-16">Tomorrow</a></li>
-                                    <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-11-09&amp;to=2026-11-15" data-action="dim-quick" data-from="2026-11-09" data-to="2026-11-15">This week</a></li>
-                                    <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-11-16&amp;to=2026-11-22" data-action="dim-quick" data-from="2026-11-16" data-to="2026-11-22">Next week</a></li>
-                                </ul>
                             </fieldset>
-                            <div class="dim-toolbar__actions dim-toolbar__foot" data-region="dim-filters-foot">
-                                <a class="btn btn-sm btn-outline-secondary dim-toolbar__footclear" href="https://example.com/theme_dimensions/category/8" data-region="dim-filters-clear" data-action="dim-clear" hidden>Clear filters</a>
-                                <button type="button" class="btn btn-sm btn-primary dim-toolbar__footshow dim-live-only" data-action="dim-filters-show" data-dim-template="Show {n}">Show 100</button>
+                            <div class="dim-datelayer__foot" data-region="dim-period-foot">
+                                <a class="dim-datelayer__clear" href="https://example.com/theme_dimensions/category/8" data-action="dim-period-clear">Clear period</a>
+                                <button type="button" class="btn btn-sm btn-primary dim-datelayer__show dim-live-only" data-action="dim-period-show" data-dim-template="Show {n}">Show 100</button>
                                 <button type="submit" class="dim-toolbar__submit dim-nojs-only">Filter</button>
                             </div>
                         </div>

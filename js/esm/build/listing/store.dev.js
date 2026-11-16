@@ -321,6 +321,13 @@ const listen = /* @__PURE__ */ __name(() => {
       setRange(quick.dataset.from || "", quick.dataset.to || "");
       return;
     }
+    if (Listing.closestOf(event, SELECTORS.periodclear)) {
+      event.preventDefault();
+      if (state.datefrom !== "" || state.dateto !== "") {
+        setRange("", "");
+      }
+      return;
+    }
     if (Listing.closestOf(event, SELECTORS.fav)) {
       event.preventDefault();
       onFav();

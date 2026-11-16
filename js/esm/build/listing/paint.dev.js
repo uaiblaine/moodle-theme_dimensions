@@ -23,6 +23,7 @@ const PAGE_WINDOW = 10;
 const TREE_PHONE = "(max-width: 767.98px)";
 let appended = 0;
 const SHOW_NUMBER = "{n}";
+const PERIOD_SENTENCE = "{period}";
 let announcements = 0;
 const closestOf = /* @__PURE__ */ __name((event, selector) => {
   const target = event.target;
@@ -155,11 +156,12 @@ const paintCount = /* @__PURE__ */ __name((root, response) => {
   if (total && !drawnByLine(total)) {
     total.textContent = number;
   }
-  const show = root.querySelector(SELECTORS.filtersshow);
-  const template = show ? show.dataset.dimTemplate || "" : "";
-  if (show && template.indexOf(SHOW_NUMBER) >= 0) {
-    show.textContent = template.split(SHOW_NUMBER).join(number);
-  }
+  root.querySelectorAll(`${SELECTORS.filtersshow}, ${SELECTORS.periodshow}`).forEach((show) => {
+    const template = show.dataset.dimTemplate || "";
+    if (template.indexOf(SHOW_NUMBER) >= 0) {
+      show.textContent = template.split(SHOW_NUMBER).join(number);
+    }
+  });
   const url = response.seeallurl || "";
   const line = root.querySelector(SELECTORS.count);
   if (!line) {
@@ -331,6 +333,22 @@ const createChip = /* @__PURE__ */ __name((chip) => {
   link.append(cross, name);
   return link;
 }, "createChip");
+const paintDateButton = /* @__PURE__ */ __name((root, chip) => {
+  const button = root.querySelector(SELECTORS.periodbutton);
+  if (button && !drawnByLine(button)) {
+    const template = button.dataset.dimTemplate || "";
+    const name = chip && template.indexOf(PERIOD_SENTENCE) >= 0 ? template.split(PERIOD_SENTENCE).join(chip.label) : button.getAttribute("data-dim-tip") || "";
+    button.setAttribute("aria-label", name);
+    const dot = button.querySelector(SELECTORS.perioddot);
+    if (dot) {
+      dot.hidden = chip === null;
+    }
+  }
+  const clear = root.querySelector(SELECTORS.periodclear);
+  if (clear && chip) {
+    clear.href = withPanel(chip.url);
+  }
+}, "paintDateButton");
 const paintChips = /* @__PURE__ */ __name((root, response) => {
   const row = root.querySelector(SELECTORS.chiprow);
   if (!row) {
@@ -347,14 +365,16 @@ const paintChips = /* @__PURE__ */ __name((root, response) => {
   if (list) {
     list.replaceChildren(...chips.filter((chip) => chip.param !== CHIP_PERIOD).map(createChip));
   }
+  const periods = chips.filter((chip) => chip.param === CHIP_PERIOD);
   const period = row.querySelector(SELECTORS.rangepill);
   if (period) {
-    period.replaceChildren(...chips.filter((chip) => chip.param === CHIP_PERIOD).map(createChip));
+    period.replaceChildren(...periods.map(createChip));
   }
   const clear = row.querySelector(SELECTORS.clear);
   if (clear) {
     clear.hidden = !response.clearall;
   }
+  paintDateButton(root, periods.length ? periods[0] : null);
 }, "paintChips");
 const reveal = /* @__PURE__ */ __name((items) => {
   const pending = new Pending("theme_dimensions/listing:reveal");
@@ -473,6 +493,7 @@ export {
   paintChips,
   paintControls,
   paintCount,
+  paintDateButton,
   paintDates,
   paintDirect,
   paintEraser,

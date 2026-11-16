@@ -141,6 +141,7 @@ describe('theme_dimensions/listing/paint', () => {
     it('shows the count sentence only where it says where the results lie, the bar\'s count and "Show" with its number', () => {
         const root = page('<div data-region="dim-line"><span data-region="dim-line-total">16</span></div>'
             + '<button data-action="dim-filters-show" data-dim-template="Mostrar {n}">Mostrar 16</button>'
+            + '<button data-action="dim-period-show" data-dim-template="Mostrar {n}">Mostrar 16</button>'
             + '<p data-region="dim-vitrine-count"><b data-region="dim-vitrine-countnumber"></b>'
             + '<span data-region="dim-vitrine-counttext"></span></p><span data-region="dim-vitrine-seeall" hidden><a href="#"></a></span>');
         const sentence = root.querySelector('[data-region="dim-vitrine-count"]') as HTMLElement;
@@ -148,6 +149,8 @@ describe('theme_dimensions/listing/paint', () => {
         expect(sentence.classList.contains('visually-hidden')).toBe(true);
         expect(root.querySelector('[data-region="dim-line-total"]')?.textContent).toBe('1.234');
         expect(root.querySelector('[data-action="dim-filters-show"]')?.textContent).toBe('Mostrar 1.234');
+        // The date layer's "Show" is the same button with the same sentence.
+        expect(root.querySelector('[data-action="dim-period-show"]')?.textContent).toBe('Mostrar 1.234');
         // Changes that must make it fail: the sentence's visibility read from anything but the answer's seeallurl.
         paintCount(root, {countnumber: '16', countline: 'cursos: 2 nesta categoria e 14 em 4 áreas', seeallurl: '/all'});
         expect(sentence.classList.contains('visually-hidden')).toBe(false);
@@ -159,6 +162,38 @@ describe('theme_dimensions/listing/paint', () => {
         paintCount(root, {countnumber: '7', countline: 'cursos', seeallurl: ''});
         expect(root.querySelector('[data-region="dim-line-total"]')?.textContent).toBe('16');
         expect(root.querySelector('[data-action="dim-filters-show"]')?.textContent).toBe('Mostrar 7');
+        expect(root.querySelector('[data-action="dim-period-show"]')?.textContent).toBe('Mostrar 7');
+    });
+
+    it('names the date button with the answer\'s period and dots it, on a line the server drew only', () => {
+        window.history.replaceState(null, '', '/course/index.php?categoryid=7&open=9');
+        const root = page('<div data-region="dim-line"><details data-region="dim-period">'
+            + '<summary data-region="dim-period-button" aria-label="Data de início" data-dim-tip="Data de início"'
+            + ' data-dim-template="Data de início: {period}"><span data-region="dim-period-dot" hidden></span></summary>'
+            + '<div data-region="dim-period-layer"><a data-action="dim-period-clear" href="/old"></a></div></details></div>'
+            + '<div data-region="dim-line-chips"><span data-region="dim-daterange-pill"></span></div>');
+        const button = root.querySelector('[data-region="dim-period-button"]') as HTMLElement;
+        const dot = root.querySelector('[data-region="dim-period-dot"]') as HTMLElement;
+        const clear = root.querySelector('[data-action="dim-period-clear"]') as HTMLAnchorElement;
+        paintChips(root, {hasfilters: true, chips: [
+            {param: 'period', label: '1 de maio até 9 de maio', url: '/course/index.php?categoryid=7&q=fire'},
+        ]});
+        expect(button.getAttribute('aria-label')).toBe('Data de início: 1 de maio até 9 de maio');
+        expect(dot.hidden).toBe(false);
+        // "Clear period" goes where the period chip goes, the open panel carried.
+        expect(clear.href).toBe('http://localhost/course/index.php?categoryid=7&q=fire&open=9');
+
+        // No period chip is no period: the filter's name alone, and no dot.
+        paintChips(root, {hasfilters: true, chips: [{param: 'cf_3', label: 'Online', url: '/x'}]});
+        expect(button.getAttribute('aria-label')).toBe('Data de início');
+        expect(dot.hidden).toBe(true);
+
+        // A line the component draws is told the period instead (tellAnswer()), and the layer is still painted.
+        (root.querySelector('[data-region="dim-line"]') as HTMLElement).setAttribute('data-line-drawn', 'true');
+        paintChips(root, {hasfilters: true, chips: [{param: 'period', label: 'Até 9 de maio', url: '/y'}]});
+        expect(button.getAttribute('aria-label')).toBe('Data de início');
+        expect(dot.hidden).toBe(true);
+        expect(clear.href).toBe('http://localhost/y?open=9');
     });
 
     it('rewrites the count so that a repeated sentence still differs, and takes the opening\'s note away', () => {

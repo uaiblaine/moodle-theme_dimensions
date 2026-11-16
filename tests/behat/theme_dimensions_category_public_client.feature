@@ -54,10 +54,9 @@ Feature: A visitor's public category page narrows in place once the site opens i
     Given the following config values are set as admin:
       | categorypublicclient | 1 | theme_dimensions |
     When I am on the "PUBCAT" "theme_dimensions > Public category page" page
-    And I click on "//details[@data-region='dim-filters']/summary" "xpath_element"
+    And I click on "//details[@data-region='dim-period']/summary" "xpath_element"
     And I click on "//button[@data-action='dim-daterange-open'][@data-bound='from']" "xpath_element"
     And I click on "//button[@data-region='dim-daterange-day'][@aria-current='date']" "xpath_element"
-    And I click on "//button[@data-action='dim-daterange-done']" "xpath_element"
     Then I should see "Curso Futuro" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should not see "Curso Online"
     And I should see "1" node occurrences of type "article" in the "[data-region='dim-vitrine-grid']" "css_element"

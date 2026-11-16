@@ -283,15 +283,18 @@ Feature: The category showcase lists what a person may discover, and its filters
     And "//a[@data-region='dim-vitrine-clear'][@hidden]" "xpath_element" should exist
     And "//*[@data-region='dim-line-chips']//a[@data-action='dim-chip-remove'][@data-param='period']" "xpath_element" should exist
 
-  Scenario: Every control that narrows the listing is inside the filter disclosure
-    # The line is the search box, the scope, the star and one disclosure holding the facet groups
-    # and the date range. It is a native details, so it opens and closes with no script; it is
-    # closed on load always, and the chips row under the line says what narrows.
+  Scenario: Every control that narrows the listing is inside a disclosure of the line
+    # The line is the search box, the scope, the star, the Filters disclosure holding the facet
+    # groups and the date button's disclosure holding the two date fields. Each is a native details,
+    # so it opens and closes with no script; each is closed on load always, and the chips row under
+    # the line says what narrows.
     Given I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     Then "//details[@data-region='dim-filters']//fieldset[@data-region='dim-vitrine-group']" "xpath_element" should exist
-    And "//details[@data-region='dim-filters']//fieldset[@data-region='dim-date']//input[@type='date']" "xpath_element" should exist
+    And "//details[@data-region='dim-period']//fieldset[@data-region='dim-date']//input[@type='date']" "xpath_element" should exist
+    And "//details[@data-region='dim-filters']//fieldset[@data-region='dim-date']" "xpath_element" should not exist
     And "//details[@data-region='dim-filters'][not(@open)]" "xpath_element" should exist
+    And "//details[@data-region='dim-period'][not(@open)]" "xpath_element" should exist
     # The toolbar's order: the one line, then the notice, then the chips row.
     And "//form[@data-region='dim-vitrine-toolbar']/div[@data-region='dim-line']/following-sibling::p[@data-region='dim-toolbar-notice']/following-sibling::div[@data-region='dim-line-chips']" "xpath_element" should exist
     When I set the field "In-person" to "1"

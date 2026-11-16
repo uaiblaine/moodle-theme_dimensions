@@ -649,7 +649,7 @@ final class card_markup_test extends \advanced_testcase {
         $form = $forms->item(0);
         $this->assertSame('get', strtolower($form->getAttribute('method')), 'A GET form: the address bar carries the state.');
         $submit = './/button[@type="submit"][' . self::has_class('dim-toolbar__submit') . ']';
-        $this->assertSame(1, $xpath->query($submit, $form)->length);
+        $this->assertSame(2, $xpath->query($submit, $form)->length, 'The Filters panel\'s and the date layer\'s "Filter".');
         // Enter in the search box presses the form's FIRST submit: it must carry no name, or the view flips.
         $first = $xpath->query('.//button[@type="submit"]', $form)->item(0);
         $this->assertNotNull($first);
@@ -1073,8 +1073,8 @@ final class card_markup_test extends \advanced_testcase {
             'The error state offers the retry the module listens for.'
         );
 
-        /* The toolbar's own regions. The date fieldset is inside the filter disclosure, which is
-           where every control that narrows the listing lives. */
+        /* The toolbar's own regions. The date fieldset is inside the date button's disclosure, and the
+           filter disclosure holds option groups only. */
         $this->assertSame(
             1,
             $toolbar->query('//fieldset[@data-region="dim-sort"][@data-name]')->length,
@@ -1082,9 +1082,10 @@ final class card_markup_test extends \advanced_testcase {
         );
         $this->assertSame(
             1,
-            $toolbar->query('//details[@data-region="dim-filters"]//fieldset[@data-region="dim-date"]')->length,
-            'The date fieldset, inside the filter disclosure.'
+            $toolbar->query('//details[@data-region="dim-period"]//fieldset[@data-region="dim-date"]')->length,
+            'The date fieldset, inside the date button\'s disclosure.'
         );
+        $this->assertSame(0, $toolbar->query('//details[@data-region="dim-filters"]//fieldset[@data-region="dim-date"]')->length);
         /* The calendar's three hooks are data and not markup: its mount point is empty, because a
            page without JavaScript shows the two native inputs and a skeleton drawn here would be a
            control that never becomes one. */
@@ -1436,10 +1437,10 @@ final class card_markup_test extends \advanced_testcase {
      * (js/esm/tests/daterange).
      *
      * Two boxes, each a button named by its label and its date and each with its own clearing
-     * control, and ONE popover both of them control: a start alone, an end alone and a range are
-     * all periods, and which bound a day sets is the box that opened the calendar. The popover
-     * holds two months, the sentence saying which bound the next press sets, and the footer that
-     * ends the choice.
+     * control, and the months both of them control, in the layer's flow: a start alone, an end alone
+     * and a range are all periods, and which bound a day sets is the pressed box. The months come with
+     * the sentence saying which bound the next press sets between their two turns; nothing ends a
+     * choice, because each press applies at once, and "Clear period" is the layer's foot.
      */
     public function test_the_calendars_own_template_writes_every_hook_its_module_reads(): void {
         $this->resetAfterTest();
@@ -1448,11 +1449,11 @@ final class card_markup_test extends \advanced_testcase {
         $this->assertNotEmpty($context, 'An empty example context renders nothing and proves nothing.');
         $range = $this->render('category_daterange');
         $popid = $range->query('//*[@data-region="dim-daterange-pop"]')->item(0)->getAttribute('id');
-        $this->assertSame(1, $range->query('//*[@data-region="dim-daterange-pop"]')->length, 'ONE popover.');
+        $this->assertSame(1, $range->query('//*[@data-region="dim-daterange-pop"]')->length, 'ONE block of months.');
         $this->assertSame(
-            1,
+            0,
             $range->query('//*[@data-region="dim-daterange-pop"][@hidden]')->length,
-            'The popover is closed until a box is pressed.'
+            'The months are in the layer\'s flow: no popover that opens.'
         );
 
         $boxes = $range->query('//button[@data-action="dim-daterange-open"]');
@@ -1462,8 +1463,13 @@ final class card_markup_test extends \advanced_testcase {
         foreach ($boxes as $index => $box) {
             $bound = $box->getAttribute('data-bound');
             $this->assertSame(['from', 'to'][$index], $bound, 'The start comes first, each named as its parameter.');
-            $this->assertSame($popid, $box->getAttribute('aria-controls'), 'Both boxes open the SAME popover.');
-            $this->assertSame('false', $box->getAttribute('aria-expanded'), 'Each starts closed and says so.');
+            $this->assertSame($popid, $box->getAttribute('aria-controls'), 'Both boxes control the SAME months.');
+            $this->assertFalse($box->hasAttribute('aria-expanded'), 'A box opens nothing.');
+            $this->assertSame(
+                $bound === 'to' ? 'true' : 'false',
+                $box->getAttribute('aria-pressed'),
+                'The active box is the pressed one: with a start alone, the end.'
+            );
             $this->assertNotSame('', $box->getAttribute('id'));
             $label = $range->query('.//*[@data-region="dim-daterange-label"]', $box);
             $this->assertSame(1, $label->length, 'A box carries its label inside its own name.');
@@ -1514,23 +1520,28 @@ final class card_markup_test extends \advanced_testcase {
                 ->length,
             'The sentence saying which bound the next press sets is read when it changes.'
         );
-        foreach (['dim-daterange-prev', 'dim-daterange-next', 'dim-daterange-done'] as $action) {
+        foreach (['dim-daterange-prev', 'dim-daterange-next'] as $action) {
             $this->assertSame(
                 1,
                 $range->query('//*[@data-region="dim-daterange-pop"]//button[@data-action="' . $action . '"]')->length,
                 'The ' . $action . ' control.'
             );
         }
-        /* The footer. "Done" applies what the presses described, and it lives inside the popover,
-           because a control that ends a choice has to be where the choice is being made. Beside it
-           is the control that drops the whole period: the same action as each box's own, with no
-           bound, so one handler serves all three. */
+        /* No footer: each press applies at once, so there is no "Done", and "Clear period" is the layer's
+           foot, the server's (category_toolbar). */
+        $this->assertSame(0, $range->query('//button[@data-action="dim-daterange-done"]')->length, 'No "Done".');
         $this->assertSame(
-            1,
-            $range->query('//*[@data-region="dim-daterange-pop"]//button[@data-action="dim-daterange-clear"][not(@data-bound)]')
-                ->length,
-            'The footer\'s control drops the whole period.'
+            0,
+            $range->query('//button[@data-action="dim-daterange-clear"][not(@data-bound)]')->length,
+            'The whole period is cleared from the layer\'s foot.'
         );
+        foreach (['prev' => 'fa-chevron-left', 'next' => 'fa-chevron-right'] as $turn => $glyph) {
+            $this->assertSame(
+                1,
+                $range->query('//button[@data-action="dim-daterange-' . $turn . '"]/i[contains(@class, "' . $glyph . '")]')->length,
+                'The months turn with chevrons, never a caret.'
+            );
+        }
         // Every one of them names itself for a screen reader, icon-only or not.
         foreach ($range->query('//button[starts-with(@data-action, "dim-daterange-")]') as $button) {
             $this->assertNotSame(
@@ -1566,7 +1577,6 @@ final class card_markup_test extends \advanced_testcase {
                 'dim-daterange-clear',
                 'dim-daterange-prev',
                 'dim-daterange-next',
-                'dim-daterange-done',
             ],
         ];
         foreach ($hooks as $attribute => $values) {
@@ -1583,6 +1593,8 @@ final class card_markup_test extends \advanced_testcase {
             $source,
             'The component names the bound each box and clearing control serves.'
         );
+        $this->assertStringNotContainsString('dim-daterange-done', $source, 'No "Done": each press applies at once.');
+        $this->assertStringNotContainsString('category_datedone', $source);
     }
 
     /**

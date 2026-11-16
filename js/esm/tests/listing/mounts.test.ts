@@ -140,13 +140,23 @@ describe('theme_dimensions/listing/mounts', () => {
         line.setAttribute(LINE_DRAWN, '');
         tellAnswer(root, response);
         expect((heard[0].scope as Array<{value: string}>).map((option) => option.value)).toEqual(['', 'enrolled', 'scheduled']);
-        expect(heard[0]).toMatchObject({favourites: null, filtercount: 2, filtercountlabel: 'Two filters'});
+        expect(heard[0]).toMatchObject({favourites: null, filtercount: 2, filtercountlabel: 'Two filters', period: ''});
+
+        // The date button is told the period chip's words, which an answer without the chip has none of.
+        tellAnswer(root, Object.assign({}, response, {chips: [
+            {param: 'cf_3', label: 'Online'}, {param: 'period', label: '1 May to 9 May'},
+        ]}));
+        expect(heard[1].period).toBe('1 May to 9 May');
     });
 
-    it('reads a drawn line\'s own controls as the component\'s, and its three adopted frames as the listing\'s', () => {
+    it('reads a drawn line\'s own controls as the component\'s, and its four adopted frames as the listing\'s', () => {
         document.body.innerHTML = `<div data-region="dim-line" ${LINE_DRAWN}><button id="star"></button>`
-            + '<div data-region="dim-filters-panel"><input id="pill"></div></div><input id="out">';
+            + '<div data-region="dim-filters-panel"><input id="pill"></div>'
+            + '<details data-region="dim-period"><summary id="date"></summary>'
+            + '<div data-region="dim-period-layer"><a id="quick"></a></div></details></div><input id="out">';
         expect(drawnByLine(document.getElementById('star'))).toBe(true);
+        expect(drawnByLine(document.getElementById('date'))).toBe(true);
+        expect(drawnByLine(document.getElementById('quick'))).toBe(false);
         expect(drawnByLine(document.getElementById('pill'))).toBe(false);
         expect(drawnByLine(document.getElementById('out'))).toBe(false);
         expect(drawnByLine(null)).toBe(false);

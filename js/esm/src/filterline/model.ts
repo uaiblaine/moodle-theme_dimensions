@@ -62,6 +62,9 @@ export type Line = {
     openlabel: string,
     star: {name: string, pressed: boolean, count: string, label: string} | null,
     filters: {label: string, count: string, countlabel: string, hascount: boolean},
+    // The date button: the filter's name (its tooltip), its accessible name, the name with {period} in the
+    // period's place, and whether a period is set (its dot); null where the server drew none.
+    date: {label: string, name: string, template: string, set: boolean} | null,
     organiselabel: string,
     views: View[],
     viewlabel: string,
@@ -88,6 +91,8 @@ export type Answer = {
     favourites?: {available?: boolean, pressed?: boolean, count?: number | string} | null,
     filtercount?: number | string,
     filtercountlabel?: string,
+    // The period chip's sentence, the empty string for no period.
+    period?: string,
 };
 
 /** What the listing tells the line of its own state ({@see stated}); any key may be left out. */
@@ -111,6 +116,10 @@ export const SELECTORS = {
     badgenumber: '[data-region="dim-filtercount-number"]',
     badgelabel: '[data-region="dim-filtercount-label"]',
     panel: '[data-region="dim-filters-panel"]',
+    date: '[data-region="dim-period"]',
+    datebutton: '[data-region="dim-period-button"]',
+    datedot: '[data-region="dim-period-dot"]',
+    datelayer: '[data-region="dim-period-layer"]',
     organise: '[data-region="dim-organise"]',
     menu: '[data-region="dim-organise-menu"]',
     viewrow: '[data-region="dim-view-row"]',
@@ -231,6 +240,44 @@ const filtersOf = (line: Element): Line['filters'] => {
     };
 };
 
+/** Where the period's sentence goes in the date button's name: category_toolbar::PERIOD_PLACEHOLDER. */
+export const PERIOD = '{period}';
+
+/**
+ * The date button as the server drew it, or null where it drew none.
+ *
+ * @param {Element} line The server's line.
+ * @returns {object|null}
+ */
+const dateOf = (line: Element): Line['date'] => {
+    const button = line.querySelector<HTMLElement>(`${SELECTORS.date} > ${SELECTORS.datebutton}`);
+    if (!button) {
+        return null;
+    }
+    const dot = button.querySelector<HTMLElement>(SELECTORS.datedot);
+    return {
+        label: button.getAttribute(TIP) || '',
+        name: button.getAttribute('aria-label') || '',
+        template: button.dataset.dimTemplate || '',
+        set: dot !== null && !dot.hidden,
+    };
+};
+
+/**
+ * The date button's name for a period: the filter's name alone without one, the server's sentence with the
+ * period written into it with one.
+ *
+ * @param {object} date The date button.
+ * @param {string} period The period chip's sentence, or the empty string.
+ * @returns {string}
+ */
+export const dateName = (date: NonNullable<Line['date']>, period: string): string => {
+    if (period === '' || date.template.indexOf(PERIOD) < 0) {
+        return date.label;
+    }
+    return date.template.split(PERIOD).join(period);
+};
+
 /**
  * The view toggle's buttons, List first as the server draws them.
  *
@@ -277,6 +324,7 @@ export const read = (line: Element | null): Line | null => {
         openlabel: attrOf(line, SELECTORS.opener, TIP),
         star: starOf(line),
         filters: filtersOf(line),
+        date: dateOf(line),
         organiselabel: attrOf(line, `${SELECTORS.organise} > summary`, TIP),
         views: viewsOf(row),
         viewlabel: row ? row.getAttribute('aria-label') || '' : '',
@@ -332,7 +380,8 @@ export const scopeAfter = (cells: Cell[], options: Option[]): Cell[] => {
 };
 
 /**
- * The line after an answer: the result count, the scope's counts and states, the star, the Filters badge.
+ * The line after an answer: the result count, the scope's counts and states, the star, the Filters badge, the
+ * date button's name and dot.
  *
  * Each part the answer leaves out stays as it is: no scope options is a page whose state sort was
  * switched off under it (the listing's paintStatus() reads it the same way), and a toggle the answer
@@ -361,6 +410,9 @@ export const answered = (model: Line, answer: Answer): Line => {
             countlabel: answer.filtercountlabel || '',
             hascount: count !== 0,
         });
+    }
+    if (model.date && typeof answer.period === 'string') {
+        next.date = Object.assign({}, model.date, {name: dateName(model.date, answer.period), set: answer.period !== ''});
     }
     return next;
 };

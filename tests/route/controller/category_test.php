@@ -875,9 +875,9 @@ final class category_test extends \core\tests\router\route_testcase {
         $expected[$param] = '2026-06-01';
         $this->assertSame($expected, $values, 'The bound sent comes back in its own field, and the other stays empty.');
         $this->assertSame(
-            1,
+            2,
             $xpath->query($form . '//button[@type="submit"][' . self::has_class('dim-toolbar__submit') . ']')->length,
-            'With no module to apply it, the form keeps its own submit.'
+            'With no module to apply it, the form keeps a submit in each of its layers: the Filters panel and the date layer.'
         );
         $this->assertSame(
             0,

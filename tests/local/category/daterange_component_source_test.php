@@ -296,4 +296,33 @@ final class daterange_component_source_test extends \basic_testcase {
             'Without the site\'s own today the component draws nothing.'
         );
     }
+
+    /**
+     * A press of a day applies at once: there is no draft, no "Done" and no popover to close.
+     *
+     * The behaviour is Jest's (js/esm/tests/daterange/DateRange.test.tsx); this pins the source shape from
+     * PHPUnit, which the mutation sweep runs. Every press goes through tell(), the one place a period leaves the
+     * control, and the model's press() answers whether the period in force changed; the model keeps no draft.
+     *
+     * Changes that must make it fail: a press that only moves the boxes (a draft again); a "Done" or a draft put
+     * back; the control keeping Escape or a press outside for itself, which the filter line's layer owns.
+     */
+    public function test_a_press_of_a_day_applies_at_once_with_no_draft(): void {
+        $component = $this->read('js/esm/src/daterange/DateRange.tsx');
+        $this->assertStringContainsString('tell(State.press(state.current, iso));', $component, 'Each press is told.');
+        $this->assertStringContainsString(
+            'export const press = (model: Model, iso: string): Applied => {',
+            $this->read('js/esm/src/daterange/model.ts'),
+            'And answers whether the period in force changed.'
+        );
+        foreach (['js/esm/src/daterange/DateRange.tsx', 'js/esm/src/daterange/model.ts'] as $file) {
+            $code = $this->uncommented($this->read($file));
+            foreach (['draft', 'commit', 'dim-daterange-done', 'category_datedone'] as $gone) {
+                $this->assertStringNotContainsString($gone, $code, "{$file} still holds {$gone}.");
+            }
+        }
+        $code = $this->uncommented($component);
+        $this->assertStringNotContainsString("'Escape'", $code, 'Escape is the layer\'s.');
+        $this->assertStringNotContainsString('pointerdown', $code, 'A press outside is the layer\'s.');
+    }
 }

@@ -168,6 +168,30 @@ describe('theme_dimensions/listing/store', () => {
         expect(told.slice(5)).toEqual(['painted 2', 'answered', 'criteria']);
     });
 
+    it('clears the period from the date layer in place, and fetches nothing where no period is set', async() => {
+        window.history.replaceState(null, '', '/course/index.php?categoryid=7&sort=name&from=2026-05-01&to=2026-05-09');
+        page();
+        const form = document.querySelector('[data-region="dim-vitrine-toolbar"]') as HTMLElement;
+        form.insertAdjacentHTML('beforeend', '<a data-action="dim-period-clear" href="/course/index.php?categoryid=7">Clear period</a>');
+        start(shellOf(), 7);
+        const clear = form.querySelector('[data-action="dim-period-clear"]') as HTMLElement;
+        const click = new MouseEvent('click', {bubbles: true, cancelable: true});
+        clear.dispatchEvent(click);
+        // In place: no navigation, both bounds gone, one request for page zero.
+        expect(click.defaultPrevented).toBe(true);
+        expect(current().datefrom).toBe('');
+        expect(current().dateto).toBe('');
+        expect(told.filter((entry) => entry.startsWith('rows'))).toEqual(['rows 0']);
+        answers[0].resolve(rowsOf(1));
+        await settle();
+
+        // Pressed again with no period, it asks for nothing and still does not leave the page.
+        const again = new MouseEvent('click', {bubbles: true, cancelable: true});
+        clear.dispatchEvent(again);
+        expect(again.defaultPrevented).toBe(true);
+        expect(told.filter((entry) => entry.startsWith('rows'))).toEqual(['rows 0']);
+    });
+
     it('paints nothing of an answer a newer request overtook, and lets only the latest failure fall back', async() => {
         page();
         start(shellOf(), 7);

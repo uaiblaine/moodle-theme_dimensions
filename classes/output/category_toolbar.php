@@ -47,9 +47,9 @@ use theme_dimensions\local\landing\links;
  * One line, the fleet Design System's compact bar, in the filter line's slot order:
  * the scope (the state chip's values {@see criteria::SCOPE}, counted, for a
  * logged-in reader with the state sort on), a spacer, the cluster - the result
- * count and a capsule of the favourites star, the Filters disclosure, the
- * Organise menu and the view toggle - and the search's own capsule with the
- * managers' menu. Under it a second row exists only while something narrows:
+ * count and a capsule of the favourites star, the Filters disclosure, the date
+ * button, the Organise menu and the view toggle - and the search's own capsule
+ * with the managers' menu. Under it a second row exists only while something narrows:
  * the count sentence, then one chip per criterion the line does not show
  * ({@see chips()}), "Clear all" from two criteria up, "See all as a list" and
  * the automatic opening's note. The count sentence is the page's live region,
@@ -59,19 +59,24 @@ use theme_dimensions\local\landing\links;
  * The Filters disclosure is a native `details`, closed on load: the chips row
  * says what narrows, so a narrowed page never needs the panel open to say so.
  * Its badge counts what the panel holds ({@see criteria::filter_count()}). The
- * panel holds "More statuses" (the state chip's values that are not the
- * scope, the same radio name), one group per allowlisted custom field and the
- * start-date range.
+ * panel holds option groups only: "More statuses" (the state chip's values that
+ * are not the scope, the same radio name) and one group per allowlisted custom
+ * field.
  *
- * The quick date options are ordinary links, computed here from the site
- * timezone's own calendar, carrying the same `from` and `to` a reader could
- * have typed into the two date fields. Either field may be left empty: each
- * bound stands alone ({@see criteria} says what each keeps). The calendar - a
- * start box and an end box opening one popover - is the client's, and it
- * speaks the same two parameters. The server gives it data and no markup: the
- * two bounds of each quick option as attributes, the site's first weekday on
- * the date fieldset, and an empty region to mount its boxes in, because a page
- * without JavaScript must show the two native inputs alone.
+ * The period has a control of its own (the fleet Design System's date button):
+ * a native `details` too, whose summary is a calendar icon named with the filter
+ * and the period in force, with a dot at its corner while one is set, and whose
+ * layer holds the quick options, the two native date fields and a foot with
+ * "Clear period", "Show" and the no-JavaScript "Filter". The quick date options
+ * are ordinary links, computed here from the site timezone's own calendar,
+ * carrying the same `from` and `to` a reader could have typed into the two date
+ * fields. Either field may be left empty: each bound stands alone
+ * ({@see criteria} says what each keeps). The calendar - a start box, an end box
+ * and the months - is the client's, and it speaks the same two parameters. The
+ * server gives it data and no markup: the two bounds of each quick option as
+ * attributes, the site's first weekday on the date fieldset, and an empty region
+ * to mount its boxes and months in, because a page without JavaScript must show
+ * the two native inputs alone.
  *
  * The favourites toggle is a submit button of its own on the line, because it
  * combines with the state rather than being one of its values: pressing it
@@ -137,6 +142,9 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
     /** @var string The chip's data-param for the period, whose two bounds go together. */
     public const CHIP_PERIOD = 'period';
 
+    /** @var string Where the client writes the period's sentence into the date button's name. */
+    public const PERIOD_PLACEHOLDER = '{period}';
+
     /**
      * Constructor.
      *
@@ -191,6 +199,9 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
            category id only reaches the ids of the controls below. */
         $form = links::showcase_form($this->categoryid, $this->anonymous);
         $sortgroup = $this->sort_group();
+        $hasperiod = $this->criteria->datefrom !== '' || $this->criteria->dateto !== '';
+        $period = $hasperiod ? self::period_label($this->criteria) : '';
+        $datelegend = get_string('category_dategroup', self::COMPONENT);
         return (object) [
             'action' => $form['action'],
             'hidden' => $form['hidden'],
@@ -236,7 +247,7 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             'datetoname' => criteria::PARAM_DATETO,
             'datefrom' => $this->criteria->datefrom,
             'dateto' => $this->criteria->dateto,
-            'datelegend' => get_string('category_dategroup', self::COMPONENT),
+            'datelegend' => $datelegend,
             'datefromlabel' => get_string('category_datefrom', self::COMPONENT),
             'datetolabel' => get_string('category_dateto', self::COMPONENT),
             /* The site's first weekday, so the popover's weeks begin where "this week" and the site's
@@ -248,6 +259,15 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
                part of every day. */
             'today' => criteria::iso(time()),
             'datequick' => $this->quick_dates(),
+            // The date button: its dot while a period is set, and its name, which then carries the period.
+            'hasperiod' => $hasperiod,
+            'datebuttonlabel' => $hasperiod ? self::date_button_name($period) : $datelegend,
+            /* The same name with {period} in the sentence's place: the client writes each answer's period chip into
+               it, so the words stay the server's in every language ({@see PERIOD_PLACEHOLDER}). */
+            'datebuttontemplate' => self::date_button_name(self::PERIOD_PLACEHOLDER),
+            // The layer's "Clear period": a link to this listing with both bounds dropped, so it works with no script.
+            'dateclearlabel' => get_string('category_dateclear', self::COMPONENT),
+            'dateclearurl' => $this->without_period()->out(false),
             'filterslabel' => get_string('category_filters', self::COMPONENT),
             'filtercount' => $this->criteria->filter_count(),
             'hasfiltercount' => $this->criteria->filter_count() > 0,
@@ -490,6 +510,33 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             return get_string('category_daterangepillfrom', self::COMPONENT, $from);
         }
         return get_string('category_daterangepillto', self::COMPONENT, $to);
+    }
+
+    /**
+     * The date button's accessible name: the filter's name, then the period it holds.
+     *
+     * @param string $period The period's sentence ({@see period_label()}), or {@see PERIOD_PLACEHOLDER}.
+     * @return string Plain text.
+     */
+    private static function date_button_name(string $period): string {
+        return get_string('category_datebutton', self::COMPONENT, (object) [
+            'filter' => get_string('category_dategroup', self::COMPONENT),
+            'period' => $period,
+        ]);
+    }
+
+    /**
+     * This listing's address with the period dropped and every other part of the request kept.
+     *
+     * The period chip's own address ({@see chips()}), which the layer's "Clear period" carries whether or not a
+     * period is set: without one it is this page's own address.
+     *
+     * @return \core\url
+     */
+    private function without_period(): \core\url {
+        $params = $this->criteria->query_params();
+        unset($params[criteria::PARAM_DATEFROM], $params[criteria::PARAM_DATETO]);
+        return links::showcase($this->categoryid, $params, $this->anonymous);
     }
 
     /**
