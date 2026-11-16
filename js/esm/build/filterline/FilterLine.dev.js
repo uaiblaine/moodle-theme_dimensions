@@ -14,18 +14,19 @@ import { Fragment, jsxDEV } from "react/jsx-dev-runtime";
  * rules the stylesheet writes against it. A mount replaces its markup, so the first render draws the
  * markup the server drew, read off it ({@see ./model read()}), with the same names inside the same GET
  * form - the no-JavaScript submits, the listing's form reading and every Behat step keep working. React
- * draws the line's own controls: the scope, the result count, the star, the two summaries (Filters and its
- * badge, Organise), the view toggle, the search with its button and its eraser, the close button and the
- * listbox, in the cluster and the two capsules the template draws them in. Three
+ * draws the line's own controls: the scope, the result count, the star, the three summaries (Filters and its
+ * badge, the date button and its dot, Organise), the view toggle, the search with its button and its eraser,
+ * the close button and the listbox, in the cluster and the two capsules the template draws them in. Four
  * frames it draws hold server markup it adopts whole on the first commit and never diffs inside: the
- * Filters panel (More statuses, the custom fields, the period with its calendar, the quick dates),
- * the Organise menu and the managers' menu. The listing's painters keep painting those three, and paint
+ * Filters panel (More statuses, the custom fields), the date layer (the quick dates, the period's calendar,
+ * its foot), the Organise menu and the managers' menu. The listing's painters keep painting those four, and paint
  * nothing React draws: they tell the line instead, through events on it ({@see EVENTS}), which
  * js/esm/src/listing/events.ts spells:
  *
  * - `dim-line:state`, detail {query, chip, fav, view} or any part of it: the listing's own state, after a
  *   press it handled, Back, a clear or a removed chip;
- * - `dim-line:answer`, detail {total, scope, favourites, filtercount, filtercountlabel}: an answer's numbers;
+ * - `dim-line:answer`, detail {total, scope, favourites, filtercount, filtercountlabel, period}: an answer's
+ *   numbers and its period chip's sentence;
  * - `dim-line:dropterm`, sent by the line before it presses the control a suggestion names, so the one
  *   request that control causes carries no term;
  * - `dim-line:mounted`, sent once the line is drawn, after it marked itself drawn (data-line-drawn), which
@@ -38,6 +39,11 @@ import { Fragment, jsxDEV } from "react/jsx-dev-runtime";
  * is mounted a second time onto a node React has just emptied. Unmounting therefore gives the adopted frames'
  * nodes back to the server's frames and keeps them, with the line's last state, for that node
  * ({@see KEPT}); a later mount draws from them instead of reading markup that is no longer there.
+ *
+ * The three layers of the capsule - the Filters panel, the date layer and the Organise menu - are native
+ * disclosures, and opening one closes the others. The Filters panel and the date layer are popovers under the
+ * line's end on one line and bottom sheets at the two-line step; Escape closes the layer it is pressed in and
+ * gives its summary the focus. The date layer also closes on a press outside it and on its own "Show".
  *
  * The search is its button at rest at every width (the server drew the field open, for a page without this
  * component). A press, or the slash key, opens the field: in place where the fold leaves room for it beside the
@@ -72,7 +78,7 @@ const HOOKS = {
   listing: '[data-region="dim-vitrine"]',
   chips: '[data-region="dim-line-chips"]',
   show: '[data-action="dim-filters-show"]',
-  daterange: '[data-region="dim-daterange"]',
+  periodshow: '[data-action="dim-period-show"]',
   option: '[role="option"]',
   // The controls of the open search that keep it open when the focus moves to them.
   searchpart: '[data-action="dim-search-clear"], [data-action="dim-search-close"]',
@@ -118,6 +124,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
         line: line2,
         first: kept.model,
         panel: kept.panel,
+        layer: kept.layer,
         menu: kept.menu,
         manage: kept.manage,
         focused: null
@@ -128,6 +135,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       line: line2,
       first: read(line2),
       panel: line2 ? line2.querySelector(SELECTORS.panel) : null,
+      layer: line2 ? line2.querySelector(SELECTORS.datelayer) : null,
       menu: line2 ? line2.querySelector(SELECTORS.menu) : null,
       manage: line2 ? line2.querySelector(SELECTORS.manage) : null,
       focused: line2 && active && line2.contains(active) ? active : null
@@ -166,6 +174,8 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
   const scope = useRef(null);
   const filters = useRef(null);
   const panel = useRef(null);
+  const period = useRef(null);
+  const layer = useRef(null);
   const organise = useRef(null);
   const menu = useRef(null);
   const manage = useRef(null);
@@ -177,6 +187,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
   const toolbar = setup.toolbar;
   const st = live.current;
   const twolines = /* @__PURE__ */ __name(() => st.fold !== null && st.fold.step === TWO_LINES, "twolines");
+  const sheeted = /* @__PURE__ */ __name(() => twolines() && Boolean(filters.current && filters.current.open || period.current && period.current.open), "sheeted");
   const quietly = /* @__PURE__ */ __name((element) => {
     if (!(element instanceof HTMLElement)) {
       return;
@@ -424,7 +435,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       return;
     }
     const details = event.target.closest("details[open]");
-    if (details && line.contains(details) && !event.target.closest(HOOKS.daterange)) {
+    if (details && line.contains(details)) {
       event.preventDefault();
       details.open = false;
       quietly(details.querySelector("summary"));
@@ -447,18 +458,35 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
     if (!line) {
       return;
     }
-    if (event.target === filters.current && filters.current) {
-      toolbar?.classList.toggle(SHEET, twolines() && filters.current.open);
+    const layers = [filters.current, period.current, organise.current];
+    const opened = layers.find((one) => one !== null && one === event.target && one.open);
+    if (opened) {
+      layers.forEach((one) => {
+        if (one && one !== opened && one.open) {
+          one.open = false;
+        }
+      });
+    }
+    toolbar?.classList.toggle(SHEET, sheeted());
+    if (event.target === filters.current) {
       place(line, panel.current, twolines(), twolines());
+    } else if (event.target === period.current) {
+      place(line, layer.current, twolines(), twolines());
     } else if (event.target === organise.current) {
       place(line, menu.current, twolines(), false);
     }
   }, "onToggle");
   const onLineClick = /* @__PURE__ */ __name((event) => {
-    const show = event.target instanceof Element ? event.target.closest(HOOKS.show) : null;
-    if (show && filters.current) {
-      filters.current.open = false;
-      quietly(filters.current.querySelector("summary"));
+    const target = event.target instanceof Element ? event.target : null;
+    let details = null;
+    if (target && target.closest(HOOKS.show)) {
+      details = filters.current;
+    } else if (target && target.closest(HOOKS.periodshow)) {
+      details = period.current;
+    }
+    if (details) {
+      details.open = false;
+      quietly(details.querySelector("summary"));
     }
   }, "onLineClick");
   const onDocumentPress = /* @__PURE__ */ __name((event) => {
@@ -474,6 +502,9 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
     }
     if (twolines() && filters.current && filters.current.open && !filters.current.contains(target)) {
       filters.current.open = false;
+    }
+    if (period.current && period.current.open && !period.current.contains(target)) {
+      period.current.open = false;
     }
   }, "onDocumentPress");
   const onDocumentKey = /* @__PURE__ */ __name((event) => {
@@ -557,6 +588,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       return void 0;
     }
     adopt(setup.panel, panel.current);
+    adopt(setup.layer, layer.current);
     adopt(setup.menu, menu.current);
     adopt(setup.manage, manage.current);
     line.setAttribute(DRAWN, "true");
@@ -623,10 +655,17 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       line.removeAttribute(DRAWN);
       line.classList.remove(STEP_CLASSES.open, STEP_CLASSES.searching, TIPSOFF);
       adopt(panel.current, setup.panel);
+      adopt(layer.current, setup.layer);
       adopt(menu.current, setup.menu);
       adopt(manage.current, setup.manage);
       if (latest.current) {
-        KEPT.set(line, { model: latest.current, panel: setup.panel, menu: setup.menu, manage: setup.manage });
+        KEPT.set(line, {
+          model: latest.current,
+          panel: setup.panel,
+          layer: setup.layer,
+          menu: setup.menu,
+          manage: setup.manage
+        });
       }
     };
   }, []);
@@ -671,7 +710,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
     }
     paint(line, st.fold);
     drawSearch();
-    toolbar.classList.toggle(SHEET, twolines() && Boolean(filters.current && filters.current.open));
+    toolbar.classList.toggle(SHEET, sheeted());
     if (st.refocus) {
       const refocus = st.refocus;
       st.refocus = null;
@@ -698,6 +737,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       return;
     }
     place(line, panel.current, twolines(), twolines());
+    place(line, layer.current, twolines(), twolines());
     place(line, menu.current, twolines(), false);
     fades(scope.current);
     fades(toolbar ? toolbar.querySelector(HOOKS.chips) : null);
@@ -713,54 +753,55 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
     scopedown ? null : scopenode,
     /* @__PURE__ */ jsxDEV("span", { className: "dim-line__spacer", "aria-hidden": "true" }, "spacer", false, {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1152,
+      lineNumber: 1204,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV("div", { className: "dim-line__cluster", "data-region": "dim-line-cluster", children: [
       /* @__PURE__ */ jsxDEV("span", { className: "dim-line__total", "data-region": "dim-line-total", "aria-hidden": "true", children: model.total }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1154,
+        lineNumber: 1206,
         columnNumber: 17
       }),
       /* @__PURE__ */ jsxDEV("div", { className: "dim-line__capsule", "data-region": "dim-line-capsule", children: [
         drawStar(model),
         drawFilters(model, filters, panel),
+        drawDate(model, period, layer),
         /* @__PURE__ */ jsxDEV("details", { ref: organise, className: "dim-line__organise", "data-region": "dim-organise", children: [
           /* @__PURE__ */ jsxDEV("summary", { className: "dim-line__iconbtn dim-line__organisetoggle", "data-dim-tip": model.organiselabel, children: [
             /* @__PURE__ */ jsxDEV("i", { className: "fa fa-arrow-down-wide-short", "aria-hidden": "true" }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-              lineNumber: 1160,
+              lineNumber: 1213,
               columnNumber: 29
             }),
             /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: model.organiselabel }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-              lineNumber: 1161,
+              lineNumber: 1214,
               columnNumber: 29
             })
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1159,
+            lineNumber: 1212,
             columnNumber: 25
           }),
           /* @__PURE__ */ jsxDEV("div", { ref: menu, className: "dim-line__menu", "data-region": "dim-organise-menu" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1163,
+            lineNumber: 1216,
             columnNumber: 25
           })
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1158,
+          lineNumber: 1211,
           columnNumber: 21
         }),
         drawViews(model)
       ] }, void 0, true, {
         fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1155,
+        lineNumber: 1207,
         columnNumber: 17
       })
     ] }, "cluster", true, {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1153,
+      lineNumber: 1205,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV(
@@ -784,12 +825,12 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
               children: [
                 /* @__PURE__ */ jsxDEV("i", { className: "fa fa-magnifying-glass", "aria-hidden": "true" }, void 0, false, {
                   fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                  lineNumber: 1184,
+                  lineNumber: 1237,
                   columnNumber: 21
                 }),
                 /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: model.openlabel }, void 0, false, {
                   fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                  lineNumber: 1185,
+                  lineNumber: 1238,
                   columnNumber: 21
                 })
               ]
@@ -798,19 +839,19 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
             true,
             {
               fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-              lineNumber: 1174,
+              lineNumber: 1227,
               columnNumber: 17
             }
           ),
           /* @__PURE__ */ jsxDEV("div", { className: "dim-toolbar__search dim-line__search", "data-region": "dim-line-search", children: [
             /* @__PURE__ */ jsxDEV("label", { className: "visually-hidden", htmlFor: search.id, children: search.label }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-              lineNumber: 1188,
+              lineNumber: 1241,
               columnNumber: 21
             }),
             /* @__PURE__ */ jsxDEV("i", { className: "fa fa-magnifying-glass dim-toolbar__searchicon", "aria-hidden": "true" }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-              lineNumber: 1189,
+              lineNumber: 1242,
               columnNumber: 21
             }),
             /* @__PURE__ */ jsxDEV(
@@ -845,7 +886,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                lineNumber: 1190,
+                lineNumber: 1243,
                 columnNumber: 21
               }
             ),
@@ -861,7 +902,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
                 onClick: onErase,
                 children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-eraser", "aria-hidden": "true" }, void 0, false, {
                   fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                  lineNumber: 1224,
+                  lineNumber: 1277,
                   columnNumber: 22
                 })
               },
@@ -869,18 +910,18 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                lineNumber: 1216,
+                lineNumber: 1269,
                 columnNumber: 21
               }
             )
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1187,
+            lineNumber: 1240,
             columnNumber: 17
           }),
           model.manage ? /* @__PURE__ */ jsxDEV("div", { ref: manage, className: "dim-toolbar__manage", "data-region": "dim-line-manage" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1227,
+            lineNumber: 1280,
             columnNumber: 21
           }) : null
         ]
@@ -889,7 +930,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       true,
       {
         fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1168,
+        lineNumber: 1221,
         columnNumber: 13
       }
     ),
@@ -905,7 +946,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
         onClick: () => closeSearch(true),
         children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-xmark", "aria-hidden": "true" }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1239,
+          lineNumber: 1292,
           columnNumber: 14
         })
       },
@@ -913,7 +954,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       false,
       {
         fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1230,
+        lineNumber: 1283,
         columnNumber: 13
       }
     ),
@@ -921,7 +962,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
     drawList(model, listbox, listed ? st.items : [], st.active, pick)
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-    lineNumber: 1150,
+    lineNumber: 1202,
     columnNumber: 9
   });
 }, "FilterLine");
@@ -941,7 +982,7 @@ const drawScope = /* @__PURE__ */ __name((model, ref, onCell) => {
       children: [
         /* @__PURE__ */ jsxDEV("legend", { className: "visually-hidden", children: scope.legend }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1269,
+          lineNumber: 1322,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("div", { className: "dim-line__cells", "data-region": "dim-pill-track", children: scope.cells.map((cell) => /* @__PURE__ */ jsxDEV(Fragment2, { children: [
@@ -961,7 +1002,7 @@ const drawScope = /* @__PURE__ */ __name((model, ref, onCell) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-              lineNumber: 1273,
+              lineNumber: 1326,
               columnNumber: 25
             }
           ),
@@ -969,21 +1010,21 @@ const drawScope = /* @__PURE__ */ __name((model, ref, onCell) => {
             `${cell.label} `,
             /* @__PURE__ */ jsxDEV("span", { className: "dim-pill__count", "data-region": "dim-pill-count", hidden: !cell.hascount, children: cell.count }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-              lineNumber: 1285,
+              lineNumber: 1338,
               columnNumber: 29
             })
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1283,
+            lineNumber: 1336,
             columnNumber: 25
           })
         ] }, cell.value, true, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1272,
+          lineNumber: 1325,
           columnNumber: 21
         })) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1270,
+          lineNumber: 1323,
           columnNumber: 13
         })
       ]
@@ -992,7 +1033,7 @@ const drawScope = /* @__PURE__ */ __name((model, ref, onCell) => {
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1261,
+      lineNumber: 1314,
       columnNumber: 9
     }
   );
@@ -1016,19 +1057,19 @@ const drawStar = /* @__PURE__ */ __name((model) => {
       children: [
         /* @__PURE__ */ jsxDEV("i", { className: `${star.pressed ? "fa-solid" : "fa-regular"} fa-star`, "aria-hidden": "true" }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1319,
+          lineNumber: 1372,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: [
           `${star.label} `,
           /* @__PURE__ */ jsxDEV("span", { "data-region": "dim-fav-count", children: star.count }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1320,
+            lineNumber: 1373,
             columnNumber: 65
           })
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1320,
+          lineNumber: 1373,
           columnNumber: 13
         })
       ]
@@ -1037,7 +1078,7 @@ const drawStar = /* @__PURE__ */ __name((model) => {
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1309,
+      lineNumber: 1362,
       columnNumber: 9
     }
   );
@@ -1046,47 +1087,93 @@ const drawFilters = /* @__PURE__ */ __name((model, ref, panel) => /* @__PURE__ *
   /* @__PURE__ */ jsxDEV("summary", { className: "dim-toolbar__filterstoggle dim-line__iconbtn", "data-dim-tip": model.filters.label, children: [
     /* @__PURE__ */ jsxDEV("i", { className: "fa fa-sliders", "aria-hidden": "true" }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1342,
+      lineNumber: 1395,
       columnNumber: 13
     }),
     " ",
     /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden dim-line__label dim-toolbar__filterslabel", children: model.filters.label }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1344,
+      lineNumber: 1397,
       columnNumber: 13
     }),
     " ",
     /* @__PURE__ */ jsxDEV("span", { className: "dim-toolbar__filtercount", "data-region": "dim-filtercount", hidden: !model.filters.hascount, children: [
       /* @__PURE__ */ jsxDEV("span", { "aria-hidden": "true", "data-region": "dim-filtercount-number", children: model.filters.count }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1347,
+        lineNumber: 1400,
         columnNumber: 17
       }),
       /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", "data-region": "dim-filtercount-label", children: model.filters.countlabel }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1348,
+        lineNumber: 1401,
         columnNumber: 17
       })
     ] }, void 0, true, {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1346,
+      lineNumber: 1399,
       columnNumber: 13
     })
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-    lineNumber: 1341,
+    lineNumber: 1394,
     columnNumber: 9
   }),
   /* @__PURE__ */ jsxDEV("div", { ref: panel, className: "dim-toolbar__panel", "data-region": "dim-filters-panel" }, void 0, false, {
     fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-    lineNumber: 1351,
+    lineNumber: 1404,
     columnNumber: 9
   })
 ] }, void 0, true, {
   fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-  lineNumber: 1340,
+  lineNumber: 1393,
   columnNumber: 5
 }), "drawFilters");
+const drawDate = /* @__PURE__ */ __name((model, ref, layer) => {
+  const date = model.date;
+  if (!date) {
+    return null;
+  }
+  return /* @__PURE__ */ jsxDEV("details", { ref, className: "dim-line__date", "data-region": "dim-period", children: [
+    /* @__PURE__ */ jsxDEV(
+      "summary",
+      {
+        className: "dim-line__iconbtn dim-line__datetoggle",
+        "aria-label": date.name,
+        "data-dim-tip": date.label,
+        "data-dim-template": date.template,
+        "data-region": "dim-period-button",
+        children: [
+          /* @__PURE__ */ jsxDEV("i", { className: "fa fa-calendar-days", "aria-hidden": "true" }, void 0, false, {
+            fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+            lineNumber: 1436,
+            columnNumber: 17
+          }),
+          /* @__PURE__ */ jsxDEV("span", { className: "dim-line__dot", "data-region": "dim-period-dot", "aria-hidden": "true", hidden: !date.set }, void 0, false, {
+            fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+            lineNumber: 1437,
+            columnNumber: 17
+          })
+        ]
+      },
+      void 0,
+      true,
+      {
+        fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+        lineNumber: 1429,
+        columnNumber: 13
+      }
+    ),
+    /* @__PURE__ */ jsxDEV("div", { ref: layer, className: "dim-datelayer", "data-region": "dim-period-layer" }, void 0, false, {
+      fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+      lineNumber: 1439,
+      columnNumber: 13
+    })
+  ] }, void 0, true, {
+    fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+    lineNumber: 1428,
+    columnNumber: 9
+  });
+}, "drawDate");
 const drawViews = /* @__PURE__ */ __name((model) => /* @__PURE__ */ jsxDEV(
   "div",
   {
@@ -1107,12 +1194,12 @@ const drawViews = /* @__PURE__ */ __name((model) => /* @__PURE__ */ jsxDEV(
         children: [
           /* @__PURE__ */ jsxDEV("i", { className: `fa ${view.icon}`, "aria-hidden": "true" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1379,
+            lineNumber: 1468,
             columnNumber: 14
           }),
           /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: view.label }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1379,
+            lineNumber: 1468,
             columnNumber: 70
           })
         ]
@@ -1121,7 +1208,7 @@ const drawViews = /* @__PURE__ */ __name((model) => /* @__PURE__ */ jsxDEV(
       true,
       {
         fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1370,
+        lineNumber: 1459,
         columnNumber: 13
       }
     ))
@@ -1130,7 +1217,7 @@ const drawViews = /* @__PURE__ */ __name((model) => /* @__PURE__ */ jsxDEV(
   false,
   {
     fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-    lineNumber: 1363,
+    lineNumber: 1452,
     columnNumber: 5
   }
 ), "drawViews");
@@ -1154,7 +1241,7 @@ const drawList = /* @__PURE__ */ __name((model, ref, items, active, pick) => {
       children: items.length ? /* @__PURE__ */ jsxDEV("div", { role: "group", "aria-labelledby": `${id}-heading`, children: [
         /* @__PURE__ */ jsxDEV("div", { id: `${id}-heading`, className: "dim-line__suggesthead", role: "presentation", children: typed ? model.suggest.filters : model.suggest.start }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1422,
+          lineNumber: 1511,
           columnNumber: 21
         }),
         items.map((item, index) => /* @__PURE__ */ jsxDEV(
@@ -1169,44 +1256,44 @@ const drawList = /* @__PURE__ */ __name((model, ref, items, active, pick) => {
             children: [
               /* @__PURE__ */ jsxDEV("i", { className: "fa fa-plus dim-line__optionplus", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                lineNumber: 1435,
+                lineNumber: 1524,
                 columnNumber: 29
               }),
               /* @__PURE__ */ jsxDEV("span", { className: "dim-line__optionlabel", children: pieces(item.label, term).map((piece, at) => piece.marked ? /* @__PURE__ */ jsxDEV("mark", { className: "dim-mark", children: piece.text }, at, false, {
                 fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                lineNumber: 1438,
+                lineNumber: 1527,
                 columnNumber: 39
               }) : /* @__PURE__ */ jsxDEV(Fragment2, { children: piece.text }, at, false, {
                 fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                lineNumber: 1439,
+                lineNumber: 1528,
                 columnNumber: 39
               })) }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                lineNumber: 1436,
+                lineNumber: 1525,
                 columnNumber: 29
               }),
               item.group !== "" ? /* @__PURE__ */ jsxDEV(Fragment, { children: [
                 " ",
                 /* @__PURE__ */ jsxDEV("span", { className: "dim-line__optiongroup", children: item.group }, void 0, false, {
                   fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                  lineNumber: 1441,
+                  lineNumber: 1530,
                   columnNumber: 57
                 })
               ] }, void 0, true, {
                 fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                lineNumber: 1441,
+                lineNumber: 1530,
                 columnNumber: 50
               }) : null,
               item.count !== null ? /* @__PURE__ */ jsxDEV(Fragment, { children: [
                 " ",
                 /* @__PURE__ */ jsxDEV("span", { className: "dim-line__optioncount", children: item.count }, void 0, false, {
                   fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                  lineNumber: 1442,
+                  lineNumber: 1531,
                   columnNumber: 59
                 })
               ] }, void 0, true, {
                 fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                lineNumber: 1442,
+                lineNumber: 1531,
                 columnNumber: 52
               }) : null
             ]
@@ -1215,13 +1302,13 @@ const drawList = /* @__PURE__ */ __name((model, ref, items, active, pick) => {
           true,
           {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1426,
+            lineNumber: 1515,
             columnNumber: 25
           }
         ))
       ] }, void 0, true, {
         fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1421,
+        lineNumber: 1510,
         columnNumber: 17
       }) : null
     },
@@ -1229,7 +1316,7 @@ const drawList = /* @__PURE__ */ __name((model, ref, items, active, pick) => {
     false,
     {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1407,
+      lineNumber: 1496,
       columnNumber: 9
     }
   );

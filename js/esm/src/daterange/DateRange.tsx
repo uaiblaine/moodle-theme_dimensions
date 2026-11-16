@@ -14,19 +14,23 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The one calendar of the showcase, on both shells: a start box and an end box over one popover.
+ * The one calendar of the showcase, on both shells: a start box and an end box over the months, inside the date
+ * button's layer.
  *
  * The markup is the template category_daterange's, hook for hook (scss/category.scss and the Behat steps read
- * those hooks); the rules are ./model's and there is no timezone arithmetic (./calendar).
+ * those hooks); the rules are ./model's and there is no timezone arithmetic (./calendar). The layer around it -
+ * the heading, the quick options, the foot with "Clear period" and "Show" - is the server's (category_toolbar),
+ * and the layer opens and closes as a native disclosure the filter line places: nothing here opens or shuts.
  *
  * It is mounted by the listing's mountCalendar(), on both shells, as a node APPENDED
- * to the toolbar's empty dim-daterange region: core's react_autoinit observes added nodes and never
+ * to the layer's empty dim-daterange region: core's react_autoinit observes added nodes and never
  * attributes. The props are what the server resolved and the client may not compute: id, firstday,
  * today, from, to. It talks to the listing through events on that region, never through a callback:
  *
  * - it sends `dim-daterange:mounted` once it is drawn, and only then does the listing hide the two
  *   native date fields, which stay the form's transport;
- * - it sends `dim-daterange:pick`, detail {from, to}, whenever the period in force changes;
+ * - it sends `dim-daterange:pick`, detail {from, to}, whenever the period in force changes: on every press
+ *   of a day and every clear, so the list is refreshed at once while the layer stays open;
  * - it takes `dim-daterange:set`, detail {from, to}, the period the address says, silently.
  *
  * Without the day the site calls today it draws nothing and says nothing ({@see DateRange}).
@@ -48,10 +52,10 @@ import type {Applied, Bound, Model} from './model';
 import * as State from './model';
 import {CALENDAR} from '../listing/events';
 
-/** The events the control and the listing exchange on the toolbar's region, spelled once in listing/events.ts. */
+/** The events the control and the listing exchange on the layer's region, spelled once in listing/events.ts. */
 export const EVENTS = CALENDAR;
 
-/** The toolbar's region the control is mounted in, which the listing tells it the period through. */
+/** The layer's region the control is mounted in, which the listing tells it the period through. */
 const REGION = '[data-region="dim-daterange"]';
 
 /** A day cell. */
@@ -60,7 +64,7 @@ const DAY = '[data-region="dim-daterange-day"]';
 /** The component every string of this control belongs to. */
 const COMPONENT = 'theme_dimensions';
 
-/** The strings the control writes: the template category_daterange's, and the two prompts above the months. */
+/** The strings the control writes: the template category_daterange's, and the two prompts between the turns. */
 const KEYS = [
     'category_daterange',
     'category_datefrom',
@@ -69,8 +73,6 @@ const KEYS = [
     'category_dateclearto',
     'category_dateprevmonth',
     'category_datenextmonth',
-    'category_dateclear',
-    'category_datedone',
     'category_datechoosefrom',
     'category_datechooseto',
 ] as const;
@@ -79,7 +81,7 @@ const KEYS = [
 type Strings = Record<typeof KEYS[number], string>;
 
 /**
- * Where the popover shows two months rather than one: the stylesheet widens it from the same
+ * Where the layer shows two months rather than one: the stylesheet widens the month row from the same
  * breakpoint (category_scss_test holds the two numbers together), and a
  * month the stylesheet hid while the focus walked into it would take the focus out of the control.
  */
@@ -202,23 +204,12 @@ const Calendar = ({id, firstday, today, from, to}: DateRangeProps) => {
     /**
      * Ask for the focus to be put back on the day stood on once the grids are redrawn.
      *
-     * A redraw that changes the months replaces their cells, so the focused day leaves the document,
-     * the focus falls to the body, and the focus-out rule below would shut the popover after the first
-     * press of a range. The layout effect that answers runs before that rule's timeout can.
+     * A redraw that changes the months replaces their cells, so the focused day leaves the document and the
+     * focus would fall to the body; the layout effect that answers puts it on the day stood on.
      *
      * @returns {void}
      */
     const focusDay = (): void => setFocusing((tick) => tick + 1);
-
-    /**
-     * Put the focus on a box: where the reader goes back to when the popover shuts.
-     *
-     * @param {string} bound FROM or TO.
-     * @returns {void}
-     */
-    const restore = (bound: Bound): void => {
-        (bound === TO ? toBox : fromBox).current?.focus();
-    };
 
     /**
      * Take a change of the period in force, and tell the listing when it really changed.
@@ -272,33 +263,15 @@ const Calendar = ({id, firstday, today, from, to}: DateRangeProps) => {
          */
         const onSet = (event: Event): void => {
             const detail = (event as CustomEvent).detail || {};
-            update(State.set(state.current, detail.from, detail.to));
-        };
-
-        /**
-         * A press outside the open control applies the draft, as "Done" would: the pointer's way out says
-         * "that will do". Only while it is open: shut, the draft is the period in force, so committing it
-         * would change nothing and only redraw the control on every press anywhere on the page.
-         * Pointerdown rather than click, so that a press meant for a control elsewhere does not have to
-         * travel through a popover still on top of it.
-         *
-         * @param {PointerEvent} event The press.
-         * @returns {void}
-         */
-        const onPointer = (event: PointerEvent): void => {
-            if (state.current.open && event.target instanceof Node && !element.contains(event.target)) {
-                tell(State.commit(state.current));
-            }
+            update(State.set(state.current, detail.from, detail.to, months.current));
         };
 
         region?.addEventListener(EVENTS.set, onSet);
-        document.addEventListener('pointerdown', onPointer);
         element.dispatchEvent(new CustomEvent(EVENTS.mounted, {bubbles: true}));
         hold.current?.resolve();
         hold.current = null;
         return () => {
             region?.removeEventListener(EVENTS.set, onSet);
-            document.removeEventListener('pointerdown', onPointer);
         };
     }, [strings]);
 
@@ -306,7 +279,8 @@ const Calendar = ({id, firstday, today, from, to}: DateRangeProps) => {
         const query = window.matchMedia(WIDE);
 
         /**
-         * A width that gains or loses the second month redraws an open popover with the focus kept.
+         * A width that gains or loses the second month redraws the months with the day stood on kept on screen,
+         * and the focus on it when it was in the grids.
          *
          * @returns {void}
          */
@@ -314,8 +288,8 @@ const Calendar = ({id, firstday, today, from, to}: DateRangeProps) => {
             const next = monthsFor(query);
             months.current = next;
             setCount(next);
-            if (state.current.open) {
-                update(State.widen(state.current, next));
+            update(State.widen(state.current, next));
+            if (pop.current && pop.current.contains(document.activeElement)) {
                 focusDay();
             }
         };
@@ -337,33 +311,29 @@ const Calendar = ({id, firstday, today, from, to}: DateRangeProps) => {
     }
 
     /**
-     * A box pressed: open the popover in its mode, or move an open popover to that mode. A box never
-     * shuts it: a reader pressing the end box after a start must not lose the start.
+     * A box pressed: it becomes the active one, and the grid stands on its day with the focus on it.
      *
      * @param {string} bound The box's bound.
      * @returns {void}
      */
     const onBox = (bound: Bound): void => {
-        const current = state.current;
-        update(current.open
-            ? State.setMode(current, bound, today, months.current)
-            : State.open(current, bound, today, months.current));
+        update(State.setMode(state.current, bound, today, months.current));
         focusDay();
     };
 
     /**
-     * A day pressed: the draft moves, nothing is applied.
+     * A day pressed: the active box's bound is set and applied at once, and the other box becomes the active one.
      *
      * @param {string} iso The day.
      * @returns {void}
      */
     const onDay = (iso: string): void => {
-        update(State.press(state.current, iso));
+        tell(State.press(state.current, iso));
         focusDay();
     };
 
     /**
-     * A month step pressed.
+     * A month turn pressed.
      *
      * @param {number} offset Minus one or one.
      * @returns {void}
@@ -374,50 +344,29 @@ const Calendar = ({id, firstday, today, from, to}: DateRangeProps) => {
     };
 
     /**
-     * "Done": the focus back on the box of the mode, the draft applied.
+     * A box's clear pressed: it applies at once. It hides itself once its bound is gone, which would drop the
+     * focus to the body, so the focus goes to its box.
      *
+     * @param {string} bound FROM or TO.
      * @returns {void}
      */
-    const onDone = (): void => {
-        const current = state.current;
-        restore(current.field);
-        tell(State.commit(current));
-    };
-
-    /**
-     * A clearing control pressed: it applies at once. A box's own hides itself once its bound is gone,
-     * which would drop the focus to the body and shut the popover with it, so the focus goes to its box.
-     *
-     * @param {string} bound FROM, TO, or the empty string for the footer's.
-     * @returns {void}
-     */
-    const onClear = (bound: string): void => {
+    const onClear = (bound: Bound): void => {
         tell(State.drop(state.current, bound));
-        if (bound === FROM || bound === TO) {
-            restore(bound);
-        }
+        (bound === TO ? toBox : fromBox).current?.focus();
     };
 
     /**
-     * The keys: Escape shuts the popover, discards the draft and gives the box its focus back; the
-     * arrows and the pages walk the days, on a day of the open popover only, so a box keeps its keys.
+     * The arrows and the pages walk the days, on a day only, so a box keeps its keys. Escape is the filter
+     * line's: it closes the layer and gives the date button its focus back.
      *
      * @param {KeyboardEvent} event The key press.
      * @returns {void}
      */
     const onKey = (event: KeyboardEvent<HTMLDivElement>): void => {
         const current = state.current;
-        if (event.key === 'Escape') {
-            event.preventDefault();
-            if (current.open) {
-                update(State.close(current));
-                restore(current.field);
-            }
-            return;
-        }
         const target = stepOf(event.key, current.focused);
         const onday = event.target instanceof Element && event.target.closest(DAY);
-        if (target === null || !current.open || !onday) {
+        if (target === null || !onday) {
             return;
         }
         event.preventDefault();
@@ -429,32 +378,28 @@ const Calendar = ({id, firstday, today, from, to}: DateRangeProps) => {
     };
 
     /**
-     * The keyboard's own way out discards, as Escape does. The timeout lets the focus land first: during
-     * focusout the next element is not focused yet, and every move would read as a move out.
+     * The pointer over a day, or off the months: the band previews from the other bound to that day.
      *
+     * @param {string} iso The day, or the empty string for none.
      * @returns {void}
      */
-    const onBlur = (): void => {
-        window.setTimeout(() => {
-            const element = root.current;
-            if (element && !element.contains(document.activeElement)) {
-                update(State.close(state.current));
-            }
-        }, 0);
+    const onHover = (iso: string): void => {
+        const next = State.hover(state.current, iso);
+        if (next !== state.current) {
+            update(next);
+        }
     };
 
     const popid = `dim-daterange-pop-${id}`;
-    const both = model.draftfrom !== '' && model.draftto !== '';
-    let prompt = '';
-    if (model.opened) {
-        prompt = model.mode === TO ? strings.category_datechooseto : strings.category_datechoosefrom;
-    }
+    const prompt = model.mode === TO ? strings.category_datechooseto : strings.category_datechoosefrom;
+    const band = State.drawn(model);
+    const banded = band.from !== '' && band.to !== '' && band.from !== band.to;
 
     /**
      * One box and the control that clears it.
      *
      * A box's label is its name while it is empty and leaves the picture once it holds a date; it stays
-     * in the box's accessible name either way.
+     * in the box's accessible name either way. The active box is the pressed one.
      *
      * @param {string} bound The bound.
      * @param {string} label The box's name.
@@ -462,18 +407,18 @@ const Calendar = ({id, firstday, today, from, to}: DateRangeProps) => {
      * @returns {object} The box.
      */
     const box = (bound: Bound, label: string, clear: string): ReactNode => {
-        const value = bound === TO ? model.draftto : model.draftfrom;
-        const active = model.open && bound === model.mode ? ' dim-daterange__field--active' : '';
+        const value = bound === TO ? model.to : model.from;
+        const active = bound === model.mode;
         return (
             <div className="dim-daterange__box">
                 <button
                     ref={bound === TO ? toBox : fromBox}
-                    className={`form-control dim-daterange__field${active}`}
+                    className={`dim-daterange__field${active ? ' dim-daterange__field--active' : ''}`}
                     type="button"
                     id={`dim-daterange-${id}-${bound}`}
                     data-action="dim-daterange-open"
                     data-bound={bound}
-                    aria-expanded={model.open ? 'true' : 'false'}
+                    aria-pressed={active ? 'true' : 'false'}
                     aria-controls={popid}
                     onClick={() => onBox(bound)}
                 >
@@ -501,29 +446,24 @@ const Calendar = ({id, firstday, today, from, to}: DateRangeProps) => {
     /**
      * One day of a month, as the button that picks it.
      *
-     * Each bound that is set is a filled end; the days strictly between are tinted only when both are
-     * set, because a start or an end alone keeps a period that runs off the calendar.
+     * The drawn ends are filled and the days strictly between them are a band; the drawn period is the one in
+     * force, or the one a hovered day previews ({@see State.drawn}). A bound alone is one end and no band,
+     * because a start or an end alone keeps a period that runs off the calendar. What is selected is the period
+     * in force, never the preview.
      *
      * @param {string} iso The day.
      * @returns {object} The day cell.
      */
     const day = (iso: string): ReactNode => {
-        const edge = iso === model.draftfrom || iso === model.draftto;
-        const inside = both && iso > model.draftfrom && iso < model.draftto;
         const classes = ['dim-daterange__day'];
-        if (inside) {
-            classes.push('dim-daterange__day--in');
+        if (banded && iso > band.from && iso < band.to) {
+            classes.push('dim-daterange__day--between');
         }
-        if (edge) {
-            classes.push('dim-daterange__day--edge');
-        }
-        // The ends of a range join the tint between them; a range of one day is one round end.
-        if (both && model.draftfrom !== model.draftto && iso === model.draftfrom) {
-            classes.push('dim-daterange__day--start');
-        }
-        if (both && model.draftfrom !== model.draftto && iso === model.draftto) {
+        if (iso === band.from || iso === band.to) {
             classes.push('dim-daterange__day--end');
         }
+        const inforce = iso === model.from || iso === model.to
+            || (model.from !== '' && model.to !== '' && iso > model.from && iso < model.to);
         return (
             <button
                 key={iso}
@@ -534,9 +474,10 @@ const Calendar = ({id, firstday, today, from, to}: DateRangeProps) => {
                 data-date={iso}
                 aria-label={say(iso, {dateStyle: 'long'}, language)}
                 tabIndex={iso === model.focused ? 0 : -1}
-                aria-selected={edge || inside ? 'true' : 'false'}
+                aria-selected={inforce ? 'true' : 'false'}
                 aria-current={iso === today ? 'date' : undefined}
                 onClick={() => onDay(iso)}
+                onPointerEnter={() => onHover(iso)}
             >{String(Number(iso.slice(8)))}</button>
         );
     };
@@ -551,21 +492,20 @@ const Calendar = ({id, firstday, today, from, to}: DateRangeProps) => {
      */
     const month = (index: number): ReactNode => {
         const hidden = index >= count;
-        const painted = model.opened && !hidden;
         const shown: Month = monthAt(model.cursor, index);
         const captionid = `${popid}-month-${index}`;
         return (
             <div key={index} className="dim-daterange__monthblock" data-region="dim-daterange-monthblock" hidden={hidden}>
                 <span className="dim-daterange__month" id={captionid} data-region="dim-daterange-month" aria-live="polite">
-                    {painted ? say(firstOf(shown), {year: 'numeric', month: 'long'}, language) : ''}
+                    {hidden ? '' : say(firstOf(shown), {year: 'numeric', month: 'long'}, language)}
                 </span>
                 <div
                     className="dim-daterange__grid"
                     data-region="dim-daterange-grid"
-                    role={painted ? 'grid' : undefined}
-                    aria-labelledby={painted ? captionid : undefined}
+                    role={hidden ? undefined : 'grid'}
+                    aria-labelledby={hidden ? undefined : captionid}
                 >
-                    {painted ? (
+                    {hidden ? null : (
                         <div className="dim-daterange__row dim-daterange__row--head" role="row">
                             {weekdays(weekstart).map((name) => (
                                 <span
@@ -573,28 +513,28 @@ const Calendar = ({id, firstday, today, from, to}: DateRangeProps) => {
                                     className="dim-daterange__dow"
                                     role="columnheader"
                                     aria-label={say(name, {weekday: 'long'}, language)}
-                                >{say(name, {weekday: 'short'}, language)}</span>
+                                >{say(name, {weekday: 'narrow'}, language)}</span>
                             ))}
                         </div>
-                    ) : null}
-                    {painted ? weeks(shown, weekstart).map((row, rowindex) => (
+                    )}
+                    {hidden ? null : weeks(shown, weekstart).map((row, rowindex) => (
                         <div key={`${firstOf(shown)}-${rowindex}`} className="dim-daterange__row" role="row">
                             {row.map((iso, slot) => (iso === '' ? blank(slot) : day(iso)))}
                         </div>
-                    )) : null}
+                    ))}
                 </div>
             </div>
         );
     };
 
-    const set = model.draftfrom !== '' || model.draftto !== '' ? ' dim-daterange--set' : '';
+    const set = model.from !== '' || model.to !== '' ? ' dim-daterange--set' : '';
     return (
-        <div ref={root} className={`dim-daterange${set}`} data-region="dim-daterange-field" onKeyDown={onKey} onBlur={onBlur}>
+        <div ref={root} className={`dim-daterange${set}`} data-region="dim-daterange-field" onKeyDown={onKey}>
             <div className="dim-daterange__boxes" role="group" aria-label={strings.category_daterange}>
                 {box(FROM, strings.category_datefrom, strings.category_dateclearfrom)}
                 {box(TO, strings.category_dateto, strings.category_dateclearto)}
             </div>
-            <div ref={pop} className="dim-daterange__pop" id={popid} data-region="dim-daterange-pop" hidden={!model.open}>
+            <div ref={pop} className="dim-daterange__pop" id={popid} data-region="dim-daterange-pop">
                 <div className="dim-daterange__nav">
                     <button
                         className="dim-daterange__step"
@@ -616,23 +556,9 @@ const Calendar = ({id, firstday, today, from, to}: DateRangeProps) => {
                         <span className="visually-hidden">{strings.category_datenextmonth}</span>
                     </button>
                 </div>
-                <div className="dim-daterange__months">
+                <div className="dim-daterange__months" onPointerLeave={() => onHover('')}>
                     {month(0)}
                     {month(1)}
-                </div>
-                <div className="dim-daterange__footer">
-                    <button
-                        className="btn btn-link btn-sm dim-daterange__footerclear"
-                        type="button"
-                        data-action="dim-daterange-clear"
-                        onClick={() => onClear('')}
-                    >{strings.category_dateclear}</button>
-                    <button
-                        className="btn btn-primary btn-sm dim-daterange__done"
-                        type="button"
-                        data-action="dim-daterange-done"
-                        onClick={onDone}
-                    >{strings.category_datedone}</button>
                 </div>
             </div>
         </div>

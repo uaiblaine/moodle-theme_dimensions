@@ -198,11 +198,12 @@ const tell = async(line: HTMLElement, type: string, detail: object): Promise<voi
 };
 
 describe('theme_dimensions/filterline/FilterLine', () => {
-    it('draws the boxes the server drew, every name in the same form, the three frames adopted as they were', async() => {
+    it('draws the boxes the server drew, every name in the same form, the four frames adopted as they were', async() => {
         const page = drawPage();
         const server = Array.from(page.line.children).map((child) => shape(child, ADDED)).join('');
         const posted = Array.from(new FormData(page.form).entries());
         const panel = page.line.querySelector('[data-region="dim-filters-panel"] [data-name="cf_12"]');
+        const dates = page.line.querySelector('[data-region="dim-period-layer"] [data-region="dim-date"]');
         const menu = page.line.querySelector('[data-region="dim-sort"]');
         const manage = page.line.querySelector('[data-region="dim-line-manage"] .action-menu');
 
@@ -214,6 +215,7 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(Array.from(new FormData(page.form).entries())).toEqual(posted);
         // The very server nodes, moved: what the listing paints there and what the period control is mounted in.
         expect(page.line.querySelector('[data-region="dim-filters-panel"] [data-name="cf_12"]')).toBe(panel);
+        expect(page.line.querySelector('[data-region="dim-period-layer"] [data-region="dim-date"]')).toBe(dates);
         expect(page.line.querySelector('[data-region="dim-sort"]')).toBe(menu);
         expect(page.line.querySelector('[data-region="dim-line-manage"] .action-menu')).toBe(manage);
         const field = page.line.querySelector('input[type="search"]') as HTMLInputElement;
@@ -342,7 +344,7 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(listbox(page.line).hidden).toBe(false);
     });
 
-    it('closes a panel of the line on Escape and gives its summary the focus, but leaves the calendar its key', async() => {
+    it('closes a panel or the date layer of the line on Escape and gives its summary the focus', async() => {
         const page = await mount();
         const filters = page.line.querySelector('[data-region="dim-filters"]') as HTMLDetailsElement;
         filters.open = true;
@@ -351,11 +353,112 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(filters.open).toBe(false);
         expect(document.activeElement).toBe(filters.querySelector('summary'));
 
-        filters.open = true;
-        const calendar = document.createElement('button');
-        page.line.querySelector('[data-region="dim-daterange"]')?.append(calendar);
-        fireEvent.keyDown(calendar, {key: 'Escape'});
+        // The calendar keeps no key of its own: a day's Escape closes its layer too.
+        const period = page.line.querySelector('[data-region="dim-period"]') as HTMLDetailsElement;
+        period.open = true;
+        const day = document.createElement('button');
+        page.line.querySelector('[data-region="dim-daterange"]')?.append(day);
+        fireEvent.keyDown(day, {key: 'Escape'});
+        expect(period.open).toBe(false);
+        expect(document.activeElement).toBe(period.querySelector('summary'));
+    });
+
+    it('draws the date button the server drew, and an answer\'s period writes its name and its dot', async() => {
+        const page = await mount();
+        const button = page.line.querySelector('[data-region="dim-period"] > [data-region="dim-period-button"]') as HTMLElement;
+        const dot = button.querySelector('[data-region="dim-period-dot"]') as HTMLElement;
+        expect(button.tagName).toBe('SUMMARY');
+        expect(button.classList.contains('dim-line__iconbtn')).toBe(true);
+        expect(button.querySelector('.fa-calendar-days')).not.toBeNull();
+        expect(button.getAttribute('aria-label')).toBe('Start date: 17 September 2026 to 24 September 2026');
+        expect(button.getAttribute('data-dim-tip')).toBe('Start date');
+        expect(button.hasAttribute('title')).toBe(false);
+        expect(dot.getAttribute('aria-hidden')).toBe('true');
+        expect(dot.hidden).toBe(false);
+        // Right after Filters in the capsule.
+        const capsule = Array.from(page.line.querySelectorAll('[data-region="dim-line-capsule"] > *'))
+            .map((child) => child.getAttribute('data-region'));
+        expect(capsule.indexOf('dim-period')).toBe(capsule.indexOf('dim-filters') + 1);
+
+        await tell(page.line, EVENTS.answer, {filtercount: 0, filtercountlabel: '', period: ''});
+        expect(button.getAttribute('aria-label')).toBe('Start date');
+        expect(dot.hidden).toBe(true);
+        await tell(page.line, EVENTS.answer, {filtercount: 0, filtercountlabel: '', period: 'From 1 October 2026'});
+        expect(button.getAttribute('aria-label')).toBe('Start date: From 1 October 2026');
+        expect(dot.hidden).toBe(false);
+        // An answer that says nothing of the period leaves the button as it is.
+        await tell(page.line, EVENTS.answer, {total: '3'});
+        expect(button.getAttribute('aria-label')).toBe('Start date: From 1 October 2026');
+    });
+
+    it('opens one layer of the capsule at a time', async() => {
+        const page = await mount();
+        const filters = page.line.querySelector('[data-region="dim-filters"]') as HTMLDetailsElement;
+        const period = page.line.querySelector('[data-region="dim-period"]') as HTMLDetailsElement;
+        const organise = page.line.querySelector('[data-region="dim-organise"]') as HTMLDetailsElement;
+        /**
+         * Open a layer as a press on its summary does: the attribute, then the toggle event.
+         *
+         * @param {HTMLDetailsElement} details The layer's disclosure.
+         * @returns {void}
+         */
+        const open = (details: HTMLDetailsElement): void => {
+            act(() => {
+                details.open = true;
+                details.dispatchEvent(new Event('toggle'));
+            });
+        };
+        open(filters);
         expect(filters.open).toBe(true);
+        open(period);
+        expect(period.open).toBe(true);
+        expect(filters.open).toBe(false);
+        open(filters);
+        expect(period.open).toBe(false);
+        open(organise);
+        expect(filters.open).toBe(false);
+        expect(organise.open).toBe(true);
+    });
+
+    it('closes the date layer from its "Show" and on a press outside it, never on a press inside it', async() => {
+        const page = await mount();
+        const period = page.line.querySelector('[data-region="dim-period"]') as HTMLDetailsElement;
+        period.open = true;
+        const show = page.line.querySelector('[data-action="dim-period-show"]') as HTMLButtonElement;
+        expect(show.textContent).toBe('Show 16');
+        fireEvent.click(show);
+        expect(period.open).toBe(false);
+        expect(document.activeElement).toBe(period.querySelector('summary'));
+
+        period.open = true;
+        fireEvent.pointerDown(page.line.querySelector('[data-action="dim-quick"]') as HTMLElement);
+        fireEvent.pointerDown(period.querySelector('summary') as HTMLElement);
+        expect(period.open).toBe(true);
+        // A press outside closes it at the one-line step too, where the Filters panel stays.
+        const filters = page.line.querySelector('[data-region="dim-filters"]') as HTMLDetailsElement;
+        fireEvent.pointerDown(document.body);
+        expect(period.open).toBe(false);
+        filters.open = true;
+        fireEvent.pointerDown(document.body);
+        expect(filters.open).toBe(true);
+    });
+
+    it('draws the date layer as a bottom sheet at the two-line step', async() => {
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700, 300]);
+        const page = await mount();
+        await resize(500);
+        expect(page.line.classList.contains('dim-line--s2')).toBe(true);
+        const period = page.line.querySelector('[data-region="dim-period"]') as HTMLDetailsElement;
+        act(() => {
+            period.open = true;
+            period.dispatchEvent(new Event('toggle'));
+        });
+        expect(page.form.classList.contains('dim-toolbar--sheet')).toBe(true);
+        act(() => {
+            period.open = false;
+            period.dispatchEvent(new Event('toggle'));
+        });
+        expect(page.form.classList.contains('dim-toolbar--sheet')).toBe(false);
     });
 
     it('folds at the observer\'s first entry, before its first paint, from the widths measured once', async() => {
@@ -621,7 +724,7 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(page.line.querySelectorAll('[title]')).toHaveLength(0);
         const tips = Array.from(page.line.querySelectorAll<HTMLElement>('[data-dim-tip]'));
         expect(tips.map((control) => control.getAttribute('data-dim-tip'))).toEqual(
-            ['Favourites', 'Filters', 'Organise', 'List', 'Cards', 'Search courses', 'Clear text', 'Close search']
+            ['Favourites', 'Filters', 'Start date', 'Organise', 'List', 'Cards', 'Search courses', 'Clear text', 'Close search']
         );
         tips.forEach((control) => {
             const word = control.querySelector(':scope > .visually-hidden');

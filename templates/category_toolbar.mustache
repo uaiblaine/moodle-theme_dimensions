@@ -27,8 +27,8 @@
     state sort on; a spacer that pushes the rest to the end; the cluster
     (dim-line-cluster), which holds the result count (dim-line-total) and the
     capsule (dim-line-capsule) of the favourites star (dim-line-star), the
-    Filters disclosure (dim-filters), the Organise menu (dim-organise) and the
-    view toggle (dim-view-row, List first); then the search's own capsule
+    Filters disclosure (dim-filters), the date button (dim-period), the Organise
+    menu (dim-organise) and the view toggle (dim-view-row, List first); then the search's own capsule
     (dim-line-searchcap): the search button, the field with its eraser, and
     core's action menu for the category's managers (dim-line-manage). With no
     JavaScript the line wraps where it does not fit and every control still
@@ -44,9 +44,10 @@
 
     On both shells the line is a React component's mount
     (js/esm/src/filterline/FilterLine.tsx), which draws this same
-    markup from the markup it replaces and adopts three subtrees of it whole,
-    never redrawn: the Filters panel (dim-filters-panel), the Organise menu
-    (dim-organise-menu) and the managers' menu (dim-line-manage). A change of
+    markup from the markup it replaces and adopts four subtrees of it whole,
+    never redrawn: the Filters panel (dim-filters-panel), the date layer
+    (dim-period-layer), the Organise menu (dim-organise-menu) and the managers'
+    menu (dim-line-manage). A change of
     the line's own markup here changes the component too; the Jest fixture
     js/esm/tests/filterline/toolbar.ts is this template rendered from its
     example context, and filterline_component_source_test holds the two equal.
@@ -75,11 +76,13 @@
     dim-live-only), which closes the panel. Its words are the server's twice
     over: the sentence for the page's count, and the same sentence with {n}
     where the number goes (data-dim-template), into which the client writes
-    each answer's number. Every cell of the scope is written, a cell with
-    nothing to offer carrying the hidden attribute (absent), because the client
-    measures the line with every cell drawn. The Filters panel and the Organise
-    menu each name a region (dim-filters-panel, dim-organise-menu): the client
-    places every floating layer under the line's real bottom.
+    each answer's number; the date layer's "Show" (dim-period-show) is the same
+    button with the same two sentences. Every cell of the scope is written, a
+    cell with nothing to offer carrying the hidden attribute (absent), because
+    the client measures the line with every cell drawn. The Filters panel, the
+    date layer and the Organise menu each name a region (dim-filters-panel,
+    dim-period-layer, dim-organise-menu): the client places every floating
+    layer under the line's real bottom.
 
     The favourites toggle combines with the state rather than being one of its
     values, so it is a submit button of its own: it posts fav with the value a
@@ -98,21 +101,36 @@
     holds and nothing the line shows; each of the badge's halves - the digit
     sighted readers see and the sentence a screen reader is read - carries a
     region, because the client rewrites both after every request. The panel
-    holds "More statuses", one group per allowlisted custom field, the
-    start-date range with its quick options, and its foot (dim-filters-foot):
-    "Clear filters" (dim-filters-clear), a link carrying the clear link's own
-    address and action, drawn while something narrows; "Show"; and the
-    no-JavaScript "Filter" submit.
+    holds option groups only - "More statuses" and one group per allowlisted
+    custom field - and its foot (dim-filters-foot): "Clear filters"
+    (dim-filters-clear), a link carrying the clear link's own address and
+    action, drawn while something narrows; "Show"; and the no-JavaScript
+    "Filter" submit. The badge does not count the period, which the date button
+    shows.
+
+    The date button is a native details too, after Filters: its summary
+    (dim-period-button) is the calendar glyph, named by its aria-label with the
+    filter and, while one is set, the period's sentence (the period chip's
+    words), and it carries a dot (dim-period-dot, aria-hidden) at its corner
+    while a period is set. The same name with {period} in the sentence's place
+    is on it (data-dim-template), into which the client writes each answer's
+    period chip. Its layer (dim-period-layer) holds the date fieldset
+    (dim-date), whose legend is the layer's heading: the quick options, the
+    empty dim-daterange region and the two native date fields; then its foot
+    (dim-period-foot): "Clear period" (dim-period-clear), a link to this
+    listing with both bounds dropped; "Show"; and the no-JavaScript "Filter".
+    Without JavaScript the summary opens the layer, and the two fields and the
+    quick links post or carry the same two parameters.
 
     The quick date options are ordinary links carrying the two parameters the
     date fields carry, computed on the server in the site's timezone. Either
     date field may be left empty: each bound narrows on its own. The calendar
     is the client's (category_daterange) and speaks the same parameters: it
-    mounts its start and end boxes into the empty dim-daterange region, hides the
-    native fields (dim-dateinputs) and reads three facts off this markup rather
-    than computing them - the first weekday and today's date from the date
-    fieldset, and each quick option's bounds from its link - so the client does
-    no timezone arithmetic.
+    mounts its boxes and its months into the empty dim-daterange region, hides
+    the native fields (dim-dateinputs) and reads three facts off this markup
+    rather than computing them - the first weekday and today's date from the
+    date fieldset, and each quick option's bounds from its link - so the client
+    does no timezone arithmetic.
 
     The Organise menu is a native details too: its summary is a glyph whose name
     is a visually hidden word; inside are the three sort chips (dim-sort) and
@@ -232,14 +250,19 @@
         "datetolabel": "To",
         "firstday": 0,
         "today": "2026-09-18",
+        "hasperiod": true,
+        "datebuttonlabel": "Start date: 17 September 2026 to 24 September 2026",
+        "datebuttontemplate": "Start date: {period}",
+        "dateclearlabel": "Clear period",
+        "dateclearurl": "https://example.com/course/index.php?categoryid=7&q=rescue&chip=pending&cf_12=1",
         "datequick": [
             {"label": "Today", "url": "https://example.com/course/index.php?categoryid=7&from=2026-09-17&to=2026-09-17", "from": "2026-09-17", "to": "2026-09-17", "current": false},
             {"label": "This week", "url": "https://example.com/course/index.php?categoryid=7&from=2026-09-14&to=2026-09-20", "from": "2026-09-14", "to": "2026-09-20", "current": true}
         ],
         "filterslabel": "Filters",
-        "filtercount": 3,
+        "filtercount": 2,
         "hasfiltercount": true,
-        "filtercountlabel": "Applied filters: 3",
+        "filtercountlabel": "Applied filters: 2",
         "pagesizename": "perpage",
         "pagesize": 24,
         "haspagesize": true,
@@ -331,8 +354,23 @@
                             </div>
                         </fieldset>
                         {{/facets}}
-                        <fieldset class="dim-toolbar__group dim-toolbar__group--date" data-region="dim-date" data-firstday="{{firstday}}" data-today="{{today}}">
-                            <legend class="dim-toolbar__grouplabel">{{datelegend}}</legend>
+                        <div class="dim-toolbar__actions dim-toolbar__foot" data-region="dim-filters-foot">
+                            <a class="btn btn-sm btn-outline-secondary dim-toolbar__footclear" href="{{clearurl}}" data-region="dim-filters-clear" data-action="dim-clear"{{^hasfilters}} hidden{{/hasfilters}}>{{clearfilterslabel}}</a>
+                            <button type="button" class="btn btn-sm btn-primary dim-toolbar__footshow dim-live-only" data-action="dim-filters-show" data-dim-template="{{showtemplate}}">{{showlabel}}</button>
+                            <button type="submit" class="dim-toolbar__submit dim-nojs-only">{{submitlabel}}</button>
+                        </div>
+                    </div>
+                </details>
+                <details class="dim-line__date" data-region="dim-period">
+                    <summary class="dim-line__iconbtn dim-line__datetoggle" aria-label="{{datebuttonlabel}}" data-dim-tip="{{datelegend}}" data-dim-template="{{datebuttontemplate}}" data-region="dim-period-button"><i class="fa fa-calendar-days" aria-hidden="true"></i><span class="dim-line__dot" data-region="dim-period-dot" aria-hidden="true"{{^hasperiod}} hidden{{/hasperiod}}></span></summary>
+                    <div class="dim-datelayer" data-region="dim-period-layer">
+                        <fieldset class="dim-datelayer__group" data-region="dim-date" data-firstday="{{firstday}}" data-today="{{today}}">
+                            <legend class="dim-datelayer__head">{{datelegend}}</legend>
+                            <ul class="dim-toolbar__quick" role="list">
+                                {{#datequick}}
+                                <li><a class="dim-quick{{#current}} dim-quick--on{{/current}}" href="{{url}}" data-action="dim-quick" data-from="{{from}}" data-to="{{to}}"{{#current}} aria-current="true"{{/current}}>{{label}}</a></li>
+                                {{/datequick}}
+                            </ul>
                             <div class="dim-toolbar__daterange" data-region="dim-daterange"></div>
                             <div class="dim-toolbar__dates" data-region="dim-dateinputs">
                                 <div class="dim-toolbar__datefield">
@@ -344,15 +382,10 @@
                                     <input class="form-control dim-toolbar__dateinput" type="date" id="{{datetoid}}" name="{{datetoname}}" value="{{dateto}}">
                                 </div>
                             </div>
-                            <ul class="dim-toolbar__quick" role="list">
-                                {{#datequick}}
-                                <li><a class="dim-quick{{#current}} dim-quick--on{{/current}}" href="{{url}}" data-action="dim-quick" data-from="{{from}}" data-to="{{to}}"{{#current}} aria-current="true"{{/current}}>{{label}}</a></li>
-                                {{/datequick}}
-                            </ul>
                         </fieldset>
-                        <div class="dim-toolbar__actions dim-toolbar__foot" data-region="dim-filters-foot">
-                            <a class="btn btn-sm btn-outline-secondary dim-toolbar__footclear" href="{{clearurl}}" data-region="dim-filters-clear" data-action="dim-clear"{{^hasfilters}} hidden{{/hasfilters}}>{{clearfilterslabel}}</a>
-                            <button type="button" class="btn btn-sm btn-primary dim-toolbar__footshow dim-live-only" data-action="dim-filters-show" data-dim-template="{{showtemplate}}">{{showlabel}}</button>
+                        <div class="dim-datelayer__foot" data-region="dim-period-foot">
+                            <a class="dim-datelayer__clear" href="{{dateclearurl}}" data-action="dim-period-clear">{{dateclearlabel}}</a>
+                            <button type="button" class="btn btn-sm btn-primary dim-datelayer__show dim-live-only" data-action="dim-period-show" data-dim-template="{{showtemplate}}">{{showlabel}}</button>
                             <button type="submit" class="dim-toolbar__submit dim-nojs-only">{{submitlabel}}</button>
                         </div>
                     </div>

@@ -213,7 +213,7 @@ final class scale_ratchet_test extends \basic_testcase {
         'category.scss' => [
             '-1px' => 1,
             '-5px' => 1,
-            '10px' => 42,
+            '10px' => 40,
             '118px' => 1,
             '128px' => 1,
             '13px' => 1,
@@ -221,7 +221,6 @@ final class scale_ratchet_test extends \basic_testcase {
             '164px' => 2,
             '18px' => 12,
             '1px' => 1,
-            '2.25rem' => 1,
             '22px' => 2,
             '24px' => 3,
             '26px' => 3,
@@ -360,7 +359,7 @@ final class scale_ratchet_test extends \basic_testcase {
         ],
         'category.scss' => [
             'var(--dim-ds-radius-pill, 50rem)' => 8,
-            'var(--dim-radius-pill)' => 9,
+            'var(--dim-radius-pill)' => 7,
         ],
         'competency.scss' => [
             'var(--dim-ds-radius-pill)' => 6,

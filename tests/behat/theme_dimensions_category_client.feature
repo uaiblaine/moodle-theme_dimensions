@@ -409,7 +409,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '4 courses in Test category')]" "xpath_element" should exist
-    When I click on "//details[@data-region='dim-filters']/summary" "xpath_element"
+    When I click on "//details[@data-region='dim-period']/summary" "xpath_element"
     And I click on "Today" "link"
     Then I should see "3 courses with these filters: 2 in this category and 1 in 1 area" in the "[data-region='dim-vitrine-count']" "css_element"
     And I should not see "Curso de Onte"
@@ -417,15 +417,14 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And the url should match "[?&]to=[0-9]{4}-[0-9]{2}-[0-9]{2}"
 
   @javascript
-  Scenario: The calendar describes a range in two presses from the start box and "Done" is what applies it
-    # The start box opens the calendar in the start's mode: the first press sets the start and moves
-    # the calendar on to the end, so the second press on the same day is the one-day period - the
-    # smallest thing that proves both presses were taken. The day is the one the server marked as
+  Scenario: The calendar takes a range in two presses from the start box, each applied at once, the layer staying open
+    # The date button opens its own layer. The start box is the active one: the first press sets the
+    # start and makes the end the active box, so the second press on the same day is the one-day period -
+    # the smallest thing that proves both presses were taken. The day is the one the server marked as
     # today, so nothing here depends on the browser's own clock. The course seeded yesterday and the
     # one seeded two days ahead are the controls on each side of it.
     #
-    # The presses apply nothing. They describe a period, the popover stays open showing it, and the
-    # reader says they are finished; the address still carrying no period is the whole of that rule.
+    # Each press applies at once: the start alone first, then the range, while the layer stays open.
     Given the following "courses" exist:
       | fullname      | shortname | category | customfield_dimensions_model | startdate     |
       | Curso de Onte | ONTEM     | TESTCAT  | 1                          | ##yesterday## |
@@ -433,26 +432,23 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '5 courses in Test category')]" "xpath_element" should exist
-    When I click on "//details[@data-region='dim-filters']/summary" "xpath_element"
+    When I click on "//details[@data-region='dim-period']/summary" "xpath_element"
     And I click on "//button[@data-action='dim-daterange-open'][@data-bound='from']" "xpath_element"
     Then "//*[@data-region='dim-daterange-pop'][not(@hidden)]" "xpath_element" should exist
     When I click on "//button[@data-region='dim-daterange-day'][@aria-current='date']" "xpath_element"
-    And I click on "//button[@data-region='dim-daterange-day'][@aria-current='date']" "xpath_element"
-    Then "//*[@data-region='dim-daterange-pop'][not(@hidden)]" "xpath_element" should exist
-    And the url should match "^(?!.*[?&](from|to)=)"
-    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '5 courses in Test category')]" "xpath_element" should exist
-    # And now the reader says they are done with it.
-    When I click on "//button[@data-action='dim-daterange-done']" "xpath_element"
+    Then I should see "4 courses with these filters: 3 in this category and 1 in 1 area" in the "[data-region='dim-vitrine-count']" "css_element"
+    And the url should match "^(?!.*[?&]to=)"
+    When I click on "//button[@data-region='dim-daterange-day'][@aria-current='date']" "xpath_element"
     Then I should see "3 courses with these filters: 2 in this category and 1 in 1 area" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//details[@data-region='dim-period'][@open]" "xpath_element" should exist
     And I should not see "Curso de Onte"
     And I should not see "Curso Futuro"
     And the url should match "[?&]from=[0-9]{4}-[0-9]{2}-[0-9]{2}"
     And the url should match "[?&]to=[0-9]{4}-[0-9]{2}-[0-9]{2}"
-    # The badge on the Filters summary counts the period once, in both of its halves: it is the only
-    # number of this toolbar a reader who shuts the panel can still see, and the second half is
-    # the sentence a screen reader is read, which is where the digit alone would have been right.
-    And "//*[@data-region='dim-filtercount'][not(@hidden)]//*[@data-region='dim-filtercount-number'][normalize-space(text())='1']" "xpath_element" should exist
-    And "//*[@data-region='dim-filtercount-label'][normalize-space(text())='Filters applied: 1']" "xpath_element" should exist
+    # The period is not in the Filters badge: the date button says it, in its name and with its dot.
+    And "//*[@data-region='dim-filtercount'][@hidden]" "xpath_element" should exist
+    And "//summary[@data-region='dim-period-button'][starts-with(@aria-label, 'Start date: ')]" "xpath_element" should exist
+    And "//*[@data-region='dim-period-dot'][not(@hidden)]" "xpath_element" should exist
     # Clearing the start box alone leaves the end alone, which is a period of its own: the courses
     # starting on that day or earlier. The address keeps the end and drops the start.
     When I click on "//button[@data-action='dim-daterange-clear'][@data-bound='from']" "xpath_element"
@@ -461,18 +457,19 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I should not see "Curso Futuro"
     And the url should match "[?&]to=[0-9]{4}-[0-9]{2}-[0-9]{2}"
     And the url should match "^(?!.*[?&]from=)"
-    # The period is stated where a reader who shuts the panel can still see it, and that statement
-    # is a control: pressing it drops the period and the whole listing comes back. The panel is a
-    # popover over the row under the line from the sm breakpoint up, so the reader shuts it first.
-    When I click on "//details[@data-region='dim-filters']/summary" "xpath_element"
-    Then "//details[@data-region='dim-filters'][not(@open)]" "xpath_element" should exist
+    # The period is stated where a reader who shuts the layer can still see it, and that statement
+    # is a control: pressing it drops the period and the whole listing comes back. The layer is a
+    # popover over the row under the line, so the reader shuts it first.
+    When I click on "//details[@data-region='dim-period']/summary" "xpath_element"
+    Then "//details[@data-region='dim-period'][not(@open)]" "xpath_element" should exist
     And "//*[@data-region='dim-daterange-pill']//a[starts-with(normalize-space(.), 'Until ')]" "xpath_element" should be visible
     When I click on "//*[@data-region='dim-daterange-pill']//a" "xpath_element"
     Then "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '5 courses in Test category')]" "xpath_element" should exist
     And the url should match "^(?!.*[?&](from|to)=)"
-    # And the badge goes back with it, which is what makes the assertions above a measurement of
-    # this request rather than of a number that happened to be painted once.
-    And "//*[@data-region='dim-filtercount'][@hidden]" "xpath_element" should exist
+    # And the button's dot and its period go with it, which is what makes the assertions above a
+    # measurement of this request rather than of a name that happened to be painted once.
+    And "//*[@data-region='dim-period-dot'][@hidden]" "xpath_element" should exist
+    And "//summary[@data-region='dim-period-button'][@aria-label='Start date']" "xpath_element" should exist
 
   @javascript
   Scenario: A start alone keeps the courses from that day on, and the address carries the start alone
@@ -482,10 +479,9 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
       | Curso Futuro  | FUTURO    | TESTCAT  | 1                          | ##+2 days##   |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    When I click on "//details[@data-region='dim-filters']/summary" "xpath_element"
+    When I click on "//details[@data-region='dim-period']/summary" "xpath_element"
     And I click on "//button[@data-action='dim-daterange-open'][@data-bound='from']" "xpath_element"
     And I click on "//button[@data-region='dim-daterange-day'][@aria-current='date']" "xpath_element"
-    And I click on "//button[@data-action='dim-daterange-done']" "xpath_element"
     Then I should see "4 courses with these filters: 3 in this category and 1 in 1 area" in the "[data-region='dim-vitrine-count']" "css_element"
     And I should see "Curso Futuro" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should not see "Curso de Onte"
@@ -494,22 +490,21 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And "//*[@data-region='dim-daterange-pill']//a[starts-with(normalize-space(.), 'From ')]" "xpath_element" should be visible
 
   @javascript
-  Scenario: The end box opens the same calendar, and an end alone keeps the courses up to that day
-    # One popover serves both boxes. Opened from the end box, it says it is asking for the last day,
-    # and its one press sets the end.
+  Scenario: The end box makes the end the active one, and an end alone keeps the courses up to that day
+    # The months serve both boxes. Pressed, the end box is the active one, the prompt says it is asking
+    # for the last day, and the one press sets the end.
     Given the following "courses" exist:
       | fullname      | shortname | category | customfield_dimensions_model | startdate     |
       | Curso de Onte | ONTEM     | TESTCAT  | 1                          | ##yesterday## |
       | Curso Futuro  | FUTURO    | TESTCAT  | 1                          | ##+2 days##   |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    When I click on "//details[@data-region='dim-filters']/summary" "xpath_element"
+    When I click on "//details[@data-region='dim-period']/summary" "xpath_element"
     And I click on "//button[@data-action='dim-daterange-open'][@data-bound='to']" "xpath_element"
     Then "//*[@data-region='dim-daterange-pop'][not(@hidden)]" "xpath_element" should exist
-    And "//button[@data-bound='to'][@aria-expanded='true'][@aria-controls=//*[@data-region='dim-daterange-pop']/@id]" "xpath_element" should exist
+    And "//button[@data-bound='to'][@aria-pressed='true'][@aria-controls=//*[@data-region='dim-daterange-pop']/@id]" "xpath_element" should exist
     And "//*[@data-region='dim-daterange-prompt'][normalize-space(.)='Choose the last day']" "xpath_element" should exist
     When I click on "//button[@data-region='dim-daterange-day'][@aria-current='date']" "xpath_element"
-    And I click on "//button[@data-action='dim-daterange-done']" "xpath_element"
     Then I should see "4 courses with these filters: 3 in this category and 1 in 1 area" in the "[data-region='dim-vitrine-count']" "css_element"
     And I should see "Curso de Onte" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should not see "Curso Futuro"

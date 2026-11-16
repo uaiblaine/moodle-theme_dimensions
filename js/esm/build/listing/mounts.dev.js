@@ -12,7 +12,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 import Pending from "@moodle/lms/core/pending";
-import { SCOPE } from "./address";
+import { CHIP_PERIOD, SCOPE } from "./address";
 import { AREAS, CALENDAR, LINE, LINE_DRAWN, SELECTORS } from "./events";
 const COMPONENTS = {
   calendar: "@moodle/lms/theme_dimensions/daterange/DateRange",
@@ -35,6 +35,8 @@ const tellAnswer = /* @__PURE__ */ __name((root, response) => {
   const group = response.statusgroup;
   const options = group ? group.options || [] : [];
   const rank = /* @__PURE__ */ __name((option) => SCOPE.indexOf(String(option.value)), "rank");
+  const chips = Array.isArray(response.chips) ? response.chips : [];
+  const period = chips.find((chip) => chip.param === CHIP_PERIOD);
   tellLine(root, LINE.answer, {
     // The bar's count is the count sentence's number, as the server formatted it.
     total: typeof response.countnumber === "string" ? response.countnumber : void 0,
@@ -42,7 +44,9 @@ const tellAnswer = /* @__PURE__ */ __name((root, response) => {
     scope: options.length ? options.filter((option) => rank(option) >= 0).sort((a, b) => rank(a) - rank(b)) : null,
     favourites: response.favourites || null,
     filtercount: Number(response.filtercount || 0),
-    filtercountlabel: response.filtercountlabel || ""
+    filtercountlabel: response.filtercountlabel || "",
+    // The date button's name carries the period chip's words; no chip is no period, and the button its name alone.
+    period: period ? period.label || "" : ""
   });
 }, "tellAnswer");
 const focusTarget = /* @__PURE__ */ __name((root) => {

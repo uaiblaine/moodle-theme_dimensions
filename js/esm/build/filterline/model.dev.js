@@ -35,6 +35,10 @@ const SELECTORS = {
   badgenumber: '[data-region="dim-filtercount-number"]',
   badgelabel: '[data-region="dim-filtercount-label"]',
   panel: '[data-region="dim-filters-panel"]',
+  date: '[data-region="dim-period"]',
+  datebutton: '[data-region="dim-period-button"]',
+  datedot: '[data-region="dim-period-dot"]',
+  datelayer: '[data-region="dim-period-layer"]',
   organise: '[data-region="dim-organise"]',
   menu: '[data-region="dim-organise-menu"]',
   viewrow: '[data-region="dim-view-row"]',
@@ -92,6 +96,26 @@ const filtersOf = /* @__PURE__ */ __name((line) => {
     hascount: badge !== null && !badge.hidden
   };
 }, "filtersOf");
+const PERIOD = "{period}";
+const dateOf = /* @__PURE__ */ __name((line) => {
+  const button = line.querySelector(`${SELECTORS.date} > ${SELECTORS.datebutton}`);
+  if (!button) {
+    return null;
+  }
+  const dot = button.querySelector(SELECTORS.datedot);
+  return {
+    label: button.getAttribute(TIP) || "",
+    name: button.getAttribute("aria-label") || "",
+    template: button.dataset.dimTemplate || "",
+    set: dot !== null && !dot.hidden
+  };
+}, "dateOf");
+const dateName = /* @__PURE__ */ __name((date, period) => {
+  if (period === "" || date.template.indexOf(PERIOD) < 0) {
+    return date.label;
+  }
+  return date.template.split(PERIOD).join(period);
+}, "dateName");
 const viewsOf = /* @__PURE__ */ __name((row) => (row ? Array.from(row.querySelectorAll(SELECTORS.view)) : []).map((button) => ({
   value: button.value,
   label: button.getAttribute(TIP) || "",
@@ -120,6 +144,7 @@ const read = /* @__PURE__ */ __name((line) => {
     openlabel: attrOf(line, SELECTORS.opener, TIP),
     star: starOf(line),
     filters: filtersOf(line),
+    date: dateOf(line),
     organiselabel: attrOf(line, `${SELECTORS.organise} > summary`, TIP),
     views: viewsOf(row),
     viewlabel: row ? row.getAttribute("aria-label") || "" : "",
@@ -180,6 +205,9 @@ const answered = /* @__PURE__ */ __name((model, answer) => {
       hascount: count !== 0
     });
   }
+  if (model.date && typeof answer.period === "string") {
+    next.date = Object.assign({}, model.date, { name: dateName(model.date, answer.period), set: answer.period !== "" });
+  }
   return next;
 }, "answered");
 const stated = /* @__PURE__ */ __name((model, told) => {
@@ -201,9 +229,11 @@ const stated = /* @__PURE__ */ __name((model, told) => {
   return next;
 }, "stated");
 export {
+  PERIOD,
   SELECTORS,
   TIP,
   answered,
+  dateName,
   read,
   scopeAfter,
   stated

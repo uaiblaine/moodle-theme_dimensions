@@ -4,7 +4,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * The filter line's suggestions: which filters a text offers, and in what order.
  *
  * The suggestions are the filters already on the page - every scope cell, the favourites star, every option
- * of the Filters panel and its quick dates - whose label or group matches the typed text, accent- and
+ * of the Filters panel and the date layer's quick dates - whose label or group matches the typed text, accent- and
  * case-insensitively, word starts first and then by count, each with its group and a count the page has
  * shown for it.
  *

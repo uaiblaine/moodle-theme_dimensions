@@ -282,7 +282,7 @@ final class filterline_component_source_test extends \advanced_testcase {
     /**
      * No painter of the shared listing writes into what the component draws; it tells the component instead.
      *
-     * The guard is one function: inside a line the component marked drawn, and outside the three frames it
+     * The guard is one function: inside a line the component marked drawn, and outside the four frames it
      * adopts, which stay the listing's to paint. A line the component did not draw is painted as the server
      * drew it.
      *
@@ -299,8 +299,8 @@ final class filterline_component_source_test extends \advanced_testcase {
             $drawn
         );
         $this->assertStringContainsString(
-            "adopted: '[data-region=\"dim-filters-panel\"], [data-region=\"dim-organise-menu\"], "
-                . "[data-region=\"dim-line-manage\"]',",
+            "adopted: '[data-region=\"dim-filters-panel\"], [data-region=\"dim-period-layer\"], "
+                . "[data-region=\"dim-organise-menu\"], '\n        + '[data-region=\"dim-line-manage\"]',",
             $this->listing()
         );
         $guards = [
@@ -507,18 +507,24 @@ final class filterline_component_source_test extends \advanced_testcase {
     }
 
     /**
-     * The component adopts exactly the three frames the painters keep painting, and calls nothing itself.
+     * The component adopts exactly the four frames the painters keep painting, and calls nothing itself.
      *
      * Changes that must make it fail: a frame adopted that the guard does not exempt, or exempted and never
      * adopted; the component calling a service or composing a string.
      */
-    public function test_the_component_adopts_the_three_frames_and_asks_for_nothing(): void {
+    public function test_the_component_adopts_the_four_frames_and_asks_for_nothing(): void {
         $component = $this->read('js/esm/src/filterline/FilterLine.tsx');
-        foreach (['panel', 'menu', 'manage'] as $frame) {
+        foreach (['panel', 'layer', 'menu', 'manage'] as $frame) {
             $this->assertStringContainsString("adopt(setup.{$frame}, {$frame}.current);", $component);
+            $this->assertStringContainsString("adopt({$frame}.current, setup.{$frame});", $component, 'Given back on unmount.');
         }
         $model = $this->read('js/esm/src/filterline/model.ts');
-        $frames = ['panel' => 'dim-filters-panel', 'menu' => 'dim-organise-menu', 'manage' => 'dim-line-manage'];
+        $frames = [
+            'panel' => 'dim-filters-panel',
+            'datelayer' => 'dim-period-layer',
+            'menu' => 'dim-organise-menu',
+            'manage' => 'dim-line-manage',
+        ];
         foreach ($frames as $key => $region) {
             $this->assertStringContainsString("{$key}: '[data-region=\"{$region}\"]',", $model);
         }
@@ -575,8 +581,8 @@ final class filterline_component_source_test extends \advanced_testcase {
         );
         $this->assertStringContainsString('line.classList.add(TIPSOFF);', $component);
         $this->assertMatchesRegularExpression(
-            '~const show = event\.target instanceof Element \? event\.target\.closest\(HOOKS\.show\) : null;\s*'
-                . 'if \(show && filters\.current\) \{\s*filters\.current\.open = false;~',
+            '~if \(target && target\.closest\(HOOKS\.show\)\) \{\s*details = filters\.current;\s*\}'
+                . '.*?if \(details\) \{\s*details\.open = false;~s',
             $component,
             'The panel foot\'s "Show" closes the panel.'
         );
@@ -624,5 +630,79 @@ final class filterline_component_source_test extends \advanced_testcase {
         $fixture = $this->read('js/esm/tests/filterline/toolbar.ts');
         $this->assertSame(1, preg_match('~export const TOOLBAR = \\x60(.*)\\x60;~s', $fixture, $copy));
         $this->assertSame($this->line_of($html), $this->line_of($copy[1]));
+    }
+
+    /**
+     * The date button and its layer: drawn after Filters, named and dotted from each answer, one layer open at a time.
+     *
+     * The component's behaviour is Jest's (FilterLine.test.tsx, model.test.ts); this pins the source shape of each
+     * guard from PHPUnit, which the mutation sweep runs. The button's name is the server's sentence filled with the
+     * answer's period chip, its dot drawn exactly while there is one; opening one layer of the capsule closes the
+     * others; the date layer closes on its own "Show", giving its summary the focus, and on a press outside it at
+     * every step; it is placed under the line and is a bottom sheet at the two-line step, as the Filters panel is.
+     *
+     * Changes that must make it fail: the name or the dot left as the page drew them after an answer; two layers
+     * open together; the date layer's "Show" or a press outside leaving it open; the layer never placed, or never
+     * a sheet.
+     */
+    public function test_the_date_button_and_its_layer_follow_the_bars_contract(): void {
+        $model = $this->read('js/esm/src/filterline/model.ts');
+        $this->assertStringContainsString(
+            "next.date = Object.assign({}, model.date, {name: dateName(model.date, answer.period), set: answer.period !== ''});",
+            $model,
+            'The name and the dot follow the answer\'s period chip.'
+        );
+        $this->assertMatchesRegularExpression(
+            "~if \(period === '' \|\| date\.template\.indexOf\(PERIOD\) < 0\) \{\s*return date\.label;\s*\}\s*"
+                . "return date\.template\.split\(PERIOD\)\.join\(period\);~",
+            $model,
+            'No period, the filter\'s name alone; a period, the server\'s sentence filled.'
+        );
+        $this->assertStringContainsString("export const PERIOD = '{period}';", $model);
+        $this->assertSame(\theme_dimensions\output\category_toolbar::PERIOD_PLACEHOLDER, '{period}');
+
+        $component = $this->read('js/esm/src/filterline/FilterLine.tsx');
+        $this->assertMatchesRegularExpression(
+            '~\{drawFilters\(model, filters, panel\)\}\s*\{drawDate\(model, period, layer\)\}~',
+            $component,
+            'Right after Filters.'
+        );
+        $this->assertStringContainsString(
+            '<span className="dim-line__dot" data-region="dim-period-dot" aria-hidden="true" hidden={!date.set}></span>',
+            $component
+        );
+        $this->assertStringContainsString('aria-label={date.name}', $component);
+        $this->assertMatchesRegularExpression(
+            '~const layers = \[filters\.current, period\.current, organise\.current\];\s*'
+                . 'const opened = layers\.find\(\(one\) => one !== null && one === event\.target && one\.open\);\s*'
+                . 'if \(opened\) \{.*?layers\.forEach\(\(one\) => \{\s*'
+                . 'if \(one && one !== opened && one\.open\) \{\s*one\.open = false;~s',
+            $component,
+            'Opening one layer of the capsule closes the others.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~\} else if \(target && target\.closest\(HOOKS\.periodshow\)\) \{\s*details = period\.current;\s*\}~',
+            $component,
+            'The date layer\'s "Show" closes it.'
+        );
+        $this->assertStringContainsString('quietly(details.querySelector(\'summary\'));', $component);
+        $this->assertMatchesRegularExpression(
+            '~if \(period\.current && period\.current\.open && !period\.current\.contains\(target\)\) \{\s*'
+                . 'period\.current\.open = false;~',
+            $component,
+            'A press outside closes the date layer, at every step.'
+        );
+        $this->assertSame(
+            2,
+            substr_count($component, 'place(line, layer.current, twolines(), twolines());'),
+            'Placed when it opens and when the fold moves, a sheet at the two-line step.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~const sheeted = \(\): boolean => twolines\(\)\s*'
+                . '&& Boolean\(\(filters\.current && filters\.current\.open\) '
+                . '\|\| \(period\.current && period\.current\.open\)\);~',
+            $component
+        );
+        $this->assertStringNotContainsString('HOOKS.daterange', $component, 'The calendar keeps no Escape of its own.');
     }
 }

@@ -341,12 +341,14 @@ final class get_category_rows_test extends \advanced_testcase {
         self::forget();
         $start = $this->data(['categoryid' => $id, 'sort' => 'name', 'datefrom' => '2026-09-18']);
         $this->assertSame(['Alpha'], array_column($start['cards'], 'fullname'), 'A start alone has no upper bound.');
-        $this->assertSame(1, $start['filtercount']);
+        $this->assertSame(0, $start['filtercount'], 'The period is the date button\'s, never the Filters badge\'s.');
+        $this->assertTrue($start['hasfilters']);
         $this->newpage();
         self::forget();
         $end = $this->data(['categoryid' => $id, 'sort' => 'name', 'dateto' => '2026-09-17']);
         $this->assertSame(['Zulu'], array_column($end['cards'], 'fullname'), 'An end alone has no lower bound.');
-        $this->assertSame(1, $end['filtercount']);
+        $this->assertSame(0, $end['filtercount']);
+        $this->assertTrue($end['hasfilters']);
 
         // The card's returns name its category as the overline and carry no category id.
         $this->assertArrayHasKey('overline', $narrowed['cards'][0]);
@@ -902,11 +904,21 @@ final class get_category_rows_test extends \advanced_testcase {
         $this->resetAfterTest();
         $generator = self::getDataGenerator();
         $category = $generator->create_category();
-        $generator->create_course([
+        $zulu = $generator->create_course([
             'category' => $category->id,
             'fullname' => 'Zulu',
             'startdate' => criteria::day_start('2026-09-17'),
         ]);
+        // One allowlisted field, so the request can hold a filter of the panel beside the term and the period.
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        $fieldid = (int) landingfields::get_field(landingfields::SHORTNAME_MODALITY)->get('id');
+        course_handler::create()->instance_form_save((object) [
+            'id' => $zulu->id,
+            'customfield_' . landingfields::SHORTNAME_MODALITY => 1,
+        ]);
+        set_config(facets::SETTING, landingfields::SHORTNAME_MODALITY, 'theme_dimensions');
         $this->become($generator->create_user());
         $id = (int) $category->id;
 
@@ -921,11 +933,13 @@ final class get_category_rows_test extends \advanced_testcase {
             'query' => 'Zulu',
             'datefrom' => '2026-09-17',
             'dateto' => '2026-09-17',
+            'filters' => [['fieldid' => $fieldid, 'value' => 1]],
         ]);
+        $this->assertSame(1, $narrowed['total'], 'Precondition: the three criteria keep the course.');
         $this->assertSame(
             1,
             $narrowed['filtercount'],
-            'The whole period is one filter of the panel; the term is in its own box.'
+            'The field is the panel\'s one filter; the term is in its own box and the period on the date button.'
         );
         $this->assertStringContainsString('1', $narrowed['filtercountlabel'], 'The sentence carries the same number.');
         $this->assertStringNotContainsString(

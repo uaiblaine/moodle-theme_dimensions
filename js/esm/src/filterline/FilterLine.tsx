@@ -26,18 +26,19 @@
  * rules the stylesheet writes against it. A mount replaces its markup, so the first render draws the
  * markup the server drew, read off it ({@see ./model read()}), with the same names inside the same GET
  * form - the no-JavaScript submits, the listing's form reading and every Behat step keep working. React
- * draws the line's own controls: the scope, the result count, the star, the two summaries (Filters and its
- * badge, Organise), the view toggle, the search with its button and its eraser, the close button and the
- * listbox, in the cluster and the two capsules the template draws them in. Three
+ * draws the line's own controls: the scope, the result count, the star, the three summaries (Filters and its
+ * badge, the date button and its dot, Organise), the view toggle, the search with its button and its eraser,
+ * the close button and the listbox, in the cluster and the two capsules the template draws them in. Four
  * frames it draws hold server markup it adopts whole on the first commit and never diffs inside: the
- * Filters panel (More statuses, the custom fields, the period with its calendar, the quick dates),
- * the Organise menu and the managers' menu. The listing's painters keep painting those three, and paint
+ * Filters panel (More statuses, the custom fields), the date layer (the quick dates, the period's calendar,
+ * its foot), the Organise menu and the managers' menu. The listing's painters keep painting those four, and paint
  * nothing React draws: they tell the line instead, through events on it ({@see EVENTS}), which
  * js/esm/src/listing/events.ts spells:
  *
  * - `dim-line:state`, detail {query, chip, fav, view} or any part of it: the listing's own state, after a
  *   press it handled, Back, a clear or a removed chip;
- * - `dim-line:answer`, detail {total, scope, favourites, filtercount, filtercountlabel}: an answer's numbers;
+ * - `dim-line:answer`, detail {total, scope, favourites, filtercount, filtercountlabel, period}: an answer's
+ *   numbers and its period chip's sentence;
  * - `dim-line:dropterm`, sent by the line before it presses the control a suggestion names, so the one
  *   request that control causes carries no term;
  * - `dim-line:mounted`, sent once the line is drawn, after it marked itself drawn (data-line-drawn), which
@@ -50,6 +51,11 @@
  * is mounted a second time onto a node React has just emptied. Unmounting therefore gives the adopted frames'
  * nodes back to the server's frames and keeps them, with the line's last state, for that node
  * ({@see KEPT}); a later mount draws from them instead of reading markup that is no longer there.
+ *
+ * The three layers of the capsule - the Filters panel, the date layer and the Organise menu - are native
+ * disclosures, and opening one closes the others. The Filters panel and the date layer are popovers under the
+ * line's end on one line and bottom sheets at the two-line step; Escape closes the layer it is pressed in and
+ * gives its summary the focus. The date layer also closes on a press outside it and on its own "Show".
  *
  * The search is its button at rest at every width (the server drew the field open, for a page without this
  * component). A press, or the slash key, opens the field: in place where the fold leaves room for it beside the
@@ -98,7 +104,7 @@ const HOOKS = {
     listing: '[data-region="dim-vitrine"]',
     chips: '[data-region="dim-line-chips"]',
     show: '[data-action="dim-filters-show"]',
-    daterange: '[data-region="dim-daterange"]',
+    periodshow: '[data-action="dim-period-show"]',
     option: '[role="option"]',
     // The controls of the open search that keep it open when the focus moves to them.
     searchpart: '[data-action="dim-search-clear"], [data-action="dim-search-close"]',
@@ -108,7 +114,7 @@ const HOOKS = {
 /** The class the line carries while Escape has put its tooltips off. */
 const TIPSOFF = 'dim-line--tipsoff';
 
-/** The class the form carries while the Filters panel is a bottom sheet. */
+/** The class the form carries while the Filters panel or the date layer is a bottom sheet. */
 const SHEET = 'dim-toolbar--sheet';
 
 /** The class of the active option of the listbox. */
@@ -121,7 +127,7 @@ type Handlers = Record<string, (...args: never[]) => void>;
 type FilterLineProps = {form: string};
 
 /** What an unmount keeps of a drawn line for the next mount of the same node: the last state and the server's frames. */
-type Kept = {model: Line, panel: Element | null, menu: Element | null, manage: Element | null};
+type Kept = {model: Line, panel: Element | null, layer: Element | null, menu: Element | null, manage: Element | null};
 
 /**
  * The lines this component drew and was unmounted from, by node: what a mount onto a line React has emptied draws.
@@ -218,6 +224,7 @@ const FilterLine = ({form}: FilterLineProps) => {
                 line: line,
                 first: kept.model,
                 panel: kept.panel,
+                layer: kept.layer,
                 menu: kept.menu,
                 manage: kept.manage,
                 focused: null,
@@ -228,6 +235,7 @@ const FilterLine = ({form}: FilterLineProps) => {
             line: line,
             first: read(line),
             panel: line ? line.querySelector(SELECTORS.panel) : null,
+            layer: line ? line.querySelector(SELECTORS.datelayer) : null,
             menu: line ? line.querySelector(SELECTORS.menu) : null,
             manage: line ? line.querySelector(SELECTORS.manage) : null,
             focused: line && active && line.contains(active) ? active : null,
@@ -268,6 +276,8 @@ const FilterLine = ({form}: FilterLineProps) => {
     const scope = useRef<HTMLFieldSetElement>(null);
     const filters = useRef<HTMLDetailsElement>(null);
     const panel = useRef<HTMLDivElement>(null);
+    const period = useRef<HTMLDetailsElement>(null);
+    const layer = useRef<HTMLDivElement>(null);
     const organise = useRef<HTMLDetailsElement>(null);
     const menu = useRef<HTMLDivElement>(null);
     const manage = useRef<HTMLDivElement>(null);
@@ -288,6 +298,15 @@ const FilterLine = ({form}: FilterLineProps) => {
      * @returns {boolean}
      */
     const twolines = (): boolean => st.fold !== null && st.fold.step === TWO_LINES;
+
+    /**
+     * Whether a layer of the capsule is a bottom sheet now: the Filters panel or the date layer, open at the
+     * two-line step.
+     *
+     * @returns {boolean}
+     */
+    const sheeted = (): boolean => twolines()
+        && Boolean((filters.current && filters.current.open) || (period.current && period.current.open));
 
     /**
      * Move the focus without it counting as the reader's: the field's focus listener stays quiet.
@@ -731,8 +750,8 @@ const FilterLine = ({form}: FilterLineProps) => {
     };
 
     /**
-     * Close an open menu or panel of the line on Escape, and give its summary the focus; an open search
-     * closes first. The calendar inside the Filters panel keeps Escape for its own draft.
+     * Close an open menu, panel or layer of the line on Escape, and give its summary the focus; an open search
+     * closes first.
      *
      * @param {KeyboardEvent} event The key.
      * @returns {void}
@@ -747,7 +766,7 @@ const FilterLine = ({form}: FilterLineProps) => {
             return;
         }
         const details = event.target.closest<HTMLDetailsElement>('details[open]');
-        if (details && line.contains(details) && !event.target.closest(HOOKS.daterange)) {
+        if (details && line.contains(details)) {
             event.preventDefault();
             details.open = false;
             quietly(details.querySelector('summary'));
@@ -776,7 +795,8 @@ const FilterLine = ({form}: FilterLineProps) => {
     };
 
     /**
-     * A floating layer opened or closed: placed under the line, and the panel a sheet at the two-line step.
+     * A floating layer opened or closed: the others closed when it opened, placed under the line, and the panel
+     * and the date layer sheets at the two-line step.
      *
      * @param {Event} event The toggle, heard in the capture phase: it does not bubble.
      * @returns {void}
@@ -785,30 +805,50 @@ const FilterLine = ({form}: FilterLineProps) => {
         if (!line) {
             return;
         }
-        if (event.target === filters.current && filters.current) {
-            toolbar?.classList.toggle(SHEET, twolines() && filters.current.open);
+        const layers = [filters.current, period.current, organise.current];
+        const opened = layers.find((one) => one !== null && one === event.target && one.open);
+        if (opened) {
+            // The three hang from the same end of the line: one open layer at a time.
+            layers.forEach((one) => {
+                if (one && one !== opened && one.open) {
+                    one.open = false;
+                }
+            });
+        }
+        toolbar?.classList.toggle(SHEET, sheeted());
+        if (event.target === filters.current) {
             place(line, panel.current, twolines(), twolines());
+        } else if (event.target === period.current) {
+            place(line, layer.current, twolines(), twolines());
         } else if (event.target === organise.current) {
             place(line, menu.current, twolines(), false);
         }
     };
 
     /**
-     * The Filters panel's "Show": the panel closes and its summary takes the focus, on the list it shows.
+     * The "Show" of the Filters panel or of the date layer: the layer closes and its summary takes the focus, on
+     * the list it shows.
      *
      * @param {MouseEvent} event The click.
      * @returns {void}
      */
     const onLineClick = (event: MouseEvent): void => {
-        const show = event.target instanceof Element ? event.target.closest(HOOKS.show) : null;
-        if (show && filters.current) {
-            filters.current.open = false;
-            quietly(filters.current.querySelector('summary'));
+        const target = event.target instanceof Element ? event.target : null;
+        let details: HTMLDetailsElement | null = null;
+        if (target && target.closest(HOOKS.show)) {
+            details = filters.current;
+        } else if (target && target.closest(HOOKS.periodshow)) {
+            details = period.current;
+        }
+        if (details) {
+            details.open = false;
+            quietly(details.querySelector('summary'));
         }
     };
 
     /**
-     * A press anywhere: outside the line it closes the search, outside the bottom sheet it closes the sheet.
+     * A press anywhere: outside the line it closes the search, outside the bottom sheet it closes the sheet, and
+     * outside the date layer and its button it closes the date layer, at every step.
      *
      * @param {PointerEvent} event The press.
      * @returns {void}
@@ -827,6 +867,9 @@ const FilterLine = ({form}: FilterLineProps) => {
         // The bottom sheet has no summary beside it to press again, so a press outside it closes it.
         if (twolines() && filters.current && filters.current.open && !filters.current.contains(target)) {
             filters.current.open = false;
+        }
+        if (period.current && period.current.open && !period.current.contains(target)) {
+            period.current.open = false;
         }
     };
 
@@ -943,6 +986,7 @@ const FilterLine = ({form}: FilterLineProps) => {
             return undefined;
         }
         adopt(setup.panel, panel.current);
+        adopt(setup.layer, layer.current);
         adopt(setup.menu, menu.current);
         adopt(setup.manage, manage.current);
         // Drawn from here: the stylesheet folds the server's open field to its button on a drawn line, which the
@@ -1035,10 +1079,17 @@ const FilterLine = ({form}: FilterLineProps) => {
                state, so a mount of this node again (react_autoinit, after a move) draws the line again. Run before the
                frames are removed: a component's layout cleanup runs ahead of its host nodes' removal. */
             adopt(panel.current, setup.panel);
+            adopt(layer.current, setup.layer);
             adopt(menu.current, setup.menu);
             adopt(manage.current, setup.manage);
             if (latest.current) {
-                KEPT.set(line, {model: latest.current, panel: setup.panel, menu: setup.menu, manage: setup.manage});
+                KEPT.set(line, {
+                    model: latest.current,
+                    panel: setup.panel,
+                    layer: setup.layer,
+                    menu: setup.menu,
+                    manage: setup.manage,
+                });
             }
         };
     // The first commit's effect, once: every later change reaches the listeners through api.
@@ -1100,7 +1151,7 @@ const FilterLine = ({form}: FilterLineProps) => {
         }
         paint(line, st.fold);
         drawSearch();
-        toolbar.classList.toggle(SHEET, twolines() && Boolean(filters.current && filters.current.open));
+        toolbar.classList.toggle(SHEET, sheeted());
         if (st.refocus) {
             const refocus = st.refocus;
             st.refocus = null;
@@ -1133,6 +1184,7 @@ const FilterLine = ({form}: FilterLineProps) => {
             return;
         }
         place(line, panel.current, twolines(), twolines());
+        place(line, layer.current, twolines(), twolines());
         place(line, menu.current, twolines(), false);
         fades(scope.current);
         fades(toolbar ? toolbar.querySelector<HTMLElement>(HOOKS.chips) : null);
@@ -1155,6 +1207,7 @@ const FilterLine = ({form}: FilterLineProps) => {
                 <div className="dim-line__capsule" data-region="dim-line-capsule">
                     {drawStar(model)}
                     {drawFilters(model, filters, panel)}
+                    {drawDate(model, period, layer)}
                     <details ref={organise} className="dim-line__organise" data-region="dim-organise">
                         <summary className="dim-line__iconbtn dim-line__organisetoggle" data-dim-tip={model.organiselabel}>
                             <i className="fa fa-arrow-down-wide-short" aria-hidden="true"></i>
@@ -1351,6 +1404,42 @@ const drawFilters = (
         <div ref={panel} className="dim-toolbar__panel" data-region="dim-filters-panel"></div>
     </details>
 );
+
+/**
+ * The date button: its summary - the calendar glyph, named by its aria-label with the filter and the period in force,
+ * and the dot while a period is set - and the layer's frame, which holds the server's layer, adopted on the first
+ * commit and never diffed. Drawn only where the server drew one.
+ *
+ * @param {object} model The line.
+ * @param {object} ref The details element's ref.
+ * @param {object} layer The layer frame's ref.
+ * @returns {object|null}
+ */
+const drawDate = (
+    model: Line,
+    ref: RefObject<HTMLDetailsElement | null>,
+    layer: RefObject<HTMLDivElement | null>
+): ReactNode => {
+    const date = model.date;
+    if (!date) {
+        return null;
+    }
+    return (
+        <details ref={ref} className="dim-line__date" data-region="dim-period">
+            <summary
+                className="dim-line__iconbtn dim-line__datetoggle"
+                aria-label={date.name}
+                data-dim-tip={date.label}
+                data-dim-template={date.template}
+                data-region="dim-period-button"
+            >
+                <i className="fa fa-calendar-days" aria-hidden="true"></i>
+                <span className="dim-line__dot" data-region="dim-period-dot" aria-hidden="true" hidden={!date.set}></span>
+            </summary>
+            <div ref={layer} className="dim-datelayer" data-region="dim-period-layer"></div>
+        </details>
+    );
+};
 
 /**
  * The view toggle: List first, the capsule's last icon buttons, each named by a visually hidden word and the

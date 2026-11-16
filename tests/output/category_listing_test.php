@@ -990,8 +990,14 @@ final class category_listing_test extends \advanced_testcase {
            that says what the number means. The label must hold the number and no unsubstituted
            placeholder: in a single-quoted language string, a backslash before the dollar of {$a}
            survives and get_string() then has no placeholder to substitute. */
-        $context = $this->export(['search' => 'Curso', 'sort' => criteria::SORT_NAME, 'datefrom' => '2020-01-01']);
-        $this->assertTrue($context->toolbar->hasfiltercount, 'The period is in the panel.');
+        $fieldid = array_key_first(facets::fields());
+        $context = $this->export([
+            'search' => 'Curso',
+            'sort' => criteria::SORT_NAME,
+            'datefrom' => '2020-01-01',
+            'fields' => [$fieldid => landingfields::MODALITY_ONLINE],
+        ]);
+        $this->assertTrue($context->toolbar->hasfiltercount, 'The field is in the panel; the period is the date button\'s.');
         $this->assertSame(1, $context->toolbar->filtercount);
         $this->assertStringContainsString(
             (string) $context->toolbar->filtercount,
@@ -2682,8 +2688,9 @@ final class category_listing_test extends \advanced_testcase {
      *
      * The row under the line says what narrows - every criterion the line does not show is a chip
      * there - so the panel needs no opening to say it, and the toolbar's context carries no such
-     * switch. The badge counts the field and the period, which live in the panel, and not the
-     * term (its box) nor a scope value (a cell of the line); the row shows for every one of them.
+     * switch. The badge counts the field, which lives in the panel, and not the term (its box), a
+     * scope value (a cell of the line) nor the period (the date button); the row shows for every one
+     * of them.
      */
     public function test_the_filter_panel_is_closed_on_load_and_its_badge_counts_what_it_holds(): void {
         $viewer = $this->seed();
@@ -2696,8 +2703,9 @@ final class category_listing_test extends \advanced_testcase {
             'a search' => [['search' => 'Curso'], 0],
             'a scope value' => [['state' => classifier::STATE_ENROLLED], 0],
             'a field' => [['fields' => [$fieldid => landingfields::MODALITY_ONLINE]], 1],
-            'a start' => [['datefrom' => '2026-01-01'], 1],
-            'an end' => [['dateto' => '2026-12-31'], 1],
+            // The period is the date button's: its dot and its name say it, never the Filters badge.
+            'a start' => [['datefrom' => '2026-01-01'], 0],
+            'an end' => [['dateto' => '2026-12-31'], 0],
         ];
         foreach ($cases as $what => [$options, $badge]) {
             self::forget();
@@ -2705,6 +2713,47 @@ final class category_listing_test extends \advanced_testcase {
             $this->assertObjectNotHasProperty('filtersopen', $toolbar, $what);
             $this->assertSame($badge, $toolbar->filtercount, $what . ' on the badge.');
             $this->assertTrue($toolbar->hasfilters, $what . ' shows the row under the line.');
+        }
+    }
+
+    /**
+     * The date button's name and dot follow the period in force, in the page's own export.
+     *
+     * Without a period the button is named by the filter alone and draws no dot; with one, a bound alone or both,
+     * its name is the filter followed by the period chip's own sentence and its dot is drawn, so a page read
+     * without JavaScript names the period on the line. Its template is the same name with the client's
+     * placeholder in the sentence's place, and its layer's "Clear period" goes where the period chip goes.
+     *
+     * Changes that must make it fail: the name left the filter's alone under a period; the dot drawn at rest or
+     * missing under a period; the name written from anything but the period chip's sentence; "Clear period"
+     * keeping a bound.
+     */
+    public function test_the_date_button_is_named_with_the_period_and_dotted_while_one_is_set(): void {
+        $viewer = $this->seed();
+        $this->become($viewer);
+        $legend = get_string('category_dategroup', 'theme_dimensions');
+        $rest = $this->export()->toolbar;
+        $this->assertFalse($rest->hasperiod, 'No dot at rest.');
+        $this->assertSame($legend, $rest->datebuttonlabel, 'The filter\'s name alone.');
+        $this->assertSame($legend . ': ' . category_toolbar::PERIOD_PLACEHOLDER, $rest->datebuttontemplate);
+        $periods = [
+            ['datefrom' => '2026-01-01'],
+            ['dateto' => '2026-12-31'],
+            ['datefrom' => '2026-01-01', 'dateto' => '2026-12-31'],
+        ];
+        foreach ($periods as $bounds) {
+            self::forget();
+            $toolbar = $this->export($bounds)->toolbar;
+            $chips = array_values(array_filter(
+                $toolbar->chips,
+                static fn(array $chip): bool => $chip['param'] === category_toolbar::CHIP_PERIOD
+            ));
+            $this->assertCount(1, $chips, 'Precondition: the period has its chip.');
+            $this->assertTrue($toolbar->hasperiod, 'The dot, while a period is set.');
+            $this->assertSame($legend . ': ' . $chips[0]['label'], $toolbar->datebuttonlabel, 'The chip\'s own words.');
+            $this->assertSame($chips[0]['url'], $toolbar->dateclearurl, '"Clear period" goes where the period chip goes.');
+            $this->assertStringNotContainsString('from=', $toolbar->dateclearurl);
+            $this->assertStringNotContainsString('to=', $toolbar->dateclearurl);
         }
     }
 
