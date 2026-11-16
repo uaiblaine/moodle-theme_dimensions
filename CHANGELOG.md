@@ -5,6 +5,21 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The administrator chooses what identifies a person in the navbar** (2026100621). Four new settings on the
+  *Identity* tab: the field shown beside the avatar (`identitynavbar`), the field that will be the title of the
+  profile layer (`identitytitle`), the further lines under it (`identitylines`) and the display patterns
+  (`identitypatterns`). A field is the full name in the site's format, the alternate name, the first name, the
+  username, the email address, the ID number or a custom profile field of type text, menu or social; a custom field
+  is shown only while Moodle's own visibility rule shows it to the person. An empty field falls back to the full
+  name. A display pattern formats or partly hides a field wherever these settings show it, one `field=pattern` per
+  line: `#` shows a character, `*` hides it (as •), anything else is printed as written, and only the value's letters
+  and digits fill the pattern, so `username=***.###.###-**` shows `12345678909` as `•••.456.789-••`. The pattern is
+  applied on the server, and a value of another length is shown as stored. The defaults change nothing: the full
+  name, no further line, no pattern. One difference without touching a setting: while an administrator is logged in
+  as somebody, the navbar names the account logged in as (Moodle's "You are logged in as" line and the open menu
+  still name the administrator). The title and the further lines have no surface yet; the profile layer that draws
+  them comes next. The custom fields' definitions are kept in a new shared cache (`identityfields`), emptied when a
+  profile field or category changes, and read only while a setting names a custom field.
 - **The category showcase's start date has a button of its own on the filter bar** (2026100620). A calendar button
   follows Filters in the capsule; its name says the period ("Start date: 17 November 2026 to 4 December 2026") and a
   small dot sits on its corner while one is set. It opens its own layer, under the bar's end or as a sheet from the

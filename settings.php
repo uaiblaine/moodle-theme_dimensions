@@ -40,6 +40,8 @@ use theme_dimensions\local\drawernav;
 use theme_dimensions\local\focusmode;
 use theme_dimensions\local\guesthome;
 use theme_dimensions\local\guestnav;
+use theme_dimensions\local\identity;
+use theme_dimensions\local\identitypatterns_setting;
 use theme_dimensions\local\landing\heroformat;
 use theme_dimensions\local\landingdefaults;
 use theme_dimensions\local\readingbar;
@@ -332,6 +334,61 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             ['maxfiles' => 1, 'accepted_types' => 'web_image']
         );
         $setting->set_updatedcallback('theme_reset_all_caches');
+        $tab->add($setting);
+
+        // Create identity fields heading.
+        $name = 'theme_dimensions/identityfieldsheading';
+        $title = get_string('identityfieldsheading', 'theme_dimensions', null, true);
+        $description = get_string('identityfieldsheading_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_heading($name, $title, $description);
+        $tab->add($setting);
+
+        // Setting: The field beside the avatar in the navbar. The choices are a closure, so this file reads no
+        // table while it loads ({@see identity::choices()}); read when a page is drawn, so no cache reset.
+        $name = 'theme_dimensions/' . identity::SETTING_NAVBAR;
+        $title = get_string('identitynavbar', 'theme_dimensions', null, true);
+        $description = get_string('identitynavbar_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configselect(
+            $name,
+            $title,
+            $description,
+            identity::FULLNAME,
+            fn(): array => identity::choices()
+        );
+        $tab->add($setting);
+
+        // Setting: The field that is the title beside the photo in the profile layer.
+        $name = 'theme_dimensions/' . identity::SETTING_TITLE;
+        $title = get_string('identitytitle', 'theme_dimensions', null, true);
+        $description = get_string('identitytitle_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configselect(
+            $name,
+            $title,
+            $description,
+            identity::FULLNAME,
+            fn(): array => identity::choices()
+        );
+        $tab->add($setting);
+
+        // Setting: The further lines under the title. None by default.
+        $name = 'theme_dimensions/' . identity::SETTING_LINES;
+        $title = get_string('identitylines', 'theme_dimensions', null, true);
+        $description = get_string('identitylines_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configmulticheckbox(
+            $name,
+            $title,
+            $description,
+            [],
+            fn(): array => identity::choices(true)
+        );
+        $tab->add($setting);
+
+        // Setting: The display patterns, one "field=pattern" per line, validated on save
+        // ({@see identitypatterns_setting}). Empty by default.
+        $name = 'theme_dimensions/' . identity::SETTING_PATTERNS;
+        $title = get_string('identitypatterns', 'theme_dimensions', null, true);
+        $description = get_string('identitypatterns_desc', 'theme_dimensions', null, true);
+        $setting = new identitypatterns_setting($name, $title, $description, '', PARAM_RAW, 60, 4);
         $tab->add($setting);
 
         // Add tab to settings page.

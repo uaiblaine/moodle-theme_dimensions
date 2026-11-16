@@ -49,4 +49,30 @@ $observers = [
         'callback' => '\theme_dimensions\local\lookcohorts::cohort_deleted',
         'priority' => 1000,
     ],
+    // The identity settings read the custom profile fields' definitions from a cache; any change to a field or to
+    // a category (whose order is the fields' order) empties it.
+    [
+        'eventname' => '\\core\\event\\user_info_field_created',
+        'callback' => '\\theme_dimensions\\local\\identity::definitions_changed',
+    ],
+    [
+        'eventname' => '\\core\\event\\user_info_field_updated',
+        'callback' => '\\theme_dimensions\\local\\identity::definitions_changed',
+    ],
+    [
+        'eventname' => '\\core\\event\\user_info_field_deleted',
+        'callback' => '\\theme_dimensions\\local\\identity::definitions_changed',
+    ],
+    [
+        'eventname' => '\\core\\event\\user_info_category_created',
+        'callback' => '\\theme_dimensions\\local\\identity::definitions_changed',
+    ],
+    [
+        'eventname' => '\\core\\event\\user_info_category_updated',
+        'callback' => '\\theme_dimensions\\local\\identity::definitions_changed',
+    ],
+    [
+        'eventname' => '\\core\\event\\user_info_category_deleted',
+        'callback' => '\\theme_dimensions\\local\\identity::definitions_changed',
+    ],
 ];
