@@ -403,7 +403,7 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui, mode = optionsOf({})) => 
   }, "syncField");
   const syncHolders = /* @__PURE__ */ __name(() => {
     const open = st.open > 0 ? String(st.open) : "";
-    const psort = st.open > 0 && st.psort === PSORT_NAME ? PSORT_NAME : "";
+    const psort = st.psort === PSORT_NAME ? PSORT_NAME : "";
     [document.querySelector(SELECTORS.toolbar), document.querySelector(SELECTORS.fold)].forEach((form) => {
       syncField(form, SELECTORS.openfield, "open", open);
       syncField(form, SELECTORS.psortfield, "psort", psort);
@@ -524,7 +524,7 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui, mode = optionsOf({})) => 
     }
     st.open = id;
     st.openedby = options.auto ? "auto" : "user";
-    st.psort = options.psort || "";
+    st.psort = options.psort === void 0 ? st.psort : options.psort;
     st.ticket += 1;
     const turn = ++st.turn;
     applyExpandable(prev);
@@ -557,7 +557,6 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui, mode = optionsOf({})) => 
     setPosterOpen(poster, false, mode.links);
     st.open = 0;
     st.openedby = "";
-    st.psort = "";
     st.ticket += 1;
     st.turn += 1;
     window.clearTimeout(st.skeleton);
@@ -603,8 +602,21 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui, mode = optionsOf({})) => 
     st.psort = value;
     paintSort();
     writeAddress();
+    areas.dispatchEvent(new CustomEvent(EVENTS.ordered, { detail: { psort: value } }));
     request();
   }, "setPsort");
+  const onOrder = /* @__PURE__ */ __name((detail) => {
+    const value = detail.psort === PSORT_NAME ? PSORT_NAME : "";
+    if (st.psort === value) {
+      return;
+    }
+    st.psort = value;
+    syncHolders();
+    if (st.open) {
+      paintSort();
+      request();
+    }
+  }, "onOrder");
   const toggleArea = /* @__PURE__ */ __name((poster) => {
     const id = Number(poster.dataset.categoryid);
     if (id === st.open) {
@@ -727,6 +739,11 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui, mode = optionsOf({})) => 
       return;
     }
     if (id === 0) {
+      st.psort = psort;
+      if (!st.open) {
+        syncHolders();
+        return;
+      }
       const active = document.activeElement;
       const open = posterOf(areas, st.open);
       closeArea(panel.contains(active) || Boolean(open) && Boolean(open?.contains(active)), false);
@@ -820,10 +837,10 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui, mode = optionsOf({})) => 
   const adopt = /* @__PURE__ */ __name(() => {
     st.allempty = loadedAllEmpty(areas, isRoot());
     const id = drawnOpen(nodes);
+    st.psort = readPanel(window.location.href).psort;
     if (id) {
       st.open = id;
       st.openedby = "user";
-      st.psort = readPanel(window.location.href).psort;
       st.asked = question(posterOf(areas, id), st.psort);
       st.askedticket = st.ticket;
       convertPanel();
@@ -863,6 +880,7 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui, mode = optionsOf({})) => 
     onScroll,
     onPending,
     onFailed,
+    onOrder,
     state
   };
 }, "createPanel");

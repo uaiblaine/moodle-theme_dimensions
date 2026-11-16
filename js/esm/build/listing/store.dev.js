@@ -17,7 +17,7 @@ import Pending from "@moodle/lms/core/pending";
 import { period } from "../daterange/calendar";
 import { markTitles } from "../areas/mark";
 import * as Listing from "./listing";
-import { LISTING, SELECTORS } from "./events";
+import { AREAS, LISTING, SELECTORS } from "./events";
 const SEARCH_DEBOUNCE = 300;
 const MIN_SEARCH_LENGTH = 2;
 let root;
@@ -154,19 +154,38 @@ const onSearchInput = /* @__PURE__ */ __name((search) => {
     }
   }, SEARCH_DEBOUNCE);
 }, "onSearchInput");
-const onSort = /* @__PURE__ */ __name((sort) => {
-  if (sort === state.sort) {
+const onOrganise = /* @__PURE__ */ __name((name, value) => {
+  const group = name === Listing.PARAM.group ? value : Listing.groupOf(state);
+  const order = name === Listing.PARAM.sort ? value : Listing.orderOf(state);
+  if (Listing.GROUPS.indexOf(group) < 0 || Listing.ORDERS.indexOf(order) < 0 || group === Listing.groupOf(state) && order === Listing.orderOf(state)) {
     return;
   }
   const was = Listing.isGrouped(state.sort);
-  state.sort = sort;
+  Listing.organise(state, group, order);
   state.page = 0;
-  if (was !== Listing.isGrouped(sort)) {
+  Listing.paintOrganise(root, state);
+  if (was !== Listing.isGrouped(state.sort)) {
     shell.leave(Listing.buildUrl(state));
     return;
   }
-  apply("filter");
-}, "onSort");
+  if (!was) {
+    apply("filter");
+    return;
+  }
+  shell.changed("order");
+  Listing.writeUrl(state, false);
+  shell.written();
+  areas?.dispatchEvent(new CustomEvent(AREAS.order, { detail: { psort: state.psort } }));
+}, "onOrganise");
+const onOrdered = /* @__PURE__ */ __name((event) => {
+  const psort = (event.detail || {}).psort === "name" ? "name" : "";
+  if (!Listing.isGrouped(state.sort) || psort === state.psort) {
+    return;
+  }
+  state.psort = psort;
+  Listing.paintOrganise(root, state);
+  shell.changed("order");
+}, "onOrdered");
 const onTree = /* @__PURE__ */ __name((link) => {
   const id = Number(link.dataset.categoryid);
   if (!Number.isInteger(id) || id <= 0) {
@@ -190,10 +209,6 @@ const setRange = /* @__PURE__ */ __name((datefrom, dateto) => {
 const onChoose = /* @__PURE__ */ __name((input) => {
   const group = input.closest(SELECTORS.group);
   const name = group && group.dataset.name ? group.dataset.name : input.name;
-  if (name === Listing.PARAM.sort) {
-    onSort(input.value);
-    return;
-  }
   if (name === Listing.PARAM.chip) {
     state.chip = input.value;
   } else if (name && name.startsWith(Listing.PARAM.fieldprefix)) {
@@ -340,6 +355,12 @@ const listen = /* @__PURE__ */ __name(() => {
       setView(view.value === "list" ? "list" : "cards");
       return;
     }
+    const item = Listing.closestOf(event, SELECTORS.organiseitem);
+    if (item) {
+      event.preventDefault();
+      onOrganise(item.name, item.value);
+      return;
+    }
     const branch = Listing.closestOf(event, SELECTORS.treelink);
     if (branch) {
       event.preventDefault();
@@ -353,6 +374,12 @@ const listen = /* @__PURE__ */ __name(() => {
     }
   });
 }, "listen");
+const drawnOrganisation = /* @__PURE__ */ __name((payload, params, defaultsort) => {
+  if (payload.remembered !== true || typeof payload.sort !== "string") {
+    return Listing.organisationOf(params, defaultsort);
+  }
+  return { sort: payload.sort, psort: Listing.isGrouped(payload.sort) && payload.psort === "name" ? "name" : "" };
+}, "drawnOrganisation");
 const init = /* @__PURE__ */ __name((given, categoryid) => {
   const found = document.querySelector(SELECTORS.root);
   if (!found || !Number.isInteger(categoryid) || categoryid < 0) {
@@ -370,7 +397,7 @@ const init = /* @__PURE__ */ __name((given, categoryid) => {
   const range = Listing.periodOf(params);
   const defaultsort = typeof payload.defaultsort === "string" ? payload.defaultsort : "";
   const remembered = payload.remembered === true;
-  const sort = remembered && typeof payload.sort === "string" ? payload.sort : Listing.sortOf(params, defaultsort);
+  const { sort, psort } = drawnOrganisation(payload, params, defaultsort);
   state = {
     categoryid,
     page: Number(payload.page) || 0,
@@ -384,6 +411,7 @@ const init = /* @__PURE__ */ __name((given, categoryid) => {
     // The organisation, the period and the tree's category are the address's: the toolbar is a GET form.
     defaultsort,
     sort,
+    psort,
     // Whether every address the store writes names its organisation (the shell's changed() sets it).
     remembered,
     datefrom: range.from,
@@ -403,6 +431,8 @@ const init = /* @__PURE__ */ __name((given, categoryid) => {
   }
   shell.written();
   Listing.mountAreas(areas, shell.areas.props, shell.areas.client);
+  areas?.removeEventListener(AREAS.ordered, onOrdered);
+  areas?.addEventListener(AREAS.ordered, onOrdered);
   if (!live) {
     return false;
   }

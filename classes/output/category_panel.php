@@ -90,7 +90,7 @@ class category_panel implements \core\output\named_templatable, \core\output\ren
      * @param bool $anonymous Whether the anonymous shell is drawing.
      * @param bool $isd20 Whether the area is a visitor's merely listed child, listed as a slice of its parent.
      * @param int $pageid The page's own category (the parent an $isd20 slice is cut from; 0 at the root).
-     * @param array|null $pageparams The page's own address parameters, open and psort excluded, or
+     * @param array|null $pageparams The page's own address parameters, open excluded, or
      *   null where the panel is not drawn by the page (the web service): its no-JavaScript
      *   addresses are then empty.
      * @param array $siblings The page's posters, whose other areas with a result the zero state
@@ -168,11 +168,13 @@ class category_panel implements \core\output\named_templatable, \core\output\ren
     }
 
     /**
-     * The page's own address parameters, without the panel's two.
+     * The page's own address parameters, without the open panel.
      *
      * What every no-JavaScript address of a panel starts from - the order links, Close, and the
-     * posters' own links - so that none of them loses the reader's filters, organisation, page
-     * size or page of the direct courses while opening, reordering or closing a panel.
+     * posters' own links - so that none of them loses the reader's filters, organisation, grouped
+     * order, page size or page of the direct courses while opening, reordering or closing a panel.
+     * The grouped order stays: it holds with no panel open ({@see criteria::$psort}), so closing a
+     * panel keeps it and the next one opens in it; only the order links set it ({@see nojs()}).
      *
      * @param criteria $page The page's request.
      * @param int|null $pagenumber The page of the direct courses being drawn, or null for none.
@@ -180,7 +182,7 @@ class category_panel implements \core\output\named_templatable, \core\output\ren
      */
     public static function page_params(criteria $page, ?int $pagenumber): array {
         $params = $page->query_params();
-        unset($params[criteria::PARAM_OPEN], $params[criteria::PARAM_PSORT]);
+        unset($params[criteria::PARAM_OPEN]);
         if ($pagenumber !== null && $pagenumber > 0) {
             $params[criteria::PARAM_PAGE] = $pagenumber;
         }
@@ -380,7 +382,10 @@ class category_panel implements \core\output\named_templatable, \core\output\ren
             'isd20' => $this->isd20,
             'subtitle' => $hasrows ? $this->subtitle($total, $shown, $filtered) : '',
             'psortname' => $this->psort === criteria::SORT_NAME,
-            'sorturlrecent' => $this->nojs([criteria::PARAM_OPEN => $this->areaid], self::ANCHOR_PANEL),
+            'sorturlrecent' => $this->nojs(
+                [criteria::PARAM_OPEN => $this->areaid, criteria::PARAM_PSORT => null],
+                self::ANCHOR_PANEL
+            ),
             'sorturlname' => $this->nojs(
                 [criteria::PARAM_OPEN => $this->areaid, criteria::PARAM_PSORT => criteria::SORT_NAME],
                 self::ANCHOR_PANEL
@@ -535,7 +540,7 @@ class category_panel implements \core\output\named_templatable, \core\output\ren
     /**
      * One no-JavaScript address of the page drawing the panel, or '' for the web service's copy.
      *
-     * @param array $params The panel's own parameters to add to the page's.
+     * @param array $params The panel's own parameters, each replacing the page's of its name; a null drops it.
      * @param string $anchor The fragment.
      * @return string
      */
@@ -543,7 +548,8 @@ class category_panel implements \core\output\named_templatable, \core\output\ren
         if ($this->pageparams === null) {
             return '';
         }
-        return self::page_address($this->pageid, $this->pageparams + $params, $this->anonymous, $anchor);
+        $all = array_filter(array_replace($this->pageparams, $params), static fn($value): bool => $value !== null);
+        return self::page_address($this->pageid, $all, $this->anonymous, $anchor);
     }
 
     /**

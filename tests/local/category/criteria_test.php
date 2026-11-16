@@ -537,7 +537,8 @@ final class criteria_test extends \advanced_testcase {
      * A panel is dropped where it cannot apply, and an order outside the vocabulary is the default one.
      *
      * The flat organisations draw no poster, so an open arriving with one names nothing on the page;
-     * the grouped one beside it is the control. An order means nothing while no panel is open.
+     * the grouped one beside it is the control. The grouped order holds with no panel open, and means
+     * nothing under a flat organisation, which carries its order in the sort itself.
      */
     public function test_a_panel_is_dropped_where_it_cannot_apply(): void {
         $this->resetAfterTest();
@@ -558,9 +559,183 @@ final class criteria_test extends \advanced_testcase {
                 $bogus . ' is not an order of a panel.'
             );
         }
-        $this->assertSame('', (new criteria(7, ['psort' => criteria::SORT_NAME]))->psort, 'No panel open, no order.');
+        $closed = new criteria(7, ['psort' => criteria::SORT_NAME]);
+        $this->assertSame(criteria::SORT_NAME, $closed->psort, 'No panel open: the grouped order holds for the next one.');
+        $this->assertSame([criteria::PARAM_PSORT => criteria::SORT_NAME], $closed->query_params(), 'And it travels.');
         $this->assertSame(0, (new criteria(7, ['open' => -4]))->open);
         $this->assertSame([''], array_values(array_diff(criteria::PSORTS, [criteria::SORT_NAME])));
+    }
+
+    /**
+     * "Group by" and "Sort by" by name read as the organisation and the grouped order every older address spells.
+     *
+     * The grouping by name makes sort the order (criteria::organisation()); the pairs are the two spellings of one
+     * request, so each is built here both ways and compared whole. The order travels across a change of grouping.
+     *
+     * Changes that must make it fail: a grouping by name read as an organisation; "No grouping" losing its order;
+     * the A-Z order of a grouped page lost; the grouping by area reading as a flat order.
+     *
+     * @param array $named The options in the grouping's spelling.
+     * @param array $older The same request in the older spelling.
+     */
+    #[DataProvider('organisation_spellings_provider')]
+    public function test_a_grouping_by_name_is_the_older_spelling_of_the_same_request(array $named, array $older): void {
+        $this->resetAfterTest();
+        $this->assertEquals(new criteria(7, $older), new criteria(7, $named));
+        $flat = ['defaultsort' => criteria::SORT_NAME];
+        $this->assertEquals(new criteria(7, $older + $flat), new criteria(7, $named + $flat), 'And on a flat-default category.');
+    }
+
+    /**
+     * The pairs of spellings of one organisation: the grouping by name and its order, and the older one.
+     *
+     * @return array
+     */
+    public static function organisation_spellings_provider(): array {
+        return [
+            'grouped, the newest first' => [['group' => 'category', 'sort' => 'recent'], ['sort' => 'category']],
+            'grouped, no order named' => [['group' => 'category'], ['sort' => 'category']],
+            'grouped, A-Z' => [['group' => 'category', 'sort' => 'name'], ['sort' => 'category', 'psort' => 'name']],
+            'grouped, A-Z as the older psort' => [
+                ['group' => 'category', 'psort' => 'name'],
+                ['sort' => 'category', 'psort' => 'name'],
+            ],
+            'flat by name' => [['group' => 'none', 'sort' => 'name'], ['sort' => 'name']],
+            'flat, the newest first' => [['group' => 'none', 'sort' => 'recent'], ['sort' => 'recent']],
+            'flat, the order carried from A-Z' => [['group' => 'none', 'psort' => 'name'], ['sort' => 'name']],
+            'flat, no order named' => [['group' => 'none'], ['sort' => 'recent']],
+            'an unknown grouping is no grouping' => [['group' => 'bogus', 'sort' => 'name'], ['sort' => 'name']],
+            'an unknown grouping keeps the older reading' => [
+                ['group' => 'Category', 'sort' => 'category'],
+                ['sort' => 'category'],
+            ],
+            'an organisation is no order' => [['group' => 'none', 'sort' => 'category'], ['sort' => 'recent']],
+        ];
+    }
+
+    /**
+     * Every older address keeps meaning what it meant, and reads as the grouping and the order "Organise" shows.
+     *
+     * The table is the request model's legacy equivalence in the other direction: from each older spelling to the
+     * pair the menu draws chosen, and back to the very address it came from (query_params(), keep_params()), so a
+     * page minted from an old link names the same thing. The category's default decides only what is left out.
+     *
+     * Changes that must make it fail: an older address read as another grouping or order; an address of the default
+     * state that grows; the A-Z order of a grouped page left out of the address.
+     *
+     * @param array $older The older address's options.
+     * @param string $default The category's default organisation.
+     * @param string $group The grouping "Group by" shows chosen.
+     * @param string $order The order "Sort by" shows chosen.
+     * @param array $address What the page writes back for it.
+     */
+    #[DataProvider('older_addresses_provider')]
+    public function test_every_older_address_reads_as_the_two_choices_and_back(
+        array $older,
+        string $default,
+        string $group,
+        string $order,
+        array $address
+    ): void {
+        $this->resetAfterTest();
+        $criteria = new criteria(7, $older + ['defaultsort' => $default]);
+        $this->assertSame([$group, $order], [$criteria->group(), $criteria->order()]);
+        $this->assertSame($address, $criteria->query_params());
+        $this->assertSame($address, $criteria->keep_params(), 'Clear keeps exactly that.');
+    }
+
+    /**
+     * The older addresses, each with the category's default, the two choices it reads as and its address.
+     *
+     * @return array
+     */
+    public static function older_addresses_provider(): array {
+        return [
+            'bare, the theme default' => [[], '', 'category', 'recent', []],
+            'sort=category, the default chip spelled' => [['sort' => 'category'], '', 'category', 'recent', ['sort' => 'category']],
+            'sort=name' => [['sort' => 'name'], '', 'none', 'name', ['sort' => 'name']],
+            'sort=recent' => [['sort' => 'recent'], '', 'none', 'recent', ['sort' => 'recent']],
+            'psort=name, a panel open' => [
+                ['open' => 9, 'psort' => 'name'],
+                '',
+                'category',
+                'name',
+                ['open' => 9, 'psort' => 'name'],
+            ],
+            'psort=name alone' => [['psort' => 'name'], '', 'category', 'name', ['psort' => 'name']],
+            'bare, a flat default' => [[], 'name', 'none', 'name', []],
+            'sort=category on a flat default' => [['sort' => 'category'], 'name', 'category', 'recent', ['sort' => 'category']],
+            'sort=recent on a flat default' => [['sort' => 'recent'], 'name', 'none', 'recent', ['sort' => 'recent']],
+            'grouped A-Z on a flat default' => [
+                ['sort' => 'category', 'psort' => 'name'],
+                'recent',
+                'category',
+                'name',
+                ['sort' => 'category', 'psort' => 'name'],
+            ],
+            'psort under a flat sort is dropped' => [['sort' => 'name', 'psort' => 'name'], '', 'none', 'name', ['sort' => 'name']],
+        ];
+    }
+
+    /**
+     * The address and the remembered state read the grouping by name, and a remembered A-Z order fills a bare address.
+     *
+     * Changes that must make it fail: the group parameter not read off the address; a bare address of a reader who
+     * remembers the grouped A-Z order drawn in the newest first; an address naming a grouping or the A-Z order
+     * filled in from the remembered state anyway (the control that a named address is read as written).
+     */
+    public function test_the_address_names_a_grouping_and_a_remembered_order_fills_a_bare_one(): void {
+        $this->resetAfterTest();
+        $category = $this->getDataGenerator()->create_category();
+        $categoryid = (int) $category->id;
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $_GET = ['group' => 'none', 'sort' => 'name'];
+        $this->assertSame(['none', 'name'], $this->choices(criteria::from_request($categoryid, [])));
+        $_GET = ['group' => 'category', 'sort' => 'name'];
+        $this->assertSame(['category', 'name'], $this->choices(criteria::from_request($categoryid, [])));
+
+        remembered::record($categoryid, [remembered::KEY_SORT => 'category', remembered::KEY_PSORT => 'name']);
+        $_GET = [];
+        $bare = criteria::from_request($categoryid, []);
+        $this->assertSame(['category', 'name'], $this->choices($bare), 'A bare address is the remembered state.');
+        $this->assertSame([criteria::PARAM_SORT => 'category', criteria::PARAM_PSORT => 'name'], $bare->keep_params());
+        $_GET = ['group' => 'category'];
+        $this->assertSame(['category', 'recent'], $this->choices(criteria::from_request($categoryid, [])), 'A grouping named.');
+        $_GET = ['psort' => 'name'];
+        remembered::record($categoryid, [remembered::KEY_SORT => 'recent', remembered::KEY_PSORT => null]);
+        $this->assertSame(['category', 'name'], $this->choices(criteria::from_request($categoryid, [])), 'The order named.');
+        $_GET = [];
+    }
+
+    /**
+     * The grouping and the order a request shows chosen.
+     *
+     * @param criteria $criteria The request.
+     * @return array [group, order].
+     */
+    private function choices(criteria $criteria): array {
+        return [$criteria->group(), $criteria->order()];
+    }
+
+    /**
+     * A listing service refuses a grouping or an order outside its vocabulary, whatever spelling it is sent in.
+     *
+     * Changes that must make it fail: an unknown grouping answered; an organisation sent as the order of a named
+     * grouping answered; the older spellings refused (the controls that the vocabulary is the right one).
+     */
+    public function test_a_service_refuses_a_grouping_or_an_order_outside_its_vocabulary(): void {
+        foreach ([['', ''], ['', 'category'], ['', 'name'], ['category', ''], ['category', 'name'], ['none', 'recent']] as $known) {
+            rows::require_known_organisation($known[0], $known[1]);
+        }
+        foreach ([['bogus', 'name'], ['none', 'category'], ['category', 'category'], ['', 'bogus']] as $unknown) {
+            try {
+                rows::require_known_organisation($unknown[0], $unknown[1]);
+                $this->fail(implode('/', $unknown) . ' was answered.');
+            } catch (\invalid_parameter_exception $exception) {
+                $this->assertStringContainsString('Unknown', $exception->getMessage());
+            }
+        }
     }
 
     /**

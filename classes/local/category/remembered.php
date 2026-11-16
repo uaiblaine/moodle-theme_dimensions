@@ -28,8 +28,9 @@ namespace theme_dimensions\local\category;
  * The organisation, the view and the filters a reader left each category's listing in.
  *
  * One user preference holds a JSON object keyed by category id, the least recently written entry
- * first. An entry has up to five keys, each optional: `s` the organisation (one of
+ * first. An entry has up to six keys, each optional: `s` the organisation (one of
  * {@see criteria::SORTS} but the empty one, which is stored as the grouped organisation it means),
+ * `p` the grouped order (A-Z, stored as name, or absent for the newest first; {@see criteria::$psort}),
  * `v` the view (cards or list), `t` the state chip ({@see classifier::filters()}), `fav` the
  * favourites toggle (true, or absent for off) and `f` the custom field filters (field id => option
  * value, over the site's filter fields, {@see facets::fields()}). The search term, the period and the
@@ -71,12 +72,15 @@ final class remembered {
     /**
      * @var int The longest value stored, in bytes. The theme's own bound: user_preferences.value has been a text column
      *   since Moodle 5.0 (it was char(1333) before). Set so that {@see MAX_CATEGORIES} entries carrying every key fit
-     *   (about 2.3 KB), which leaves the count as the bound that applies; this one only stops a malformed map.
+     *   (about 2.5 KB), which leaves the count as the bound that applies; this one only stops a malformed map.
      */
     public const MAX_LENGTH = 4096;
 
     /** @var string Key of an entry: the organisation. */
     public const KEY_SORT = 's';
+
+    /** @var string Key of an entry: the grouped order, stored as criteria::SORT_NAME and absent for the newest first. */
+    public const KEY_PSORT = 'p';
 
     /** @var string Key of an entry: the view. */
     public const KEY_VIEW = 'v';
@@ -146,7 +150,8 @@ final class remembered {
         $map = self::map();
         $entry = $map[$categoryid] ?? [];
         $options = self::field_options();
-        foreach ([self::KEY_SORT, self::KEY_VIEW, self::KEY_STATE, self::KEY_FAVOURITES, self::KEY_FIELDS] as $key) {
+        $keys = [self::KEY_SORT, self::KEY_PSORT, self::KEY_VIEW, self::KEY_STATE, self::KEY_FAVOURITES, self::KEY_FIELDS];
+        foreach ($keys as $key) {
             if (!array_key_exists($key, $changes)) {
                 continue;
             }
@@ -230,6 +235,10 @@ final class remembered {
         $sort = $raw[self::KEY_SORT] ?? null;
         if (is_string($sort) && $sort !== '' && in_array($sort, criteria::SORTS, true)) {
             $entry[self::KEY_SORT] = $sort;
+        }
+        // The newest first is the grouped default and is stored as no key; A-Z is the one value kept.
+        if (($raw[self::KEY_PSORT] ?? null) === criteria::SORT_NAME) {
+            $entry[self::KEY_PSORT] = criteria::SORT_NAME;
         }
         $view = $raw[self::KEY_VIEW] ?? null;
         if (is_string($view) && in_array($view, self::VIEWS, true)) {

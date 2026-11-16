@@ -34,7 +34,10 @@ import type {ListingState} from './address';
 import type {AreasClient} from './mounts';
 import type {Answer} from './paint';
 import * as Listing from './listing';
-import {LISTING, SELECTORS} from './events';
+import {AREAS, LISTING, SELECTORS} from './events';
+
+/** An organisation and its grouped order, as the listing's state holds them (ListingState's sort and psort). */
+type Organisation = {sort: string, psort: string};
 
 /** A rows answer: the painters' part and the page's own numbers. */
 export type Rows = Answer & {cards?: object[], page?: number | string, searchtooshort?: boolean, clearurl?: string,
@@ -287,24 +290,56 @@ const onSearchInput = (search: HTMLInputElement): void => {
 };
 
 /**
- * Deal with an organisation being chosen: a fetch inside one shell, a navigation between two, because the
- * grouped organisation draws the posters and the flat ones a bare grid.
+ * Deal with an item of the Organise menu being chosen: "Group by" or "Sort by", each keeping the other's choice.
  *
- * @param {string} sort The organisation chosen.
+ * A change of grouping is a navigation, because the grouped organisation draws the posters and a flat one a bare
+ * grid. An order of a flat list is a fetch. An order of the grouped page moves no poster: it is the open panel's
+ * order and the next one's, so the address is corrected, the posters' component told, and nothing is fetched.
+ *
+ * @param {string} name The item's section: the group parameter or the sort parameter.
+ * @param {string} value The grouping or the order chosen.
  * @returns {void}
  */
-const onSort = (sort: string): void => {
-    if (sort === state.sort) {
+const onOrganise = (name: string, value: string): void => {
+    const group = name === Listing.PARAM.group ? value : Listing.groupOf(state);
+    const order = name === Listing.PARAM.sort ? value : Listing.orderOf(state);
+    if (Listing.GROUPS.indexOf(group) < 0 || Listing.ORDERS.indexOf(order) < 0
+        || (group === Listing.groupOf(state) && order === Listing.orderOf(state))) {
         return;
     }
     const was = Listing.isGrouped(state.sort);
-    state.sort = sort;
+    Listing.organise(state, group, order);
     state.page = 0;
-    if (was !== Listing.isGrouped(sort)) {
+    Listing.paintOrganise(root, state);
+    if (was !== Listing.isGrouped(state.sort)) {
         shell.leave(Listing.buildUrl(state));
         return;
     }
-    apply('filter');
+    if (!was) {
+        apply('filter');
+        return;
+    }
+    shell.changed('order');
+    Listing.writeUrl(state, false);
+    shell.written();
+    areas?.dispatchEvent(new CustomEvent(AREAS.order, {detail: {psort: state.psort}}));
+};
+
+/**
+ * The panel's own order control changed the grouped order: the state and "Sort by" follow, and it is remembered.
+ * The posters' component wrote the address.
+ *
+ * @param {Event} event The ordered event, detail {psort}.
+ * @returns {void}
+ */
+const onOrdered = (event: Event): void => {
+    const psort = ((event as CustomEvent).detail || {}).psort === 'name' ? 'name' : '';
+    if (!Listing.isGrouped(state.sort) || psort === state.psort) {
+        return;
+    }
+    state.psort = psort;
+    Listing.paintOrganise(root, state);
+    shell.changed('order');
 };
 
 /**
@@ -351,10 +386,6 @@ const setRange = (datefrom: string, dateto: string): void => {
 const onChoose = (input: HTMLInputElement): void => {
     const group = input.closest<HTMLElement>(SELECTORS.group);
     const name = group && group.dataset.name ? group.dataset.name : input.name;
-    if (name === Listing.PARAM.sort) {
-        onSort(input.value);
-        return;
-    }
     if (name === Listing.PARAM.chip) {
         state.chip = input.value;
     } else if (name && name.startsWith(Listing.PARAM.fieldprefix)) {
@@ -568,6 +599,13 @@ const listen = (): void => {
             setView(view.value === 'list' ? 'list' : 'cards');
             return;
         }
+        const item = Listing.closestOf(event, SELECTORS.organiseitem) as HTMLButtonElement | null;
+        if (item) {
+            // A submit button for a reader without a client; in place, or a navigation between shells, here.
+            event.preventDefault();
+            onOrganise(item.name, item.value);
+            return;
+        }
         const branch = Listing.closestOf(event, SELECTORS.treelink);
         if (branch) {
             event.preventDefault();
@@ -580,6 +618,23 @@ const listen = (): void => {
             requestRows(lastpage + 1, true);
         }
     });
+};
+
+/**
+ * The organisation and the grouped order the page was drawn in: the address's, or, for a reader who left a state
+ * on this category and may have arrived on its bare address, the payload's, which the server drew that state with.
+ * The grouped order is never kept under a flat organisation (criteria::$psort).
+ *
+ * @param {object} payload The listing's data-vitrine.
+ * @param {URLSearchParams} params The address's query string.
+ * @param {string} defaultsort The category's default organisation.
+ * @returns {object} sort and psort.
+ */
+const drawnOrganisation = (payload: Record<string, unknown>, params: URLSearchParams, defaultsort: string): Organisation => {
+    if (payload.remembered !== true || typeof payload.sort !== 'string') {
+        return Listing.organisationOf(params, defaultsort);
+    }
+    return {sort: payload.sort, psort: Listing.isGrouped(payload.sort) && payload.psort === 'name' ? 'name' : ''};
 };
 
 /**
@@ -616,7 +671,7 @@ export const init = (given: Shell, categoryid: number): boolean => {
     /* A reader who left a state on this category may have arrived on its bare address, which the server drew with
        that state: the organisation is then the payload's, not the address's. */
     const remembered = payload.remembered === true;
-    const sort = remembered && typeof payload.sort === 'string' ? payload.sort : Listing.sortOf(params, defaultsort);
+    const {sort, psort} = drawnOrganisation(payload, params, defaultsort);
     state = {
         categoryid: categoryid,
         page: Number(payload.page) || 0,
@@ -631,6 +686,7 @@ export const init = (given: Shell, categoryid: number): boolean => {
         // The organisation, the period and the tree's category are the address's: the toolbar is a GET form.
         defaultsort: defaultsort,
         sort: sort,
+        psort: psort,
         // Whether every address the store writes names its organisation (the shell's changed() sets it).
         remembered: remembered,
         datefrom: range.from,
@@ -652,6 +708,9 @@ export const init = (given: Shell, categoryid: number): boolean => {
     }
     shell.written();
     Listing.mountAreas(areas, shell.areas.props, shell.areas.client);
+    // The same function, so a second start never doubles the listener.
+    areas?.removeEventListener(AREAS.ordered, onOrdered);
+    areas?.addEventListener(AREAS.ordered, onOrdered);
     if (!live) {
         return false;
     }

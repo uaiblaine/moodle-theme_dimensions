@@ -73,7 +73,9 @@ const rowsArgs = /* @__PURE__ */ __name((page) => {
     query: state.query,
     perpage: state.pagesize,
     filters: Listing.filterArgs(state),
-    sort: state.sort,
+    // "Group by" and "Sort by" by name, the order in sort (criteria::organisation()).
+    group: Listing.groupOf(state),
+    sort: Listing.orderOf(state),
     datefrom: state.datefrom,
     dateto: state.dateto,
     cat: state.cat,

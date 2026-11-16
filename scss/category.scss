@@ -1105,7 +1105,7 @@ body.dim-category {
         min-width: 0;
     }
 
-    // The bar's icon buttons (icon-button.md): the star, Filters, Organise, the two views, the search
+    // The bar's icon buttons (icon-button.md): the star, Filters, Organise, View, the search
     // and the button that closes it. No border: transparent and muted at rest, the alternative surface
     // under the pointer, the brand tone pressed or open, the button's 8px corners and a 16px glyph. Two
     // of them are a disclosure's summary, so the marker goes.
@@ -1153,45 +1153,111 @@ body.dim-category {
     // A disclosure's summary is open while its details is: the pressed face of every open control.
     .dim-toolbar__filters[open] > .dim-line__iconbtn,
     .dim-line__date[open] > .dim-line__iconbtn,
-    .dim-line__organise[open] > .dim-line__iconbtn {
+    .dim-line__organise[open] > .dim-line__iconbtn,
+    .dim-line__viewmenu[open] > .dim-line__iconbtn {
         background: var(--dim-brand-tint);
         color: var(--dim-primary-ink);
     }
 
-    // The Organise menu: a native disclosure whose content is a small popover under its summary.
-    .dim-line__organise {
+    // Organise and View (menu.md): native disclosures whose content is a menu under their summary.
+    .dim-line__organise,
+    .dim-line__viewmenu {
         position: relative;
         flex: none;
     }
 
-    .dim-line__menu {
-        position: absolute;
-        top: calc(100% + 6px);
-        right: 0;
-        z-index: 2;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-        width: max-content;
-        padding: 12px 14px;
-        border: 1px solid var(--dim-line);
-        border-radius: var(--dim-ds-radius-md, 8px);
-        background: var(--dim-surface);
-        box-shadow: var(--dim-shadow);
-    }
-
-    // The view toggle: its two buttons are the capsule's last icon buttons, List first.
-    .dim-toolbar__view {
-        display: inline-flex;
-        flex: none;
-        gap: .125rem;
-    }
-
-    // The glyph's box is the icon's 1em: Font Awesome's grid glyph is only .875em wide.
-    .dim-toolbar__viewbtn .fa {
+    // The View button's chevron says it opens a menu: 12px after the view's own glyph, whose box is the
+    // icon's 1em (Font Awesome's grid glyph is only .875em wide).
+    .dim-line__viewtoggle > .fa:first-child {
         width: 1em;
         text-align: center;
+    }
+
+    .dim-line__chevron {
+        font-size: .75rem;
+    }
+
+    // A menu (menu.md): 4px around its items, the hairline, the menu's 8px corners and the middle
+    // elevation, hung under its summary at the line's end.
+    .dim-line__menu {
+        position: absolute;
+        top: calc(100% + .375rem);
+        right: 0;
+        z-index: 20;
+        min-width: 13.75rem;
+        padding: .25rem;
+        border: 1px solid var(--dim-line);
+        border-radius: var(--dim-radius-md);
+        background: var(--dim-surface);
+        box-shadow: var(--dim-elevation-md);
+    }
+
+    // A section's heading: small, muted, in sentence case, never a control.
+    .dim-menu__head {
+        padding: .375rem .5rem .125rem;
+        color: var(--dim-muted);
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+    .dim-menu__sep {
+        margin: .25rem 0;
+        border-top: 1px solid var(--dim-line);
+    }
+
+    // An item: its icon, its word and the tick, no border and no outline at rest, hovered or chosen
+    // (D50); the chosen one is told by its weight and its tick, the ring by the keyboard's focus alone.
+    .dim-menu__item {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        width: 100%;
+        min-height: 2rem;
+        padding: .25rem .5rem;
+        border: 0;
+        border-radius: var(--dim-radius-xs);
+        background: transparent;
+        color: var(--dim-ink);
+        font-size: .875rem;
+        text-align: start;
+        cursor: pointer;
+        transition: background var(--dim-motion) var(--dim-ease);
+
+        &:hover {
+            background: var(--dim-surface-subtle);
+        }
+
+        &[aria-checked="true"] {
+            font-weight: 600;
+        }
+
+        &:focus-visible {
+            outline: 3px solid var(--dim-ring);
+            outline-offset: 2px;
+        }
+    }
+
+    .dim-menu__icon {
+        flex: none;
+        width: 1rem;
+        color: var(--dim-muted);
+        font-size: 1rem;
+        text-align: center;
+    }
+
+    .dim-menu__label {
+        flex: 1 1 auto;
+    }
+
+    // The tick holds its place on every item, so a choice moves no word; only the chosen one shows it.
+    .dim-menu__tick {
+        flex: none;
+        color: var(--dim-primary-ink);
+        visibility: hidden;
+    }
+
+    .dim-menu__item[aria-checked="true"] .dim-menu__tick {
+        visibility: visible;
     }
 
     // The search box of the root's search line: a pill, its magnifier at the start and its eraser at
@@ -1516,38 +1582,6 @@ body.dim-category {
         white-space: nowrap;
     }
 
-    // The organisation reads "Organise:" at the START of its own line, as the design's second row
-    // does, not above its track. A legend that floats is not the fieldset's rendered legend (the
-    // HTML rendering rules), so it lays out as a flex item of the group beside the track;
-    // Bootstrap's reboot floats every legend already but gives it the whole width, which would put
-    // the label on a line of its own - so the width goes, and the float is written here too so the
-    // arrangement does not rest on a reboot rule. The colon is the stylesheet's, so the string
-    // stays the group's name for assistive technology. The gap is the 10px the design renders.
-    .dim-toolbar__group--sort {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 10px;
-    }
-
-    // The organisation's label is running text and not a group heading - the reading face at its
-    // own size and weight.
-    .dim-toolbar__group--sort > .dim-toolbar__grouplabel {
-        float: left;
-        width: auto;
-        margin: 0;
-        padding: 0;
-        color: var(--dim-muted);
-        font-family: var(--dim-ds-font-reading);
-        font-size: .88rem;
-        font-weight: 400;
-        white-space: nowrap;
-
-        &::after {
-            content: ":";
-        }
-    }
-
     // A group's options wrap onto further lines inside the box they are in, 6px apart, so every
     // option stays in view and none widens the page; the track is no scroll container, so the
     // focus ring outside an option is never clipped.
@@ -1622,10 +1656,9 @@ body.dim-category {
         margin-left: auto;
     }
 
-    // The two submits a reader without the client module needs - "Apply" beside the organisation
-    // and "Filter" at the foot of the panel - are the design's apply button: the call to action's
-    // filled pair at a field's corners, 40px, the brand face at 15px and 600.
-    .dim-toolbar__sortsubmit,
+    // The submit a reader without the client module needs - "Filter" at the foot of the panel and of
+    // the date layer - is the design's apply button: the call to action's filled pair at a field's
+    // corners, 40px, the brand face at 15px and 600.
     .dim-toolbar__submit {
         display: inline-flex;
         align-items: center;
@@ -5614,9 +5647,8 @@ body.dim-category {
             min-height: 44px;
         }
 
-        // Without JavaScript the design's "Apply" takes a full line of its own on a phone,
-        // at the 44px every control has there; so does the panel's "Filter".
-        .dim-toolbar__sortsubmit,
+        // Without JavaScript the panel's "Filter" takes a full line of its own on a phone, at the
+        // 44px every control has there.
         .dim-toolbar__submit {
             flex: 1 1 100%;
             min-height: 44px;
@@ -6216,7 +6248,8 @@ body.dim-category {
         .dim-card,
         .dim-card__title a,
         .dim-pill,
-        .dim-card__star {
+        .dim-card__star,
+        .dim-menu__item {
             transition: none;
         }
 

@@ -317,7 +317,7 @@ final class listing_account_source_test extends \basic_testcase {
             'query: state.query,',
             "chip: state.chip,\n        fav: state.fav,\n        perpage: state.pagesize,",
             'filters: Listing.filterArgs(state),',
-            'sort: state.sort,',
+            "group: Listing.groupOf(state),\n        sort: Listing.orderOf(state),",
             'datefrom: state.datefrom,',
             'dateto: state.dateto,',
             'cat: state.cat,',
@@ -418,13 +418,27 @@ final class listing_account_source_test extends \basic_testcase {
 
     /**
      * The organisation that changes the shell loads the page, once the state it leaves is remembered or a second passed.
+     *
+     * Organise's two sections each keep the other's choice; a change of grouping is a navigation, an order of a flat
+     * list a fetch, and an order of the grouped page writes the address and tells the posters, fetching nothing.
+     *
+     * Changes that must make it fail: a change of grouping fetched into the wrong shell; a flat reorder not fetched;
+     * a grouped reorder fetched, or never told to the posters; the panel's own order not followed.
      */
     public function test_the_organisation_is_a_navigation_between_shells_and_a_fetch_inside_one(): void {
-        $sort = $this->body('onSort', self::STORE);
+        $sort = $this->body('onOrganise', self::STORE);
         $this->assertMatchesRegularExpression(
-            '~if \(was !== Listing\.isGrouped\(sort\)\) \{\s*shell\.leave\(Listing\.buildUrl\(state\)\);\s*return;\s*\}\s*'
-                . "apply\\('filter'\\);~",
+            '~if \(was !== Listing\.isGrouped\(state\.sort\)\) \{\s*shell\.leave\(Listing\.buildUrl\(state\)\);\s*return;\s*\}\s*'
+                . "if \\(!was\\) \\{\\s*apply\\('filter'\\);\\s*return;\\s*\\}\\s*"
+                . "shell\\.changed\\('order'\\);\\s*Listing\\.writeUrl\\(state, false\\);\\s*shell\\.written\\(\\);\\s*"
+                . 'areas\?\.dispatchEvent\(new CustomEvent\(AREAS\.order, \{detail: \{psort: state\.psort\}\}\)\);~',
             $sort
+        );
+        $this->assertStringContainsString('Listing.organise(state, group, order);', $sort);
+        $this->assertMatchesRegularExpression(
+            "~state\\.psort = psort;\\s*Listing\\.paintOrganise\\(root, state\\);\\s*shell\\.changed\\('order'\\);~",
+            $this->body('onOrdered', self::STORE),
+            'The panel\'s own order is the state\'s, painted and remembered.'
         );
         $this->assertMatchesRegularExpression(
             '~await Promise\.race\(\[\s*remember\(true\),[^;]*REMEMBER_WAIT\)\),\s*\]\);\s*'
@@ -435,9 +449,10 @@ final class listing_account_source_test extends \basic_testcase {
         $address = $this->read('js/esm/src/listing/address.ts');
         $this->assertStringContainsString("export const GROUPED_SORTS = ['', 'category'];", $address);
         $this->assertMatchesRegularExpression(
-            '~if \(name === Listing\.PARAM\.sort\) \{\s*onSort\(input\.value\);\s*return;~',
-            $this->body('onChoose', self::STORE),
-            'The organisation chips are radios of the same delegated change handler.'
+            '~const item = Listing\.closestOf\(event, SELECTORS\.organiseitem\) as HTMLButtonElement \| null;\s*'
+                . 'if \(item\) \{[^}]*event\.preventDefault\(\);\s*onOrganise\(item\.name, item\.value\);~',
+            $this->read(self::STORE),
+            'The menu\'s items are submits the delegated press handler takes.'
         );
     }
 
@@ -477,9 +492,11 @@ final class listing_account_source_test extends \basic_testcase {
 
         $init = $this->body('init', self::STORE);
         $this->assertStringContainsString('const remembered = payload.remembered === true;', $init);
-        $this->assertStringContainsString(
-            "const sort = remembered && typeof payload.sort === 'string' ? payload.sort : Listing.sortOf(params, defaultsort);",
-            $init
+        $this->assertStringContainsString('const {sort, psort} = drawnOrganisation(payload, params, defaultsort);', $init);
+        $this->assertMatchesRegularExpression(
+            "~if \\(payload\\.remembered !== true \\|\\| typeof payload\\.sort !== 'string'\\) \\{\\s*"
+                . 'return Listing\.organisationOf\(params, defaultsort\);~',
+            $this->body('drawnOrganisation', self::STORE)
         );
         $this->assertMatchesRegularExpression(
             '~if \(current\(\)\.remembered\) \{\s*rememberedsent = JSON\.stringify\(rememberArgs\(\)\);\s*'

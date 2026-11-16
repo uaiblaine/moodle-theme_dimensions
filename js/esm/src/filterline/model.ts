@@ -43,8 +43,8 @@ export type Cell = {
     absent: boolean,
 };
 
-/** One button of the view toggle. */
-export type View = {value: string, label: string, icon: string, pressed: boolean};
+/** One item of the View menu: the view, its word and icon, and whether it is the one in force. */
+export type View = {value: string, label: string, icon: string, checked: boolean};
 
 /** Everything the line's own controls show, as the server drew it. */
 export type Line = {
@@ -67,9 +67,12 @@ export type Line = {
     // period's place, and whether a period is set (its dot); null where the server drew none.
     date: {label: string, name: string, template: string, set: boolean} | null,
     organiselabel: string,
+    // The View menu: its items, the button's name, the parameter its items post, its section's heading and its id.
     views: View[],
     viewlabel: string,
     viewname: string,
+    viewheading: string,
+    viewheadid: string,
     manage: boolean,
     closelabel: string,
     suggest: {id: string, filters: string, start: string},
@@ -125,8 +128,11 @@ export const SELECTORS = {
     datelayer: '[data-region="dim-period-layer"]',
     organise: '[data-region="dim-organise"]',
     menu: '[data-region="dim-organise-menu"]',
-    viewrow: '[data-region="dim-view-row"]',
+    viewmenu: '[data-region="dim-view"]',
+    viewlayer: '[data-region="dim-view-menu"]',
     view: '[data-action="dim-view"]',
+    menuhead: '.dim-menu__head',
+    menulabel: '.dim-menu__label',
     manage: '[data-region="dim-line-manage"]',
     listbox: '[data-region="dim-line-suggest"]',
     pillcount: '[data-region="dim-pill-count"]',
@@ -283,17 +289,26 @@ export const dateName = (date: NonNullable<Line['date']>, period: string): strin
 };
 
 /**
- * The view toggle's buttons, List first as the server draws them.
+ * The Font Awesome icon an element draws: its fa- class, without the family or the menu's own classes.
  *
- * @param {Element|null} row The view toggle.
+ * @param {Element|null} icon The icon.
+ * @returns {string}
+ */
+const iconOf = (icon: Element | null): string =>
+    (icon ? Array.from(icon.classList).find((name) => name.startsWith('fa-')) || '' : '');
+
+/**
+ * The View menu's items, List first as the server draws them.
+ *
+ * @param {Element|null} menu The View menu.
  * @returns {Array}
  */
-const viewsOf = (row: Element | null): View[] => (row ? Array.from(row.querySelectorAll<HTMLButtonElement>(SELECTORS.view)) : [])
-    .map((button) => ({
-        value: button.value,
-        label: button.getAttribute(TIP) || '',
-        icon: (button.querySelector('i')?.className || '').replace(/^fa\s+/, ''),
-        pressed: button.getAttribute('aria-pressed') === 'true',
+const viewsOf = (menu: Element | null): View[] => (menu ? Array.from(menu.querySelectorAll<HTMLButtonElement>(SELECTORS.view)) : [])
+    .map((item) => ({
+        value: item.value,
+        label: text(item.querySelector(SELECTORS.menulabel)),
+        icon: iconOf(item.querySelector('i')),
+        checked: item.getAttribute('aria-checked') === 'true',
     }));
 
 /**
@@ -313,7 +328,9 @@ export const read = (line: Element | null): Line | null => {
     if (!line || !search || !field || !listbox) {
         return null;
     }
-    const row = line.querySelector(SELECTORS.viewrow);
+    const view = line.querySelector(SELECTORS.viewmenu);
+    const layer = view ? view.querySelector(SELECTORS.viewlayer) : null;
+    const head = layer ? layer.querySelector(SELECTORS.menuhead) : null;
     return {
         scope: scopeOf(line),
         total: text(line.querySelector(SELECTORS.total)),
@@ -330,9 +347,11 @@ export const read = (line: Element | null): Line | null => {
         filters: filtersOf(line),
         date: dateOf(line),
         organiselabel: attrOf(line, `${SELECTORS.organise} > summary`, TIP),
-        views: viewsOf(row),
-        viewlabel: row ? row.getAttribute('aria-label') || '' : '',
-        viewname: row ? attrOf(row, SELECTORS.view, 'name') || 'view' : 'view',
+        views: viewsOf(layer),
+        viewlabel: view ? attrOf(view, 'summary', TIP) : '',
+        viewname: layer ? attrOf(layer, SELECTORS.view, 'name') || 'view' : 'view',
+        viewheading: text(head),
+        viewheadid: head ? head.id : '',
         manage: line.querySelector(SELECTORS.manage) !== null,
         closelabel: attrOf(line, SELECTORS.closer, 'aria-label'),
         suggest: {id: listbox.id, filters: listbox.dataset.labelFilters || '', start: listbox.dataset.labelStart || ''},
@@ -446,7 +465,7 @@ export const stated = (model: Line, told: Told): Line => {
         next.star = Object.assign({}, model.star, {pressed: told.fav});
     }
     if (typeof told.view === 'string') {
-        next.views = model.views.map((view) => Object.assign({}, view, {pressed: view.value === told.view}));
+        next.views = model.views.map((view) => Object.assign({}, view, {checked: view.value === told.view}));
     }
     return next;
 };

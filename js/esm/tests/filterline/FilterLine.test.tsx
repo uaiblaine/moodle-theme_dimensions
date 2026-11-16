@@ -204,7 +204,7 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         const posted = Array.from(new FormData(page.form).entries());
         const panel = page.line.querySelector('[data-region="dim-filters-panel"] [data-name="cf_12"]');
         const dates = page.line.querySelector('[data-region="dim-period-layer"] [data-region="dim-date"]');
-        const menu = page.line.querySelector('[data-region="dim-sort"]');
+        const menu = page.line.querySelector('[data-region="dim-organise-group"][data-name="sort"]');
         const manage = page.line.querySelector('[data-region="dim-line-manage"] .action-menu');
 
         await act(async() => {
@@ -216,7 +216,7 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         // The very server nodes, moved: what the listing paints there and what the period control is mounted in.
         expect(page.line.querySelector('[data-region="dim-filters-panel"] [data-name="cf_12"]')).toBe(panel);
         expect(page.line.querySelector('[data-region="dim-period-layer"] [data-region="dim-date"]')).toBe(dates);
-        expect(page.line.querySelector('[data-region="dim-sort"]')).toBe(menu);
+        expect(page.line.querySelector('[data-region="dim-organise-group"][data-name="sort"]')).toBe(menu);
         expect(page.line.querySelector('[data-region="dim-line-manage"] .action-menu')).toBe(manage);
         const field = page.line.querySelector('input[type="search"]') as HTMLInputElement;
         expect(field.getAttribute('role')).toBe('combobox');
@@ -277,8 +277,9 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect((page.line.querySelector('[data-action="dim-search-clear"]') as HTMLElement).hidden).toBe(true);
         expect((page.line.querySelector('#dim-chip-7-enrolled') as HTMLInputElement).checked).toBe(true);
         expect(page.line.querySelector('[data-region="dim-line-star"]')?.getAttribute('aria-pressed')).toBe('true');
-        const views = Array.from(page.line.querySelectorAll('[data-region="dim-view-row"] button'));
-        expect(views.map((button) => button.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
+        const views = Array.from(page.line.querySelectorAll('[data-region="dim-view-menu"] button'));
+        expect(views.map((button) => button.getAttribute('aria-checked'))).toEqual(['true', 'false']);
+        expect(page.line.querySelector('[data-region="dim-view-icon"]')?.classList.contains('fa-list')).toBe(true);
     });
 
     it('opens the search on the reader\'s own focus only: a press or a Tab, never a client\'s focus', async() => {
@@ -363,6 +364,83 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(document.activeElement).toBe(period.querySelector('summary'));
     });
 
+    it('draws View as one button over a menu, and Organise as a menu of two headed sections', async() => {
+        const page = await mount();
+        const view = page.line.querySelector('[data-region="dim-view"]') as HTMLDetailsElement;
+        const summary = view.querySelector('summary') as HTMLElement;
+        expect(summary.querySelector('[data-region="dim-view-icon"]')?.classList.contains('fa-border-all')).toBe(true);
+        expect(summary.querySelector('.fa-chevron-down')).not.toBeNull();
+        const menu = view.querySelector('[role="menu"]') as HTMLElement;
+        expect(menu.getAttribute('aria-label')).toBe('View');
+        const head = menu.querySelector('.dim-menu__head') as HTMLElement;
+        expect(head.textContent).toBe('Show as');
+        expect(menu.querySelector('[role="group"]')?.getAttribute('aria-labelledby')).toBe(head.id);
+        const words = Array.from(menu.querySelectorAll('[role="menuitemradio"]')).map((item) => item.textContent);
+        expect(words).toEqual(['List', 'Cards']);
+        const organise = page.line.querySelector('[data-region="dim-organise-menu"]') as HTMLElement;
+        expect(organise.getAttribute('role')).toBe('menu');
+        const heads = Array.from(organise.querySelectorAll('.dim-menu__head')).map((one) => one.textContent);
+        expect(heads).toEqual(['Group by', 'Sort by']);
+        expect(organise.querySelectorAll('[role="separator"]')).toHaveLength(1);
+    });
+
+    it('moves through a menu with the arrow keys, one Tab stop, and closes it on a choice, Tab or Escape', async() => {
+        const page = await mount();
+        // The items are the form's submits; with no listing here, nothing else takes the press.
+        page.form.addEventListener('submit', (event) => event.preventDefault());
+        const organise = page.line.querySelector('[data-region="dim-organise"]') as HTMLDetailsElement;
+        const summary = organise.querySelector('summary') as HTMLElement;
+        const items = Array.from(organise.querySelectorAll<HTMLElement>('[role="menuitemradio"]'));
+        // An arrow on the button opens the menu on its first chosen item, the only one in the Tab order.
+        await act(async() => summary.focus());
+        fireEvent.keyDown(summary, {key: 'ArrowDown'});
+        expect(organise.open).toBe(true);
+        expect(document.activeElement).toBe(items[0]);
+        expect(items.map((item) => item.tabIndex)).toEqual([0, -1, -1, -1]);
+        // Through both sections, wrapping, and to the ends.
+        fireEvent.keyDown(items[0], {key: 'ArrowDown'});
+        fireEvent.keyDown(items[1], {key: 'ArrowDown'});
+        expect(document.activeElement).toBe(items[2]);
+        expect(items.map((item) => item.tabIndex)).toEqual([-1, -1, 0, -1]);
+        fireEvent.keyDown(items[2], {key: 'End'});
+        expect(document.activeElement).toBe(items[3]);
+        fireEvent.keyDown(items[3], {key: 'ArrowDown'});
+        expect(document.activeElement).toBe(items[0]);
+        fireEvent.keyDown(items[0], {key: 'ArrowUp'});
+        expect(document.activeElement).toBe(items[3]);
+        fireEvent.keyDown(items[3], {key: 'Home'});
+        expect(document.activeElement).toBe(items[0]);
+        // The control: a key the menu does not move by changes nothing.
+        fireEvent.keyDown(items[0], {key: 'a'});
+        expect(document.activeElement).toBe(items[0]);
+        // Escape closes it and gives the button the focus.
+        fireEvent.keyDown(items[0], {key: 'Escape'});
+        expect(organise.open).toBe(false);
+        expect(document.activeElement).toBe(summary);
+        // Tab leaves it closed.
+        fireEvent.keyDown(summary, {key: 'ArrowUp'});
+        expect(organise.open).toBe(true);
+        fireEvent.keyDown(document.activeElement as HTMLElement, {key: 'Tab'});
+        expect(organise.open).toBe(false);
+        // A choice closes it and gives the button the focus; the listing acts on the press after the line.
+        organise.open = true;
+        const press = new MouseEvent('click', {bubbles: true, cancelable: true});
+        items[1].dispatchEvent(press);
+        expect(organise.open).toBe(false);
+        expect(document.activeElement).toBe(summary);
+        // The View menu, drawn by the component, the same way.
+        const view = page.line.querySelector('[data-region="dim-view"]') as HTMLDetailsElement;
+        const toggle = view.querySelector('summary') as HTMLElement;
+        fireEvent.keyDown(toggle, {key: 'ArrowDown'});
+        expect(view.open).toBe(true);
+        expect(document.activeElement).toBe(view.querySelector('[value="cards"]'));
+        fireEvent.keyDown(document.activeElement as HTMLElement, {key: 'ArrowDown'});
+        expect(document.activeElement).toBe(view.querySelector('[value="list"]'));
+        (document.activeElement as HTMLElement).click();
+        expect(view.open).toBe(false);
+        expect(document.activeElement).toBe(toggle);
+    });
+
     it('draws the date button the server drew, and an answer\'s period writes its name and its dot', async() => {
         const page = await mount();
         const button = page.line.querySelector('[data-region="dim-period"] > [data-region="dim-period-button"]') as HTMLElement;
@@ -421,6 +499,7 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         const filters = page.line.querySelector('[data-region="dim-filters"]') as HTMLDetailsElement;
         const period = page.line.querySelector('[data-region="dim-period"]') as HTMLDetailsElement;
         const organise = page.line.querySelector('[data-region="dim-organise"]') as HTMLDetailsElement;
+        const view = page.line.querySelector('[data-region="dim-view"]') as HTMLDetailsElement;
         /**
          * Open a layer as a press on its summary does: the attribute, then the toggle event.
          *
@@ -443,6 +522,9 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         open(organise);
         expect(filters.open).toBe(false);
         expect(organise.open).toBe(true);
+        open(view);
+        expect(organise.open).toBe(false);
+        expect(view.open).toBe(true);
     });
 
     it('closes the date layer from its "Show" and on a press outside it, never on a press inside it', async() => {
@@ -463,10 +545,10 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(period.open).toBe(false);
     });
 
-    it('closes the Filters panel, the date layer and the Organise menu on a press outside, at every step', async() => {
+    it('closes the Filters panel, the date layer and the two menus on a press outside, at every step', async() => {
         (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700, 300]);
         const page = await mount();
-        const layers = ['dim-filters', 'dim-period', 'dim-organise'].map(
+        const layers = ['dim-filters', 'dim-period', 'dim-organise', 'dim-view'].map(
             (region) => page.line.querySelector(`[data-region="${region}"]`) as HTMLDetailsElement
         );
         const star = page.line.querySelector('[data-region="dim-line-star"]') as HTMLButtonElement;
@@ -808,7 +890,7 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(page.line.querySelectorAll('[title]')).toHaveLength(0);
         const tips = Array.from(page.line.querySelectorAll<HTMLElement>('[data-dim-tip]'));
         expect(tips.map((control) => control.getAttribute('data-dim-tip'))).toEqual(
-            ['Favourites', 'Filters', 'Start date', 'Organise', 'List', 'Cards', 'Search courses', 'Clear text', 'Close search']
+            ['Favourites', 'Filters', 'Start date', 'Organise', 'View', 'Search courses', 'Clear text', 'Close search']
         );
         tips.forEach((control) => {
             const word = control.querySelector(':scope > .visually-hidden');

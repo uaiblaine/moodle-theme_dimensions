@@ -768,14 +768,17 @@ final class card_markup_test extends \advanced_testcase {
             'dim-vitrine-clear' => '//a[@data-region="dim-vitrine-clear"]',
             /* The count paragraph's two parts and the two that follow the chips in the row under
                the line, each rewritten by the client; the clear link's action, shared by every
-               "clear filters" of the page; and the view toggle, one group on the line. */
+               "clear filters" of the page; and the View menu, one disclosure on the line, with the icon of
+               the view in force on its summary. */
             'dim-vitrine-countnumber' => '//*[@data-region="dim-vitrine-count"]/b[@data-region="dim-vitrine-countnumber"]',
             'dim-vitrine-counttext' => '//*[@data-region="dim-vitrine-count"]/span[@data-region="dim-vitrine-counttext"]',
             'dim-vitrine-seeall' => '//*[@data-region="dim-line-chips"]/span[@data-region="dim-vitrine-seeall"]/a[@href]',
             'dim-vitrine-countnote' => '//*[@data-region="dim-line-chips"]/span[@data-region="dim-vitrine-countnote"][@hidden]',
             'dim-vitrine-countnotetext' => '//*[@data-region="dim-vitrine-countnote"]//*[@data-region="dim-vitrine-countnotetext"]',
             'dim-clear on the clear link' => '//a[@data-region="dim-vitrine-clear"][@data-action="dim-clear"]',
-            'dim-view-row' => '//*[@data-region="dim-line-capsule"]/*[@data-region="dim-view-row"][@role="group"]',
+            'dim-view' => '//*[@data-region="dim-line-capsule"]/details[@data-region="dim-view"]/summary'
+                . '/i[@data-region="dim-view-icon"]',
+            'dim-view-menu' => '//details[@data-region="dim-view"]/div[@data-region="dim-view-menu"][@role="menu"]',
             /* The filter line and what the clients address on it and under it: the line, its cluster with the
                result count and the capsule, the search's capsule with the field and its eraser, the Organise
                menu, the scope and "More statuses" halves of the state group, the row under the line, its list
@@ -815,7 +818,13 @@ final class card_markup_test extends \advanced_testcase {
             'dim-line-suggest' => '//*[@data-region="dim-line"]/div[@data-region="dim-line-suggest"][@id="dim-vitrine-suggest-7"]'
                 . '[@data-label-filters][@data-label-start][@hidden]',
             'dim-filters-panel' => '//details[@data-region="dim-filters"]/div[@data-region="dim-filters-panel"]',
-            'dim-organise-menu' => '//details[@data-region="dim-organise"]/div[@data-region="dim-organise-menu"]',
+            'dim-organise-menu' => '//details[@data-region="dim-organise"]/div[@data-region="dim-organise-menu"][@role="menu"]',
+            /* Its two sections, each a group naming the parameter its items post, and the two hidden fields that
+               carry the organisation in force before every control, which the listing keeps in step. */
+            'dim-organise-group' => '//*[@data-region="dim-organise-menu"]/div[@role="group"][@data-region="dim-organise-group"]'
+                . '[@data-name][@aria-labelledby]/button[@role="menuitemradio"][@data-action="dim-organise"][@aria-checked]',
+            'dim-group-field' => '//form/input[@type="hidden"][@name="group"][@data-region="dim-group-field"]',
+            'dim-order-field' => '//form/input[@type="hidden"][@name="sort"][@data-region="dim-order-field"]',
             // The third frame the logged-in shell's line component adopts whole: core's managers' menu.
             'dim-line-manage' => '//*[@data-region="dim-line-searchcap"]/div[@data-region="dim-line-manage"]'
                 . '/div[' . self::has_class('action-menu') . ']',
@@ -832,17 +841,18 @@ final class card_markup_test extends \advanced_testcase {
                 "The toolbar no longer writes the {$hook} hook the client module addresses."
             );
         }
-        /* Both view buttons, because the module addresses them as a pair and swaps aria-pressed:
-           ONE group of two named submits, List first, each named by a visually hidden word and the
-           bar's tooltip. There is no second copy of the toggle for the phone. */
+        /* Both views, because the module addresses them as a pair and swaps aria-checked: ONE menu of two
+           named submits, List first, each a menu item with its icon, its word and the tick. There is no
+           second copy for the phone. The View button itself is named by a visually hidden word and the
+           bar's tooltip. */
         $this->assertSame(
             2,
             $toolbar->query('//button[@data-action="dim-view"][@name="view"]')->length,
-            'The view toggle is two named submits, addressed by data-action.'
+            'The views are two named submits, addressed by data-action.'
         );
         $this->assertSame(0, $toolbar->query('//*[@data-region="dim-view-phone"]')->length, 'There is no phone copy.');
         $views = iterator_to_array(
-            $toolbar->query('//*[@data-region="dim-view-row"]/button[@data-action="dim-view"][@name="view"]')
+            $toolbar->query('//*[@data-region="dim-view-menu"]/div[@role="group"]/button[@data-action="dim-view"][@name="view"]')
         );
         $this->assertSame(
             ['list', 'cards'],
@@ -850,16 +860,19 @@ final class card_markup_test extends \advanced_testcase {
             'List first, as the filter line draws it.'
         );
         foreach ($views as $button) {
-            $this->assertNotSame('', $button->getAttribute('data-dim-tip'), 'An icon button has a tooltip.');
-            $this->assertFalse($button->hasAttribute('title'), 'And no title beside it.');
+            $this->assertSame('menuitemradio', $button->getAttribute('role'));
+            $this->assertFalse($button->hasAttribute('title'), 'No title.');
             $this->assertSame(
                 1,
-                $toolbar->query('./span[' . self::has_class('visually-hidden') . ']', $button)->length,
-                'And its word is its accessible name, out of the picture.'
+                $toolbar->query('./span[' . self::has_class('dim-menu__label') . ']', $button)->length,
+                'Its word is on screen, so it needs no tooltip.'
             );
         }
-        /* The open panel, carried by two hidden fields the panel module keeps in step with the
-           address it rewrites, each by its own region. */
+        $summary = $toolbar->query('//details[@data-region="dim-view"]/summary')->item(0);
+        $this->assertNotSame('', $summary->getAttribute('data-dim-tip'), 'The View button has a tooltip.');
+        $this->assertSame(1, $toolbar->query('./span[' . self::has_class('visually-hidden') . ']', $summary)->length);
+        /* The open panel and the grouped order, carried by two hidden fields the panel module keeps in
+           step with the address it rewrites, each by its own region. */
         foreach (['open' => 'dim-open-field', 'psort' => 'dim-psort-field'] as $name => $region) {
             $this->assertSame(
                 1,
@@ -1076,9 +1089,12 @@ final class card_markup_test extends \advanced_testcase {
         /* The toolbar's own regions. The date fieldset is inside the date button's disclosure, and the
            filter disclosure holds option groups only. */
         $this->assertSame(
-            1,
-            $toolbar->query('//fieldset[@data-region="dim-sort"][@data-name]')->length,
-            'The organisation group.'
+            ['group', 'sort'],
+            array_map(
+                static fn(\DOMElement $group): string => $group->getAttribute('data-name'),
+                iterator_to_array($toolbar->query('//*[@data-region="dim-organise-menu"]/*[@data-region="dim-organise-group"]'))
+            ),
+            'The organisation\'s two sections, "Group by" then "Sort by".'
         );
         $this->assertSame(
             1,
@@ -1382,8 +1398,8 @@ final class card_markup_test extends \advanced_testcase {
         $enter = $this->submitted($pressed, '[' . self::has_class('dim-toolbar__defaultsubmit') . ']');
         $this->assertSame('1', $enter['fav'] ?? null, 'Enter in the search box keeps the favourites on.');
         $this->assertSame('rescue', $enter['q'] ?? null, 'Precondition: the form really was read.');
-        $view = $this->submitted($pressed, '[@data-region="dim-view-row"]/button[@value="list"]', true);
-        $this->assertSame('1', $view['fav'] ?? null, 'And so does the view toggle.');
+        $view = $this->submitted($pressed, '[@data-region="dim-view-menu"]//button[@value="list"]', true);
+        $this->assertSame('1', $view['fav'] ?? null, 'And so does the View menu.');
 
         $field = $pressed->query('//input[@data-region="dim-fav-field"]')->item(0);
         $field->parentNode->removeChild($field);
@@ -1392,6 +1408,35 @@ final class card_markup_test extends \advanced_testcase {
             $this->submitted($pressed, '[' . self::has_class('dim-toolbar__defaultsubmit') . ']'),
             'The control: without the hidden field the favourites are lost.'
         );
+    }
+
+    /**
+     * The Organise menu works with JavaScript off: each item applies at a press and keeps the other section's choice.
+     *
+     * The form carries the grouping and the order in force as hidden fields first, so a menu item's own value,
+     * later in the form, is the one PHP reads, and the other half travels unchanged; what it posts is read as
+     * criteria reads an address. The example context is grouped by area in A-Z order.
+     *
+     * Changes that must make it fail: a hidden field of the organisation dropped or put after the menu (pressing
+     * "Sort by" then loses the grouping, or "No grouping" the order); an item posting no name.
+     */
+    public function test_the_organise_menu_posts_without_javascript_keeping_the_other_choice(): void {
+        $this->resetAfterTest();
+        $toolbar = $this->render_context('category_toolbar', $this->example_context('category_toolbar'));
+        $press = function (string $name, string $value) use ($toolbar): array {
+            $posted = $this->submitted($toolbar, "[@data-action=\"dim-organise\"][@name=\"{$name}\"][@value=\"{$value}\"]");
+            [$sort, $psort] = criteria::organisation($posted['group'] ?? '', $posted['sort'] ?? '', $posted['psort'] ?? '');
+            $request = new criteria(7, ['sort' => $sort, 'psort' => $psort]);
+            return [$request->group(), $request->order()];
+        };
+        $this->assertSame(['none', 'name'], $press('group', 'none'), 'No grouping keeps the A-Z order.');
+        $this->assertSame(['category', 'recent'], $press('sort', 'recent'), 'Most recent keeps the grouping.');
+        $enter = $this->submitted($toolbar, '[' . self::has_class('dim-toolbar__defaultsubmit') . ']');
+        $this->assertSame(['category', 'name'], [$enter['group'] ?? null, $enter['sort'] ?? null], 'Any submission keeps both.');
+
+        $field = $toolbar->query('//input[@data-region="dim-group-field"]')->item(0);
+        $field->parentNode->removeChild($field);
+        $this->assertSame(['none', 'recent'], $press('sort', 'recent'), 'The control: without the field the grouping is lost.');
     }
 
     /**

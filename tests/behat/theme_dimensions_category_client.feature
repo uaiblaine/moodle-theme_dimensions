@@ -151,16 +151,19 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I log in as "student1"
     And I am on the "TESTCAT|perpage=1" "theme_dimensions > Category showcase" page
     And ".dim-vitrine.dim-vitrine--cards" "css_element" should exist
-    # The toggle is one icon-only group whose words are visually hidden.
-    And "//*[@data-region='dim-view-row']/button[@value='list']" "xpath_element" should exist
-    And "//*[@data-region='dim-view-row']/button[@value='cards']" "xpath_element" should exist
+    # View is one icon button over a menu of the two views.
+    And "//*[@data-region='dim-view-menu']//button[@value='list'][@aria-checked='false']" "xpath_element" should exist
+    And "//*[@data-region='dim-view-menu']//button[@value='cards'][@aria-checked='true']" "xpath_element" should exist
     # The appended page is state that lives in this document and nowhere else, which is what
     # makes the assertions after the toggle able to tell a class swap from a page load: the view
     # buttons are real submits, so without this module the click would reload and lose it.
     When I click on "Load more" "button"
     Then I wait until "//ul[@data-region='dim-vitrine-grid'][count(li[not(contains(@class, 'dim-vitrine__item--enter'))]) = 2]" "xpath_element" exists
-    When I click on "List" "button" in the "[data-region='dim-view-row']" "css_element"
+    When I click on "[data-region='dim-view'] > summary" "css_element"
+    And I click on "List" "button" in the "[data-region='dim-view-menu']" "css_element"
     Then ".dim-vitrine.dim-vitrine--list" "css_element" should exist
+    And "//*[@data-region='dim-view-menu']//button[@value='list'][@aria-checked='true']" "xpath_element" should exist
+    And "//details[@data-region='dim-view'][not(@open)]" "xpath_element" should exist
     And I should see "Resgate em Altura" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should see "Curso Online" in the "[data-region='dim-vitrine-grid']" "css_element"
     # The preference is written 500 ms after the click, and the page below is asked for without a
@@ -345,7 +348,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '4 courses in Test category')]" "xpath_element" should exist
     And I should see "Zumbi do Mar" in the "//ul[@data-region='dim-vitrine-grid']/li[1]" "xpath_element"
     When I click on "[data-region='dim-organise'] > summary" "css_element"
-    And I click on "//fieldset[@data-region='dim-sort']//label[normalize-space(.)='A-Z']" "xpath_element"
+    And I click on "Name" "button" in the "[data-region='dim-organise-menu']" "css_element"
     Then I should see "Combate a Incendio" in the "//ul[@data-region='dim-vitrine-grid']/li[1]" "xpath_element"
     And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '4 courses in Test category')]" "xpath_element" should exist
     And the url should match "[?&]sort=name(&|$)"
@@ -354,7 +357,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And "[data-region='dim-areas']" "css_element" should not exist
 
   @javascript
-  Scenario: Choosing "By area" from a flat order brings the posters back
+  Scenario: Choosing "Area" from a flat order brings the posters back
     # The other half of the same rule, and the one that has to be a real navigation: the grouped
     # page draws the posters and the panel's slot, which the flat page has no markup for, so no
     # fetch could produce them.
@@ -362,14 +365,15 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I am on the "TESTCAT|sort=name" "theme_dimensions > Category showcase" page
     And "[data-region='dim-areas']" "css_element" should not exist
     When I click on "[data-region='dim-organise'] > summary" "css_element"
-    And I click on "//fieldset[@data-region='dim-sort']//label[normalize-space(.)='By area']" "xpath_element"
+    And I click on "Area" "button" in the "[data-region='dim-organise-menu']" "css_element"
     Then "[data-region='dim-areas']" "css_element" should exist
     And I should see "Open category" in the "[data-region='dim-areas']" "css_element"
     And I should see "Courses in Test category" in the "[data-region='dim-direct']" "css_element"
-    # The address names the organisation the reader pressed. It is the chip's own value, and the
-    # server reads it and the empty string as the same request - what may never be in the address
-    # is the flat order the reader has just left.
+    # The address names the organisation the reader pressed, and the order travels with it ("Sort by"
+    # keeps its choice): the grouped A-Z order, never the flat order the reader has just left.
     And the url should match "[?&]sort=category(&|$)"
+    And the url should match "[?&]psort=name(&|$)"
+    And "//button[@data-action='dim-organise'][@value='name'][@aria-checked='true']" "xpath_element" should exist
 
   @javascript
   Scenario: The page remembers the organisation chosen in this category, and only in this one
@@ -386,16 +390,28 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     And "[data-region='dim-areas']" "css_element" should exist
+    # "Name" while grouped by area keeps the posters: it is the order of the panels, remembered too.
     When I click on "[data-region='dim-organise'] > summary" "css_element"
-    And I click on "//fieldset[@data-region='dim-sort']//label[normalize-space(.)='A-Z']" "xpath_element"
+    And I click on "Name" "button" in the "[data-region='dim-organise-menu']" "css_element"
+    Then "[data-region='dim-areas']" "css_element" should exist
+    And the url should match "[?&]psort=name(&|$)"
+    And I wait "1" seconds
+    When I am on the "TESTCAT" "theme_dimensions > Category showcase" page
+    Then "[data-region='dim-areas']" "css_element" should exist
+    And "//button[@data-action='dim-organise'][@value='name'][@aria-checked='true']" "xpath_element" should exist
+    And the url should match "[?&]psort=name(&|$)"
+    # "No grouping" is a change of shell, remembered before the page is left.
+    When I click on "[data-region='dim-organise'] > summary" "css_element"
+    And I click on "No grouping" "button" in the "[data-region='dim-organise-menu']" "css_element"
     Then "[data-region='dim-areas']" "css_element" should not exist
     And the url should match "[?&]sort=name(&|$)"
     When I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     Then "[data-region='dim-areas']" "css_element" should not exist
-    And "//fieldset[@data-region='dim-sort']//input[@value='name'][@checked]" "xpath_element" should exist
+    And "//button[@data-action='dim-organise'][@value='none'][@aria-checked='true']" "xpath_element" should exist
     And the url should match "[?&]sort=name(&|$)"
     When I am on the "OTHERCAT" "theme_dimensions > Category showcase" page
-    Then "//fieldset[@data-region='dim-sort']//input[@value='category'][@checked]" "xpath_element" should exist
+    Then "//button[@data-action='dim-organise'][@value='category'][@aria-checked='true']" "xpath_element" should exist
+    And "//button[@data-action='dim-organise'][@value='recent'][@aria-checked='true']" "xpath_element" should exist
     And the url should match "^(?!.*[?&]sort=)"
 
   @javascript
@@ -673,8 +689,9 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     Then "//div[@data-region='dim-line'][contains(concat(' ', @class, ' '), ' dim-line--s2 ')]" "xpath_element" should exist
-    And "[data-region='dim-view-row']" "css_element" should be visible
-    When I click on "List" "button" in the "[data-region='dim-view-row']" "css_element"
+    And "[data-region='dim-view'] > summary" "css_element" should be visible
+    When I click on "[data-region='dim-view'] > summary" "css_element"
+    And I click on "List" "button" in the "[data-region='dim-view-menu']" "css_element"
     Then ".dim-vitrine.dim-vitrine--list" "css_element" should exist
 
   @javascript
@@ -872,12 +889,12 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     When I click on "[data-region='dim-organise'] > summary" "css_element"
-    And I click on "//fieldset[@data-region='dim-sort']//label[normalize-space(.)='A-Z']" "xpath_element"
-    Then the url should match "[?&]sort=name(&|$)"
+    And I click on "No grouping" "button" in the "[data-region='dim-organise-menu']" "css_element"
+    Then the url should match "[?&]sort=recent(&|$)"
     When I am on the "OTHERCAT" "theme_dimensions > Category showcase" page
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    Then the url should match "[?&]sort=name(&|$)"
-    And "//fieldset[@data-region='dim-sort']//input[@value='name'][@checked]" "xpath_element" should exist
+    Then the url should match "[?&]sort=recent(&|$)"
+    And "//button[@data-action='dim-organise'][@value='none'][@aria-checked='true']" "xpath_element" should exist
     When I press the "back" button in the browser
     Then I should see "Curso Outro" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should not see "Resgate em Altura" in the "[data-region='dim-vitrine-grid']" "css_element"

@@ -72,7 +72,8 @@ export const CALENDAR = {
  * psort, answer}: the page's client puts its answer's promise in it while the event is dispatched), asks for
  * the question that request would ask (question, detail {poster, psort, question}), offers a failure before
  * its inline error (unanswered, detail {poster, psort, taken}), says the rows are on screen (painted, detail
- * {panel}) and says it is drawn (mounted).
+ * {panel}), says it is drawn (mounted) and that the panel's own order control changed the grouped order
+ * (ordered, detail {psort}); the listing tells it the grouped order "Sort by" chose (order, detail {psort}).
  */
 export const AREAS = {
     mounted: 'dim-areas:mounted',
@@ -80,6 +81,8 @@ export const AREAS = {
     question: 'dim-areas:question',
     unanswered: 'dim-areas:unanswered',
     painted: 'dim-areas:painted',
+    ordered: 'dim-areas:ordered',
+    order: 'dim-areas:order',
 };
 
 /** Every hook the listing reads, all of them written by the showcase's templates. */
@@ -123,7 +126,9 @@ export const SELECTORS = {
     cardtitle: '[data-region="dim-card-titlelink"]',
     search: 'input[type="search"]',
     viewbutton: '[data-action="dim-view"]',
-    sort: '[data-region="dim-sort"]',
+    viewicon: '[data-region="dim-view-icon"]',
+    organiseitem: '[data-action="dim-organise"]',
+    organisefield: '[data-region="dim-group-field"], [data-region="dim-order-field"]',
     date: '[data-region="dim-date"]',
     daterange: '[data-region="dim-daterange"]',
     dateinputs: '[data-region="dim-dateinputs"]',
