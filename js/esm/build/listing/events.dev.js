@@ -34,7 +34,9 @@ const AREAS = {
   ask: "dim-areas:ask",
   question: "dim-areas:question",
   unanswered: "dim-areas:unanswered",
-  painted: "dim-areas:painted"
+  painted: "dim-areas:painted",
+  ordered: "dim-areas:ordered",
+  order: "dim-areas:order"
 };
 const SELECTORS = {
   root: '[data-region="dim-vitrine"]',
@@ -76,7 +78,9 @@ const SELECTORS = {
   cardtitle: '[data-region="dim-card-titlelink"]',
   search: 'input[type="search"]',
   viewbutton: '[data-action="dim-view"]',
-  sort: '[data-region="dim-sort"]',
+  viewicon: '[data-region="dim-view-icon"]',
+  organiseitem: '[data-action="dim-organise"]',
+  organisefield: '[data-region="dim-group-field"], [data-region="dim-order-field"]',
   date: '[data-region="dim-date"]',
   daterange: '[data-region="dim-daterange"]',
   dateinputs: '[data-region="dim-dateinputs"]',

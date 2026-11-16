@@ -331,6 +331,8 @@ class category_listing implements \core\output\named_templatable, \core\output\r
                    organisation in every address it writes, as criteria::sort_params() does. */
                 'remembered' => $this->criteria->remembered,
                 'sort' => $this->criteria->sort,
+                // The grouped order in force, '' or name: the remembered one is not in a bare address either.
+                'psort' => $this->criteria->psort,
                 'view' => $this->view,
                 'canpersist' => isloggedin() && !isguestuser(),
             ]),

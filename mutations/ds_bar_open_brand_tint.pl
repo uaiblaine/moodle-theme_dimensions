@@ -1,3 +1,3 @@
 # Give an open disclosure's summary the old quiet tint instead of the brand tone's ground: the pressed face no
 # longer one tone.
-s/(\n    \.dim-toolbar__filters\[open\] > \.dim-line__iconbtn,\n    \.dim-line__date\[open\] > \.dim-line__iconbtn,\n    \.dim-line__organise\[open\] > \.dim-line__iconbtn \{\n        )background: var\(--dim-brand-tint\);/${1}background: var(--dim-tint);/;
+s/(\n    \.dim-line__organise\[open\] > \.dim-line__iconbtn,\n    \.dim-line__viewmenu\[open\] > \.dim-line__iconbtn \{\n        )background: var\(--dim-brand-tint\);/${1}background: var(--dim-tint);/;

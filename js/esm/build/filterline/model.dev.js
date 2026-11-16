@@ -41,8 +41,11 @@ const SELECTORS = {
   datelayer: '[data-region="dim-period-layer"]',
   organise: '[data-region="dim-organise"]',
   menu: '[data-region="dim-organise-menu"]',
-  viewrow: '[data-region="dim-view-row"]',
+  viewmenu: '[data-region="dim-view"]',
+  viewlayer: '[data-region="dim-view-menu"]',
   view: '[data-action="dim-view"]',
+  menuhead: ".dim-menu__head",
+  menulabel: ".dim-menu__label",
   manage: '[data-region="dim-line-manage"]',
   listbox: '[data-region="dim-line-suggest"]',
   pillcount: '[data-region="dim-pill-count"]'
@@ -117,11 +120,12 @@ const dateName = /* @__PURE__ */ __name((date, period) => {
   }
   return date.template.split(PERIOD).join(period);
 }, "dateName");
-const viewsOf = /* @__PURE__ */ __name((row) => (row ? Array.from(row.querySelectorAll(SELECTORS.view)) : []).map((button) => ({
-  value: button.value,
-  label: button.getAttribute(TIP) || "",
-  icon: (button.querySelector("i")?.className || "").replace(/^fa\s+/, ""),
-  pressed: button.getAttribute("aria-pressed") === "true"
+const iconOf = /* @__PURE__ */ __name((icon) => icon ? Array.from(icon.classList).find((name) => name.startsWith("fa-")) || "" : "", "iconOf");
+const viewsOf = /* @__PURE__ */ __name((menu) => (menu ? Array.from(menu.querySelectorAll(SELECTORS.view)) : []).map((item) => ({
+  value: item.value,
+  label: text(item.querySelector(SELECTORS.menulabel)),
+  icon: iconOf(item.querySelector("i")),
+  checked: item.getAttribute("aria-checked") === "true"
 })), "viewsOf");
 const read = /* @__PURE__ */ __name((line) => {
   const search = line ? line.querySelector(SELECTORS.search) : null;
@@ -130,7 +134,9 @@ const read = /* @__PURE__ */ __name((line) => {
   if (!line || !search || !field || !listbox) {
     return null;
   }
-  const row = line.querySelector(SELECTORS.viewrow);
+  const view = line.querySelector(SELECTORS.viewmenu);
+  const layer = view ? view.querySelector(SELECTORS.viewlayer) : null;
+  const head = layer ? layer.querySelector(SELECTORS.menuhead) : null;
   return {
     scope: scopeOf(line),
     total: text(line.querySelector(SELECTORS.total)),
@@ -147,9 +153,11 @@ const read = /* @__PURE__ */ __name((line) => {
     filters: filtersOf(line),
     date: dateOf(line),
     organiselabel: attrOf(line, `${SELECTORS.organise} > summary`, TIP),
-    views: viewsOf(row),
-    viewlabel: row ? row.getAttribute("aria-label") || "" : "",
-    viewname: row ? attrOf(row, SELECTORS.view, "name") || "view" : "view",
+    views: viewsOf(layer),
+    viewlabel: view ? attrOf(view, "summary", TIP) : "",
+    viewname: layer ? attrOf(layer, SELECTORS.view, "name") || "view" : "view",
+    viewheading: text(head),
+    viewheadid: head ? head.id : "",
     manage: line.querySelector(SELECTORS.manage) !== null,
     closelabel: attrOf(line, SELECTORS.closer, "aria-label"),
     suggest: { id: listbox.id, filters: listbox.dataset.labelFilters || "", start: listbox.dataset.labelStart || "" }
@@ -228,7 +236,7 @@ const stated = /* @__PURE__ */ __name((model, told) => {
     next.star = Object.assign({}, model.star, { pressed: told.fav });
   }
   if (typeof told.view === "string") {
-    next.views = model.views.map((view) => Object.assign({}, view, { pressed: view.value === told.view }));
+    next.views = model.views.map((view) => Object.assign({}, view, { checked: view.value === told.view }));
   }
   return next;
 }, "stated");

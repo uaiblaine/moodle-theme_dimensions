@@ -403,7 +403,8 @@ export const addressWith = (href: string, open: number, psort: string): string =
     } else {
         url.searchParams.delete(PARAM.open);
     }
-    if (open > 0 && psort === PSORT_NAME) {
+    // The grouped order holds with no panel open (criteria::$psort).
+    if (psort === PSORT_NAME) {
         url.searchParams.set(PARAM.psort, PSORT_NAME);
     } else {
         url.searchParams.delete(PARAM.psort);
@@ -430,7 +431,8 @@ export const holderHref = (href: string, base: string, open: number, psort: stri
     } else {
         url.searchParams.delete(PARAM.open);
     }
-    if (open > 0 && psort === PSORT_NAME) {
+    // The grouped order holds with no panel open (criteria::$psort).
+    if (psort === PSORT_NAME) {
         url.searchParams.set(PARAM.psort, PSORT_NAME);
     } else {
         url.searchParams.delete(PARAM.psort);

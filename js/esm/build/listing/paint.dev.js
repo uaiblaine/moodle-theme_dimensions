@@ -15,7 +15,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 import Pending from "@moodle/lms/core/pending";
 import { load } from "../amd";
 import { markTitles } from "../areas/mark";
-import { CHIP_PERIOD, GROUPED_SORTS, PARAM, SCOPE, withPanel } from "./address";
+import { CHIP_PERIOD, PARAM, SCOPE, groupOf, orderOf, withPanel } from "./address";
 import { LINE, LISTING, SELECTORS } from "./events";
 import { drawnByLine, filterGroupsShown, tellCalendar, tellLine } from "./mounts";
 const CARD_TEMPLATE = "theme_dimensions/category_card";
@@ -32,14 +32,19 @@ const closestOf = /* @__PURE__ */ __name((event, selector) => {
   }
   return target.closest(selector);
 }, "closestOf");
+const VIEW_ICONS = { cards: "fa-border-all", list: "fa-list" };
 const paintView = /* @__PURE__ */ __name((root, view) => {
   root.classList.toggle("dim-vitrine--cards", view === "cards");
   root.classList.toggle("dim-vitrine--list", view === "list");
   root.querySelectorAll(SELECTORS.viewbutton).forEach((button) => {
     if (!drawnByLine(button)) {
-      button.setAttribute("aria-pressed", button.value === view ? "true" : "false");
+      button.setAttribute("aria-checked", button.value === view ? "true" : "false");
     }
   });
+  const icon = root.querySelector(SELECTORS.viewicon);
+  if (icon && !drawnByLine(icon)) {
+    icon.className = `fa ${VIEW_ICONS[view] || VIEW_ICONS.cards}`;
+  }
   tellLine(root, LINE.state, { view });
   document.dispatchEvent(new CustomEvent(LISTING.view, { detail: { view } }));
 }, "paintView");
@@ -95,6 +100,15 @@ const paintEraser = /* @__PURE__ */ __name((root) => {
     eraser.hidden = search.value === "";
   }
 }, "paintEraser");
+const paintOrganise = /* @__PURE__ */ __name((root, state) => {
+  const chosen = { [PARAM.group]: groupOf(state), [PARAM.sort]: orderOf(state) };
+  root.querySelectorAll(SELECTORS.organiseitem).forEach((item) => {
+    item.setAttribute("aria-checked", chosen[item.name] === item.value ? "true" : "false");
+  });
+  root.querySelectorAll(SELECTORS.organisefield).forEach((field) => {
+    field.value = chosen[field.name] || "";
+  });
+}, "paintOrganise");
 const paintControls = /* @__PURE__ */ __name((root, state) => {
   tellLine(root, LINE.state, { query: state.query, chip: state.chip, fav: Boolean(state.fav), view: state.view });
   const search = root.querySelector(SELECTORS.search);
@@ -112,12 +126,7 @@ const paintControls = /* @__PURE__ */ __name((root, state) => {
       input.checked = input.value === current;
     });
   });
-  const sort = root.querySelector(SELECTORS.sort);
-  if (sort) {
-    sort.querySelectorAll('input[type="radio"]').forEach((input) => {
-      input.checked = state.sort === "" ? GROUPED_SORTS.indexOf(input.value) >= 0 : input.value === state.sort;
-    });
-  }
+  paintOrganise(root, state);
   paintFavToggle(root, state.fav);
   paintDates(root, state);
   markTree(root, state);
@@ -514,6 +523,7 @@ export {
   paintFiltersControl,
   paintGrid,
   paintGroups,
+  paintOrganise,
   paintPager,
   paintView,
   renderCards,

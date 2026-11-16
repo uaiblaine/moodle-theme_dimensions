@@ -479,9 +479,9 @@ final class category_listing_markup_test extends \advanced_testcase {
             'The result count, then the capsule, on the cluster\'s one ground.'
         );
         $this->assertSame(
-            ['dim-line-star', 'dim-filters', 'dim-period', 'dim-organise', 'dim-view-row'],
+            ['dim-line-star', 'dim-filters', 'dim-period', 'dim-organise', 'dim-view'],
             $slots($xpath->query('//div[@data-region="dim-line-capsule"]/*')),
-            'The star, Filters, the date button right after it, Organise and the view toggle, in one capsule.'
+            'The star, Filters, the date button right after it, Organise and View, in one capsule.'
         );
         $this->assertSame(
             ['dim-search-open', 'dim-line-search', 'manage', 'dim-search-close'],
@@ -504,7 +504,7 @@ final class category_listing_markup_test extends \advanced_testcase {
         $this->assertSame('visually-hidden', $scope->item(0)->getAttribute('class'));
         // Every other group names itself once, with a legend that is not hidden and no duplicate beside it.
         $legends = $xpath->query('//fieldset[' . self::has_class('dim-toolbar__group') . '][not(@data-role="scope")]/legend');
-        $this->assertGreaterThan(2, $legends->length, 'The organisation, "More statuses", a facet and the dates.');
+        $this->assertGreaterThan(1, $legends->length, 'A facet and the dates: the organisation is a menu, with no legend.');
         foreach ($legends as $legend) {
             $this->assertStringNotContainsString('visually-hidden', $legend->getAttribute('class'));
             $this->assertNotSame('', trim($legend->textContent));
@@ -539,30 +539,49 @@ final class category_listing_markup_test extends \advanced_testcase {
             $this->assertStringContainsString('to=', $link->getAttribute('href'));
         }
 
-        // Organise: a menu whose summary is a named glyph, holding the sort and its Apply.
-        $organise = $xpath->query('//div[@data-region="dim-line-capsule"]/details[@data-region="dim-organise"]');
-        $this->assertFalse($organise->item(0)->hasAttribute('open'));
-        $toggle = $xpath->query('./summary', $organise->item(0))->item(0);
-        $word = $xpath->query('./span[' . self::has_class('visually-hidden') . ']', $toggle)->item(0);
-        $this->assertSame('Organise', $word->textContent, 'Its name is a word out of the picture.');
-        $this->assertSame(1, $xpath->query('./i[@aria-hidden="true"]', $toggle)->length);
+        /* Organise and View (menu.md): each a disclosure whose summary is a named glyph and whose layer is a menu.
+           Organise holds two headed sections split by a separator, "Group by" then "Sort by"; View one, "Show as".
+           Every item is a menu radio with its icon, its word and the tick, one chosen per section. */
+        $menus = [
+            'dim-organise' => ['Organise', [['Group by', 'group', 2], ['Sort by', 'sort', 2]]],
+            'dim-view' => ['View', [['Show as', 'view', 2]]],
+        ];
+        foreach ($menus as $region => [$name, $sections]) {
+            $details = $xpath->query('//div[@data-region="dim-line-capsule"]/details[@data-region="' . $region . '"]')->item(0);
+            $this->assertFalse($details->hasAttribute('open'), "{$region} is closed on load.");
+            $toggle = $xpath->query('./summary', $details)->item(0);
+            $this->assertTrue(self::has_token($toggle->getAttribute('class'), 'dim-line__iconbtn'), 'An icon button.');
+            $word = $xpath->query('./span[' . self::has_class('visually-hidden') . ']', $toggle)->item(0);
+            $this->assertSame($name, $word->textContent, 'Its name is a word out of the picture.');
+            $menu = $xpath->query('./div[@role="menu"]', $details)->item(0);
+            $this->assertSame($name, $menu->getAttribute('aria-label'));
+            $heads = $xpath->query('./div[' . self::has_class('dim-menu__head') . ']', $menu);
+            $this->assertSame(array_column($sections, 0), array_map(
+                static fn(\DOMElement $head): string => $head->textContent,
+                iterator_to_array($heads)
+            ), 'Each section headed, in sentence case.');
+            $this->assertSame(count($sections) - 1, $xpath->query('./div[@role="separator"]', $menu)->length);
+            foreach ($sections as $index => [, $param, $count]) {
+                $head = $heads->item($index);
+                $labelled = './div[@role="group"][@aria-labelledby="' . $head->getAttribute('id') . '"]';
+                $group = $xpath->query($labelled, $menu)->item(0);
+                $items = $xpath->query('./button[@role="menuitemradio"][@type="submit"][@name="' . $param . '"]', $group);
+                $this->assertSame($count, $items->length, "{$param}'s items post {$param}.");
+                $this->assertSame(1, $xpath->query('./button[@aria-checked="true"]', $group)->length, 'One chosen.');
+                foreach ($items as $item) {
+                    foreach (['i' => 'dim-menu__icon', 'span' => 'dim-menu__label', 'i[2]' => 'fa-check'] as $tag => $class) {
+                        $part = './' . preg_replace('/\[\d\]$/', '', $tag) . '[' . self::has_class($class) . ']';
+                        $this->assertSame(1, $xpath->query($part, $item)->length, "An item's {$class}.");
+                    }
+                }
+            }
+        }
         $this->assertSame(
             1,
-            $xpath->query(
-                './/fieldset[@data-region="dim-sort"][' . self::has_class('dim-toolbar__group--sort') . ']',
-                $organise->item(0)
-            )->length,
-            'The organisation chips are in the menu, their fieldset named for the inline legend.'
+            $xpath->query('//details[@data-region="dim-view"]/summary/i[' . self::has_class('fa-chevron-down') . ']')->length,
+            'View draws a chevron, never a caret (D61).'
         );
-        $this->assertSame(0, $xpath->query('//*[@data-region="dim-showas"]')->length, 'The view toggle never moves into it.');
-
-        // The view: icon buttons of the capsule, each named by a visually hidden word.
-        foreach ($xpath->query('//*[@data-region="dim-view-row"]//button[@data-action="dim-view"]') as $button) {
-            $this->assertTrue(self::has_token($button->getAttribute('class'), 'dim-line__iconbtn'));
-            $labels = $xpath->query('./span[' . self::has_class('visually-hidden') . ']', $button);
-            $this->assertSame(1, $labels->length, 'An icon-only button still says what it is.');
-            $this->assertSame(1, $xpath->query('./i[' . self::has_class('fa') . ']', $button)->length);
-        }
+        $this->assertSame(0, $xpath->query('//*[@data-region="dim-showas"]')->length, 'The views never move into Organise.');
 
         // The open field: magnifier, field, and the eraser - a client's control, named, never a cross.
         $eraser = $xpath->query('//*[@data-region="dim-line-search"]/button[@data-action="dim-search-clear"]')->item(0);
@@ -616,8 +635,7 @@ final class category_listing_markup_test extends \advanced_testcase {
             'filters' => './/details[@data-region="dim-filters"]/summary',
             'date' => './/details[@data-region="dim-period"]/summary',
             'organise' => './/details[@data-region="dim-organise"]/summary',
-            'list' => './/button[@data-action="dim-view"][@value="list"]',
-            'cards' => './/button[@data-action="dim-view"][@value="cards"]',
+            'view' => './/details[@data-region="dim-view"]/summary',
             'search' => './/button[@data-action="dim-search-open"]',
             'eraser' => './/button[@data-action="dim-search-clear"]',
             'close' => './/button[@data-action="dim-search-close"]',
@@ -949,7 +967,7 @@ final class category_listing_markup_test extends \advanced_testcase {
      * Without JavaScript every control of the line submits the form, and the default submit is still first.
      *
      * Enter in the search box presses the form's first submit, which is the name-less one; then the
-     * star, the panel's "Filter", the menu's "Apply" and the two view buttons each post the form.
+     * star, the panel's "Filter", the four items of Organise and the two of View each post the form.
      *
      * Changes that must make it fail: a named submit moved before the default one; a control of the
      * line turned into a plain button.
@@ -973,24 +991,19 @@ final class category_listing_markup_test extends \advanced_testcase {
                 'dim-line-star',
                 'dim-toolbar__submit',
                 'dim-toolbar__submit',
-                'dim-toolbar__sortsubmit',
+                'dim-organise',
+                'dim-organise',
+                'dim-organise',
+                'dim-organise',
                 'dim-view',
                 'dim-view',
             ],
             $found,
-            'The default first, the star, the panel\'s and the date layer\'s Filter, the menu\'s Apply, the two views.'
+            'The default first, the star, the panel\'s and the date layer\'s Filter, the items of Organise and of View.'
         );
-        foreach (['dim-toolbar__sortsubmit', 'dim-toolbar__submit'] as $name) {
-            $submit = $xpath->query('//button[@type="submit"][' . self::has_class($name) . ']');
-            $this->assertSame($name . ' dim-nojs-only', $submit->item(0)->getAttribute('class'), $name . ', the theme\'s own.');
-        }
-        $this->assertSame(
-            1,
-            $xpath->query(
-                '//details[@data-region="dim-organise"]//button[' . self::has_class('dim-toolbar__sortsubmit') . ']'
-            )->length,
-            'The menu\'s Apply is in the menu it applies.'
-        );
+        $submit = $xpath->query('//button[@type="submit"][' . self::has_class('dim-toolbar__submit') . ']');
+        $this->assertSame('dim-toolbar__submit dim-nojs-only', $submit->item(0)->getAttribute('class'), 'The theme\'s own.');
+        $this->assertSame(0, $xpath->query('//*[' . self::has_class('dim-toolbar__sortsubmit') . ']')->length, 'No Apply.');
     }
 
     /**
@@ -1118,8 +1131,8 @@ final class category_listing_markup_test extends \advanced_testcase {
         $this->assertStringContainsString('dim-nojs-only', $submits->item(1)->getAttribute('class'), 'The module hides it.');
         $this->assertSame(1, $xpath->query('.//input[@type="search"][@name="q"]', $form)->length);
         $this->assertSame(1, $xpath->query('.//*[@data-region="dim-toolbar-notice"]', $form)->length);
-        $listingonly = ['dim-filters', 'dim-organise', 'dim-sort', 'dim-view-row', 'dim-vitrine-count', 'dim-vitrine-clear',
-            'dim-line-chips'];
+        $listingonly = ['dim-filters', 'dim-organise', 'dim-group-field', 'dim-order-field', 'dim-view', 'dim-vitrine-count',
+            'dim-vitrine-clear', 'dim-line-chips'];
         foreach ($listingonly as $region) {
             $this->assertSame(0, $xpath->query('.//*[@data-region="' . $region . '"]', $form)->length, "No {$region} at the root.");
         }

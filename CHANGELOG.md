@@ -13,6 +13,19 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   one destination for the viewer will be that destination's own pill, a group with none is left out, and a viewer
   whose only destination is the category page itself (a learner) will get no row. Five new strings name the
   navigation and its four groups; "More" is Moodle's own word.
+- **The category showcase's Organise and View are menus: "Group by" and "Sort by" are two choices, and View is one
+  button** (2026100624). Organise opens a menu with two sections, "Group by" (Area, No grouping) and "Sort by" (Name,
+  Most recent), each item with its icon and a tick on the chosen one, and choosing in one section keeps the other:
+  grouped by area, "Sort by" is the order of the area panel that is open and of the next one opened, also before any
+  panel is open, and it stays when the panel closes; the panel's own Recent and A-Z buttons and the menu follow each
+  other. View is one button showing the view in force with a chevron, opening "Show as" with Cards and List. Both menus
+  are keyboard menus: an arrow key on the button opens it on its chosen item, the arrows, Home and End move through
+  the items, Escape and a choice return to the button, and a press outside closes them like the bar's other layers.
+  Without JavaScript every item is a button that applies at once, and "Apply" is gone. Every address and remembered
+  state written before keeps meaning what it meant (`sort=category`, `sort=name`, `sort=recent`, `psort=name`); the
+  addresses the theme writes keep that spelling and do not grow for the default state, and the toolbar's form and the
+  listing services also take the grouping by name (`group=category` or `group=none`, with the order in `sort`).
+  The A-Z order of a grouped page is now remembered per category and kept in the address with no panel open.
 - **The user button opens the profile layer** (2026100623). A new setting on the *Identity* tab, `profilelayer`
   (on by default), prints on every page of a logged-in account a side layer built from Moodle's own user menu: the
   person's picture with the title and further lines chosen in the identity settings (masked on the server), "View

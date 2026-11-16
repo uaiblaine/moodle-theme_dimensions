@@ -51,7 +51,7 @@ final class remembered_test extends \advanced_testcase {
      * @return void
      */
     protected function tearDown(): void {
-        foreach (['sort', 'chip', 'fav', 'q', 'open', 'from', 'to', 'cat', 'view'] as $name) {
+        foreach (['sort', 'psort', 'group', 'chip', 'fav', 'q', 'open', 'from', 'to', 'cat', 'view'] as $name) {
             unset($_GET[$name]);
         }
         foreach (array_keys($_GET) as $name) {
@@ -250,6 +250,7 @@ final class remembered_test extends \advanced_testcase {
         for ($i = 0; $i < remembered::MAX_CATEGORIES; $i++) {
             $map[2000000000 + $i] = [
                 remembered::KEY_SORT => criteria::SORT_CATEGORY,
+                remembered::KEY_PSORT => criteria::SORT_NAME,
                 remembered::KEY_VIEW => category_toolbar::VIEW_CARDS,
                 remembered::KEY_STATE => classifier::STATE_CONDITIONAL,
                 remembered::KEY_FAVOURITES => true,
@@ -263,6 +264,32 @@ final class remembered_test extends \advanced_testcase {
         $this->assertLessThanOrEqual(remembered::MAX_LENGTH, strlen($json));
         $this->assertCount(remembered::MAX_CATEGORIES, json_decode($json, true));
         $this->assertCount(facets::MAX_FIELDS, json_decode($json, true)['2000000019']['f']);
+    }
+
+    /**
+     * The grouped A-Z order is remembered as name and nothing else, read back, and forgotten with a null.
+     *
+     * Changes that must make it fail: a grouped order outside its one stored value kept; the stored A-Z order
+     * dropped on the way out; a write of null leaving it in place.
+     */
+    public function test_the_grouped_order_is_remembered_as_its_one_value(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $categoryid = (int) $this->getDataGenerator()->create_category()->id;
+        foreach (['recent', 'category', '', 'NAME', true] as $bogus) {
+            $this->assertNull(remembered::entry([remembered::KEY_PSORT => $bogus], []), var_export($bogus, true) . ' is no order.');
+        }
+        $this->assertSame([remembered::KEY_PSORT => criteria::SORT_NAME], remembered::entry([remembered::KEY_PSORT => 'name'], []));
+
+        remembered::record($categoryid, [remembered::KEY_SORT => criteria::SORT_CATEGORY, remembered::KEY_PSORT => 'name']);
+        $this->assertSame(
+            [remembered::KEY_SORT => criteria::SORT_CATEGORY, remembered::KEY_PSORT => criteria::SORT_NAME],
+            remembered::for_category($categoryid)
+        );
+        remembered::record($categoryid, [remembered::KEY_PSORT => 'recent']);
+        $this->assertSame(criteria::SORT_NAME, remembered::for_category($categoryid)[remembered::KEY_PSORT], 'Refused, kept.');
+        remembered::record($categoryid, [remembered::KEY_PSORT => null]);
+        $this->assertSame([remembered::KEY_SORT => criteria::SORT_CATEGORY], remembered::for_category($categoryid), 'Forgotten.');
     }
 
     /**

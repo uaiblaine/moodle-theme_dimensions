@@ -117,6 +117,62 @@ final class remember_category_state_test extends \advanced_testcase {
     }
 
     /**
+     * "Group by" and "Sort by" by name are remembered in the entry's spelling, the grouped A-Z order included.
+     *
+     * The client sends the grouping with the order in sort; the entry keeps the organisation and, for the grouped
+     * A-Z order alone, its order. A choice of the newest first, and then of no grouping, forgets the order; an
+     * unknown sort without a grouping is refused and the entry keeps what it held, as before the grouping existed.
+     *
+     * Changes that must make it fail: the group parameter not declared or not read; the grouped A-Z order not stored,
+     * or kept under a flat organisation; an unknown sort overwriting the remembered organisation.
+     */
+    public function test_the_grouping_and_its_order_are_remembered_in_the_entrys_spelling(): void {
+        $this->resetAfterTest();
+        $categoryid = (int) self::getDataGenerator()->create_category()->id;
+        $this->become(self::getDataGenerator()->create_user());
+
+        $this->assertFalse($this->call(['categoryid' => $categoryid, 'group' => 'category', 'sort' => 'name'])['error']);
+        $this->assertSame(['s' => criteria::SORT_CATEGORY, 'p' => criteria::SORT_NAME], remembered::for_category($categoryid));
+        $this->call(['categoryid' => $categoryid, 'group' => 'category', 'sort' => 'recent']);
+        $this->assertSame(['s' => criteria::SORT_CATEGORY], remembered::for_category($categoryid), 'The newest first is no key.');
+        $this->call(['categoryid' => $categoryid, 'group' => 'category', 'sort' => 'name']);
+        $this->call(['categoryid' => $categoryid, 'group' => 'none', 'sort' => 'name']);
+        $this->assertSame(['s' => criteria::SORT_NAME], remembered::for_category($categoryid), 'A flat order keeps none.');
+        $this->call(['categoryid' => $categoryid, 'sort' => 'bogus']);
+        $this->assertSame(['s' => criteria::SORT_NAME], remembered::for_category($categoryid), 'An unknown sort is refused.');
+    }
+
+    /**
+     * A named grouping is held to the listing services' vocabulary, and a refused call remembers nothing.
+     *
+     * The known pair first is the control: it is stored, so the refusals that follow had an entry to overwrite.
+     *
+     * Changes that must make it fail: the service no longer calling rows::require_known_organisation() for a
+     * named grouping, so an unknown grouping is read as none and an unknown order as the default.
+     */
+    public function test_an_unknown_grouping_or_order_of_a_named_grouping_is_refused(): void {
+        $this->resetAfterTest();
+        $categoryid = (int) self::getDataGenerator()->create_category()->id;
+        $this->become(self::getDataGenerator()->create_user());
+
+        $this->assertFalse($this->call(['categoryid' => $categoryid, 'group' => 'none', 'sort' => 'name'])['error']);
+        $held = ['s' => criteria::SORT_NAME];
+        $this->assertSame($held, remembered::for_category($categoryid));
+
+        $refused = [
+            ['group' => 'bogus', 'sort' => 'recent'],
+            ['group' => 'category', 'sort' => 'bogus'],
+            ['group' => 'none', 'sort' => 'category'],
+        ];
+        foreach ($refused as $pair) {
+            $response = $this->call(['categoryid' => $categoryid] + $pair);
+            $this->assertTrue($response['error'], json_encode($pair));
+            $this->assertSame('invalidparameter', $response['exception']->errorcode, json_encode($pair));
+            $this->assertSame($held, remembered::for_category($categoryid), json_encode($pair));
+        }
+    }
+
+    /**
      * The favourites are a boolean of their own: the older chip spelling of them is never stored, and no
      * value outside the boolean reaches the function at all.
      *

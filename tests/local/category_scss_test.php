@@ -896,7 +896,7 @@ final class category_scss_test extends \basic_testcase {
             $this->rule_body(
                 $scss,
                 ".dim-toolbar__filters[open] > .dim-line__iconbtn,\n    .dim-line__date[open] > .dim-line__iconbtn,\n"
-                    . "    .dim-line__organise[open] > .dim-line__iconbtn"
+                    . "    .dim-line__organise[open] > .dim-line__iconbtn,\n    .dim-line__viewmenu[open] > .dim-line__iconbtn"
             ),
             'An open disclosure\'s summary wears the pressed face.'
         );
@@ -940,13 +940,37 @@ final class category_scss_test extends \basic_testcase {
         );
         $this->assertStringNotContainsString('position', $capsule, 'Not positioned: its layers hang from the line.');
 
-        $view = $this->rule_body($scss, '.dim-toolbar__view');
-        $this->assertDoesNotMatchRegularExpression(
-            '~border|background|overflow~',
-            $view,
-            'The view toggle is two of the capsule\'s icon buttons, no segmented box of its own.'
+        // The menus of Organise and View (menu.md): 4px around the items, the hairline, 8px corners, the middle elevation.
+        $menu = $this->rule_body($scss, '.dim-line__menu');
+        $this->assertMatchesRegularExpression(
+            '~top:\s*calc\(100% \+ \.375rem\);\s*right:\s*0;\s*z-index:\s*20;\s*min-width:\s*13\.75rem;\s*padding:\s*\.25rem;\s*'
+                . 'border:\s*1px solid var\(--dim-line\);\s*border-radius:\s*var\(--dim-radius-md\);\s*'
+                . 'background:\s*var\(--dim-surface\);\s*box-shadow:\s*var\(--dim-elevation-md\);~',
+            $menu,
+            'A menu: hung 6px under its button at the line\'s end, 220px at least, the menu\'s measures.'
         );
-        $this->assertMatchesRegularExpression('~gap:\s*\.125rem;~', $view);
+        $item = $this->rule_body($scss, '.dim-menu__item');
+        $this->assertMatchesRegularExpression(
+            '~gap:\s*\.5rem;\s*width:\s*100%;\s*min-height:\s*2rem;\s*padding:\s*\.25rem \.5rem;\s*border:\s*0;\s*'
+                . 'border-radius:\s*var\(--dim-radius-xs\);\s*background:\s*transparent;~',
+            $item,
+            'An item: 32px, 4px corners, no border (D50).'
+        );
+        $this->assertMatchesRegularExpression('~&:hover \{\s*background:\s*var\(--dim-surface-subtle\);\s*\}~', $item);
+        $this->assertMatchesRegularExpression('~&\[aria-checked="true"\] \{\s*font-weight:\s*600;\s*\}~', $item, 'Chosen at 600.');
+        $this->assertDoesNotMatchRegularExpression('~outline~', explode('&:focus-visible', $item)[0], 'No outline but the ring.');
+        $this->assertMatchesRegularExpression(
+            '~visibility:\s*visible;~',
+            $this->rule_body($scss, '.dim-menu__item[aria-checked="true"] .dim-menu__tick'),
+            'The tick shows on the chosen item alone.'
+        );
+        $this->assertMatchesRegularExpression('~visibility:\s*hidden;~', $this->rule_body($scss, '.dim-menu__tick'));
+        $this->assertMatchesRegularExpression(
+            '~padding:\s*\.375rem \.5rem \.125rem;\s*color:\s*var\(--dim-muted\);\s*font-size:\s*\.75rem;\s*font-weight:\s*600;~',
+            $this->rule_body($scss, '.dim-menu__head'),
+            'A section\'s heading.'
+        );
+        $this->assertMatchesRegularExpression('~font-size:\s*\.75rem;~', $this->rule_body($scss, '.dim-line__chevron'), '12px.');
 
         $kebab = $this->rule_body($scss, '.dim-toolbar__manage .dropdown-toggle');
         $this->assertMatchesRegularExpression(
@@ -975,7 +999,7 @@ final class category_scss_test extends \basic_testcase {
             'After the actions box it replaces: at equal specificity the later rule wins.'
         );
 
-        $apply = $this->rule_body($scss, ".dim-toolbar__sortsubmit,\n    .dim-toolbar__submit");
+        $apply = $this->rule_body($scss, '.dim-toolbar__submit');
         $this->assertMatchesRegularExpression('~min-height:\s*40px;~', $apply);
         $this->assertMatchesRegularExpression('~background:\s*var\(--dim-cta\);\s*color:\s*var\(--dim-cta-ink\);~', $apply);
 
@@ -1538,39 +1562,17 @@ final class category_scss_test extends \basic_testcase {
     }
 
     /**
-     * The organisation reads "Organise:" inline before its track, and the row under the line follows the design.
+     * The row under the line follows the design.
      *
-     * The sort group (in the Organise menu) is a flex row, and its legend is floated: a floated
-     * legend is not the fieldset's rendered legend, so it lays out as a flex item beside the track
-     * instead of above it. Bootstrap's reboot gives every legend the whole width, which would put
-     * the label on its own line, so the width is reset too. The colon is the stylesheet's, so the
-     * string stays the group's name. The row under the line centres its controls 6px apart (the
-     * Design System's chips row) and the clear link right after the chips rather than pushed to the far end; an empty
-     * period region is out of the row, or its two gaps would double the distance. On a phone every pill and quick
-     * option of the toolbar is 44px tall.
+     * The row under the line centres its controls 6px apart (the Design System's chips row) and the
+     * clear link right after the chips rather than pushed to the far end; an empty period region is
+     * out of the row, or its two gaps would double the distance. On a phone every pill and quick
+     * option of the toolbar is 44px tall. The organisation is a menu (menu.md) and has no row of its
+     * own any more: no rule is left for its inline label.
      */
-    public function test_the_organise_row_labels_itself_inline_and_the_count_row_follows_the_design(): void {
+    public function test_the_count_row_follows_the_design(): void {
         $scss = $this->stylesheet('category.scss');
-        $group = $this->rule_body($scss, '.dim-toolbar__group--sort');
-        $this->assertMatchesRegularExpression('~display:\s*flex;~', $group);
-        $this->assertMatchesRegularExpression('~align-items:\s*center;~', $group);
-        $this->assertMatchesRegularExpression('~gap:\s*10px;~', $group, 'The design renders its label 10px before the track.');
-        $legend = $this->rule_body($scss, '.dim-toolbar__group--sort > .dim-toolbar__grouplabel');
-        $this->assertMatchesRegularExpression(
-            '~float:\s*left;~',
-            $legend,
-            'A floated legend is a flex item beside the track, not the rendered legend above it.'
-        );
-        $this->assertMatchesRegularExpression('~width:\s*auto;~', $legend, 'Not the reboot\'s whole width.');
-        $this->assertMatchesRegularExpression('~font-size:\s*\.88rem;~', $legend);
-        $this->assertMatchesRegularExpression('~&::after \{\s*content:\s*":";~', $legend);
-        $template = (string) file_get_contents($this->plugin_root() . '/templates/category_toolbar.mustache');
-        $this->assertStringContainsString(
-            '<fieldset class="dim-toolbar__group dim-toolbar__group--sort" data-region="dim-sort"',
-            $template,
-            'The rule is for the class the template writes on the sort group.'
-        );
-
+        $this->assertStringNotContainsString('dim-toolbar__group--sort', $scss, 'No rule for the organisation\'s old row.');
         $row = $this->rule_body($scss, '.dim-line__chips');
         $this->assertMatchesRegularExpression('~align-items:\s*center;~', $row);
         $this->assertMatchesRegularExpression('~gap:\s*\.375rem;~', $row);
@@ -1625,7 +1627,7 @@ final class category_scss_test extends \basic_testcase {
         $open = $this->rule_body(
             $scss,
             ".dim-toolbar__filters[open] > .dim-line__iconbtn,\n    .dim-line__date[open] > .dim-line__iconbtn,\n"
-                . "    .dim-line__organise[open] > .dim-line__iconbtn"
+                . "    .dim-line__organise[open] > .dim-line__iconbtn,\n    .dim-line__viewmenu[open] > .dim-line__iconbtn"
         );
         $this->assertMatchesRegularExpression('~background:\s*var\(--dim-brand-tint\);~', $open);
         $this->assertMatchesRegularExpression(
@@ -2586,7 +2588,7 @@ final class category_scss_test extends \basic_testcase {
         $found = preg_match_all('~@media \(max-width: 575\.98px\) \{(.*?)\n    \}~s', $scss, $matches);
         $this->assertGreaterThan(0, $found, 'The stylesheet has no sm media query at all any more.');
         foreach ($matches[1] as $block) {
-            if (str_contains($block, 'dim-toolbar__sortsubmit')) {
+            if (str_contains($block, 'dim-toolbar__submit')) {
                 return $block;
             }
         }

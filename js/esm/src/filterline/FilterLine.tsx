@@ -27,7 +27,7 @@
  * markup the server drew, read off it ({@see ./model read()}), with the same names inside the same GET
  * form - the no-JavaScript submits, the listing's form reading and every Behat step keep working. React
  * draws the line's own controls: the scope, the result count, the star, the three summaries (Filters and its
- * badge, the date button and its dot, Organise), the view toggle, the search with its button and its eraser,
+ * badge, the date button and its dot, Organise), the View menu, the search with its button and its eraser,
  * the close button and the listbox, in the cluster and the two capsules the template draws them in. Four
  * frames it draws hold server markup it adopts whole on the first commit and never diffs inside: the
  * Filters panel (More statuses, the custom fields), the date layer (the quick dates, the period's calendar,
@@ -52,10 +52,13 @@
  * nodes back to the server's frames and keeps them, with the line's last state, for that node
  * ({@see KEPT}); a later mount draws from them instead of reading markup that is no longer there.
  *
- * The three layers of the capsule - the Filters panel, the date layer and the Organise menu - are native
- * disclosures, and opening one closes the others. The Filters panel and the date layer are popovers under the
- * line's end on one line and bottom sheets at the two-line step; Escape closes the layer it is pressed in and
- * gives its summary the focus. The date layer also closes on a press outside it and on its own "Show".
+ * The four layers of the capsule - the Filters panel, the date layer, the Organise menu and the View menu - are
+ * native disclosures, and opening one closes the others. The Filters panel and the date layer are popovers under
+ * the line's end on one line and bottom sheets at the two-line step; Escape closes the layer it is pressed in and
+ * gives its summary the focus, and a press outside an open one closes it. The date layer also closes on its own
+ * "Show". The two menus (menu.md) keep one Tab stop, their chosen item; an arrow key on the button opens one on
+ * it, the arrows, Home and End move through its items, Tab leaves it closed, and choosing an item closes it and
+ * gives its button the focus.
  *
  * The search is its button at rest at every width (the server drew the field open, for a page without this
  * component). A press, or the slash key, opens the field: in place where the fold leaves room for it beside the
@@ -106,6 +109,9 @@ const HOOKS = {
     show: '[data-action="dim-filters-show"]',
     periodshow: '[data-action="dim-period-show"]',
     option: '[role="option"]',
+    // A menu of the capsule (Organise, View) and its items (menu.md).
+    menu: '[role="menu"]',
+    menuitem: '[role="menuitemradio"]',
     // The controls of the open search that keep it open when the focus moves to them.
     searchpart: '[data-action="dim-search-clear"], [data-action="dim-search-close"]',
     tip: `[${TIP}]`,
@@ -280,6 +286,8 @@ const FilterLine = ({form}: FilterLineProps) => {
     const layer = useRef<HTMLDivElement>(null);
     const organise = useRef<HTMLDetailsElement>(null);
     const menu = useRef<HTMLDivElement>(null);
+    const viewmenu = useRef<HTMLDetailsElement>(null);
+    const viewlayer = useRef<HTMLDivElement>(null);
     const manage = useRef<HTMLDivElement>(null);
     const listbox = useRef<HTMLDivElement>(null);
     // What the open listbox was last placed for; empty while it is closed.
@@ -762,7 +770,11 @@ const FilterLine = ({form}: FilterLineProps) => {
      * @returns {void}
      */
     const onLineKey = (event: globalThis.KeyboardEvent): void => {
-        if (event.key !== 'Escape' || event.defaultPrevented || !(event.target instanceof Element) || !line) {
+        if (event.defaultPrevented || !(event.target instanceof Element) || !line) {
+            return;
+        }
+        if (event.key !== 'Escape') {
+            onMenuKey(event, event.target);
             return;
         }
         if (st.searching && event.target !== field.current) {
@@ -776,6 +788,83 @@ const FilterLine = ({form}: FilterLineProps) => {
             details.open = false;
             quietly(details.querySelector('summary'));
         }
+    };
+
+    /**
+     * The items of a menu of the capsule, in their order.
+     *
+     * @param {Element|null} menu The menu.
+     * @returns {Array}
+     */
+    const itemsOf = (menu: Element | null): HTMLElement[] =>
+        (menu ? Array.from(menu.querySelectorAll<HTMLElement>(HOOKS.menuitem)) : []);
+
+    /**
+     * Make one item of a menu its one stop of the Tab key, the roving focus of menu.md: the chosen one by default.
+     *
+     * @param {Element|null} menu The menu.
+     * @param {Element|null} current The item that keeps the stop, or null for the first chosen one.
+     * @returns {HTMLElement|null} The item that has it.
+     */
+    const rove = (menu: Element | null, current: Element | null): HTMLElement | null => {
+        const items = itemsOf(menu);
+        const stop = (current && items.find((item) => item === current))
+            || items.find((item) => item.getAttribute('aria-checked') === 'true')
+            || items[0]
+            || null;
+        items.forEach((item) => {
+            item.tabIndex = item === stop ? 0 : -1;
+        });
+        return stop;
+    };
+
+    /**
+     * The arrow keys of a menu (menu.md): from its button they open it on its chosen item, inside it they move
+     * through every item of every section, wrapping, and Home and End go to the ends; Tab leaves it closed.
+     *
+     * @param {KeyboardEvent} event The key.
+     * @param {Element} target What it was pressed on.
+     * @returns {void}
+     */
+    const onMenuKey = (event: globalThis.KeyboardEvent, target: Element): void => {
+        const details = target.closest('details');
+        const layer = details ? details.querySelector(`:scope > ${HOOKS.menu}`) : null;
+        if (!details || !layer || !line || !line.contains(details)) {
+            return;
+        }
+        const moves = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
+        if (target.tagName === 'SUMMARY' && target.parentElement === details) {
+            if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+                return;
+            }
+            event.preventDefault();
+            details.open = true;
+            rove(layer, null)?.focus({preventScroll: true});
+            return;
+        }
+        const item = target.closest<HTMLElement>(HOOKS.menuitem);
+        if (!item || !layer.contains(item)) {
+            return;
+        }
+        if (event.key === 'Tab') {
+            details.open = false;
+            return;
+        }
+        if (moves.indexOf(event.key) < 0) {
+            return;
+        }
+        event.preventDefault();
+        const items = itemsOf(layer);
+        const at = items.indexOf(item);
+        let next = at;
+        if (event.key === 'Home') {
+            next = 0;
+        } else if (event.key === 'End') {
+            next = items.length - 1;
+        } else {
+            next = (at + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+        }
+        rove(layer, items[next])?.focus({preventScroll: true});
     };
 
     /**
@@ -810,10 +899,10 @@ const FilterLine = ({form}: FilterLineProps) => {
         if (!line) {
             return;
         }
-        const layers = [filters.current, period.current, organise.current];
+        const layers = [filters.current, period.current, organise.current, viewmenu.current];
         const opened = layers.find((one) => one !== null && one === event.target && one.open);
         if (opened) {
-            // The three hang from the same end of the line: one open layer at a time.
+            // The four hang from the same end of the line: one open layer at a time.
             layers.forEach((one) => {
                 if (one && one !== opened && one.open) {
                     one.open = false;
@@ -827,12 +916,16 @@ const FilterLine = ({form}: FilterLineProps) => {
             place(line, layer.current, twolines(), twolines());
         } else if (event.target === organise.current) {
             place(line, menu.current, twolines(), false);
+            rove(menu.current, null);
+        } else if (event.target === viewmenu.current) {
+            place(line, viewlayer.current, twolines(), false);
+            rove(viewlayer.current, null);
         }
     };
 
     /**
-     * The "Show" of the Filters panel or of the date layer: the layer closes and its summary takes the focus, on
-     * the list it shows.
+     * The "Show" of the Filters panel or of the date layer, or an item of a menu: the layer closes and its summary
+     * takes the focus, on the list it shows. The listing acts on the item after this, the press bubbling on.
      *
      * @param {MouseEvent} event The click.
      * @returns {void}
@@ -840,10 +933,13 @@ const FilterLine = ({form}: FilterLineProps) => {
     const onLineClick = (event: MouseEvent): void => {
         const target = event.target instanceof Element ? event.target : null;
         let details: HTMLDetailsElement | null = null;
+        const item = target ? target.closest(HOOKS.menuitem) : null;
         if (target && target.closest(HOOKS.show)) {
             details = filters.current;
         } else if (target && target.closest(HOOKS.periodshow)) {
             details = period.current;
+        } else if (item) {
+            details = [organise.current, viewmenu.current].find((one) => one !== null && one.contains(item)) || null;
         }
         if (details) {
             details.open = false;
@@ -873,7 +969,7 @@ const FilterLine = ({form}: FilterLineProps) => {
         // details, so the press that closes it natively is not closed twice; nothing is moved and the press is
         // let through, so a card or a link outside still acts. The bottom sheet is the same layer: the dimmed
         // page around it is outside it.
-        [filters.current, period.current, organise.current].forEach((layer) => {
+        [filters.current, period.current, organise.current, viewmenu.current].forEach((layer) => {
             if (layer && layer.open && !layer.contains(target)) {
                 layer.open = false;
             }
@@ -1197,6 +1293,7 @@ const FilterLine = ({form}: FilterLineProps) => {
         place(line, panel.current, twolines(), twolines());
         place(line, layer.current, twolines(), twolines());
         place(line, menu.current, twolines(), false);
+        place(line, viewlayer.current, twolines(), false);
         fades(scope.current);
         fades(toolbar ? toolbar.querySelector<HTMLElement>(HOOKS.chips) : null);
     }, [foldkey]);
@@ -1224,9 +1321,15 @@ const FilterLine = ({form}: FilterLineProps) => {
                             <i className="fa fa-arrow-down-wide-short" aria-hidden="true"></i>
                             <span className="visually-hidden">{model.organiselabel}</span>
                         </summary>
-                        <div ref={menu} className="dim-line__menu" data-region="dim-organise-menu"></div>
+                        <div
+                            ref={menu}
+                            className="dim-line__menu dim-menu"
+                            role="menu"
+                            aria-label={model.organiselabel}
+                            data-region="dim-organise-menu"
+                        ></div>
                     </details>
-                    {drawViews(model)}
+                    {drawView(model, viewmenu, viewlayer)}
                 </div>
             </div>
             <div
@@ -1457,33 +1560,54 @@ const drawDate = (
 };
 
 /**
- * The view toggle: List first, the capsule's last icon buttons, each named by a visually hidden word and the
- * bar's tooltip.
+ * The View menu (menu.md): one icon button drawing the view in force and a chevron, named by a visually hidden
+ * word and the bar's tooltip, over a menu of one section, "Show as", whose items are the views, List first, each
+ * its icon, its word and the tick of the chosen one.
  *
  * @param {object} model The line.
+ * @param {object} ref The details' ref.
+ * @param {object} layer The menu's ref.
  * @returns {object}
  */
-const drawViews = (model: Line): ReactNode => (
-    <div
-        className="dim-toolbar__view dim-line__view"
-        role="group"
-        aria-label={model.viewlabel}
-        data-region="dim-view-row"
-    >
-        {model.views.map((view) => (
-            <button
-                key={view.value}
-                type="submit"
-                className="dim-toolbar__viewbtn dim-line__iconbtn"
-                data-action="dim-view"
-                name={model.viewname}
-                value={view.value}
-                aria-pressed={view.pressed ? 'true' : 'false'}
-                data-dim-tip={view.label}
-            ><i className={`fa ${view.icon}`} aria-hidden="true"></i><span className="visually-hidden">{view.label}</span></button>
-        ))}
-    </div>
-);
+const drawView = (model: Line, ref: RefObject<HTMLDetailsElement | null>, layer: RefObject<HTMLDivElement | null>): ReactNode => {
+    const current = model.views.find((view) => view.checked) || model.views[model.views.length - 1];
+    return (
+        <details ref={ref} className="dim-line__viewmenu" data-region="dim-view">
+            <summary className="dim-line__iconbtn dim-line__viewtoggle" data-dim-tip={model.viewlabel}>
+                <i className={`fa ${current ? current.icon : ''}`} aria-hidden="true" data-region="dim-view-icon"></i>
+                <i className="fa fa-chevron-down dim-line__chevron" aria-hidden="true"></i>
+                <span className="visually-hidden">{model.viewlabel}</span>
+            </summary>
+            <div
+                ref={layer}
+                className="dim-line__menu dim-menu"
+                role="menu"
+                aria-label={model.viewlabel}
+                data-region="dim-view-menu"
+            >
+                <div className="dim-menu__head" id={model.viewheadid}>{model.viewheading}</div>
+                <div role="group" aria-labelledby={model.viewheadid}>
+                    {model.views.map((view) => (
+                        <button
+                            key={view.value}
+                            type="submit"
+                            className="dim-menu__item"
+                            role="menuitemradio"
+                            data-action="dim-view"
+                            name={model.viewname}
+                            value={view.value}
+                            aria-checked={view.checked ? 'true' : 'false'}
+                        >
+                            <i className={`fa ${view.icon} dim-menu__icon`} aria-hidden="true"></i>
+                            <span className="dim-menu__label">{view.label}</span>
+                            <i className="fa fa-check dim-menu__tick" aria-hidden="true"></i>
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </details>
+    );
+};
 
 /**
  * The listbox of the suggestions: one group under the server's heading, each option with its label (the
