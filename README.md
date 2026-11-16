@@ -278,6 +278,42 @@ On a phone Moodle hides the activity navigation footer ("Next", "Previous" and t
 button) while the reader scrolls down; the theme brings it back near the end of the page, where
 the reader looks for "Next".
 
+### Identity fields
+
+The settings under *Who the person is shown as* (*Identity* tab) decide what identifies the logged-in person in
+the theme's own surfaces: the name beside the avatar in the navbar (`theme_dimensions/identitynavbar`), and the
+title and the further lines of the profile layer (`theme_dimensions/identitytitle`,
+`theme_dimensions/identitylines`; the layer itself is not in this release yet, so only the navbar setting has a
+surface today).
+
+- **The fields**: the full name in the site's format (`fullname`), the alternate name (`alternatename`), the first
+  name (`firstname`), the username (`username`), the email address (`email`), the ID number (`idnumber`) and each
+  custom profile field of type text, drop-down menu or social (`profile_field_<shortname>`).
+- **The defaults change nothing**: the full name in the navbar and as the title, no further line, no pattern.
+- **Fallbacks**: an empty field falls back to the full name in the navbar and as the title, and is skipped as a
+  further line; a line whose text is the title's is not repeated.
+- **Visibility**: a custom profile field is shown only while Moodle's own rule shows it to the person (a field
+  "not visible" needs `moodle/user:viewalldetails`); otherwise it counts as empty.
+- **Display patterns** (`theme_dimensions/identitypatterns`): one `field=pattern` per line. In a pattern `#` shows
+  the value's next character, `*` hides it (printed as •) and any other character is printed as written. Only the
+  value's letters and digits fill the pattern, so separators stored with the value are ignored:
+  `username=***.###.###-**` shows `12345678909` (or `123.456.789-09`) as `•••.456.789-••`. The pattern is applied on
+  the server, so the hidden characters are not in the page. A value whose count of letters and digits is not the
+  pattern's is shown as stored: a pattern is a format, not a rule that withholds a field. The setting refuses a
+  line without `=`, an unknown field, a pattern with no `#` or `*`, and a field named twice.
+- **Scope of a pattern**: the theme's own surfaces only. Moodle shows the same field whole wherever Moodle shows
+  it (the profile page, the participants list, the name block of the open user menu).
+- **Under "log in as"** the fields are those of the account logged in as; Moodle's "You are logged in as" line
+  names the administrator.
+- **How fresh**: the values come from the session, as Moodle's own user menu name does. A field somebody else
+  changes (an administrator, a synchronisation task) reaches the person at their next login; a person editing
+  their own profile sees it at once.
+
+Nothing is stored about a person: the values are read from the session and printed. The definitions of the
+custom profile fields (short name, type, order, visibility) are kept in the shared cache `identityfields`, read
+only while a setting names a custom field and emptied when a profile field or category changes.
+
+
 ### Boost Union flavours compiled ahead of time
 
 Boost Union compiles a flavour's stylesheet only when a browser first asks for it, so after every
@@ -466,7 +502,7 @@ Settings
 | Tab | What it holds |
 |---|---|
 | General settings | Boost Union Child's two SCSS inheritance settings; leave them on *Inherit*. The *Look* section's `theme_dimensions/selectableflavours`: the Boost Union flavours a logged-in person may choose as their own look (none ticked: nobody chooses). A chosen flavour is shown to that person on every page, over the flavours Boost Union's category and cohort rules apply. Saving the list gives each listed look a cohort (*Look: ...*) and empties the cohort of a look taken off it. `theme_dimensions/lookmenufavicons` (off by default) puts each look's mark before its name in those menus: the flavour's favicon, else a dot in its brand colour; the site default shows the site's favicon. Each listed look's stylesheet is compiled before its first visitor by the warm-up task (*Boost Union flavours compiled ahead of time*); without it, the first person to pick a look after a cache reset waits for a whole theme compile. The *Guest account* section's guest home page (`theme_dimensions/guesthomepage`, `theme_dimensions/guesthomepageurl`). |
-| Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*; the visitor's actions, the side menu, the context bar while reading and its colour (`theme_dimensions/navbarcontextcolor`), auto-hide, the compact navbar on tablets and the logos for dark surfaces. |
+| Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*; the visitor's actions, the side menu, the context bar while reading and its colour (`theme_dimensions/navbarcontextcolor`), auto-hide, the compact navbar on tablets and the logos for dark surfaces. Under *Who the person is shown as*: `theme_dimensions/identitynavbar` (the field beside the avatar in the navbar), `theme_dimensions/identitytitle` and `theme_dimensions/identitylines` (the title and the further lines of the profile layer) and `theme_dimensions/identitypatterns`; see *Identity fields* below. |
 | Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
 | Course landing page | The banner's format (`theme_dimensions/landingheroformat`: in the content column, the default, or full width); the page model, modality and study format a new course starts with; existing courses never change. `theme_dimensions/relatedcount`: how many related courses a landing page shows at most (4 by default). |
 | Category showcase | The showcase switch, the public pages and their live listing, the page size, the grouping by state, the tree depth, the filter groups, the cover video size limit and the site-wide hero image. |

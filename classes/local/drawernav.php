@@ -39,7 +39,7 @@ use theme_boost\colour_mode;
  *
  * - The identity: core's avatars, name and metadata lines from the user menu, exactly as core composed
  *   them (fullname() under the site's fullnamedisplay; under "log in as", the real user's name with
- *   core's "You are logged in as" line). The theme composes no name and reads no profile field.
+ *   core's "You are logged in as" line). The drawer composes no name and reads no profile field.
  * - The role line: "Site administrator" when is_siteadmin() - a read of
  *   $CFG->siteadmins, no statement - and nothing else at render time. The number of courses in progress
  *   (core's own timeline classification, the "In progress" filter of My courses) costs a statement per

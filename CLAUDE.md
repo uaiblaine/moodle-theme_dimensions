@@ -314,6 +314,9 @@ amd/src/focusmode.js           The switch in place (class, header actions, focus
 classes/external/set_focus_mode.php  Records a switch made in place, in the session.
 focus.php                      The no-JavaScript fallback of the switch: guards, a state change, a redirect.
 templates/core/user_menu_metadata.mustache  Adds the name beside the avatar, md and up.
+classes/local/identity.php     Which field identifies a person (navbar name; the profile layer's title and lines),
+                               its fallbacks and a custom field's visibility; identitypattern.php is the mask,
+                               identitypatterns_setting.php the validated setting. See "The identity fields".
 classes/local/upstream.php     The copies of core and Boost Union code and today's upstream of each; the snapshots
                                (*.upstream beside each copy), tests/local/upstream_test.php, scripts/upstream-merge.sh.
 tests/output/core_renderer_test.php  Renders real pages through a real header: the login layout (Boost Union's, or
@@ -488,13 +491,16 @@ already shaped decisions here:
 
 ## The name in the navbar
 
-- **The theme composes no name.** The user menu's name is `fullname($USER)`, written by
-  `\core\user::get_user_navigation_info()` and carried through
-  `core\navigation\output\primary::get_user_menu()` into the layout context as
-  `usermenu.userfullname`; under "log in as" core puts the real user's name there instead. So the
-  navbar shows whatever the site's `fullnamedisplay` composes, and the theme decides only where it
-  is shown (below). `core_renderer_test::test_the_navbar_shows_the_name_core_composed` pins it
-  through a real page header.
+- **The navbar's name is the theme's key, `usermenu.dimensionsnavname`**, written by
+  `apply_name_in_usermenu()` from `identity::navbar($USER)`: the field the administrator chose
+  (section "The identity fields"), masked, of the session's user. With the settings at their
+  defaults that is `fullname($USER)`, what core writes as `usermenu.userfullname`
+  (`\core\user::get_user_navigation_info()`, through
+  `core\navigation\output\primary::get_user_menu()`), except under "log in as", where core's
+  key names the real user and the theme's the account logged in as. Core's key is never rewritten:
+  Boost Union's name block in the open menu reads it. `core_renderer_test` pins both through a
+  real page header (`test_the_navbar_shows_the_name_core_composed`,
+  `test_the_navbar_shows_the_chosen_identity_field`).
 - **The navbar colour and the menu's name block are applied in `render_from_template()`, guarded
   by the context's shape** (`$context['usermenu']['userfullname']`) rather than by a template
   name. That survives Boost Union renaming its layout templates and costs one `isset()` per
@@ -725,7 +731,46 @@ rests on:
 
 ## Rank and war name
 
-The theme reads no profile fields: the navbar shows what `fullname()` composes (the section above).
+The navbar shows the field the administrator chose (`identitynavbar`; the section above), which is how a rank and
+war name kept in `user.alternatename` or in a custom profile field reaches it without `fullnamedisplay` being set
+to the alternate name site-wide (tried and abandoned: other plugins and certificates read that setting).
+
+## The identity fields
+
+`classes/local/identity.php` (which field, its fallbacks, the visibility of a custom field) and
+`classes/local/identitypattern.php` (the mask, pure) feed the navbar's name today and the profile layer's title and
+lines next (`moodle-dev/docs/design-system/plans/user-menu-theme.md`, decisions D73, D74, D76).
+
+- **The values are the session's.** `identity` takes the user record as a parameter and the renderer hands it
+  `$USER`, which under "log in as" is the account logged in as (D76; core's `userfullname` names the real user and
+  is left alone for Boost Union's name block). Custom fields come from `$USER->profile`, which
+  `get_complete_user_data()` fills at login and `loginas()` for the account logged in as; a record without it
+  reads as empty fields. Nothing is re-read per page, so a value somebody else changes waits for the next login.
+- **`$USER->profile` carries every field, the "not visible" ones included**, so `identity::visible()` asks core's
+  `profile_field_base::is_visible()` on an object built from the cached definition (gate `identity_visible_call`).
+  It hands core the system context for the viewer's own record: with no context core looks the user context up,
+  a statement on a cold context cache, and every branch that reads the context is behind "not my own record".
+- **A column is shown to its owner alone** (`identity::own()`, gate `identity_columns_own_record`): the columns
+  carry no visibility rule here, so a caller handing in another person's record gets the full name and the custom
+  fields core shows the viewer, never a username, email or ID number. A test reading a person's columns must be
+  logged in as that person.
+- **`choices()` has two spellings**: plain for the two selects (core's template escapes an option), escaped for
+  the checkboxes (core prints a label as HTML); the validation error is plain too.
+- **The defaults read nothing.** `fullname` is answered by `fullname($user)` before any cache;
+  `identity::definitions()` (application cache `identityfields`, one statement on a miss) is reached only when a
+  stored value names a custom field. Six observers empty it (`db/events.php`: the profile field and the profile
+  category events, because the categories' order is the fields' order). The entry keeps no description, no
+  default and no menu options: core's menu field formats every option in its constructor.
+- **A social field's stored `name` is the network's key** (`profile_field_social::set_field()` replaces it, on the
+  object it is handed): `visible()` builds a new record per call, and `choices()` looks the network's name up.
+- **The mask fails open on a length mismatch, by decision** (D74): a value that does not fit its pattern is shown
+  as stored. Whoever needs a field never shown whole must not offer it; do not "harden" `identitypattern::mask()`
+  without the owner.
+- **The settings store defaults at install and upgrade** (`fullname`, `fullname`, an empty list, an empty text), and
+  an unset or unknown value reads as the full name; no upgrade step writes them. Core's select setting ignores a
+  value outside its choices without an error.
+- **A test's person is `get_complete_user_data()`**, never the generator's row (it has no `profile`), and the
+  generator's `create_custom_profile_field()` fires no event: trigger core's event to see the cache emptied.
 
 ## The user profile page
 

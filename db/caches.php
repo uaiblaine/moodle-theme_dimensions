@@ -71,4 +71,14 @@ $definitions = [
             'theme_boost_union_flavours_deleted',
         ],
     ],
+    // The definitions of the custom profile fields the identity settings offer (local\identity::definitions()):
+    // one entry, read only while a setting names a custom field. Site-wide and the same for everybody; the
+    // profile field and category events delete it (db/events.php), which every node sees.
+    'identityfields' => [
+        'mode' => \core_cache\store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => true,
+        'staticacceleration' => true,
+        'staticaccelerationsize' => 1,
+    ],
 ];

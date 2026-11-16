@@ -22,13 +22,16 @@
     Modification compared to the original template:
     * Show the user's name beside the avatar in the navbar, from the md breakpoint up, so the
       session is identified at a glance. Core renders only the avatar here and keeps the name
-      inside the open menu. The name itself is core's, whatever fullname() composes under the
+      inside the open menu. The name is dimensionsnavname, the identity field the administrator
+      chose for the navbar, already masked by its display pattern (plain text, escaped here); a
+      context without that key shows core's userfullname, whatever fullname() composes under the
       site's fullnamedisplay setting.
 
     Context variables required for this template:
     * metadata - Array of extra badges (logged in as, failed logins), each with classes and content
     * avatardata - Array of avatars, each with classes and content
-    * userfullname - The name of the logged in user
+    * userfullname - The name of the logged in user, as core composed it
+    * dimensionsnavname - The name the navbar shows, when the theme's renderer wrote one
 
     Example context (json):
     {
@@ -44,7 +47,8 @@
                 "content": "<span class=\"userpicture\"></span>"
             }
         ],
-        "userfullname": "Cel. Perovano"
+        "userfullname": "Antônio Perovano",
+        "dimensionsnavname": "Cel. Perovano"
     }
 }}
 {{#metadata}}
@@ -61,6 +65,11 @@
         </span>
     {{/avatardata}}
 </span>
-{{#userfullname}}
-    <span class="dimensions-usermenu-name d-none d-md-inline">{{userfullname}}</span>
-{{/userfullname}}
+{{#dimensionsnavname}}
+    <span class="dimensions-usermenu-name d-none d-md-inline">{{dimensionsnavname}}</span>
+{{/dimensionsnavname}}
+{{^dimensionsnavname}}
+    {{#userfullname}}
+        <span class="dimensions-usermenu-name d-none d-md-inline">{{userfullname}}</span>
+    {{/userfullname}}
+{{/dimensionsnavname}}

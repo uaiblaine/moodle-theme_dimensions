@@ -29,6 +29,7 @@ use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\darklogo;
 use theme_dimensions\local\guestnav;
+use theme_dimensions\local\identity;
 use theme_dimensions\output\category_hero;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -118,6 +119,22 @@ final class core_renderer_test extends \advanced_testcase {
     }
 
     /**
+     * A real page header for the current user: the dashboard's, navbar and user menu included.
+     *
+     * @return string
+     */
+    private function header_html(): string {
+        global $PAGE;
+
+        $GLOBALS['PAGE'] = new \moodle_page();
+        $renderer = $this->renderer('/my/', 'standard');
+        $PAGE->set_title('Dashboard');
+        $PAGE->set_heading('Dashboard');
+
+        return $renderer->header();
+    }
+
+    /**
      * The names in the navbar's name block, for the current user, through a real page header.
      *
      * Every occurrence is returned, de-duplicated, so a test asserting one name also proves no
@@ -127,13 +144,7 @@ final class core_renderer_test extends \advanced_testcase {
      * @return array The distinct names, in the order they appear.
      */
     private function navbar_names(): array {
-        global $PAGE;
-
-        $GLOBALS['PAGE'] = new \moodle_page();
-        $renderer = $this->renderer('/my/', 'standard');
-        $PAGE->set_title('Dashboard');
-        $PAGE->set_heading('Dashboard');
-        $html = $renderer->header();
+        $html = $this->header_html();
 
         preg_match_all('~<span class="dimensions-usermenu-name[^"]*">(.*?)</span>~s', $html, $matches);
 
@@ -143,9 +154,9 @@ final class core_renderer_test extends \advanced_testcase {
     /**
      * The navbar shows the name core composed: fullname() under the site's fullnamedisplay.
      *
-     * The theme composes nothing. Beside the avatar is usermenu.userfullname as core wrote it, so
-     * with fullnamedisplay at the alternate name the navbar shows that column whatever the civil
-     * name - which is how the service name local_rank keeps there reaches it.
+     * With the identity settings at their defaults the theme shows fullname(), as core's own
+     * usermenu.userfullname does, so with fullnamedisplay at the alternate name the navbar shows
+     * that column whatever the civil name.
      *
      * @return void
      */
@@ -220,6 +231,96 @@ final class core_renderer_test extends \advanced_testcase {
             'submenus' => [],
         ]);
         $this->assertStringContainsString('class="userfirstname', $menu, 'Control: core draws the first name from this key.');
+    }
+
+    /**
+     * The navbar shows the field the administrator chose, and the open menu keeps core's name.
+     *
+     * The control is the default: with nothing stored the same account shows fullname(), whatever its alternate
+     * name. Boost Union's name block reads core's own key, which the theme leaves alone.
+     *
+     * @return void
+     */
+    public function test_the_navbar_shows_the_chosen_identity_field(): void {
+        $this->resetAfterTest();
+        $sink = $this->redirectEvents();
+        $perovano = self::getDataGenerator()->create_user(
+            ['firstname' => 'Antônio', 'lastname' => 'Perovano', 'alternatename' => 'Cel. Perovano']
+        );
+        $cardoso = self::getDataGenerator()->create_user(['firstname' => 'Bruno', 'lastname' => 'Cardoso', 'alternatename' => '']);
+        $sink->close();
+
+        $this->setUser($perovano);
+        $this->assertSame(['Antônio Perovano'], $this->navbar_names(), 'Control: the default is the full name.');
+
+        set_config(identity::SETTING_NAVBAR, 'alternatename', 'theme_dimensions');
+        $this->assertSame(['Cel. Perovano'], $this->navbar_names());
+        $this->assertMatchesRegularExpression(
+            '~class="[^"]*loggedinas[^"]*"[^>]*>.*?Antônio Perovano~s',
+            $this->header_html(),
+            'The name block of the open menu is still core\'s full name.'
+        );
+
+        // An account without the field shows its full name.
+        $this->setUser($cardoso);
+        $this->assertSame(['Bruno Cardoso'], $this->navbar_names());
+    }
+
+    /**
+     * A display pattern is applied on the server: the page never carries the characters it hides.
+     *
+     * @return void
+     */
+    public function test_a_masked_navbar_name_never_reaches_the_page_whole(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user(
+            ['firstname' => 'Ana', 'lastname' => 'Ribeiro', 'username' => '12345678909']
+        ));
+        set_config(identity::SETTING_NAVBAR, 'username', 'theme_dimensions');
+
+        $this->assertSame(['12345678909'], $this->navbar_names(), 'Control: without a pattern the username is on the page.');
+        $this->assertStringContainsString('12345678909', $this->header_html());
+
+        set_config(identity::SETTING_PATTERNS, 'username=***.###.###-**', 'theme_dimensions');
+        $html = $this->header_html();
+        $this->assertSame(['•••.456.789-••'], $this->navbar_names());
+        $this->assertStringNotContainsString('12345678909', $html);
+        $this->assertStringNotContainsString('123.456', $html);
+    }
+
+    /**
+     * A pattern's literal characters are escaped once by the template, never twice.
+     *
+     * @return void
+     */
+    public function test_a_patterns_literals_are_escaped_once_in_the_navbar(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user(['firstname' => 'Ana', 'lastname' => 'Ribeiro', 'idnumber' => 'ab']));
+        set_config(identity::SETTING_NAVBAR, 'idnumber', 'theme_dimensions');
+        set_config(identity::SETTING_PATTERNS, 'idnumber=<#&#>', 'theme_dimensions');
+
+        $this->assertSame(['&lt;a&amp;b&gt;'], $this->navbar_names());
+    }
+
+    /**
+     * Under "log in as" the navbar names the account logged in as, and core's key still names the real user.
+     *
+     * @return void
+     */
+    public function test_under_log_in_as_the_navbar_names_the_account_logged_in_as(): void {
+        global $USER;
+        $this->resetAfterTest();
+        $sink = $this->redirectEvents();
+        $student = self::getDataGenerator()->create_user(['firstname' => 'Ana', 'lastname' => 'Ribeiro']);
+        $sink->close();
+
+        $this->setAdminUser();
+        $admin = fullname($USER);
+        $this->assertSame([s($admin)], $this->navbar_names(), 'Control: the administrator sees their own name.');
+
+        \core\session\manager::loginas($student->id, \context_system::instance(), false);
+        $this->assertSame(['Ana Ribeiro'], $this->navbar_names());
+        $this->assertStringContainsString(s($admin), $this->header_html(), 'Core still names the real user in the menu.');
     }
 
     /**
