@@ -31,7 +31,9 @@ import {SELECTORS} from './events';
 
 /**
  * A listing client's state, which may carry fields of its own. `remembered`: every address names its
- * organisation; `viewchosen`: the view is written back; `defaultsort`: what a bare address gets here.
+ * organisation; `viewchosen`: the view is written back; `defaultsort`: what a bare address gets here; `sort`:
+ * the organisation (criteria::SORTS); `psort`: the grouped order, '' (the newest first) or name, always ''
+ * under a flat organisation, which carries its order in `sort`.
  */
 export type ListingState = {
     categoryid: number,
@@ -43,6 +45,7 @@ export type ListingState = {
     fav: boolean,
     filters: Record<string, number>,
     sort: string,
+    psort: string,
     defaultsort: string,
     remembered?: boolean,
     datefrom: string,
@@ -62,6 +65,7 @@ export const PARAM = {
     perpage: 'perpage',
     view: 'view',
     sort: 'sort',
+    group: 'group',
     from: 'from',
     to: 'to',
     cat: 'cat',
@@ -93,6 +97,82 @@ export const GROUPED_SORTS = ['', 'category'];
 
 /** The server's criteria::SORTS, the empty string first: what an address may name. */
 const SORTS = ['', 'category', 'name', 'recent'];
+
+/** The server's criteria::GROUPS, "Group by" in its order: the grouping by area, then none. */
+export const GROUPS = ['category', 'none'];
+
+/** The server's criteria::ORDERS, "Sort by" in its order. */
+export const ORDERS = ['name', 'recent'];
+
+/** The grouped order A-Z, the one value the grouped order is ever written with: criteria::SORT_NAME. */
+const ORDER_NAME = 'name';
+
+/**
+ * The organisation and the grouped order a query string names, read from both spellings as the server's
+ * criteria::organisation() reads them: a grouping by name with its order in sort, or the older spelling, an
+ * organisation in sort and the grouped order in psort. Nothing named is the category's default.
+ *
+ * @param {URLSearchParams} params The query string to read.
+ * @param {string} defaultsort The category's default, the empty string for the theme's.
+ * @returns {object} sort (one of SORTS) and psort ('' or name, '' under a flat organisation).
+ */
+export const organisationOf = (params: URLSearchParams, defaultsort: string): {sort: string, psort: string} => {
+    const group = params.get(PARAM.group) || '';
+    const named = params.get(PARAM.sort) || '';
+    let psort = params.get(PARAM.psort) === ORDER_NAME ? ORDER_NAME : '';
+    let sort = SORTS.indexOf(named) > 0 ? named : '';
+    if (GROUPS.indexOf(group) >= 0) {
+        let order = psort === ORDER_NAME ? ORDER_NAME : 'recent';
+        if (ORDERS.indexOf(named) >= 0) {
+            order = named;
+        }
+        sort = group === 'none' ? order : 'category';
+        psort = group === 'none' || order !== ORDER_NAME ? '' : ORDER_NAME;
+    }
+    sort = sort || defaultsort || '';
+    return {sort: sort, psort: GROUPED_SORTS.indexOf(sort) >= 0 ? psort : ''};
+};
+
+/**
+ * The grouping in force, by name: what "Group by" shows chosen.
+ *
+ * @param {object} state The calling client's state.
+ * @returns {string} One of GROUPS.
+ */
+export const groupOf = (state: ListingState): string => (GROUPED_SORTS.indexOf(state.sort) >= 0 ? 'category' : 'none');
+
+/**
+ * The order in force, whatever the grouping: what "Sort by" shows chosen, criteria::order().
+ *
+ * @param {object} state The calling client's state.
+ * @returns {string} One of ORDERS.
+ */
+export const orderOf = (state: ListingState): string => {
+    if (GROUPED_SORTS.indexOf(state.sort) >= 0) {
+        return state.psort === ORDER_NAME ? ORDER_NAME : 'recent';
+    }
+    return state.sort;
+};
+
+/**
+ * Put a grouping and an order into a state, each kept as the other one left it (fleet Design System D49).
+ *
+ * @param {object} state The calling client's state.
+ * @param {string} group One of GROUPS.
+ * @param {string} order One of ORDERS.
+ * @returns {void}
+ */
+export const organise = (state: ListingState, group: string, order: string): void => {
+    if (group === 'none') {
+        state.sort = order;
+        state.psort = '';
+        return;
+    }
+    // Into the grouping the default is named, so a flat-default category's address can name it (criteria::sort_params());
+    // within it the spelling stays, so a reorder writes no organisation the address did not name.
+    state.sort = isGrouped(state.sort) ? state.sort : 'category';
+    state.psort = order === ORDER_NAME ? ORDER_NAME : '';
+};
 
 /**
  * Whether a state is the root's, the course index whose one criterion is the search.
@@ -141,10 +221,7 @@ export const pageSizeOf = (params: URLSearchParams): number => {
  * @param {string} defaultsort The category's default, the empty string for the theme's.
  * @returns {string} The organisation.
  */
-export const sortOf = (params: URLSearchParams, defaultsort: string): string => {
-    const sort = params.get(PARAM.sort) || '';
-    return SORTS.indexOf(sort) > 0 ? sort : (defaultsort || '');
-};
+export const sortOf = (params: URLSearchParams, defaultsort: string): string => organisationOf(params, defaultsort).sort;
 
 /**
  * Whether an organisation draws the areas, which is the server's own is_grouped().
@@ -208,7 +285,8 @@ export const buildUrl = (state: ListingState): URL => {
     Array.from(params.keys())
         .filter((key) => key.startsWith(PARAM.fieldprefix))
         .forEach((key) => params.delete(key));
-    [PARAM.query, PARAM.chip, PARAM.fav, PARAM.page, PARAM.view, PARAM.sort, PARAM.from, PARAM.to, PARAM.cat]
+    // The grouping by name is what the form posts without JavaScript; the addresses spell the older way (criteria).
+    [PARAM.query, PARAM.chip, PARAM.fav, PARAM.page, PARAM.view, PARAM.sort, PARAM.group, PARAM.from, PARAM.to, PARAM.cat]
         .forEach((key) => params.delete(key));
     if (state.query !== '') {
         params.set(PARAM.query, state.query);
@@ -254,6 +332,11 @@ export const buildUrl = (state: ListingState): URL => {
     // The open panel rides along untouched, except into a flat organisation, which draws no posters.
     if (!isGrouped(state.sort)) {
         params.delete(PARAM.open);
+        params.delete(PARAM.psort);
+    } else if (state.psort === ORDER_NAME) {
+        // The grouped order, which the posters' component writes as well, from the same state (criteria::order_params()).
+        params.set(PARAM.psort, ORDER_NAME);
+    } else {
         params.delete(PARAM.psort);
     }
     return url;
@@ -329,7 +412,9 @@ export const readUrl = (state: ListingState): void => {
     state.query = params.get(PARAM.query) || '';
     state.chip = chipOf(params);
     state.fav = favOf(params);
-    state.sort = sortOf(params, state.defaultsort);
+    const organisation = organisationOf(params, state.defaultsort);
+    state.sort = organisation.sort;
+    state.psort = organisation.psort;
     const period = periodOf(params);
     state.datefrom = period.from;
     state.dateto = period.to;

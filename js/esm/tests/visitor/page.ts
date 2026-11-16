@@ -32,6 +32,8 @@ export const VISITOR_FORM = 'dim-vitrine-form-8';
 /** The toolbar form, as the anonymous shell draws it. */
 export const VISITOR_TOOLBAR = `<form class="dim-toolbar" id="dim-vitrine-form-8" method="get" action="https://example.com/theme_dimensions/category/8" data-region="dim-vitrine-toolbar">
         
+        <input type="hidden" name="group" value="category" data-region="dim-group-field">
+        <input type="hidden" name="sort" value="recent" data-region="dim-order-field">
         <button type="submit" class="visually-hidden dim-toolbar__defaultsubmit" tabindex="-1">Filter</button>
         <div class="dim-line" data-region="dim-line">
             <span class="dim-line__spacer" aria-hidden="true"></span>
@@ -107,25 +109,30 @@ export const VISITOR_TOOLBAR = `<form class="dim-toolbar" id="dim-vitrine-form-8
                     </details>
                     <details class="dim-line__organise" data-region="dim-organise">
                         <summary class="dim-line__iconbtn dim-line__organisetoggle" data-dim-tip="Organise"><i class="fa fa-arrow-down-wide-short" aria-hidden="true"></i><span class="visually-hidden">Organise</span></summary>
-                        <div class="dim-line__menu" data-region="dim-organise-menu">
-                            <fieldset class="dim-toolbar__group dim-toolbar__group--sort" data-region="dim-sort" data-name="sort">
-                                <legend class="dim-toolbar__grouplabel">Organise</legend>
-                                <div class="dim-toolbar__pills">
-                                    <input class="dim-pill__input visually-hidden" type="radio" name="sort" id="dim-sort-8-category" value="category" checked>
-                                    <label class="dim-pill" for="dim-sort-8-category">By area</label>
-                                    <input class="dim-pill__input visually-hidden" type="radio" name="sort" id="dim-sort-8-name" value="name">
-                                    <label class="dim-pill" for="dim-sort-8-name">A-Z</label>
-                                    <input class="dim-pill__input visually-hidden" type="radio" name="sort" id="dim-sort-8-recent" value="recent">
-                                    <label class="dim-pill" for="dim-sort-8-recent">Recent</label>
-                                </div>
-                            </fieldset>
-                            <button type="submit" class="dim-toolbar__sortsubmit dim-nojs-only">Apply</button>
+                        <div class="dim-line__menu dim-menu" role="menu" aria-label="Organise" data-region="dim-organise-menu">
+                            <div class="dim-menu__head" id="dim-organise-8-group">Group by</div>
+                            <div role="group" aria-labelledby="dim-organise-8-group" data-region="dim-organise-group" data-name="group">
+                                <button type="submit" class="dim-menu__item" role="menuitemradio" data-action="dim-organise" name="group" value="category" aria-checked="true"><i class="fa fa-layer-group dim-menu__icon" aria-hidden="true"></i><span class="dim-menu__label">Area</span><i class="fa fa-check dim-menu__tick" aria-hidden="true"></i></button>
+                                <button type="submit" class="dim-menu__item" role="menuitemradio" data-action="dim-organise" name="group" value="none" aria-checked="false"><i class="fa fa-grip-lines dim-menu__icon" aria-hidden="true"></i><span class="dim-menu__label">No grouping</span><i class="fa fa-check dim-menu__tick" aria-hidden="true"></i></button>
+                            </div>
+                            <div class="dim-menu__sep" role="separator"></div>
+                            <div class="dim-menu__head" id="dim-organise-8-sort">Sort by</div>
+                            <div role="group" aria-labelledby="dim-organise-8-sort" data-region="dim-organise-group" data-name="sort">
+                                <button type="submit" class="dim-menu__item" role="menuitemradio" data-action="dim-organise" name="sort" value="name" aria-checked="false"><i class="fa fa-arrow-down-a-z dim-menu__icon" aria-hidden="true"></i><span class="dim-menu__label">Name</span><i class="fa fa-check dim-menu__tick" aria-hidden="true"></i></button>
+                                <button type="submit" class="dim-menu__item" role="menuitemradio" data-action="dim-organise" name="sort" value="recent" aria-checked="true"><i class="fa fa-clock-rotate-left dim-menu__icon" aria-hidden="true"></i><span class="dim-menu__label">Most recent</span><i class="fa fa-check dim-menu__tick" aria-hidden="true"></i></button>
+                            </div>
                         </div>
                     </details>
-                    <div class="dim-toolbar__view dim-line__view" role="group" aria-label="View" data-region="dim-view-row">
-                        <button type="submit" class="dim-toolbar__viewbtn dim-line__iconbtn" data-action="dim-view" name="view" value="list" aria-pressed="false" data-dim-tip="List"><i class="fa fa-list" aria-hidden="true"></i><span class="visually-hidden">List</span></button>
-                        <button type="submit" class="dim-toolbar__viewbtn dim-line__iconbtn" data-action="dim-view" name="view" value="cards" aria-pressed="true" data-dim-tip="Cards"><i class="fa fa-border-all" aria-hidden="true"></i><span class="visually-hidden">Cards</span></button>
-                    </div>
+                    <details class="dim-line__viewmenu" data-region="dim-view">
+                        <summary class="dim-line__iconbtn dim-line__viewtoggle" data-dim-tip="View"><i class="fa fa-border-all" aria-hidden="true" data-region="dim-view-icon"></i><i class="fa fa-chevron-down dim-line__chevron" aria-hidden="true"></i><span class="visually-hidden">View</span></summary>
+                        <div class="dim-line__menu dim-menu" role="menu" aria-label="View" data-region="dim-view-menu">
+                            <div class="dim-menu__head" id="dim-view-8-head">Show as</div>
+                            <div role="group" aria-labelledby="dim-view-8-head">
+                                <button type="submit" class="dim-menu__item" role="menuitemradio" data-action="dim-view" name="view" value="list" aria-checked="false"><i class="fa fa-list dim-menu__icon" aria-hidden="true"></i><span class="dim-menu__label">List</span><i class="fa fa-check dim-menu__tick" aria-hidden="true"></i></button>
+                                <button type="submit" class="dim-menu__item" role="menuitemradio" data-action="dim-view" name="view" value="cards" aria-checked="true"><i class="fa fa-border-all dim-menu__icon" aria-hidden="true"></i><span class="dim-menu__label">Cards</span><i class="fa fa-check dim-menu__tick" aria-hidden="true"></i></button>
+                            </div>
+                        </div>
+                    </details>
                 </div>
             </div>
             <div class="dim-line__capsule dim-line__searchcap" data-region="dim-line-searchcap">

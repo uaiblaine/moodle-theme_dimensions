@@ -32,7 +32,8 @@ import type {ListingState} from '../../src/listing/address';
  * @returns {object}
  */
 const stateOf = (changes: Partial<ListingState> = {}): ListingState => ({
-    categoryid: 7, page: 0, query: 'fire', chip: '', fav: false, filters: {}, sort: '', defaultsort: '', remembered: false,
+    categoryid: 7, page: 0, query: 'fire', chip: '', fav: false, filters: {}, sort: '', psort: '', defaultsort: '',
+    remembered: false,
     datefrom: '2026-01-01', dateto: '', cat: 0, view: 'cards', viewchosen: false, pagesize: 0, ...changes,
 });
 

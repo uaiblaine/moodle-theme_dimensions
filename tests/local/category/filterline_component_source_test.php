@@ -673,7 +673,7 @@ final class filterline_component_source_test extends \advanced_testcase {
         );
         $this->assertStringContainsString('aria-label={date.name}', $component);
         $this->assertMatchesRegularExpression(
-            '~const layers = \[filters\.current, period\.current, organise\.current\];\s*'
+            '~const layers = \[filters\.current, period\.current, organise\.current, viewmenu\.current\];\s*'
                 . 'const opened = layers\.find\(\(one\) => one !== null && one === event\.target && one\.open\);\s*'
                 . 'if \(opened\) \{.*?layers\.forEach\(\(one\) => \{\s*'
                 . 'if \(one && one !== opened && one\.open\) \{\s*one\.open = false;~s',
@@ -687,7 +687,7 @@ final class filterline_component_source_test extends \advanced_testcase {
         );
         $this->assertStringContainsString('quietly(details.querySelector(\'summary\'));', $component);
         $this->assertMatchesRegularExpression(
-            '~\[filters\.current, period\.current, organise\.current\]\.forEach\(\(layer\) => \{\s*'
+            '~\[filters\.current, period\.current, organise\.current, viewmenu\.current\]\.forEach\(\(layer\) => \{\s*'
                 . 'if \(layer && layer\.open && !layer\.contains\(target\)\) \{\s*layer\.open = false;~',
             $component,
             'A press outside closes the date layer, at every step.'
@@ -719,10 +719,10 @@ final class filterline_component_source_test extends \advanced_testcase {
     public function test_a_press_outside_closes_any_open_layer_and_the_search_shuts_the_managers_menu(): void {
         $component = $this->read('js/esm/src/filterline/FilterLine.tsx');
         $this->assertMatchesRegularExpression(
-            '~\[filters\.current, period\.current, organise\.current\]\.forEach\(\(layer\) => \{\s*'
+            '~\[filters\.current, period\.current, organise\.current, viewmenu\.current\]\.forEach\(\(layer\) => \{\s*'
                 . 'if \(layer && layer\.open && !layer\.contains\(target\)\) \{\s*layer\.open = false;\s*\}\s*\}\);~',
             $component,
-            'All three layers, one rule.'
+            'All four layers, the View menu included, one rule.'
         );
         $press = $this->body_of($component, 'onDocumentPress');
         $this->assertStringNotContainsString('preventDefault', $press);

@@ -46,6 +46,6 @@ Feature: The category showcase's first paint, measured in a throttled browser
     Given the following config values are set as admin:
       | forcelogin           | 1 |                  |
       | categorypublicclient | 1 | theme_dimensions |
-    When I probe the "cold" first paint of "public:PERFFLAT" as "visitor-flat" pressing "[data-region='dim-view-row'] button[aria-pressed='false']"
-    And I probe the "warm" first paint of "public:PERFFLAT" as "visitor-flat" pressing "[data-region='dim-view-row'] button[aria-pressed='false']"
+    When I probe the "cold" first paint of "public:PERFFLAT" as "visitor-flat" pressing "[data-region='dim-view-menu'] button[aria-checked='false']"
+    And I probe the "warm" first paint of "public:PERFFLAT" as "visitor-flat" pressing "[data-region='dim-view-menu'] button[aria-checked='false']"
     Then "body.dim-public-js" "css_element" should exist

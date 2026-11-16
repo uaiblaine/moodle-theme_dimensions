@@ -39,9 +39,11 @@ courses of the category and its subcategories as cards or a dense list, with sea
 filter groups built from course custom fields, a start-date filter, a category tree and real paging.
 It works with JavaScript off; with JavaScript on, every choice is applied in place.
 
-- **Organised by area, A-Z or Recent.** By area, each subcategory is a poster, and its courses
-  open in a panel between the rows, with the area's own order (Recent or A-Z) and a link to its
-  page. A-Z and Recent list every course of the subtree, with the category tree beside them.
+- **Grouped by area or not, sorted by name or the most recent.** *Organise* holds two independent
+  choices, *Group by* (Area, No grouping) and *Sort by* (Name, Most recent). By area, each
+  subcategory is a poster, and its courses open in a panel between the rows, in the order *Sort by*
+  holds (the panel's own Recent and A-Z buttons change it too) and with a link to its page. With no
+  grouping, every course of the subtree is one list in that order, with the category tree beside it.
 - **Cards that answer "can I get in?".** Each card shows the enrolment state for the reader
   (enrolled, open for enrolment, application under review, access from a date, no enrolment
   available and more), a favourite star and a "More information" dialogue.
@@ -57,7 +59,7 @@ It works with JavaScript off; with JavaScript on, every choice is applied in pla
 ### The filter line
 
 Every control of the listing sits on one line, in a fixed order: the scope, the search, the
-favourites star, *Filters*, *Organise* and the view (List or Cards, icons only).
+favourites star, *Filters*, *Organise* and *View* (one icon button whose menu offers Cards or List).
 
 - **The scope** - *All*, *My courses*, *Open for enrolment*, *Scheduled* - is a set of counted
   cells. The rarer states, *Under review* and *Free access*, are in the panel under *More

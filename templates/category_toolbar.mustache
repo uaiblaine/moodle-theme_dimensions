@@ -28,7 +28,7 @@
     (dim-line-cluster), which holds the result count (dim-line-total) and the
     capsule (dim-line-capsule) of the favourites star (dim-line-star), the
     Filters disclosure (dim-filters), the date button (dim-period), the Organise
-    menu (dim-organise) and the view toggle (dim-view-row, List first); then the search's own capsule
+    menu (dim-organise) and the View menu (dim-view); then the search's own capsule
     (dim-line-searchcap): the search button, the field with its eraser, and
     core's action menu for the category's managers (dim-line-manage). With no
     JavaScript the line wraps where it does not fit and every control still
@@ -47,7 +47,7 @@
     markup from the markup it replaces and adopts four subtrees of it whole,
     never redrawn: the Filters panel (dim-filters-panel), the date layer
     (dim-period-layer), the Organise menu (dim-organise-menu) and the managers'
-    menu (dim-line-manage). A change of
+    menu (dim-line-manage); the View menu it draws itself. A change of
     the line's own markup here changes the component too; the Jest fixture
     js/esm/tests/filterline/toolbar.ts is this template rendered from its
     example context, and filterline_component_source_test holds the two equal.
@@ -137,9 +137,19 @@
     date fieldset, and each quick option's bounds from its link - so the client
     does no timezone arithmetic.
 
-    The Organise menu is a native details too: its summary is a glyph whose name
-    is a visually hidden word; inside are the three sort chips (dim-sort) and
-    the no-JavaScript "Apply" submit.
+    Organise and View are the fleet Design System's menus, each a native details
+    whose summary is an icon button named by a visually hidden word, and whose
+    layer is a role="menu" (dim-organise-menu, dim-view-menu). Organise holds
+    two headed radio groups split by a separator, "Group by" then "Sort by"
+    (dim-organise-group, data-name naming the parameter); View one, "Show as",
+    and its summary draws the view in force (dim-view-icon) and a chevron. Every
+    item is a role="menuitemradio" submit button, its icon, its word and a tick
+    the stylesheet shows on the chosen one (aria-checked): Organise's post group
+    or sort (dim-organise), View's post view (dim-view). The two halves of the
+    organisation are independent, so the grouping and the order in force are
+    hidden fields first in the form (organisefields: dim-group-field,
+    dim-order-field), and an item's own value, later in the form, is the one the
+    server reads.
 
     The second row (dim-line-chips) is in the document at every moment and
     carries dim-line__chips--rest while nothing narrows, which takes everything
@@ -169,13 +179,13 @@
     The submit buttons stay inside the form because the template lint renders
     this partial on its own. The first submit of the form is a name-less,
     visually hidden one: Enter in the search box presses the form's first
-    submit, and the view buttons carry a name and a value that would otherwise
-    flip the reader's view.
+    submit, and the menu items carry a name and a value that would otherwise
+    change the reader's view or organisation.
 
-    While a panel of the areas is open, hidden fields carry it (open, and psort
-    when the panel is in name order), so a filter or a view submitted without
-    JavaScript keeps the panel open; each names its own region, because the
-    client modules keep them in step with the address.
+    While a panel of the areas is open, or the grouped order is A-Z, hidden
+    fields carry them (open, psort), so a filter or a view submitted without
+    JavaScript keeps the panel open in its order; each names its own region,
+    because the client modules keep them in step with the address.
 
     The hidden list carries whatever identifies the category on the shell that
     is drawing, and may be empty: a GET submission replaces the action's query
@@ -201,17 +211,35 @@
         "hasquery": true,
         "searchtooshort": false,
         "searchtooshortlabel": "Type at least 2 characters to search.",
-        "sortgroup": {
-            "legend": "Organise",
-            "name": "sort",
-            "options": [
-                {"id": "dim-sort-7-category", "value": "category", "label": "By category", "checked": true},
-                {"id": "dim-sort-7-name", "value": "name", "label": "A-Z", "checked": false},
-                {"id": "dim-sort-7-recent", "value": "recent", "label": "Recent", "checked": false}
+        "organiselabel": "Organise",
+        "organisefields": [
+            {"name": "group", "value": "category", "region": "dim-group-field"},
+            {"name": "sort", "value": "name", "region": "dim-order-field"}
+        ],
+        "organise": {
+            "sections": [
+                {
+                    "id": "dim-organise-7-group",
+                    "label": "Group by",
+                    "name": "group",
+                    "first": true,
+                    "items": [
+                        {"name": "group", "value": "category", "label": "Area", "icon": "fa-layer-group", "checked": true},
+                        {"name": "group", "value": "none", "label": "No grouping", "icon": "fa-grip-lines", "checked": false}
+                    ]
+                },
+                {
+                    "id": "dim-organise-7-sort",
+                    "label": "Sort by",
+                    "name": "sort",
+                    "first": false,
+                    "items": [
+                        {"name": "sort", "value": "name", "label": "Name", "icon": "fa-arrow-down-a-z", "checked": true},
+                        {"name": "sort", "value": "recent", "label": "Most recent", "icon": "fa-clock-rotate-left", "checked": false}
+                    ]
+                }
             ]
         },
-        "sortlabel": "Organise",
-        "sortapplylabel": "Apply",
         "scope": {
             "legend": "Status",
             "name": "chip",
@@ -278,6 +306,9 @@
         ],
         "viewname": "view",
         "viewlabel": "View",
+        "viewheading": "Show as",
+        "viewheadid": "dim-view-7-head",
+        "viewicon": "fa-border-all",
         "views": [
             {"value": "list", "label": "List", "current": false, "icon": "fa-list"},
             {"value": "cards", "label": "Cards", "current": true, "icon": "fa-border-all"}
@@ -310,6 +341,9 @@
     {{#openfields}}
     <input type="hidden" name="{{name}}" value="{{value}}" data-region="{{region}}">
     {{/openfields}}
+    {{#organisefields}}
+    <input type="hidden" name="{{name}}" value="{{value}}" data-region="{{region}}">
+    {{/organisefields}}
     {{#favourites}}
     <input type="hidden" name="{{name}}" value="1" data-region="dim-fav-field"{{^pressed}} disabled{{/pressed}}>
     {{/favourites}}
@@ -397,27 +431,32 @@
                     </div>
                 </details>
                 <details class="dim-line__organise" data-region="dim-organise">
-                    <summary class="dim-line__iconbtn dim-line__organisetoggle" data-dim-tip="{{sortlabel}}"><i class="fa fa-arrow-down-wide-short" aria-hidden="true"></i><span class="visually-hidden">{{sortlabel}}</span></summary>
-                    <div class="dim-line__menu" data-region="dim-organise-menu">
-                        {{#sortgroup}}
-                        <fieldset class="dim-toolbar__group dim-toolbar__group--sort" data-region="dim-sort" data-name="{{name}}">
-                            <legend class="dim-toolbar__grouplabel">{{legend}}</legend>
-                            <div class="dim-toolbar__pills">
-                                {{#options}}
-                                <input class="dim-pill__input visually-hidden" type="radio" name="{{name}}" id="{{id}}" value="{{value}}"{{#checked}} checked{{/checked}}>
-                                <label class="dim-pill" for="{{id}}">{{label}}</label>
-                                {{/options}}
-                            </div>
-                        </fieldset>
-                        {{/sortgroup}}
-                        <button type="submit" class="dim-toolbar__sortsubmit dim-nojs-only">{{sortapplylabel}}</button>
+                    <summary class="dim-line__iconbtn dim-line__organisetoggle" data-dim-tip="{{organiselabel}}"><i class="fa fa-arrow-down-wide-short" aria-hidden="true"></i><span class="visually-hidden">{{organiselabel}}</span></summary>
+                    <div class="dim-line__menu dim-menu" role="menu" aria-label="{{organiselabel}}" data-region="dim-organise-menu">
+                        {{#organise.sections}}
+                        <div class="dim-menu__head" id="{{id}}">{{label}}</div>
+                        <div role="group" aria-labelledby="{{id}}" data-region="dim-organise-group" data-name="{{name}}">
+                            {{#items}}
+                            <button type="submit" class="dim-menu__item" role="menuitemradio" data-action="dim-organise" name="{{name}}" value="{{value}}" aria-checked="{{#checked}}true{{/checked}}{{^checked}}false{{/checked}}"><i class="fa {{icon}} dim-menu__icon" aria-hidden="true"></i><span class="dim-menu__label">{{label}}</span><i class="fa fa-check dim-menu__tick" aria-hidden="true"></i></button>
+                            {{/items}}
+                        </div>
+                        {{#first}}
+                        <div class="dim-menu__sep" role="separator"></div>
+                        {{/first}}
+                        {{/organise.sections}}
                     </div>
                 </details>
-                <div class="dim-toolbar__view dim-line__view" role="group" aria-label="{{viewlabel}}" data-region="dim-view-row">
-                    {{#views}}
-                    <button type="submit" class="dim-toolbar__viewbtn dim-line__iconbtn" data-action="dim-view" name="{{viewname}}" value="{{value}}" aria-pressed="{{#current}}true{{/current}}{{^current}}false{{/current}}" data-dim-tip="{{label}}"><i class="fa {{icon}}" aria-hidden="true"></i><span class="visually-hidden">{{label}}</span></button>
-                    {{/views}}
-                </div>
+                <details class="dim-line__viewmenu" data-region="dim-view">
+                    <summary class="dim-line__iconbtn dim-line__viewtoggle" data-dim-tip="{{viewlabel}}"><i class="fa {{viewicon}}" aria-hidden="true" data-region="dim-view-icon"></i><i class="fa fa-chevron-down dim-line__chevron" aria-hidden="true"></i><span class="visually-hidden">{{viewlabel}}</span></summary>
+                    <div class="dim-line__menu dim-menu" role="menu" aria-label="{{viewlabel}}" data-region="dim-view-menu">
+                        <div class="dim-menu__head" id="{{viewheadid}}">{{viewheading}}</div>
+                        <div role="group" aria-labelledby="{{viewheadid}}">
+                            {{#views}}
+                            <button type="submit" class="dim-menu__item" role="menuitemradio" data-action="dim-view" name="{{viewname}}" value="{{value}}" aria-checked="{{#current}}true{{/current}}{{^current}}false{{/current}}"><i class="fa {{icon}} dim-menu__icon" aria-hidden="true"></i><span class="dim-menu__label">{{label}}</span><i class="fa fa-check dim-menu__tick" aria-hidden="true"></i></button>
+                            {{/views}}
+                        </div>
+                    </div>
+                </details>
             </div>
         </div>
         <div class="dim-line__capsule dim-line__searchcap" data-region="dim-line-searchcap">

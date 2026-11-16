@@ -1847,8 +1847,8 @@ final class population {
                 $result->panel = null;
             }
         }
+        // The grouped order stays: it holds with no panel open, so the address without the panel keeps it too.
         $criteria->open = 0;
-        $criteria->psort = '';
     }
 
     /**

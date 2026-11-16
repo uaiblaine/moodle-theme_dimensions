@@ -146,7 +146,8 @@ class get_category_rows extends external_api {
             ),
             'sort' => new external_value(
                 PARAM_ALPHA,
-                'How the listing is organised: empty or category for the grouped default, name, or recent.',
+                'Without a group, how the listing is organised: empty or category for the grouped default, name, '
+                    . 'or recent. With a group, its order: name, recent, or empty for the newest first.',
                 VALUE_DEFAULT,
                 ''
             ),
@@ -184,6 +185,14 @@ class get_category_rows extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            // After fav, for the same reason: a client that names no group is answered as before it existed.
+            'group' => new external_value(
+                PARAM_ALPHA,
+                'How the listing is grouped: category or none, which makes sort the order; empty when sort '
+                    . 'names the organisation alone.',
+                VALUE_DEFAULT,
+                ''
+            ),
         ]);
     }
 
@@ -196,12 +205,13 @@ class get_category_rows extends external_api {
      * @param string $chip The state chip, '' for all.
      * @param int $perpage The page size the address asked for, 0 for the site default.
      * @param array $filters One entry of fieldid and value per custom field filter.
-     * @param string $sort How the listing is organised, '' for the grouped default.
+     * @param string $sort The organisation (no group), or the order (a group named); '' for the default.
      * @param string $datefrom The first start date kept, as YYYY-MM-DD, '' for no bound.
      * @param string $dateto The last start date kept, as YYYY-MM-DD, '' for no bound.
      * @param int $cat The category of the tree the listing is narrowed to, 0 for the whole subtree.
      * @param bool $withcategories Whether this is a panel's request, answered with the panel's context.
      * @param bool $fav Whether only the reader's favourite courses are kept.
+     * @param string $group The grouping, one of criteria::GROUPS, '' when sort names the organisation alone.
      * @return array The page: its numbers, its cards and the option lists of its toolbar.
      * @throws \invalid_parameter_exception On a malformed request.
      * @throws \moodle_exception The one refusal, for every category this viewer may not list.
@@ -218,7 +228,8 @@ class get_category_rows extends external_api {
         string $dateto = '',
         int $cat = 0,
         bool $withcategories = false,
-        bool $fav = false
+        bool $fav = false,
+        string $group = ''
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'categoryid' => $categoryid,
@@ -233,6 +244,7 @@ class get_category_rows extends external_api {
             'cat' => $cat,
             'withcategories' => $withcategories,
             'fav' => $fav,
+            'group' => $group,
         ]);
 
         /* The cheap checks, before login: a malformed request is malformed for anybody, and
@@ -243,15 +255,10 @@ class get_category_rows extends external_api {
         if ($params['chip'] !== '' && !in_array($params['chip'], classifier::filters(), true)) {
             throw new \invalid_parameter_exception('Unknown chip: ' . $params['chip']);
         }
-        /* The organisation, against the same allowlist the address is read with. The page drops an
-           unknown value and renders - it is a query string somebody may have edited - while this
-           function refuses it: its only client is this theme's own module, and a value it never
-           sends is a defect worth seeing rather than a listing that silently came back in another
-           order. The root is refused for the same reason; the tree's cat is not refused at all (see
-           the class docblock). */
-        if (!in_array($params['sort'], criteria::SORTS, true)) {
-            throw new \invalid_parameter_exception('Unknown sort: ' . $params['sort']);
-        }
+        /* The organisation, against the same allowlists the address is read with (rows says why it is
+           refused here and dropped there). The root is refused for the same reason; the tree's cat is
+           not refused at all (see the class docblock). */
+        rows::require_known_organisation((string) $params['group'], (string) $params['sort']);
         foreach (['datefrom', 'dateto'] as $bound) {
             if ($params[$bound] !== '' && criteria::parse_date((string) $params[$bound]) === '') {
                 throw new \invalid_parameter_exception('The ' . $bound . ' must be a date as YYYY-MM-DD.');
@@ -271,6 +278,7 @@ class get_category_rows extends external_api {
                 || $params['perpage'] !== 0
                 || $params['filters'] !== []
                 || $params['sort'] !== ''
+                || $params['group'] !== ''
                 || $params['datefrom'] !== ''
                 || $params['dateto'] !== ''
                 || $params['cat'] !== 0
@@ -317,6 +325,7 @@ class get_category_rows extends external_api {
             'pagesize' => $pagesize,
             'filters' => $fields,
             'sort' => (string) $params['sort'],
+            'group' => (string) $params['group'],
             'datefrom' => (string) $params['datefrom'],
             'dateto' => (string) $params['dateto'],
             'cat' => (int) $params['cat'],

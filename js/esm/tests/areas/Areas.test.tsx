@@ -565,6 +565,37 @@ describe('theme_dimensions/areas/Areas', () => {
         await press(panel.querySelector('[data-psort="recent"]') as HTMLElement);
         expect(questions).toHaveLength(1);
     });
+
+    it('tells the listing its own order change, and takes the order "Sort by" chose, open or closed', async() => {
+        const areas = await mount();
+        const ordered: string[] = [];
+        areas.addEventListener(EVENTS.ordered, (event: Event) => ordered.push((event as CustomEvent).detail.psort));
+        await press(controlOf(8));
+        await answer();
+        await press(panelEl().querySelector('[data-psort="name"]') as HTMLElement);
+        expect(ordered).toEqual(['name']);
+        await answer();
+        // Closed, the grouped order holds: it is still in the address, and the next panel opens in it.
+        await press(panelEl().querySelector('[data-action="dim-panel-close"]') as HTMLElement);
+        expect(window.location.search).toBe('?categoryid=7&psort=name');
+        await press(controlOf(9));
+        expect(questions.map((one) => [one.id, one.psort])).toEqual([[9, 'name']]);
+        await answer();
+        // The listing's choice: the open panel is asked again in it, and the panel tells nothing back.
+        await act(async() => {
+            areas.dispatchEvent(new CustomEvent(EVENTS.order, {detail: {psort: ''}}));
+        });
+        await flush();
+        expect(questions.map((one) => [one.id, one.psort])).toEqual([[9, '']]);
+        expect(ordered).toEqual(['name']);
+        // The control: the order in force asks nothing.
+        await answer();
+        await act(async() => {
+            areas.dispatchEvent(new CustomEvent(EVENTS.order, {detail: {psort: ''}}));
+        });
+        await flush();
+        expect(questions).toHaveLength(0);
+    });
 });
 
 describe('theme_dimensions/areas/Areas on the visitor\'s shell', () => {

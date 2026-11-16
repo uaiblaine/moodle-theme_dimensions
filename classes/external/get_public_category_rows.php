@@ -174,6 +174,14 @@ class get_public_category_rows extends external_api {
                 VALUE_DEFAULT,
                 ''
             ),
+            // Last: a client that names no group is answered as before it existed.
+            'group' => new external_value(
+                PARAM_ALPHA,
+                'How the listing is grouped: category or none, which makes sort the order; empty when sort '
+                    . 'names the organisation alone.',
+                VALUE_DEFAULT,
+                ''
+            ),
         ]);
     }
 
@@ -185,13 +193,14 @@ class get_public_category_rows extends external_api {
      * @param string $query The search term as typed.
      * @param int $perpage The page size the address asked for, 0 for the site default.
      * @param array $filters One entry of fieldid and value per custom field filter.
-     * @param string $sort How the listing is organised, '' for the grouped default.
+     * @param string $sort The organisation (no group), or the order (a group named); '' for the default.
      * @param string $datefrom The first start date kept, as YYYY-MM-DD, '' for no bound.
      * @param string $dateto The last start date kept, as YYYY-MM-DD, '' for no bound.
      * @param int $cat The category of the tree the listing is narrowed to, 0 for the whole subtree.
      * @param bool $withcategories Whether this is a public area's panel.
      * @param int $slice The merely listed child whose slice of the listing is the panel, 0 for none.
      * @param string $lang The language of the page that asks, '' for the request's own.
+     * @param string $group The grouping, one of criteria::GROUPS, '' when sort names the organisation alone.
      * @return array The page, in {@see get_category_rows::execute_returns()}'s shape.
      * @throws \invalid_parameter_exception On a malformed request, whatever the id.
      * @throws \moodle_exception The one refusal, for every request that may not be answered.
@@ -208,7 +217,8 @@ class get_public_category_rows extends external_api {
         int $cat = 0,
         bool $withcategories = false,
         int $slice = 0,
-        string $lang = ''
+        string $lang = '',
+        string $group = ''
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'categoryid' => $categoryid,
@@ -223,6 +233,7 @@ class get_public_category_rows extends external_api {
             'withcategories' => $withcategories,
             'slice' => $slice,
             'lang' => $lang,
+            'group' => $group,
         ]);
 
         // Counted before anything can refuse, so a batch of refused calls is cut to one too.
@@ -271,9 +282,7 @@ class get_public_category_rows extends external_api {
         if ($params['page'] < 0) {
             throw new \invalid_parameter_exception('The page must not be negative.');
         }
-        if (!in_array($params['sort'], criteria::SORTS, true)) {
-            throw new \invalid_parameter_exception('Unknown sort: ' . $params['sort']);
-        }
+        rows::require_known_organisation((string) $params['group'], (string) $params['sort']);
         foreach (['datefrom', 'dateto'] as $bound) {
             if ($params[$bound] !== '' && criteria::parse_date((string) $params[$bound]) === '') {
                 throw new \invalid_parameter_exception('The ' . $bound . ' must be a date as YYYY-MM-DD.');
@@ -299,6 +308,7 @@ class get_public_category_rows extends external_api {
                 || $params['perpage'] !== 0
                 || $params['filters'] !== []
                 || $params['sort'] !== ''
+                || $params['group'] !== ''
                 || $params['datefrom'] !== ''
                 || $params['dateto'] !== ''
                 || $params['cat'] !== 0
@@ -317,6 +327,7 @@ class get_public_category_rows extends external_api {
             'pagesize' => $perpage > 0 ? min($perpage, population::MAX_PAGESIZE) : null,
             'filters' => $fields,
             'sort' => (string) $params['sort'],
+            'group' => (string) $params['group'],
             'datefrom' => (string) $params['datefrom'],
             'dateto' => (string) $params['dateto'],
             'cat' => (int) $params['cat'],

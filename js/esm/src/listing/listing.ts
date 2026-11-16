@@ -24,13 +24,13 @@
  */
 
 export {
-    PARAM, buildUrl, catOf, dropCriterion, filterArgs, isGrouped, isRoot, narrows, pageSizeOf, periodOf, readUrl, rootOnly,
-    sortOf, syncFold, withPanel,
+    GROUPS, ORDERS, PARAM, buildUrl, catOf, dropCriterion, filterArgs, groupOf, isGrouped, isRoot, narrows, orderOf, organise,
+    organisationOf, pageSizeOf, periodOf, readUrl, rootOnly, syncFold, withPanel,
 } from './address';
 export {writeUrl} from './history';
 export {focusTarget, mountAreas, mountCalendar, mountLine, tellAnswer} from './mounts';
 export {
     armTreebox, closestOf, markTree, paintChips, paintControls, paintCount, paintDates, paintDirect, paintEraser,
-    paintFavToggle, paintFavourites, paintFilterBadge, paintFiltersControl, paintGrid, paintGroups, paintPager, paintView,
-    renderCards, restoreMore,
+    paintFavToggle, paintFavourites, paintFilterBadge, paintFiltersControl, paintGrid, paintGroups, paintOrganise, paintPager,
+    paintView, renderCards, restoreMore,
 } from './paint';

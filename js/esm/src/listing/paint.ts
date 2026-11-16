@@ -29,7 +29,7 @@
 import Pending from '@moodle/lms/core/pending';
 import {load} from '../amd';
 import {markTitles} from '../areas/mark';
-import {CHIP_PERIOD, GROUPED_SORTS, PARAM, SCOPE, withPanel} from './address';
+import {CHIP_PERIOD, PARAM, SCOPE, groupOf, orderOf, withPanel} from './address';
 import type {ListingState} from './address';
 import {LINE, LISTING, SELECTORS} from './events';
 import {drawnByLine, filterGroupsShown, tellCalendar, tellLine} from './mounts';
@@ -95,8 +95,11 @@ export const closestOf = (event: Event, selector: string): HTMLElement | null =>
     return target.closest<HTMLElement>(selector);
 };
 
+/** The View button's icon for each view, as category_toolbar draws it. */
+const VIEW_ICONS: Record<string, string> = {cards: 'fa-border-all', list: 'fa-list'};
+
 /**
- * Paint the view onto the container and the toggle's two buttons. No preference, no address.
+ * Paint the view onto the container, the View menu's two items and its button's icon. No preference, no address.
  *
  * @param {HTMLElement} root The listing section.
  * @param {string} view Either cards or list.
@@ -107,9 +110,13 @@ export const paintView = (root: HTMLElement, view: string): void => {
     root.classList.toggle('dim-vitrine--list', view === 'list');
     root.querySelectorAll<HTMLButtonElement>(SELECTORS.viewbutton).forEach((button) => {
         if (!drawnByLine(button)) {
-            button.setAttribute('aria-pressed', button.value === view ? 'true' : 'false');
+            button.setAttribute('aria-checked', button.value === view ? 'true' : 'false');
         }
     });
+    const icon = root.querySelector<HTMLElement>(SELECTORS.viewicon);
+    if (icon && !drawnByLine(icon)) {
+        icon.className = `fa ${VIEW_ICONS[view] || VIEW_ICONS.cards}`;
+    }
     tellLine(root, LINE.state, {view: view});
     document.dispatchEvent(new CustomEvent(LISTING.view, {detail: {view: view}}));
 };
@@ -202,6 +209,26 @@ export const paintEraser = (root: HTMLElement): void => {
 };
 
 /**
+ * Paint the organisation onto the Organise menu - the chosen item of "Group by" and of "Sort by" - and onto the
+ * form's two hidden fields that carry it (category_toolbar's organise_fields()).
+ *
+ * The menu is a frame the line's component adopts, so it stays the listing's to paint, drawn or not.
+ *
+ * @param {HTMLElement} root The listing section.
+ * @param {object} state The calling client's state.
+ * @returns {void}
+ */
+export const paintOrganise = (root: HTMLElement, state: ListingState): void => {
+    const chosen: Record<string, string> = {[PARAM.group]: groupOf(state), [PARAM.sort]: orderOf(state)};
+    root.querySelectorAll<HTMLButtonElement>(SELECTORS.organiseitem).forEach((item) => {
+        item.setAttribute('aria-checked', chosen[item.name] === item.value ? 'true' : 'false');
+    });
+    root.querySelectorAll<HTMLInputElement>(SELECTORS.organisefield).forEach((field) => {
+        field.value = chosen[field.name] || '';
+    });
+};
+
+/**
  * Put a state back onto the controls, after the reader moved through their history.
  *
  * @param {HTMLElement} root The listing section.
@@ -227,15 +254,7 @@ export const paintControls = (root: HTMLElement, state: ListingState): void => {
             input.checked = input.value === current;
         });
     });
-    const sort = root.querySelector(SELECTORS.sort);
-    if (sort) {
-        // The empty value and the grouped default are one request: the default's chip is pressed for either.
-        sort.querySelectorAll<HTMLInputElement>('input[type="radio"]').forEach((input) => {
-            input.checked = state.sort === ''
-                ? GROUPED_SORTS.indexOf(input.value) >= 0
-                : input.value === state.sort;
-        });
-    }
+    paintOrganise(root, state);
     paintFavToggle(root, state.fav);
     paintDates(root, state);
     markTree(root, state);

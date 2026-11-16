@@ -91,13 +91,18 @@ describe('theme_dimensions/areas/model', () => {
 
     it('writes the panel into the address, keeps every other parameter and drops the stale fragments', () => {
         expect(addressWith(BASE + '&q=x#dim-panel', 8, 'name')).toBe(BASE + '&q=x&open=8&psort=name');
-        expect(addressWith(BASE + '&open=8&psort=name#dim-area-8', 0, 'name')).toBe(BASE);
+        // The grouped order holds with no panel open: it is the next panel's order.
+        expect(addressWith(BASE + '&open=8&psort=name#dim-area-8', 0, 'name')).toBe(BASE + '&psort=name');
+        expect(addressWith(BASE + '&open=8&psort=name#dim-area-8', 0, '')).toBe(BASE);
         expect(addressWith(BASE + '&open=8#dim-nomatch', 9, '')).toBe(BASE + '&open=9');
         expect(addressWith(BASE + '#elsewhere', 9, '')).toBe(BASE + '&open=9#elsewhere');
         expect(holderHref('/course/index.php?categoryid=7&q=x', BASE, 8, 'name'))
             .toBe('https://example.com/course/index.php?categoryid=7&q=x&open=8&psort=name');
         expect(holderHref('/course/index.php?categoryid=7&open=8&psort=name', BASE, 0, ''))
             .toBe('https://example.com/course/index.php?categoryid=7');
+        expect(holderHref('/course/index.php?categoryid=7&open=8', BASE, 0, 'name'))
+            .toBe('https://example.com/course/index.php?categoryid=7&psort=name');
+        expect(readPanel(BASE + '&psort=name')).toEqual({open: 0, psort: 'name'});
         expect(readPanel(BASE + '&open=8&psort=name')).toEqual({open: 8, psort: 'name'});
         expect(readPanel(BASE + '&open=x&psort=other')).toEqual({open: 0, psort: ''});
     });

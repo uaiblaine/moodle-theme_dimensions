@@ -21,6 +21,7 @@
  */
 
 import {current, init as start} from '../../src/listing/store';
+import {AREAS} from '../../src/listing/events';
 import type {Rows, Shell} from '../../src/listing/store';
 
 /** What the stand-in shell was told, in order. */
@@ -62,9 +63,12 @@ const shellOf = (): Shell => ({
 const page = (toolbar = true): void => {
     document.body.innerHTML = `<section data-region="dim-vitrine" data-vitrine='{"page":0,"total":3,"hasmore":true}'>`
         + (toolbar ? '<form data-region="dim-vitrine-toolbar" id="t"><input type="search" name="q">'
-            + '<fieldset data-region="dim-sort"><input type="radio" name="sort" value="name">'
-            + '<input type="radio" name="sort" value="recent"><input type="radio" name="sort" value="category"></fieldset>'
-            + '</form>' : '')
+            + '<div data-region="dim-organise-menu" role="menu">'
+            + '<button type="submit" data-action="dim-organise" name="group" value="category" aria-checked="false"></button>'
+            + '<button type="submit" data-action="dim-organise" name="group" value="none" aria-checked="true"></button>'
+            + '<button type="submit" data-action="dim-organise" name="sort" value="name" aria-checked="true"></button>'
+            + '<button type="submit" data-action="dim-organise" name="sort" value="recent" aria-checked="false"></button>'
+            + '</div></form>' : '')
         + '<nav data-region="dim-vitrine-tree"><a data-region="dim-tree-link" data-categoryid="9" href="#">Area</a></nav>'
         + '<p data-region="dim-toolbar-notice" hidden></p>'
         + '<div data-region="dim-areas"><ol><li data-region="dim-panel"></li></ol></div>'
@@ -103,6 +107,20 @@ const grid = (): string[] => Array.from(document.querySelectorAll('[data-region=
     .map((article) => article.textContent || '');
 
 const push = jest.spyOn(window.history, 'pushState');
+
+/**
+ * Press an item of the Organise menu, as a reader does.
+ *
+ * @param {string} name The item's section: group or sort.
+ * @param {string} value Its value.
+ * @returns {MouseEvent} The press, to read whether the store took it.
+ */
+const choose = (name: string, value: string): MouseEvent => {
+    const item = document.querySelector(`[data-action="dim-organise"][name="${name}"][value="${value}"]`) as HTMLElement;
+    const press = new MouseEvent('click', {bubbles: true, cancelable: true});
+    item.dispatchEvent(press);
+    return press;
+};
 
 beforeEach(() => {
     told = [];
@@ -195,11 +213,7 @@ describe('theme_dimensions/listing/store', () => {
     it('paints nothing of an answer a newer request overtook, and lets only the latest failure fall back', async() => {
         page();
         start(shellOf(), 7);
-        const radio = (value: string): void => {
-            const input = document.querySelector<HTMLInputElement>(`input[value="${value}"]`) as HTMLInputElement;
-            input.checked = true;
-            input.dispatchEvent(new Event('change', {bubbles: true}));
-        };
+        const radio = (value: string): void => choose('sort', value);
         radio('recent');
         (document.querySelector('[data-region="dim-tree-link"]') as HTMLElement).click();
         answers[1].resolve(rowsOf(1));
@@ -216,15 +230,51 @@ describe('theme_dimensions/listing/store', () => {
         expect(told.filter((line) => line.startsWith('failed'))).toEqual(['failed 0 false']);
     });
 
-    it('leaves the page for the grouped organisation, which a flat shell cannot hold', () => {
+    it('leaves the page for the grouped organisation, which a flat shell cannot hold, keeping the order', () => {
         page();
         const shell = shellOf();
         start(shell, 7);
-        const input = document.querySelector<HTMLInputElement>('input[value="category"]') as HTMLInputElement;
-        input.dispatchEvent(new Event('change', {bubbles: true}));
+        const press = choose('group', 'category');
+        expect(press.defaultPrevented).toBe(true);
         expect(shell.leave).toHaveBeenCalledTimes(1);
+        // "Sort by" keeps its choice: the flat A-Z order becomes the grouped one.
+        expect(told).toContain('leave ?categoryid=7&sort=category&psort=name');
         expect(shell.rows).not.toHaveBeenCalled();
         expect(push).not.toHaveBeenCalled();
+        // The control: the chosen item asks for nothing.
+        page();
+        start(shellOf(), 7);
+        told.splice(0);
+        choose('sort', 'name');
+        expect(told).toEqual([]);
+    });
+
+    it('reorders the grouped page in place: no request, the address corrected, the posters told', () => {
+        window.history.replaceState(null, '', '/course/index.php?categoryid=7&open=9');
+        page();
+        const shell = shellOf();
+        start(shell, 7);
+        const orders: string[] = [];
+        const areas = document.querySelector('[data-region="dim-areas"]') as HTMLElement;
+        areas.addEventListener(AREAS.order, (event) => orders.push((event as CustomEvent).detail.psort));
+        choose('sort', 'name');
+        expect(current().psort).toBe('name');
+        expect(window.location.search).toBe('?categoryid=7&open=9&psort=name');
+        expect(orders).toEqual(['name']);
+        expect(shell.rows).not.toHaveBeenCalled();
+        expect(push).not.toHaveBeenCalled();
+        expect(told).toContain('changed order ?categoryid=7&open=9');
+        expect(document.querySelector('[name="sort"][value="name"]')?.getAttribute('aria-checked')).toBe('true');
+        expect(document.querySelector('[name="group"][value="category"]')?.getAttribute('aria-checked')).toBe('true');
+        // The panel's own order control: the state and "Sort by" follow it, and the change is remembered.
+        told.splice(0);
+        areas.dispatchEvent(new CustomEvent(AREAS.ordered, {detail: {psort: ''}}));
+        expect(current().psort).toBe('');
+        expect(document.querySelector('[name="sort"][value="recent"]')?.getAttribute('aria-checked')).toBe('true');
+        expect(told.filter((line) => line.startsWith('changed'))).toHaveLength(1);
+        // The control: the order already in force tells nothing.
+        areas.dispatchEvent(new CustomEvent(AREAS.ordered, {detail: {psort: ''}}));
+        expect(told.filter((line) => line.startsWith('changed'))).toHaveLength(1);
     });
 
     it('appends the next page with no address of its own', async() => {
