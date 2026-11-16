@@ -451,18 +451,39 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
-     * The count line is four regions of the server's, and every answer writes the four.
+     * The count line is four regions of the server's, and every answer writes the four, the bar's count and "Show".
      *
      * The count line is the number in bold and the sentence after it; "See all as a list" when the
      * server offers one and the automatic opening's note, which a new answer always takes away,
      * follow the chips in the row under the filter line.
      * Writing the whole paragraph's text would wipe the other regions. Nothing is composed: the
      * number and the sentence arrive formatted, and the note is the answer's own sentence, shown
-     * only once the panel's module says it opened the area.
+     * only once the panel's module says it opened the area. The same number is the bar's count on a
+     * line the server drew and goes into the Filters panel's "Show", in the server's own sentence. The
+     * sentence is visually hidden exactly where the answer offers no "See all as a list", the template's
+     * own condition.
+     *
+     * Changes that must make it fail: the sentence's visibility read from anything but the answer's
+     * seeallurl; the bar's count left unwritten on the server's line, or written from another key; the
+     * "Show" label composed here rather than filled into the server's sentence.
      */
     public function test_the_count_line_is_four_regions_the_answer_writes(): void {
         $count = $this->body('paintCount');
-        $this->assertStringContainsString("number.textContent = response.countnumber || '';", $count);
+        $this->assertStringContainsString("const number = response.countnumber || '';", $count);
+        $this->assertStringContainsString('bold.textContent = number;', $count);
+        $this->assertMatchesRegularExpression(
+            '~const total = root\.querySelector\(SELECTORS\.total\);\s*if \(total && !drawnByLine\(total\)\) \{\s*'
+                . 'total\.textContent = number;~',
+            $count,
+            'The bar\'s count is the sentence\'s number.'
+        );
+        $this->assertStringContainsString("line.classList.toggle('visually-hidden', url === '');", $count);
+        $this->assertStringContainsString("const template = show ? show.dataset.dimTemplate || '' : '';", $count);
+        $this->assertStringContainsString('show.textContent = template.split(SHOW_NUMBER).join(number);', $count);
+        $this->assertStringContainsString("const SHOW_NUMBER = '{n}';", $this->shared());
+        $this->assertSame(\theme_dimensions\output\category_toolbar::SHOW_PLACEHOLDER, '{n}', 'The server\'s spelling.');
+        $this->assertStringContainsString("total: '[data-region=\"dim-line-total\"]',", $this->shared());
+        $this->assertStringContainsString("filtersshow: '[data-action=\"dim-filters-show\"]',", $this->shared());
         $this->assertStringContainsString(
             "text.replaceChildren(document.createTextNode(response.countline || ''), marker);",
             $count,
@@ -756,13 +777,15 @@ final class amd_source_test extends \basic_testcase {
      * Nothing of a chip is composed here: its label, its address, what it drops and the words that
      * name the press are the answer's (category_toolbar::chips()), painted with the markup of the
      * server's category_chip. The row shows while the answer says something narrows, and keeps
-     * only its visually hidden count sentence at rest; "Clear all" follows the answer's clearall.
+     * only its count sentence at rest; "Clear all" follows the answer's clearall, and the Filters
+     * panel's "Clear filters" whether anything narrows.
      * The state's status group is split between the scope and "More statuses" by SCOPE, the
      * server's own list. A pressed chip drops in the state exactly what its address drops, and the
      * eraser empties the search and asks again.
      *
-     * Changes that must make it fail: the rest class or the count's visually-hidden toggled on
-     * anything but the answer's hasfilters; the clear link shown on hasfilters again; a chip whose
+     * Changes that must make it fail: the rest class toggled on anything but the answer's hasfilters;
+     * the count sentence's visibility written here again (paintCount() writes it, from seeallurl); the
+     * panel's "Clear filters" left as the page drew it; the clear link shown on hasfilters again; a chip whose
      * address loses the open panel; the period dropping one bound only; the chip press not
      * intercepted; the split read from anything but SCOPE.
      */
@@ -770,7 +793,12 @@ final class amd_source_test extends \basic_testcase {
         $chips = $this->body('paintChips');
         $this->assertStringContainsString('const narrowed = Boolean(response.hasfilters);', $chips);
         $this->assertStringContainsString("row.classList.toggle('dim-line__chips--rest', !narrowed);", $chips);
-        $this->assertStringContainsString("count.classList.toggle('visually-hidden', !narrowed);", $chips);
+        $this->assertStringNotContainsString('SELECTORS.count', $chips, 'The sentence\'s visibility is paintCount()\'s.');
+        $this->assertMatchesRegularExpression(
+            '~const panelclear = root\.querySelector<HTMLElement>\(SELECTORS\.filtersclear\);\s*'
+                . 'if \(panelclear\) \{\s*panelclear\.hidden = !narrowed;~',
+            $chips
+        );
         $this->assertStringContainsString('clear.hidden = !response.clearall;', $chips);
         $this->assertStringContainsString('chips.filter((chip) => chip.param !== CHIP_PERIOD).map(createChip)', $chips);
         $this->assertStringContainsString('chips.filter((chip) => chip.param === CHIP_PERIOD).map(createChip)', $chips);

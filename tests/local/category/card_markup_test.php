@@ -775,14 +775,19 @@ final class card_markup_test extends \advanced_testcase {
             'dim-vitrine-countnote' => '//*[@data-region="dim-line-chips"]/span[@data-region="dim-vitrine-countnote"][@hidden]',
             'dim-vitrine-countnotetext' => '//*[@data-region="dim-vitrine-countnote"]//*[@data-region="dim-vitrine-countnotetext"]',
             'dim-clear on the clear link' => '//a[@data-region="dim-vitrine-clear"][@data-action="dim-clear"]',
-            'dim-view-row' => '//*[@data-region="dim-line"]/*[@data-region="dim-view-row"][@role="group"]',
-            /* The filter line and what the clients address on it and under it: the line, the search
-               pill and its eraser, the Organise menu, the scope and "More statuses" halves of the
-               state group, the row under the line, its list of chips and each chip's action. */
+            'dim-view-row' => '//*[@data-region="dim-line-capsule"]/*[@data-region="dim-view-row"][@role="group"]',
+            /* The filter line and what the clients address on it and under it: the line, its cluster with the
+               result count and the capsule, the search's capsule with the field and its eraser, the Organise
+               menu, the scope and "More statuses" halves of the state group, the row under the line, its list
+               of chips and each chip's action. */
             'dim-line' => '//form[@data-region="dim-vitrine-toolbar"]/div[@data-region="dim-line"]',
-            'dim-line-search' => '//*[@data-region="dim-line"]/div[@data-region="dim-line-search"]//input[@type="search"]',
+            'dim-line-total' => '//*[@data-region="dim-line"]/div[@data-region="dim-line-cluster"]'
+                . '/span[@data-region="dim-line-total"][@aria-hidden="true"]',
+            'dim-line-capsule' => '//*[@data-region="dim-line-cluster"]/div[@data-region="dim-line-capsule"]',
+            'dim-line-search' => '//*[@data-region="dim-line"]/div[@data-region="dim-line-searchcap"]'
+                . '/div[@data-region="dim-line-search"]//input[@type="search"]',
             'dim-search-clear' => '//*[@data-region="dim-line-search"]/button[@type="button"][@data-action="dim-search-clear"]',
-            'dim-organise' => '//*[@data-region="dim-line"]/details[@data-region="dim-organise"]/summary',
+            'dim-organise' => '//*[@data-region="dim-line-capsule"]/details[@data-region="dim-organise"]/summary',
             'dim-vitrine-group scope' => '//*[@data-region="dim-line"]/fieldset[@data-region="dim-vitrine-group"]'
                 . '[@data-name="chip"][@data-role="scope"]//*[@data-region="dim-pill-track"]',
             'dim-vitrine-group more' => '//details[@data-region="dim-filters"]//fieldset[@data-region="dim-vitrine-group"]'
@@ -793,16 +798,17 @@ final class card_markup_test extends \advanced_testcase {
             /* The favourites toggle on the line, right before the filter disclosure, with
                the action the client intercepts, the number the client rewrites in its name and the
                hidden field the client enables while it is on. */
-            'dim-line-star' => '//details[@data-region="dim-filters"]'
+            'dim-line-star' => '//*[@data-region="dim-line-capsule"]/details[@data-region="dim-filters"]'
                 . '/preceding-sibling::*[1][self::button][@data-region="dim-line-star"][@data-action="dim-fav"]',
             'dim-fav-count' => '//button[@data-region="dim-line-star"]//*[@data-region="dim-fav-count"]',
             'dim-fav-field' => '//form//input[@type="hidden"][@name="fav"][@data-region="dim-fav-field"]',
             /* What the filter line's component (js/esm/src/filterline) drives and nothing else draws: the search's
-               icon, pointing at the field it opens; the button that closes the search over the line;
+               button, pointing at the field it opens; the button that closes the search over the line;
                the listbox, hidden, carrying its id and its two headings; the Filters panel and the
-               Organise menu it places under the line; and the menu's "Show as", whose buttons carry
-               the view toggle's own action, so the clients' view handler serves them. */
-            'dim-search-open' => '//*[@data-region="dim-line"]/button[@type="button"][@data-action="dim-search-open"]'
+               Organise menu it places under the line; and the panel foot's "Show", carrying the sentence
+               the listing writes each answer's number into, beside "Clear filters", the clear link by
+               another name. */
+            'dim-search-open' => '//*[@data-region="dim-line-searchcap"]/button[@type="button"][@data-action="dim-search-open"]'
                 . '[@aria-controls="dim-vitrine-q-7"][@aria-expanded="false"]',
             'dim-search-close' => '//*[@data-region="dim-line"]/button[@type="button"][@data-action="dim-search-close"]'
                 . '[@aria-label]',
@@ -811,10 +817,13 @@ final class card_markup_test extends \advanced_testcase {
             'dim-filters-panel' => '//details[@data-region="dim-filters"]/div[@data-region="dim-filters-panel"]',
             'dim-organise-menu' => '//details[@data-region="dim-organise"]/div[@data-region="dim-organise-menu"]',
             // The third frame the logged-in shell's line component adopts whole: core's managers' menu.
-            'dim-line-manage' => '//*[@data-region="dim-line"]/div[@data-region="dim-line-manage"]'
+            'dim-line-manage' => '//*[@data-region="dim-line-searchcap"]/div[@data-region="dim-line-manage"]'
                 . '/div[' . self::has_class('action-menu') . ']',
-            'dim-showas' => '//*[@data-region="dim-organise-menu"]/*[@data-region="dim-showas"][@role="group"]'
-                . '/button[@type="button"][@data-action="dim-view"][@value][@aria-pressed]',
+            'dim-filters-foot' => '//*[@data-region="dim-filters-panel"]/div[@data-region="dim-filters-foot"]',
+            'dim-filters-clear' => '//*[@data-region="dim-filters-foot"]/a[@data-region="dim-filters-clear"]'
+                . '[@data-action="dim-clear"][@href]',
+            'dim-filters-show' => '//*[@data-region="dim-filters-foot"]/button[@type="button"][@data-action="dim-filters-show"]'
+                . '[@data-dim-template]',
         ];
         foreach ($toolbarhooks as $hook => $query) {
             $this->assertGreaterThan(
@@ -824,8 +833,8 @@ final class card_markup_test extends \advanced_testcase {
             );
         }
         /* Both view buttons, because the module addresses them as a pair and swaps aria-pressed:
-           ONE group of two named submits, List first, each named by a visually hidden word and a
-           tooltip. There is no second copy of the toggle for the phone. */
+           ONE group of two named submits, List first, each named by a visually hidden word and the
+           bar's tooltip. There is no second copy of the toggle for the phone. */
         $this->assertSame(
             2,
             $toolbar->query('//button[@data-action="dim-view"][@name="view"]')->length,
@@ -841,7 +850,8 @@ final class card_markup_test extends \advanced_testcase {
             'List first, as the filter line draws it.'
         );
         foreach ($views as $button) {
-            $this->assertNotSame('', $button->getAttribute('title'), 'An icon button has a tooltip.');
+            $this->assertNotSame('', $button->getAttribute('data-dim-tip'), 'An icon button has a tooltip.');
+            $this->assertFalse($button->hasAttribute('title'), 'And no title beside it.');
             $this->assertSame(
                 1,
                 $toolbar->query('./span[' . self::has_class('visually-hidden') . ']', $button)->length,
@@ -1272,7 +1282,8 @@ final class card_markup_test extends \advanced_testcase {
      * The favourites combine with the state rather than being one of its values, so the toggle is a
      * submit button of its own beside the Filter control: aria-pressed says whether it is on, the
      * glyph is the very star the course card's favourite button draws (solid when pressed), and the
-     * word and the number are its accessible name, hidden from the eye, with the word as its tooltip.
+     * word and the number are its accessible name, hidden from the eye, with the word as its tooltip. It is
+     * the capsule's first control, right after the result count.
      */
     public function test_the_favourites_toggle_is_the_cards_star_beside_the_filter_control(): void {
         $this->resetAfterTest();
@@ -1284,7 +1295,8 @@ final class card_markup_test extends \advanced_testcase {
         $this->assertSame('fav', $star->getAttribute('name'));
         $this->assertSame('1', $star->getAttribute('value'), 'Released, a press turns it on.');
         $this->assertSame('false', $star->getAttribute('aria-pressed'));
-        $this->assertSame('Favourites', $star->getAttribute('title'), 'Its tooltip names it.');
+        $this->assertSame('Favourites', $star->getAttribute('data-dim-tip'), 'Its tooltip names it.');
+        $this->assertFalse($star->hasAttribute('title'), 'The bar\'s tooltip, never the browser\'s.');
         $glyph = $toolbar->query('./i[' . self::has_class('fa-star') . ']', $star)->item(0);
         $this->assertNotNull($glyph);
         $this->assertStringContainsString('fa-regular', $glyph->getAttribute('class'), 'The card\'s released star.');
@@ -1300,10 +1312,10 @@ final class card_markup_test extends \advanced_testcase {
         $this->assertSame(
             1,
             $toolbar->query(
-                '//*[@data-region="dim-line-search"]/following-sibling::*[not(@data-action="dim-search-open")][1]'
-                    . '[@data-region="dim-line-star"]'
+                '//*[@data-region="dim-line-cluster"]/*[@data-region="dim-line-total"]/following-sibling::*[1]'
+                    . '[@data-region="dim-line-capsule"]/*[1][@data-region="dim-line-star"]'
             )->length,
-            'The star follows the search (and the icon the client folds it into) on the line, as the contract orders the slots.'
+            'The star is the capsule\'s first control, right after the result count, as the contract orders the slots.'
         );
 
         $group = $toolbar->query('//fieldset[@data-region="dim-vitrine-group"][@data-name="chip"]')->item(0);

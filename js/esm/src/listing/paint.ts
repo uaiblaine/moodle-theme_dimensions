@@ -71,6 +71,9 @@ export type Answer = {
 /** How many pages have been appended into this document. */
 let appended = 0;
 
+/** Where the number goes in the Filters panel's "Show" sentence: category_toolbar::SHOW_PLACEHOLDER. */
+const SHOW_NUMBER = '{n}';
+
 /** How many times the count line has been rewritten, so a repeat still announces. */
 let announcements = 0;
 
@@ -285,20 +288,36 @@ export const paintFilterBadge = (root: HTMLElement, response: Answer): void => {
  * A live region speaks only when its text changes, and the same sentence after a filter that left the same
  * numbers is the case a reader most needs told: a counter of zero-width spaces after it makes every pass differ.
  * Every word is the answer's: the number, the sentence, "See all as a list", and the automatic opening's note,
- * which every answer takes away.
+ * which every answer takes away. The sentence is visually hidden wherever the bar's count says what it says,
+ * and shown where it says where the results lie across the areas, which is exactly when the answer offers
+ * "See all as a list" (the template's own condition). The same number goes to the bar's count on a line the
+ * server drew (the line's component is told it otherwise, tellAnswer()) and into the Filters panel's "Show",
+ * through the sentence the server wrote with {n} in the number's place.
  *
  * @param {HTMLElement} root The listing section.
  * @param {object} response The rows response: countnumber, countline and seeallurl.
  * @returns {void}
  */
 export const paintCount = (root: HTMLElement, response: Answer): void => {
+    const number = response.countnumber || '';
+    const total = root.querySelector(SELECTORS.total);
+    if (total && !drawnByLine(total)) {
+        total.textContent = number;
+    }
+    const show = root.querySelector<HTMLElement>(SELECTORS.filtersshow);
+    const template = show ? show.dataset.dimTemplate || '' : '';
+    if (show && template.indexOf(SHOW_NUMBER) >= 0) {
+        show.textContent = template.split(SHOW_NUMBER).join(number);
+    }
+    const url = response.seeallurl || '';
     const line = root.querySelector(SELECTORS.count);
     if (!line) {
         return;
     }
-    const number = line.querySelector(SELECTORS.countnumber);
-    if (number) {
-        number.textContent = response.countnumber || '';
+    line.classList.toggle('visually-hidden', url === '');
+    const bold = line.querySelector(SELECTORS.countnumber);
+    if (bold) {
+        bold.textContent = number;
     }
     const text = line.querySelector(SELECTORS.counttext);
     if (text) {
@@ -310,7 +329,6 @@ export const paintCount = (root: HTMLElement, response: Answer): void => {
     }
     // "See all as a list" and the automatic opening's note follow the chips in the row, outside the sentence.
     const seeall = root.querySelector<HTMLElement>(SELECTORS.seeall);
-    const url = response.seeallurl || '';
     if (seeall) {
         const link = seeall.querySelector('a');
         if (link && url !== '') {
@@ -537,9 +555,10 @@ export const paintChips = (root: HTMLElement, response: Answer): void => {
     }
     const narrowed = Boolean(response.hasfilters);
     row.classList.toggle('dim-line__chips--rest', !narrowed);
-    const count = row.querySelector(SELECTORS.count);
-    if (count) {
-        count.classList.toggle('visually-hidden', !narrowed);
+    // The Filters panel's "Clear filters" is the clear link by another name, offered while anything narrows.
+    const panelclear = root.querySelector<HTMLElement>(SELECTORS.filtersclear);
+    if (panelclear) {
+        panelclear.hidden = !narrowed;
     }
     const chips = response.chips || [];
     const list = row.querySelector(SELECTORS.chiplist);

@@ -350,6 +350,7 @@ $string['category_searchplaceholder'] = 'Search by name';
 $string['category_searchtooshort'] = 'Type at least {$a} characters to search.';
 $string['category_seeaslist'] = 'See all as a list';
 $string['category_showas'] = 'Show as';
+$string['category_showcount'] = 'Show {$a}';
 $string['category_skiptocourses'] = 'Go to this category\'s courses';
 $string['category_sort_category'] = 'By area';
 $string['category_sort_name'] = 'A-Z';

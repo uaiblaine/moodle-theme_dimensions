@@ -976,6 +976,9 @@ final class category_listing_test extends \advanced_testcase {
         $this->assertSame('3', $context->countnumber, 'A flat listing counts its whole total, not the page.');
         $this->assertSame('courses for “Curso” in Root & Co', $context->countline);
         $this->assertSame('', $context->seeallurl, 'A flat listing already is the list.');
+        // The Filters panel's "Show" is the count's own number in its sentence, and the sentence the client fills.
+        $this->assertSame(get_string('category_showcount', 'theme_dimensions', '3'), $context->showlabel);
+        $this->assertSame('Show {n}', $context->toolbar->showtemplate, 'The server\'s words, the number left to the client.');
         $this->assertStringContainsString('page=1', $context->pager);
         $this->assertStringContainsString('q=Curso', $context->pager);
         $this->assertStringContainsString('perpage=2', $context->pager);

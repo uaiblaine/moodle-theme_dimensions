@@ -359,13 +359,13 @@ describe('theme_dimensions/filterline/FilterLine', () => {
     });
 
     it('folds at the observer\'s first entry, before its first paint, from the widths measured once', async() => {
-        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480, 300]);
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700, 300]);
         const page = await mount();
-        await resize(700);
-        expect(page.line.classList.contains('dim-line--s3')).toBe(true);
-        expect(page.line.classList.contains('dim-line--folded')).toBe(true);
+        await resize(800);
+        expect(page.line.classList.contains('dim-line--s1')).toBe(true);
+        expect(page.line.classList.contains('dim-line--over')).toBe(true);
         expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
-        expect(Measure.stepWidths).toHaveBeenCalledWith(page.line, null, 700);
+        expect(Measure.stepWidths).toHaveBeenCalledWith(page.line, null, 800);
         // The entry's content box is the width: nothing is read off the line for it.
         expect(Measure.contentWidth).not.toHaveBeenCalled();
     });
@@ -391,13 +391,13 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(page.line.classList.contains('dim-line--s1')).toBe(true);
     });
 
-    it('folds a line its first entry finds narrow straight to the fourth step, the scope on its own line', async() => {
-        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480, 300]);
+    it('folds a line its first entry finds narrow straight to the two-line step, the scope on its own line', async() => {
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700, 300]);
         const page = await mount();
         expect(page.line.style.visibility).toBe('hidden');
         await resize(500);
-        expect(page.line.classList.contains('dim-line--s4')).toBe(true);
-        expect(page.line.classList.contains('dim-line--folded')).toBe(false);
+        expect(page.line.classList.contains('dim-line--s2')).toBe(true);
+        expect(page.line.classList.contains('dim-line--over')).toBe(true);
         expect(page.line.style.visibility).toBe('');
         expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
         const order = Array.from(page.line.children)
@@ -438,13 +438,15 @@ describe('theme_dimensions/filterline/FilterLine', () => {
 
     it('measures in the mount\'s commit where there is no ResizeObserver', async() => {
         delete (window as unknown as {ResizeObserver?: unknown}).ResizeObserver;
-        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480, 300]);
-        (Measure.contentWidth as jest.Mock).mockReturnValueOnce(700);
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700, 300]);
+        (Measure.contentWidth as jest.Mock).mockReturnValueOnce(800);
         const page = await mount();
         expect(Measure.contentWidth).toHaveBeenCalledTimes(1);
-        expect(Measure.stepWidths).toHaveBeenCalledWith(page.line, null, 700);
-        expect(page.line.classList.contains('dim-line--s3')).toBe(true);
-        expect(page.line.classList.contains('dim-line--folded')).toBe(true);
+        expect(Measure.stepWidths).toHaveBeenCalledWith(page.line, null, 800);
+        expect(page.line.classList.contains('dim-line--s1')).toBe(true);
+        expect(page.line.classList.contains('dim-line--over')).toBe(true);
+        // The fallback measures a line already drawn, whose search the stylesheet shows as its button.
+        expect(page.line.hasAttribute(DRAWN)).toBe(true);
         expect(page.mounted).toHaveBeenCalledTimes(1);
         // Measured in the commit, folded before the paint: nothing to hide.
         expect(page.line.style.visibility).toBe('');
@@ -492,32 +494,34 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(page.line.style.visibility).toBe('');
     });
 
-    it('takes a step from a new width alone, the scope on a line of its own at the fourth, its focus kept', async() => {
-        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480, 300]);
+    it('takes a step from a new width alone, the scope on a line of its own at the second, its focus kept', async() => {
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700, 300]);
         const page = await mount();
         await resize(1000);
         expect(page.line.classList.contains('dim-line--s1')).toBe(true);
+        expect(page.line.classList.contains('dim-line--over')).toBe(false);
         const cell = page.line.querySelector('#dim-chip-7-enrolled') as HTMLInputElement;
         await act(async() => cell.focus());
 
         await resize(500);
 
-        expect(page.line.classList.contains('dim-line--s4')).toBe(true);
-        expect(page.line.classList.contains('dim-line--folded')).toBe(false);
+        expect(page.line.classList.contains('dim-line--s2')).toBe(true);
+        expect(page.line.classList.contains('dim-line--over')).toBe(true);
         expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
         const order = Array.from(page.line.children).map((child) => child.getAttribute('data-region') || child.getAttribute('data-action'));
         expect(order.indexOf('dim-vitrine-group')).toBe(order.indexOf('dim-search-close') + 1);
         expect(document.activeElement).toBe(page.line.querySelector('#dim-chip-7-enrolled'));
     });
 
-    it('grows the search over the line from the third step and closes back to the control that opened it', async() => {
-        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480, 300]);
+    it('grows the search over the line where the field does not fit and closes back to the control that opened it', async() => {
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700, 300]);
         const page = await mount([], empty);
-        await resize(700);
+        await resize(800);
         const opener = page.line.querySelector('[data-action="dim-search-open"]') as HTMLButtonElement;
         await act(async() => opener.focus());
         fireEvent.click(opener);
         expect(page.line.classList.contains('dim-line--searching')).toBe(true);
+        expect(page.line.classList.contains('dim-line--open')).toBe(false);
         expect(opener.getAttribute('aria-expanded')).toBe('true');
         expect(document.activeElement).toBe(page.field);
         expect(listbox(page.line).hidden).toBe(false);
@@ -535,6 +539,129 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         } finally {
             layout.mockRestore();
         }
+    });
+
+    it('folds the search to its button at rest at every step, and opens it in place from the button', async() => {
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700, 300]);
+        const page = await mount([], empty);
+        await resize(1000);
+        const opener = page.line.querySelector('[data-action="dim-search-open"]') as HTMLButtonElement;
+        // Changes that must make it fail: the field left open at rest on a line with room for it.
+        expect(page.line.classList.contains('dim-line--open')).toBe(false);
+        expect(page.line.classList.contains('dim-line--searching')).toBe(false);
+        expect(opener.getAttribute('aria-expanded')).toBe('false');
+
+        await act(async() => opener.focus());
+        fireEvent.click(opener);
+        expect(page.line.classList.contains('dim-line--open')).toBe(true);
+        expect(page.line.classList.contains('dim-line--searching')).toBe(false);
+        expect(opener.getAttribute('aria-expanded')).toBe('true');
+        expect(document.activeElement).toBe(page.field);
+
+        // The focus leaving an empty field folds it.
+        const star = page.line.querySelector('[data-region="dim-line-star"]') as HTMLButtonElement;
+        await act(async() => {
+            fireEvent.focusOut(page.field, {relatedTarget: star});
+        });
+        expect(page.line.classList.contains('dim-line--open')).toBe(false);
+        expect(opener.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('keeps the search open in place while it holds a text, and the eraser empties it and keeps it open', async() => {
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700, 300]);
+        // The example's field holds a term: the first fold opens it in place.
+        const page = await mount();
+        expect(page.field.value).toBe('rescue');
+        await resize(1000);
+        expect(page.line.classList.contains('dim-line--open')).toBe(true);
+
+        const star = page.line.querySelector('[data-region="dim-line-star"]') as HTMLButtonElement;
+        await act(async() => page.field.focus());
+        await act(async() => {
+            fireEvent.focusOut(page.field, {relatedTarget: star});
+        });
+        expect(page.line.classList.contains('dim-line--open')).toBe(true);
+
+        const eraser = page.line.querySelector('[data-action="dim-search-clear"]') as HTMLButtonElement;
+        await act(async() => page.field.focus());
+        await act(async() => {
+            fireEvent.focusOut(page.field, {relatedTarget: eraser});
+            fireEvent.click(eraser);
+        });
+        expect(page.field.value).toBe('');
+        expect(document.activeElement).toBe(page.field);
+        expect(page.line.classList.contains('dim-line--open')).toBe(true);
+
+        // Escape folds it back to its button, whatever it holds.
+        fireEvent.change(page.field, {target: {value: 'fire'}});
+        fireEvent.keyDown(page.field, {key: 'Escape'});
+        expect(page.line.classList.contains('dim-line--open')).toBe(false);
+
+        // A term the listing takes away while nothing holds the search folds it too.
+        fireEvent.click(page.line.querySelector('[data-action="dim-search-open"]') as HTMLButtonElement);
+        expect(page.line.classList.contains('dim-line--open')).toBe(true);
+        await act(async() => (document.activeElement as HTMLElement).blur());
+        await tell(page.line, EVENTS.state, {query: ''});
+        expect(page.line.classList.contains('dim-line--open')).toBe(false);
+    });
+
+    it('folds a search that holds a text where it would cover the line, and opens it in place again with room', async() => {
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700, 300]);
+        const page = await mount();
+        await resize(800);
+        expect(page.line.classList.contains('dim-line--over')).toBe(true);
+        expect(page.line.classList.contains('dim-line--searching')).toBe(false);
+        expect(page.line.classList.contains('dim-line--open')).toBe(false);
+        await resize(1000);
+        expect(page.line.classList.contains('dim-line--open')).toBe(true);
+    });
+
+    it('names every icon-only control and repeats its name in the bar\'s tooltip, with no title', async() => {
+        const page = await mount();
+        expect(page.line.querySelectorAll('[title]')).toHaveLength(0);
+        const tips = Array.from(page.line.querySelectorAll<HTMLElement>('[data-dim-tip]'));
+        expect(tips.map((control) => control.getAttribute('data-dim-tip'))).toEqual(
+            ['Favourites', 'Filters', 'Organise', 'List', 'Cards', 'Search courses', 'Clear text', 'Close search']
+        );
+        tips.forEach((control) => {
+            const word = control.querySelector(':scope > .visually-hidden');
+            const name = control.getAttribute('aria-label') || (word ? (word.textContent || '').trim() : '');
+            expect(name.startsWith(control.getAttribute('data-dim-tip') || '-')).toBe(true);
+        });
+    });
+
+    it('puts the tooltips off on Escape and back on another control', async() => {
+        const page = await mount();
+        const star = page.line.querySelector('[data-region="dim-line-star"]') as HTMLButtonElement;
+        const organise = page.line.querySelector('[data-region="dim-organise"] > summary') as HTMLElement;
+        await act(async() => star.focus());
+        fireEvent.keyDown(star, {key: 'Escape'});
+        expect(page.line.classList.contains('dim-line--tipsoff')).toBe(true);
+        // The same control again leaves them off; another one brings them back.
+        star.dispatchEvent(pointer('pointerover', 'mouse'));
+        expect(page.line.classList.contains('dim-line--tipsoff')).toBe(true);
+        organise.dispatchEvent(pointer('pointerover', 'mouse'));
+        expect(page.line.classList.contains('dim-line--tipsoff')).toBe(false);
+    });
+
+    it('draws the answer\'s result count on the bar', async() => {
+        const page = await mount();
+        const total = page.line.querySelector('[data-region="dim-line-total"]') as HTMLElement;
+        expect(total.textContent).toBe('16');
+        expect(total.getAttribute('aria-hidden')).toBe('true');
+        await tell(page.line, EVENTS.answer, {total: '1.234', filtercount: 0, filtercountlabel: ''});
+        expect(total.textContent).toBe('1.234');
+    });
+
+    it('closes the Filters panel from its "Show" and gives its summary the focus', async() => {
+        const page = await mount();
+        const filters = page.line.querySelector('[data-region="dim-filters"]') as HTMLDetailsElement;
+        filters.open = true;
+        const show = page.line.querySelector('[data-action="dim-filters-show"]') as HTMLButtonElement;
+        expect(show.textContent).toBe('Show 16');
+        fireEvent.click(show);
+        expect(filters.open).toBe(false);
+        expect(document.activeElement).toBe(filters.querySelector('summary'));
     });
 
     it('imports the preview on the first pointer on the toolbar, and previews the active suggestion', async() => {

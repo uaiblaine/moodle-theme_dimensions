@@ -88,8 +88,9 @@ export const tellLine = (root: HTMLElement, type: string, detail: object): boole
 };
 
 /**
- * Tell the filter line's component an answer's numbers, in SCOPE's order: called after the painters, so the
- * panel's groups its suggestions read are painted. A visitor's answer carries no scope and no favourites.
+ * Tell the filter line's component an answer's numbers - the result count, and the scope in SCOPE's
+ * order - called after the painters, so the panel's groups its suggestions read are painted. A visitor's
+ * answer carries no scope and no favourites.
  *
  * @param {HTMLElement} root The listing section.
  * @param {object} response The rows response.
@@ -106,6 +107,8 @@ export const tellAnswer = (root: HTMLElement, response: Record<string, unknown>)
      */
     const rank = (option: Option): number => SCOPE.indexOf(String(option.value));
     tellLine(root, LINE.answer, {
+        // The bar's count is the count sentence's number, as the server formatted it.
+        total: typeof response.countnumber === 'string' ? response.countnumber : undefined,
         // No option at all is a page whose state sort was switched off under it: the scope stays as drawn.
         scope: options.length ? options.filter((option) => rank(option) >= 0).sort((a, b) => rank(a) - rank(b)) : null,
         favourites: response.favourites || null,

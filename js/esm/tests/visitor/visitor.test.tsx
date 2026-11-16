@@ -189,11 +189,12 @@ describe('the components on the visitor\'s markup', () => {
         await act(async() => {
             first.render(<FilterLine form={VISITOR_FORM} />);
         });
-        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620]);
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700]);
         await act(async() => {
-            observers[0]([{contentRect: {width: 700}}]);
+            observers[0]([{contentRect: {width: 800}}]);
         });
-        expect(line.classList.contains('dim-line--s3')).toBe(true);
+        expect(line.classList.contains('dim-line--s1')).toBe(true);
+        expect(line.classList.contains('dim-line--over')).toBe(true);
         expect(line.style.visibility).toBe('');
         await act(async() => {
             first.unmount();
@@ -207,14 +208,14 @@ describe('the components on the visitor\'s markup', () => {
         expect(observers).toHaveLength(2);
         expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
         expect(line.style.visibility).toBe('hidden');
-        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480]);
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700, 300]);
         await act(async() => {
             observers[1]([{contentRect: {width: 500}}]);
         });
         expect(Measure.stepWidths).toHaveBeenCalledTimes(2);
         expect(Measure.stepWidths).toHaveBeenLastCalledWith(line, null, 500);
-        expect(line.classList.contains('dim-line--s4')).toBe(true);
-        expect(line.classList.contains('dim-line--folded')).toBe(false);
+        expect(line.classList.contains('dim-line--s2')).toBe(true);
+        expect(line.classList.contains('dim-line--over')).toBe(true);
         expect(line.style.visibility).toBe('');
         await act(async() => {
             second.unmount();

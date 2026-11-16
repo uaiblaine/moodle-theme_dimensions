@@ -14,8 +14,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The filter line of the showcase, on both shells: its folding, the search that grows over it and its
- * suggestions, its floating layers and its rows that scroll sideways.
+ * The filter line of the showcase, on both shells: the fleet Design System's compact bar, its folding, the
+ * search that opens from its button in place or over the line, its suggestions, its floating layers, its
+ * tooltips and the row that scrolls sideways.
  *
  * Drawn on both shells; on the visitor's no star is drawn and the scope may be absent: it draws what the server
  * drew. block_compass's FilterLine implements the same contract on its own; nothing is shared.
@@ -25,8 +26,9 @@
  * rules the stylesheet writes against it. A mount replaces its markup, so the first render draws the
  * markup the server drew, read off it ({@see ./model read()}), with the same names inside the same GET
  * form - the no-JavaScript submits, the listing's form reading and every Behat step keep working. React
- * draws the line's own controls: the scope, the search with its eraser and its icon, the star, the two
- * summaries (Filters and its badge, Organise), the view toggle, the close button and the listbox. Three
+ * draws the line's own controls: the scope, the result count, the star, the two summaries (Filters and its
+ * badge, Organise), the view toggle, the search with its button and its eraser, the close button and the
+ * listbox, in the cluster and the two capsules the template draws them in. Three
  * frames it draws hold server markup it adopts whole on the first commit and never diffs inside: the
  * Filters panel (More statuses, the custom fields, the period with its calendar, the quick dates),
  * the Organise menu and the managers' menu. The listing's painters keep painting those three, and paint
@@ -35,7 +37,7 @@
  *
  * - `dim-line:state`, detail {query, chip, fav, view} or any part of it: the listing's own state, after a
  *   press it handled, Back, a clear or a removed chip;
- * - `dim-line:answer`, detail {scope, favourites, filtercount, filtercountlabel}: an answer's numbers;
+ * - `dim-line:answer`, detail {total, scope, favourites, filtercount, filtercountlabel}: an answer's numbers;
  * - `dim-line:dropterm`, sent by the line before it presses the control a suggestion names, so the one
  *   request that control causes carries no term;
  * - `dim-line:mounted`, sent once the line is drawn, after it marked itself drawn (data-line-drawn), which
@@ -48,6 +50,12 @@
  * is mounted a second time onto a node React has just emptied. Unmounting therefore gives the adopted frames'
  * nodes back to the server's frames and keeps them, with the line's last state, for that node
  * ({@see KEPT}); a later mount draws from them instead of reading markup that is no longer there.
+ *
+ * The search is its button at rest at every width (the server drew the field open, for a page without this
+ * component). A press, or the slash key, opens the field: in place where the fold leaves room for it beside the
+ * controls, over the line where it does not. It stays open while it holds the focus, and in place while it holds
+ * a text; Escape, or the focus leaving it empty, folds it back to its button, and the eraser empties it and keeps
+ * it open. Escape also puts the line's tooltips off until the pointer or the focus comes to another control.
  *
  * The step is measured once per content on the line's own width with every scope cell drawn
  * ({@see ./measure stepWidths()}), and taken again from a width alone on every ResizeObserver entry. The
@@ -68,7 +76,7 @@ import {normalise, pieces} from './mark';
 import {importPreview} from './lazy';
 import type {PreviewModule} from './lazy';
 import {contentWidth, fades, itemOf, place, placeList, reveal, shown, stepWidths} from './measure';
-import {SELECTORS, answered, read, stated} from './model';
+import {SELECTORS, TIP, answered, read, stated} from './model';
 import type {Answer, Line, Told} from './model';
 import {MIN_TERM, offers, remember, suggest} from './suggest';
 import type {Offer, Rest} from './suggest';
@@ -89,10 +97,16 @@ const TAB_INTENT = 1000;
 const HOOKS = {
     listing: '[data-region="dim-vitrine"]',
     chips: '[data-region="dim-line-chips"]',
-    showas: '[data-region="dim-showas"] [data-action="dim-view"]',
+    show: '[data-action="dim-filters-show"]',
     daterange: '[data-region="dim-daterange"]',
     option: '[role="option"]',
+    // The controls of the open search that keep it open when the focus moves to them.
+    searchpart: '[data-action="dim-search-clear"], [data-action="dim-search-close"]',
+    tip: `[${TIP}]`,
 };
+
+/** The class the line carries while Escape has put its tooltips off. */
+const TIPSOFF = 'dim-line--tipsoff';
 
 /** The class the form carries while the Filters panel is a bottom sheet. */
 const SHEET = 'dim-toolbar--sheet';
@@ -134,6 +148,8 @@ type Live = {
     measuredOnce: boolean,
     // The line's own inline visibility while it is hidden until the first fold; null while it is not hidden.
     veiled: string | null,
+    // The control whose tooltip Escape put off: the tooltips come back on another one.
+    tiphost: Element | null,
 };
 
 /**
@@ -240,12 +256,15 @@ const FilterLine = ({form}: FilterLineProps) => {
         refocus: null,
         measuredOnce: false,
         veiled: null,
+        tiphost: null,
     });
     const rest = useRef<WeakMap<Element, Rest>>(new WeakMap());
     const preview = useRef<PreviewModule | null>(null);
     const previewing = useRef<Promise<PreviewModule> | null>(null);
     const field = useRef<HTMLInputElement>(null);
     const opener = useRef<HTMLButtonElement>(null);
+    const closer = useRef<HTMLButtonElement>(null);
+    const searchcap = useRef<HTMLDivElement>(null);
     const scope = useRef<HTMLFieldSetElement>(null);
     const filters = useRef<HTMLDetailsElement>(null);
     const panel = useRef<HTMLDivElement>(null);
@@ -384,28 +403,72 @@ const FilterLine = ({form}: FilterLineProps) => {
     };
 
     /**
-     * Grow the search over the line or take it back, at once: a field folded into its icon can take the
-     * focus only once the class has shown it.
+     * Whether an element is a part of the search: its capsule (the button, the field, the eraser) or the close button.
      *
-     * @param {boolean} on Whether the search is over the line.
+     * @param {Element|null} element The element.
+     * @returns {boolean}
+     */
+    const inSearch = (element: Element | null): boolean => element !== null
+        && ((searchcap.current !== null && searchcap.current.contains(element)) || element === closer.current);
+
+    /**
+     * Whether the search stays open with nothing holding its focus: in place, with a text.
+     *
+     * @returns {boolean}
+     */
+    const keepsOpen = (): boolean => !morphs(st.fold) && field.current !== null && field.current.value !== '';
+
+    /**
+     * Write the open search on the line's classes, at once: in place or over the line, as the fold says. A field
+     * shown by its class can take the focus only once the class is there.
+     *
      * @returns {void}
      */
-    const searchOver = (on: boolean): void => {
+    const drawSearch = (): void => {
+        const over = morphs(st.fold);
+        line?.classList.toggle(STEP_CLASSES.open, st.searching && !over);
+        line?.classList.toggle(STEP_CLASSES.searching, st.searching && over);
+    };
+
+    /**
+     * Open or fold the search.
+     *
+     * @param {boolean} on Whether the field is open.
+     * @returns {void}
+     */
+    const setSearching = (on: boolean): void => {
         st.searching = on;
-        line?.classList.toggle(STEP_CLASSES.searching, on);
+        drawSearch();
         rerender();
     };
 
     /**
-     * Open the search: over the line from the third step, under the field before it, with the suggestions.
+     * Bring the search in line with what holds it open, where nothing of it has the focus: open in place while it
+     * holds a text, folded otherwise. Called when the fold or the term changes under it.
+     *
+     * @returns {void}
+     */
+    const settleSearch = (): void => {
+        if (!inSearch(document.activeElement)) {
+            const keep = keepsOpen();
+            if (st.searching !== keep) {
+                st.searching = keep;
+                st.from = null;
+            }
+        }
+        drawSearch();
+    };
+
+    /**
+     * Open the search - in place, or over the line where the fold says so - with the suggestions.
      *
      * @param {HTMLElement|null} from The control that opened it, which gets the focus back when it closes.
      * @returns {void}
      */
     const openSearch = (from: HTMLElement | null): void => {
-        if (morphs(st.fold) && !st.searching) {
-            st.from = from || field.current;
-            searchOver(true);
+        if (!st.searching) {
+            st.from = from || opener.current;
+            setSearching(true);
         }
         st.open = true;
         if (document.activeElement !== field.current) {
@@ -418,7 +481,7 @@ const FilterLine = ({form}: FilterLineProps) => {
      * Close the search and its suggestions; with back, the focus returns to the control that opened it.
      *
      * The focus is moved quietly, so it does not open the search again. A control that is no longer drawn
-     * - the field folded away again, the icon at a step that shows the field - hands over to the one that is.
+     * - the field folded away again - hands over to the one that is.
      *
      * @param {boolean} back Whether the focus goes back to the control that opened the search.
      * @returns {void}
@@ -428,11 +491,44 @@ const FilterLine = ({form}: FilterLineProps) => {
         if (!st.searching) {
             return;
         }
-        searchOver(false);
+        setSearching(false);
         const from = st.from;
         st.from = null;
         if (back) {
             quietly([from, field.current, opener.current].find((control) => shown(control)) || null);
+        }
+    };
+
+    /**
+     * Put the line's tooltips off on Escape, whatever else the key does (WCAG 1.4.13: a tooltip shown by hover is
+     * dismissed without moving the pointer); they come back on another control ({@see tipsBack}).
+     *
+     * @returns {void}
+     */
+    const tipsOff = (): void => {
+        if (!line) {
+            return;
+        }
+        const active = document.activeElement;
+        const focused = active && line.contains(active) ? active.closest(HOOKS.tip) : null;
+        st.tiphost = focused || line.querySelector(`${HOOKS.tip}:hover`);
+        line.classList.add(TIPSOFF);
+    };
+
+    /**
+     * The pointer or the focus came to a control: the tooltips are back once it is another one than Escape left.
+     *
+     * @param {Event} event The pointerover or the focusin.
+     * @returns {void}
+     */
+    const tipsBack = (event: Event): void => {
+        if (!line || !line.classList.contains(TIPSOFF) || !(event.target instanceof Element)) {
+            return;
+        }
+        const host = event.target.closest(HOOKS.tip);
+        if (host && host !== st.tiphost) {
+            line.classList.remove(TIPSOFF);
+            st.tiphost = null;
         }
     };
 
@@ -476,8 +572,9 @@ const FilterLine = ({form}: FilterLineProps) => {
     /**
      * Take the fold a width gives, from the widths measured for this content.
      *
-     * A fold that no longer grows the search over the line ends an open search there, and a scope about to
-     * move (to its own line, or back) has its focused cell given the focus back once moved.
+     * An open search follows the fold, in place or over the line, and one nothing holds open folds to its
+     * button where it would cover the line; a scope about to move (to its own line, or back) has its focused
+     * cell given the focus back once moved.
      *
      * @returns {void}
      */
@@ -492,10 +589,7 @@ const FilterLine = ({form}: FilterLineProps) => {
         const scopeel = scope.current;
         st.refocus = scopeel && scopeel.contains(document.activeElement) ? document.activeElement : null;
         st.fold = next;
-        if (st.searching && !morphs(next)) {
-            st.searching = false;
-            line.classList.remove(STEP_CLASSES.searching);
-        }
+        settleSearch();
         rerender();
     };
 
@@ -661,22 +755,24 @@ const FilterLine = ({form}: FilterLineProps) => {
     };
 
     /**
-     * The focus left something of the line: the suggestions go when it stays on the line, the search
-     * closes where it stands when it leaves the line, and nothing it hid keeps the focus.
+     * The focus left something of the line: the suggestions go unless it went to them, and the search folds to
+     * its button unless the focus went to a part of it or the search holds a text in place.
      *
      * @param {FocusEvent} event The focusout.
      * @returns {void}
      */
     const onLineBlur = (event: FocusEvent): void => {
-        const next = event.relatedTarget instanceof Node ? event.relatedTarget : null;
+        const next = event.relatedTarget instanceof Element ? event.relatedTarget : null;
         if (!line || next === field.current || (next && listbox.current && listbox.current.contains(next))) {
             return;
         }
-        if (next && line.contains(next)) {
-            closeList();
+        closeList();
+        if (next && line.contains(next) && next.closest(HOOKS.searchpart)) {
             return;
         }
-        closeSearch(false);
+        if (!keepsOpen()) {
+            closeSearch(false);
+        }
     };
 
     /**
@@ -698,17 +794,16 @@ const FilterLine = ({form}: FilterLineProps) => {
     };
 
     /**
-     * A "Show as" button of the Organise menu: the menu closes and its summary keeps the focus; the
-     * listing's own view handler reads the button's value after this.
+     * The Filters panel's "Show": the panel closes and its summary takes the focus, on the list it shows.
      *
      * @param {MouseEvent} event The click.
      * @returns {void}
      */
     const onLineClick = (event: MouseEvent): void => {
-        const view = event.target instanceof Element ? event.target.closest(HOOKS.showas) : null;
-        if (view && organise.current) {
-            organise.current.open = false;
-            quietly(organise.current.querySelector('summary'));
+        const show = event.target instanceof Element ? event.target.closest(HOOKS.show) : null;
+        if (show && filters.current) {
+            filters.current.open = false;
+            quietly(filters.current.querySelector('summary'));
         }
     };
 
@@ -724,7 +819,10 @@ const FilterLine = ({form}: FilterLineProps) => {
             return;
         }
         if ((st.open || st.searching) && !line.contains(target)) {
-            closeSearch(false);
+            closeList();
+            if (!keepsOpen()) {
+                closeSearch(false);
+            }
         }
         // The bottom sheet has no summary beside it to press again, so a press outside it closes it.
         if (twolines() && filters.current && filters.current.open && !filters.current.contains(target)) {
@@ -733,8 +831,8 @@ const FilterLine = ({form}: FilterLineProps) => {
     };
 
     /**
-     * Tab is a reason for the field's focus; the slash key goes to the search when the line is on screen
-     * and the focus is in no field.
+     * Tab is a reason for the field's focus; Escape puts the tooltips off; the slash key goes to the search when
+     * the line is on screen and the focus is in no field.
      *
      * @param {KeyboardEvent} event The key.
      * @returns {void}
@@ -742,6 +840,10 @@ const FilterLine = ({form}: FilterLineProps) => {
     const onDocumentKey = (event: globalThis.KeyboardEvent): void => {
         if (event.key === 'Tab') {
             st.tabat = Date.now();
+            return;
+        }
+        if (event.key === 'Escape') {
+            tipsOff();
             return;
         }
         if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented || !line) {
@@ -756,7 +858,7 @@ const FilterLine = ({form}: FilterLineProps) => {
             return;
         }
         event.preventDefault();
-        openSearch(st.fold !== null && st.fold.folded && !st.searching ? opener.current : field.current);
+        openSearch(st.searching ? field.current : opener.current);
     };
 
     /**
@@ -830,7 +932,7 @@ const FilterLine = ({form}: FilterLineProps) => {
 
     api.current = {
         onLineKey, onLineBlur, onToggle, onLineClick, onDocumentPress, onDocumentKey, onPreviewIntent, onState,
-        onAnswer, onFormChange, remeasure, measureFirst,
+        onAnswer, onFormChange, remeasure, measureFirst, tipsBack,
     } as Handlers;
 
     // The first commit: the server's frames adopted, every listener on; the line is folded before it is painted.
@@ -843,6 +945,9 @@ const FilterLine = ({form}: FilterLineProps) => {
         adopt(setup.panel, panel.current);
         adopt(setup.menu, menu.current);
         adopt(setup.manage, manage.current);
+        // Drawn from here: the stylesheet folds the server's open field to its button on a drawn line, which the
+        // first measure below reads, and the listing's painters stop writing into it.
+        line.setAttribute(DRAWN, 'true');
 
         /**
          * Hand an event to this render's handler.
@@ -858,6 +963,8 @@ const FilterLine = ({form}: FilterLineProps) => {
             [line, 'click', to('onLineClick'), false],
             [line, EVENTS.state, to('onState'), false],
             [line, EVENTS.answer, to('onAnswer'), false],
+            [line, 'pointerover', to('tipsBack'), false],
+            [line, 'focusin', to('tipsBack'), false],
             [toolbar, 'change', to('onFormChange'), false],
             [toolbar, 'pointerover', to('onPreviewIntent'), true],
             [toolbar, 'focusin', to('onPreviewIntent'), true],
@@ -913,7 +1020,6 @@ const FilterLine = ({form}: FilterLineProps) => {
             return null;
         }).catch(() => null);
 
-        line.setAttribute(DRAWN, 'true');
         drawn.current = true;
         if (setup.focused) {
             quietly(setup.focused.isConnected ? setup.focused : counterpart(line, setup.focused));
@@ -924,6 +1030,7 @@ const FilterLine = ({form}: FilterLineProps) => {
             unveil();
             listeners.forEach(([target, type, listener, options]) => target.removeEventListener(type, listener, options));
             line.removeAttribute(DRAWN);
+            line.classList.remove(STEP_CLASSES.open, STEP_CLASSES.searching, TIPSOFF);
             /* React is about to empty the line: the adopted nodes go back to the server's frames, kept with the last
                state, so a mount of this node again (react_autoinit, after a move) draws the line again. Run before the
                frames are removed: a component's layout cleanup runs ahead of its host nodes' removal. */
@@ -941,10 +1048,12 @@ const FilterLine = ({form}: FilterLineProps) => {
     api.current.remeasureWidth = (() => (settled(st.widths, st.width) ? refold() : remeasure())) as (...args: never[]) => void;
 
     /* What changes a control's width: the words, which slots there are, and how many characters a count has - never
-       its value, because every count on the line is drawn in tabular figures (the pills' and the Filters badge's), so
-       an answer that moves 12 to 15 keeps every width. The star's count is visually hidden and takes no width. */
+       its value, because every count on the line is drawn in tabular figures (the pills', the result count and the
+       Filters badge's), so an answer that moves 12 to 15 keeps every width. The star's count is visually hidden and
+       takes no width. */
     const signature = model ? JSON.stringify([
         model.scope ? model.scope.cells.map((cell) => [cell.label, String(cell.count).length, cell.hascount]) : null,
+        model.total.length,
         [model.filters.hascount, String(model.filters.count).length],
     ]) : '';
     const measured = useRef<string>(signature);
@@ -958,6 +1067,14 @@ const FilterLine = ({form}: FilterLineProps) => {
             remeasure();
         }
     }, [signature]);
+
+    // The term moved under the search (a clear, Back, a removed chip): an open search nothing holds open folds.
+    useLayoutEffect(() => {
+        if (drawn.current && st.measuredOnce) {
+            settleSearch();
+            rerender();
+        }
+    }, [model ? model.search.value : '']);
 
     // An answer was drawn: its counts are remembered while the field is empty, and what read the old ones follows.
     useLayoutEffect(() => {
@@ -982,7 +1099,7 @@ const FilterLine = ({form}: FilterLineProps) => {
             return;
         }
         paint(line, st.fold);
-        line.classList.toggle(STEP_CLASSES.searching, st.searching);
+        drawSearch();
         toolbar.classList.toggle(SHEET, twolines() && Boolean(filters.current && filters.current.open));
         if (st.refocus) {
             const refocus = st.refocus;
@@ -994,11 +1111,11 @@ const FilterLine = ({form}: FilterLineProps) => {
         if (listbox.current && !listbox.current.hidden) {
             /* Placed when the list opens and when what places it moves (the fold, the search, the width), not on every
                key: the field and the line keep their boxes while the reader types, and each placement reads layout. */
-            const fold = st.fold ? `${st.fold.step}${st.fold.folded ? 'f' : ''}` : '';
+            const fold = st.fold ? `${st.fold.step}${st.fold.over ? 'o' : ''}` : '';
             const key = [st.measuredOnce, fold, st.searching, Math.round(st.width)].join('|');
             if (placed.current !== key) {
                 placed.current = key;
-                placeList(line, listbox.current, st.fold === null || st.fold.step === 's1' || st.fold.step === 's2', twolines());
+                placeList(line, listbox.current, !morphs(st.fold), twolines());
             }
             const option = st.active >= 0 ? listbox.current.querySelectorAll(HOOKS.option)[st.active] : null;
             option?.scrollIntoView?.({block: 'nearest'});
@@ -1010,7 +1127,7 @@ const FilterLine = ({form}: FilterLineProps) => {
     /* The layers follow a new fold, and so do the rows' fades. Both read layout, so they wait for the first measure
        as it does - read in the first commit, they would force the page's first full layout themselves - and the key
        changes when it is taken, the fold or no fold it gives. */
-    const foldkey = (st.measuredOnce ? 'm' : '') + (st.fold ? `${st.fold.step}${st.fold.folded ? 'f' : ''}` : '');
+    const foldkey = (st.measuredOnce ? 'm' : '') + (st.fold ? `${st.fold.step}${st.fold.over ? 'o' : ''}` : '');
     useLayoutEffect(() => {
         if (!line || !drawn.current || !st.measuredOnce) {
             return;
@@ -1032,79 +1149,92 @@ const FilterLine = ({form}: FilterLineProps) => {
     return (
         <>
             {scopedown ? null : scopenode}
-            <div key="search" className="dim-toolbar__search dim-line__search" data-region="dim-line-search">
-                <label className="visually-hidden" htmlFor={search.id}>{search.label}</label>
-                <i className="fa fa-magnifying-glass dim-toolbar__searchicon" aria-hidden="true"></i>
-                <input
-                    ref={field}
-                    className="form-control dim-toolbar__input"
-                    type="search"
-                    id={search.id}
-                    name={search.name}
-                    value={search.value}
-                    placeholder={search.placeholder}
-                    autoComplete="off"
-                    role="combobox"
-                    aria-autocomplete="list"
-                    aria-expanded={listed ? 'true' : 'false'}
-                    aria-controls={model.suggest.id}
-                    aria-activedescendant={listed && st.active >= 0 ? `${model.suggest.id}-${st.active}` : undefined}
-                    onPointerDown={() => {
-                        st.intent = true;
-                    }}
-                    onFocus={onFieldFocus}
-                    onClick={() => {
-                        if (!st.open) {
-                            openSearch(st.from || field.current);
-                        }
-                    }}
-                    onChange={(event) => onFieldInput(event.target.value)}
-                    onKeyDown={onFieldKey}
-                />
+            <span key="spacer" className="dim-line__spacer" aria-hidden="true"></span>
+            <div key="cluster" className="dim-line__cluster" data-region="dim-line-cluster">
+                <span className="dim-line__total" data-region="dim-line-total" aria-hidden="true">{model.total}</span>
+                <div className="dim-line__capsule" data-region="dim-line-capsule">
+                    {drawStar(model)}
+                    {drawFilters(model, filters, panel)}
+                    <details ref={organise} className="dim-line__organise" data-region="dim-organise">
+                        <summary className="dim-line__iconbtn dim-line__organisetoggle" data-dim-tip={model.organiselabel}>
+                            <i className="fa fa-arrow-down-wide-short" aria-hidden="true"></i>
+                            <span className="visually-hidden">{model.organiselabel}</span>
+                        </summary>
+                        <div ref={menu} className="dim-line__menu" data-region="dim-organise-menu"></div>
+                    </details>
+                    {drawViews(model)}
+                </div>
+            </div>
+            <div
+                key="searchcap"
+                ref={searchcap}
+                className="dim-line__capsule dim-line__searchcap"
+                data-region="dim-line-searchcap"
+            >
                 <button
+                    ref={opener}
                     type="button"
-                    className="dim-line__eraser dim-live-only"
-                    data-action="dim-search-clear"
-                    aria-label={search.clearlabel}
-                    title={search.clearlabel}
-                    hidden={search.value === ''}
-                    onClick={onErase}
-                ><i className="fa fa-eraser" aria-hidden="true"></i></button>
+                    className="dim-line__iconbtn dim-line__searchopen"
+                    data-action="dim-search-open"
+                    aria-controls={search.id}
+                    aria-expanded={st.searching ? 'true' : 'false'}
+                    data-dim-tip={model.openlabel}
+                    onClick={() => openSearch(opener.current)}
+                >
+                    <i className="fa fa-magnifying-glass" aria-hidden="true"></i>
+                    <span className="visually-hidden">{model.openlabel}</span>
+                </button>
+                <div className="dim-toolbar__search dim-line__search" data-region="dim-line-search">
+                    <label className="visually-hidden" htmlFor={search.id}>{search.label}</label>
+                    <i className="fa fa-magnifying-glass dim-toolbar__searchicon" aria-hidden="true"></i>
+                    <input
+                        ref={field}
+                        className="form-control dim-toolbar__input"
+                        type="search"
+                        id={search.id}
+                        name={search.name}
+                        value={search.value}
+                        placeholder={search.placeholder}
+                        autoComplete="off"
+                        role="combobox"
+                        aria-autocomplete="list"
+                        aria-expanded={listed ? 'true' : 'false'}
+                        aria-controls={model.suggest.id}
+                        aria-activedescendant={listed && st.active >= 0 ? `${model.suggest.id}-${st.active}` : undefined}
+                        onPointerDown={() => {
+                            st.intent = true;
+                        }}
+                        onFocus={onFieldFocus}
+                        onClick={() => {
+                            if (!st.open) {
+                                openSearch(st.from || opener.current);
+                            }
+                        }}
+                        onChange={(event) => onFieldInput(event.target.value)}
+                        onKeyDown={onFieldKey}
+                    />
+                    <button
+                        type="button"
+                        className="dim-line__eraser dim-live-only"
+                        data-action="dim-search-clear"
+                        aria-label={search.clearlabel}
+                        data-dim-tip={search.clearlabel}
+                        hidden={search.value === ''}
+                        onClick={onErase}
+                    ><i className="fa fa-eraser" aria-hidden="true"></i></button>
+                </div>
+                {model.manage ? (
+                    <div ref={manage} className="dim-toolbar__manage" data-region="dim-line-manage"></div>
+                ) : null}
             </div>
             <button
-                key="opener"
-                ref={opener}
-                type="button"
-                className="dim-line__iconbtn dim-line__searchopen"
-                data-action="dim-search-open"
-                aria-controls={search.id}
-                aria-expanded={st.searching ? 'true' : 'false'}
-                title={model.openlabel}
-                onClick={() => openSearch(opener.current)}
-            >
-                <i className="fa fa-magnifying-glass" aria-hidden="true"></i>
-                <span className="visually-hidden">{model.openlabel}</span>
-            </button>
-            {drawStar(model)}
-            {drawFilters(model, filters, panel)}
-            <details key="organise" ref={organise} className="dim-line__organise" data-region="dim-organise">
-                <summary className="dim-line__iconbtn dim-line__organisetoggle" title={model.organiselabel}>
-                    <i className="fa fa-arrow-down-wide-short" aria-hidden="true"></i>
-                    <span className="visually-hidden">{model.organiselabel}</span>
-                </summary>
-                <div ref={menu} className="dim-line__menu" data-region="dim-organise-menu"></div>
-            </details>
-            {drawViews(model)}
-            {model.manage ? (
-                <div key="manage" ref={manage} className="dim-toolbar__manage" data-region="dim-line-manage"></div>
-            ) : null}
-            <button
                 key="closer"
+                ref={closer}
                 type="button"
                 className="dim-line__iconbtn dim-line__searchclose"
                 data-action="dim-search-close"
                 aria-label={model.closelabel}
-                title={model.closelabel}
+                data-dim-tip={model.closelabel}
                 onClick={() => closeSearch(true)}
             ><i className="fa fa-xmark" aria-hidden="true"></i></button>
             {scopedown ? scopenode : null}
@@ -1177,13 +1307,12 @@ const drawStar = (model: Line): ReactNode => {
     }
     return (
         <button
-            key="star"
             type="submit"
             className="dim-toolbar__star dim-line__iconbtn"
             name={star.name}
             value={star.pressed ? '0' : '1'}
             aria-pressed={star.pressed ? 'true' : 'false'}
-            title={star.label}
+            data-dim-tip={star.label}
             data-action="dim-fav"
             data-region="dim-line-star"
         >
@@ -1194,8 +1323,9 @@ const drawStar = (model: Line): ReactNode => {
 };
 
 /**
- * The Filters disclosure: its summary with the word and both halves of the badge, and the panel's frame,
- * which holds the server's panel, adopted on the first commit and never diffed.
+ * The Filters disclosure: its summary - the glyph, the word out of the picture (its accessible name) and both
+ * halves of the badge - and the panel's frame, which holds the server's panel, adopted on the first commit and
+ * never diffed.
  *
  * @param {object} model The line.
  * @param {object} ref The details element's ref.
@@ -1207,11 +1337,11 @@ const drawFilters = (
     ref: RefObject<HTMLDetailsElement | null>,
     panel: RefObject<HTMLDivElement | null>
 ): ReactNode => (
-    <details key="filters" ref={ref} className="dim-toolbar__filters dim-line__filters" data-region="dim-filters">
-        <summary className="dim-toolbar__filterstoggle">
+    <details ref={ref} className="dim-toolbar__filters dim-line__filters" data-region="dim-filters">
+        <summary className="dim-toolbar__filterstoggle dim-line__iconbtn" data-dim-tip={model.filters.label}>
             <i className="fa fa-sliders" aria-hidden="true"></i>
             {' '}
-            <span className="dim-line__label dim-toolbar__filterslabel">{model.filters.label}</span>
+            <span className="visually-hidden dim-line__label dim-toolbar__filterslabel">{model.filters.label}</span>
             {' '}
             <span className="dim-toolbar__filtercount" data-region="dim-filtercount" hidden={!model.filters.hascount}>
                 <span aria-hidden="true" data-region="dim-filtercount-number">{model.filters.count}</span>
@@ -1223,14 +1353,14 @@ const drawFilters = (
 );
 
 /**
- * The view toggle: List first, icons only, each named by a visually hidden word and a tooltip.
+ * The view toggle: List first, the capsule's last icon buttons, each named by a visually hidden word and the
+ * bar's tooltip.
  *
  * @param {object} model The line.
  * @returns {object}
  */
 const drawViews = (model: Line): ReactNode => (
     <div
-        key="view"
         className="dim-toolbar__view dim-line__view"
         role="group"
         aria-label={model.viewlabel}
@@ -1240,12 +1370,12 @@ const drawViews = (model: Line): ReactNode => (
             <button
                 key={view.value}
                 type="submit"
-                className="dim-toolbar__viewbtn"
+                className="dim-toolbar__viewbtn dim-line__iconbtn"
                 data-action="dim-view"
                 name={model.viewname}
                 value={view.value}
                 aria-pressed={view.pressed ? 'true' : 'false'}
-                title={view.label}
+                data-dim-tip={view.label}
             ><i className={`fa ${view.icon}`} aria-hidden="true"></i><span className="visually-hidden">{view.label}</span></button>
         ))}
     </div>

@@ -1,2 +1,2 @@
-# Keep the field on a folded line: field and icon side by side, and the line overflows.
-s/(\.dim-line--folded > \.dim-line__search \{\n        display: )none;/${1}block;/;
+# Leave the field open at rest on a line the client drew: the search is no longer its button.
+s/(\.dim-line\[data-line-drawn\] > \.dim-line__searchcap \{\n        > \.dim-line__searchopen \{\n            display: inline-flex;\n        \}\n\n        > \.dim-line__search \{\n            display: )none;/${1}inline-flex;/;

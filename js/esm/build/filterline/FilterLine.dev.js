@@ -2,8 +2,9 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 import { Fragment, jsxDEV } from "react/jsx-dev-runtime";
 /**
- * The filter line of the showcase, on both shells: its folding, the search that grows over it and its
- * suggestions, its floating layers and its rows that scroll sideways.
+ * The filter line of the showcase, on both shells: the fleet Design System's compact bar, its folding, the
+ * search that opens from its button in place or over the line, its suggestions, its floating layers, its
+ * tooltips and the row that scrolls sideways.
  *
  * Drawn on both shells; on the visitor's no star is drawn and the scope may be absent: it draws what the server
  * drew. block_compass's FilterLine implements the same contract on its own; nothing is shared.
@@ -13,8 +14,9 @@ import { Fragment, jsxDEV } from "react/jsx-dev-runtime";
  * rules the stylesheet writes against it. A mount replaces its markup, so the first render draws the
  * markup the server drew, read off it ({@see ./model read()}), with the same names inside the same GET
  * form - the no-JavaScript submits, the listing's form reading and every Behat step keep working. React
- * draws the line's own controls: the scope, the search with its eraser and its icon, the star, the two
- * summaries (Filters and its badge, Organise), the view toggle, the close button and the listbox. Three
+ * draws the line's own controls: the scope, the result count, the star, the two summaries (Filters and its
+ * badge, Organise), the view toggle, the search with its button and its eraser, the close button and the
+ * listbox, in the cluster and the two capsules the template draws them in. Three
  * frames it draws hold server markup it adopts whole on the first commit and never diffs inside: the
  * Filters panel (More statuses, the custom fields, the period with its calendar, the quick dates),
  * the Organise menu and the managers' menu. The listing's painters keep painting those three, and paint
@@ -23,7 +25,7 @@ import { Fragment, jsxDEV } from "react/jsx-dev-runtime";
  *
  * - `dim-line:state`, detail {query, chip, fav, view} or any part of it: the listing's own state, after a
  *   press it handled, Back, a clear or a removed chip;
- * - `dim-line:answer`, detail {scope, favourites, filtercount, filtercountlabel}: an answer's numbers;
+ * - `dim-line:answer`, detail {total, scope, favourites, filtercount, filtercountlabel}: an answer's numbers;
  * - `dim-line:dropterm`, sent by the line before it presses the control a suggestion names, so the one
  *   request that control causes carries no term;
  * - `dim-line:mounted`, sent once the line is drawn, after it marked itself drawn (data-line-drawn), which
@@ -36,6 +38,12 @@ import { Fragment, jsxDEV } from "react/jsx-dev-runtime";
  * is mounted a second time onto a node React has just emptied. Unmounting therefore gives the adopted frames'
  * nodes back to the server's frames and keeps them, with the line's last state, for that node
  * ({@see KEPT}); a later mount draws from them instead of reading markup that is no longer there.
+ *
+ * The search is its button at rest at every width (the server drew the field open, for a page without this
+ * component). A press, or the slash key, opens the field: in place where the fold leaves room for it beside the
+ * controls, over the line where it does not. It stays open while it holds the focus, and in place while it holds
+ * a text; Escape, or the focus leaving it empty, folds it back to its button, and the eraser empties it and keeps
+ * it open. Escape also puts the line's tooltips off until the pointer or the focus comes to another control.
  *
  * The step is measured once per content on the line's own width with every scope cell drawn
  * ({@see ./measure stepWidths()}), and taken again from a width alone on every ResizeObserver entry. The
@@ -53,7 +61,7 @@ import Pending from "@moodle/lms/core/pending";
 import { normalise, pieces } from "./mark";
 import { importPreview } from "./lazy";
 import { contentWidth, fades, itemOf, place, placeList, reveal, shown, stepWidths } from "./measure";
-import { SELECTORS, answered, read, stated } from "./model";
+import { SELECTORS, TIP, answered, read, stated } from "./model";
 import { MIN_TERM, offers, remember, suggest } from "./suggest";
 import { CLASSES as STEP_CLASSES, TWO_LINES, choose, morphs, paint, same, settled } from "./steps";
 import { LINE, LINE_DRAWN } from "../listing/events";
@@ -63,10 +71,14 @@ const TAB_INTENT = 1e3;
 const HOOKS = {
   listing: '[data-region="dim-vitrine"]',
   chips: '[data-region="dim-line-chips"]',
-  showas: '[data-region="dim-showas"] [data-action="dim-view"]',
+  show: '[data-action="dim-filters-show"]',
   daterange: '[data-region="dim-daterange"]',
-  option: '[role="option"]'
+  option: '[role="option"]',
+  // The controls of the open search that keep it open when the focus moves to them.
+  searchpart: '[data-action="dim-search-clear"], [data-action="dim-search-close"]',
+  tip: `[${TIP}]`
 };
+const TIPSOFF = "dim-line--tipsoff";
 const SHEET = "dim-toolbar--sheet";
 const ACTIVE = "dim-line__option--active";
 const KEPT = /* @__PURE__ */ new WeakMap();
@@ -141,13 +153,16 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
     tabat: 0,
     refocus: null,
     measuredOnce: false,
-    veiled: null
+    veiled: null,
+    tiphost: null
   });
   const rest = useRef(/* @__PURE__ */ new WeakMap());
   const preview = useRef(null);
   const previewing = useRef(null);
   const field = useRef(null);
   const opener = useRef(null);
+  const closer = useRef(null);
+  const searchcap = useRef(null);
   const scope = useRef(null);
   const filters = useRef(null);
   const panel = useRef(null);
@@ -225,15 +240,32 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
     st.active = -1;
     rerender();
   }, "closeList");
-  const searchOver = /* @__PURE__ */ __name((on) => {
+  const inSearch = /* @__PURE__ */ __name((element) => element !== null && (searchcap.current !== null && searchcap.current.contains(element) || element === closer.current), "inSearch");
+  const keepsOpen = /* @__PURE__ */ __name(() => !morphs(st.fold) && field.current !== null && field.current.value !== "", "keepsOpen");
+  const drawSearch = /* @__PURE__ */ __name(() => {
+    const over = morphs(st.fold);
+    line?.classList.toggle(STEP_CLASSES.open, st.searching && !over);
+    line?.classList.toggle(STEP_CLASSES.searching, st.searching && over);
+  }, "drawSearch");
+  const setSearching = /* @__PURE__ */ __name((on) => {
     st.searching = on;
-    line?.classList.toggle(STEP_CLASSES.searching, on);
+    drawSearch();
     rerender();
-  }, "searchOver");
+  }, "setSearching");
+  const settleSearch = /* @__PURE__ */ __name(() => {
+    if (!inSearch(document.activeElement)) {
+      const keep = keepsOpen();
+      if (st.searching !== keep) {
+        st.searching = keep;
+        st.from = null;
+      }
+    }
+    drawSearch();
+  }, "settleSearch");
   const openSearch = /* @__PURE__ */ __name((from) => {
-    if (morphs(st.fold) && !st.searching) {
-      st.from = from || field.current;
-      searchOver(true);
+    if (!st.searching) {
+      st.from = from || opener.current;
+      setSearching(true);
     }
     st.open = true;
     if (document.activeElement !== field.current) {
@@ -246,13 +278,32 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
     if (!st.searching) {
       return;
     }
-    searchOver(false);
+    setSearching(false);
     const from = st.from;
     st.from = null;
     if (back) {
       quietly([from, field.current, opener.current].find((control) => shown(control)) || null);
     }
   }, "closeSearch");
+  const tipsOff = /* @__PURE__ */ __name(() => {
+    if (!line) {
+      return;
+    }
+    const active = document.activeElement;
+    const focused = active && line.contains(active) ? active.closest(HOOKS.tip) : null;
+    st.tiphost = focused || line.querySelector(`${HOOKS.tip}:hover`);
+    line.classList.add(TIPSOFF);
+  }, "tipsOff");
+  const tipsBack = /* @__PURE__ */ __name((event) => {
+    if (!line || !line.classList.contains(TIPSOFF) || !(event.target instanceof Element)) {
+      return;
+    }
+    const host = event.target.closest(HOOKS.tip);
+    if (host && host !== st.tiphost) {
+      line.classList.remove(TIPSOFF);
+      st.tiphost = null;
+    }
+  }, "tipsBack");
   const activate = /* @__PURE__ */ __name((index) => {
     st.active = index >= 0 && index < st.items.length ? index : -1;
     rerender();
@@ -282,10 +333,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
     const scopeel = scope.current;
     st.refocus = scopeel && scopeel.contains(document.activeElement) ? document.activeElement : null;
     st.fold = next;
-    if (st.searching && !morphs(next)) {
-      st.searching = false;
-      line.classList.remove(STEP_CLASSES.searching);
-    }
+    settleSearch();
     rerender();
   }, "refold");
   const remeasure = /* @__PURE__ */ __name(() => {
@@ -383,15 +431,17 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
     }
   }, "onLineKey");
   const onLineBlur = /* @__PURE__ */ __name((event) => {
-    const next = event.relatedTarget instanceof Node ? event.relatedTarget : null;
+    const next = event.relatedTarget instanceof Element ? event.relatedTarget : null;
     if (!line || next === field.current || next && listbox.current && listbox.current.contains(next)) {
       return;
     }
-    if (next && line.contains(next)) {
-      closeList();
+    closeList();
+    if (next && line.contains(next) && next.closest(HOOKS.searchpart)) {
       return;
     }
-    closeSearch(false);
+    if (!keepsOpen()) {
+      closeSearch(false);
+    }
   }, "onLineBlur");
   const onToggle = /* @__PURE__ */ __name((event) => {
     if (!line) {
@@ -405,10 +455,10 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
     }
   }, "onToggle");
   const onLineClick = /* @__PURE__ */ __name((event) => {
-    const view = event.target instanceof Element ? event.target.closest(HOOKS.showas) : null;
-    if (view && organise.current) {
-      organise.current.open = false;
-      quietly(organise.current.querySelector("summary"));
+    const show = event.target instanceof Element ? event.target.closest(HOOKS.show) : null;
+    if (show && filters.current) {
+      filters.current.open = false;
+      quietly(filters.current.querySelector("summary"));
     }
   }, "onLineClick");
   const onDocumentPress = /* @__PURE__ */ __name((event) => {
@@ -417,7 +467,10 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       return;
     }
     if ((st.open || st.searching) && !line.contains(target)) {
-      closeSearch(false);
+      closeList();
+      if (!keepsOpen()) {
+        closeSearch(false);
+      }
     }
     if (twolines() && filters.current && filters.current.open && !filters.current.contains(target)) {
       filters.current.open = false;
@@ -426,6 +479,10 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
   const onDocumentKey = /* @__PURE__ */ __name((event) => {
     if (event.key === "Tab") {
       st.tabat = Date.now();
+      return;
+    }
+    if (event.key === "Escape") {
+      tipsOff();
       return;
     }
     if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented || !line) {
@@ -440,7 +497,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       return;
     }
     event.preventDefault();
-    openSearch(st.fold !== null && st.fold.folded && !st.searching ? opener.current : field.current);
+    openSearch(st.searching ? field.current : opener.current);
   }, "onDocumentKey");
   const onPreviewIntent = /* @__PURE__ */ __name((event) => {
     const target = event.target instanceof Element ? event.target : null;
@@ -491,7 +548,8 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
     onAnswer,
     onFormChange,
     remeasure,
-    measureFirst
+    measureFirst,
+    tipsBack
   };
   useLayoutEffect(() => {
     if (!line || !toolbar || !setup.first) {
@@ -501,6 +559,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
     adopt(setup.panel, panel.current);
     adopt(setup.menu, menu.current);
     adopt(setup.manage, manage.current);
+    line.setAttribute(DRAWN, "true");
     const to = /* @__PURE__ */ __name((name) => (event) => api.current[name](event), "to");
     const listeners = [
       [line, "keydown", to("onLineKey"), false],
@@ -509,6 +568,8 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       [line, "click", to("onLineClick"), false],
       [line, EVENTS.state, to("onState"), false],
       [line, EVENTS.answer, to("onAnswer"), false],
+      [line, "pointerover", to("tipsBack"), false],
+      [line, "focusin", to("tipsBack"), false],
       [toolbar, "change", to("onFormChange"), false],
       [toolbar, "pointerover", to("onPreviewIntent"), true],
       [toolbar, "focusin", to("onPreviewIntent"), true],
@@ -550,7 +611,6 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       }
       return null;
     }).catch(() => null);
-    line.setAttribute(DRAWN, "true");
     drawn.current = true;
     if (setup.focused) {
       quietly(setup.focused.isConnected ? setup.focused : counterpart(line, setup.focused));
@@ -561,6 +621,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       unveil();
       listeners.forEach(([target, type, listener, options]) => target.removeEventListener(type, listener, options));
       line.removeAttribute(DRAWN);
+      line.classList.remove(STEP_CLASSES.open, STEP_CLASSES.searching, TIPSOFF);
       adopt(panel.current, setup.panel);
       adopt(menu.current, setup.menu);
       adopt(manage.current, setup.manage);
@@ -572,6 +633,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
   api.current.remeasureWidth = (() => settled(st.widths, st.width) ? refold() : remeasure());
   const signature = model ? JSON.stringify([
     model.scope ? model.scope.cells.map((cell) => [cell.label, String(cell.count).length, cell.hascount]) : null,
+    model.total.length,
     [model.filters.hascount, String(model.filters.count).length]
   ]) : "";
   const measured = useRef(signature);
@@ -584,6 +646,12 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       remeasure();
     }
   }, [signature]);
+  useLayoutEffect(() => {
+    if (drawn.current && st.measuredOnce) {
+      settleSearch();
+      rerender();
+    }
+  }, [model ? model.search.value : ""]);
   useLayoutEffect(() => {
     if (!drawn.current || !toolbar || answers === 0) {
       return;
@@ -602,7 +670,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       return;
     }
     paint(line, st.fold);
-    line.classList.toggle(STEP_CLASSES.searching, st.searching);
+    drawSearch();
     toolbar.classList.toggle(SHEET, twolines() && Boolean(filters.current && filters.current.open));
     if (st.refocus) {
       const refocus = st.refocus;
@@ -612,11 +680,11 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       }
     }
     if (listbox.current && !listbox.current.hidden) {
-      const fold = st.fold ? `${st.fold.step}${st.fold.folded ? "f" : ""}` : "";
+      const fold = st.fold ? `${st.fold.step}${st.fold.over ? "o" : ""}` : "";
       const key = [st.measuredOnce, fold, st.searching, Math.round(st.width)].join("|");
       if (placed.current !== key) {
         placed.current = key;
-        placeList(line, listbox.current, st.fold === null || st.fold.step === "s1" || st.fold.step === "s2", twolines());
+        placeList(line, listbox.current, !morphs(st.fold), twolines());
       }
       const option = st.active >= 0 ? listbox.current.querySelectorAll(HOOKS.option)[st.active] : null;
       option?.scrollIntoView?.({ block: "nearest" });
@@ -624,7 +692,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       placed.current = "";
     }
   });
-  const foldkey = (st.measuredOnce ? "m" : "") + (st.fold ? `${st.fold.step}${st.fold.folded ? "f" : ""}` : "");
+  const foldkey = (st.measuredOnce ? "m" : "") + (st.fold ? `${st.fold.step}${st.fold.over ? "o" : ""}` : "");
   useLayoutEffect(() => {
     if (!line || !drawn.current || !st.measuredOnce) {
       return;
@@ -643,161 +711,201 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
   const search = model.search;
   return /* @__PURE__ */ jsxDEV(Fragment, { children: [
     scopedown ? null : scopenode,
-    /* @__PURE__ */ jsxDEV("div", { className: "dim-toolbar__search dim-line__search", "data-region": "dim-line-search", children: [
-      /* @__PURE__ */ jsxDEV("label", { className: "visually-hidden", htmlFor: search.id, children: search.label }, void 0, false, {
-        fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1036,
-        columnNumber: 17
-      }),
-      /* @__PURE__ */ jsxDEV("i", { className: "fa fa-magnifying-glass dim-toolbar__searchicon", "aria-hidden": "true" }, void 0, false, {
-        fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1037,
-        columnNumber: 17
-      }),
-      /* @__PURE__ */ jsxDEV(
-        "input",
-        {
-          ref: field,
-          className: "form-control dim-toolbar__input",
-          type: "search",
-          id: search.id,
-          name: search.name,
-          value: search.value,
-          placeholder: search.placeholder,
-          autoComplete: "off",
-          role: "combobox",
-          "aria-autocomplete": "list",
-          "aria-expanded": listed ? "true" : "false",
-          "aria-controls": model.suggest.id,
-          "aria-activedescendant": listed && st.active >= 0 ? `${model.suggest.id}-${st.active}` : void 0,
-          onPointerDown: () => {
-            st.intent = true;
-          },
-          onFocus: onFieldFocus,
-          onClick: () => {
-            if (!st.open) {
-              openSearch(st.from || field.current);
-            }
-          },
-          onChange: (event) => onFieldInput(event.target.value),
-          onKeyDown: onFieldKey
-        },
-        void 0,
-        false,
-        {
-          fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1038,
-          columnNumber: 17
-        }
-      ),
-      /* @__PURE__ */ jsxDEV(
-        "button",
-        {
-          type: "button",
-          className: "dim-line__eraser dim-live-only",
-          "data-action": "dim-search-clear",
-          "aria-label": search.clearlabel,
-          title: search.clearlabel,
-          hidden: search.value === "",
-          onClick: onErase,
-          children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-eraser", "aria-hidden": "true" }, void 0, false, {
-            fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1072,
-            columnNumber: 18
-          })
-        },
-        void 0,
-        false,
-        {
-          fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1064,
-          columnNumber: 17
-        }
-      )
-    ] }, "search", true, {
+    /* @__PURE__ */ jsxDEV("span", { className: "dim-line__spacer", "aria-hidden": "true" }, "spacer", false, {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1035,
+      lineNumber: 1152,
+      columnNumber: 13
+    }),
+    /* @__PURE__ */ jsxDEV("div", { className: "dim-line__cluster", "data-region": "dim-line-cluster", children: [
+      /* @__PURE__ */ jsxDEV("span", { className: "dim-line__total", "data-region": "dim-line-total", "aria-hidden": "true", children: model.total }, void 0, false, {
+        fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+        lineNumber: 1154,
+        columnNumber: 17
+      }),
+      /* @__PURE__ */ jsxDEV("div", { className: "dim-line__capsule", "data-region": "dim-line-capsule", children: [
+        drawStar(model),
+        drawFilters(model, filters, panel),
+        /* @__PURE__ */ jsxDEV("details", { ref: organise, className: "dim-line__organise", "data-region": "dim-organise", children: [
+          /* @__PURE__ */ jsxDEV("summary", { className: "dim-line__iconbtn dim-line__organisetoggle", "data-dim-tip": model.organiselabel, children: [
+            /* @__PURE__ */ jsxDEV("i", { className: "fa fa-arrow-down-wide-short", "aria-hidden": "true" }, void 0, false, {
+              fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+              lineNumber: 1160,
+              columnNumber: 29
+            }),
+            /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: model.organiselabel }, void 0, false, {
+              fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+              lineNumber: 1161,
+              columnNumber: 29
+            })
+          ] }, void 0, true, {
+            fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+            lineNumber: 1159,
+            columnNumber: 25
+          }),
+          /* @__PURE__ */ jsxDEV("div", { ref: menu, className: "dim-line__menu", "data-region": "dim-organise-menu" }, void 0, false, {
+            fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+            lineNumber: 1163,
+            columnNumber: 25
+          })
+        ] }, void 0, true, {
+          fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+          lineNumber: 1158,
+          columnNumber: 21
+        }),
+        drawViews(model)
+      ] }, void 0, true, {
+        fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+        lineNumber: 1155,
+        columnNumber: 17
+      })
+    ] }, "cluster", true, {
+      fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+      lineNumber: 1153,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV(
-      "button",
+      "div",
       {
-        ref: opener,
-        type: "button",
-        className: "dim-line__iconbtn dim-line__searchopen",
-        "data-action": "dim-search-open",
-        "aria-controls": search.id,
-        "aria-expanded": st.searching ? "true" : "false",
-        title: model.openlabel,
-        onClick: () => openSearch(opener.current),
+        ref: searchcap,
+        className: "dim-line__capsule dim-line__searchcap",
+        "data-region": "dim-line-searchcap",
         children: [
-          /* @__PURE__ */ jsxDEV("i", { className: "fa fa-magnifying-glass", "aria-hidden": "true" }, void 0, false, {
+          /* @__PURE__ */ jsxDEV(
+            "button",
+            {
+              ref: opener,
+              type: "button",
+              className: "dim-line__iconbtn dim-line__searchopen",
+              "data-action": "dim-search-open",
+              "aria-controls": search.id,
+              "aria-expanded": st.searching ? "true" : "false",
+              "data-dim-tip": model.openlabel,
+              onClick: () => openSearch(opener.current),
+              children: [
+                /* @__PURE__ */ jsxDEV("i", { className: "fa fa-magnifying-glass", "aria-hidden": "true" }, void 0, false, {
+                  fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+                  lineNumber: 1184,
+                  columnNumber: 21
+                }),
+                /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: model.openlabel }, void 0, false, {
+                  fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+                  lineNumber: 1185,
+                  columnNumber: 21
+                })
+              ]
+            },
+            void 0,
+            true,
+            {
+              fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+              lineNumber: 1174,
+              columnNumber: 17
+            }
+          ),
+          /* @__PURE__ */ jsxDEV("div", { className: "dim-toolbar__search dim-line__search", "data-region": "dim-line-search", children: [
+            /* @__PURE__ */ jsxDEV("label", { className: "visually-hidden", htmlFor: search.id, children: search.label }, void 0, false, {
+              fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+              lineNumber: 1188,
+              columnNumber: 21
+            }),
+            /* @__PURE__ */ jsxDEV("i", { className: "fa fa-magnifying-glass dim-toolbar__searchicon", "aria-hidden": "true" }, void 0, false, {
+              fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+              lineNumber: 1189,
+              columnNumber: 21
+            }),
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                ref: field,
+                className: "form-control dim-toolbar__input",
+                type: "search",
+                id: search.id,
+                name: search.name,
+                value: search.value,
+                placeholder: search.placeholder,
+                autoComplete: "off",
+                role: "combobox",
+                "aria-autocomplete": "list",
+                "aria-expanded": listed ? "true" : "false",
+                "aria-controls": model.suggest.id,
+                "aria-activedescendant": listed && st.active >= 0 ? `${model.suggest.id}-${st.active}` : void 0,
+                onPointerDown: () => {
+                  st.intent = true;
+                },
+                onFocus: onFieldFocus,
+                onClick: () => {
+                  if (!st.open) {
+                    openSearch(st.from || opener.current);
+                  }
+                },
+                onChange: (event) => onFieldInput(event.target.value),
+                onKeyDown: onFieldKey
+              },
+              void 0,
+              false,
+              {
+                fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+                lineNumber: 1190,
+                columnNumber: 21
+              }
+            ),
+            /* @__PURE__ */ jsxDEV(
+              "button",
+              {
+                type: "button",
+                className: "dim-line__eraser dim-live-only",
+                "data-action": "dim-search-clear",
+                "aria-label": search.clearlabel,
+                "data-dim-tip": search.clearlabel,
+                hidden: search.value === "",
+                onClick: onErase,
+                children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-eraser", "aria-hidden": "true" }, void 0, false, {
+                  fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+                  lineNumber: 1224,
+                  columnNumber: 22
+                })
+              },
+              void 0,
+              false,
+              {
+                fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
+                lineNumber: 1216,
+                columnNumber: 21
+              }
+            )
+          ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1085,
+            lineNumber: 1187,
             columnNumber: 17
           }),
-          /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: model.openlabel }, void 0, false, {
+          model.manage ? /* @__PURE__ */ jsxDEV("div", { ref: manage, className: "dim-toolbar__manage", "data-region": "dim-line-manage" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1086,
-            columnNumber: 17
-          })
+            lineNumber: 1227,
+            columnNumber: 21
+          }) : null
         ]
       },
-      "opener",
+      "searchcap",
       true,
       {
         fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1074,
+        lineNumber: 1168,
         columnNumber: 13
       }
     ),
-    drawStar(model),
-    drawFilters(model, filters, panel),
-    /* @__PURE__ */ jsxDEV("details", { ref: organise, className: "dim-line__organise", "data-region": "dim-organise", children: [
-      /* @__PURE__ */ jsxDEV("summary", { className: "dim-line__iconbtn dim-line__organisetoggle", title: model.organiselabel, children: [
-        /* @__PURE__ */ jsxDEV("i", { className: "fa fa-arrow-down-wide-short", "aria-hidden": "true" }, void 0, false, {
-          fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1092,
-          columnNumber: 21
-        }),
-        /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: model.organiselabel }, void 0, false, {
-          fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1093,
-          columnNumber: 21
-        })
-      ] }, void 0, true, {
-        fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1091,
-        columnNumber: 17
-      }),
-      /* @__PURE__ */ jsxDEV("div", { ref: menu, className: "dim-line__menu", "data-region": "dim-organise-menu" }, void 0, false, {
-        fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1095,
-        columnNumber: 17
-      })
-    ] }, "organise", true, {
-      fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1090,
-      columnNumber: 13
-    }),
-    drawViews(model),
-    model.manage ? /* @__PURE__ */ jsxDEV("div", { ref: manage, className: "dim-toolbar__manage", "data-region": "dim-line-manage" }, "manage", false, {
-      fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1099,
-      columnNumber: 17
-    }) : null,
     /* @__PURE__ */ jsxDEV(
       "button",
       {
+        ref: closer,
         type: "button",
         className: "dim-line__iconbtn dim-line__searchclose",
         "data-action": "dim-search-close",
         "aria-label": model.closelabel,
-        title: model.closelabel,
+        "data-dim-tip": model.closelabel,
         onClick: () => closeSearch(true),
         children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-xmark", "aria-hidden": "true" }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1109,
+          lineNumber: 1239,
           columnNumber: 14
         })
       },
@@ -805,7 +913,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
       false,
       {
         fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1101,
+        lineNumber: 1230,
         columnNumber: 13
       }
     ),
@@ -813,7 +921,7 @@ const FilterLine = /* @__PURE__ */ __name(({ form }) => {
     drawList(model, listbox, listed ? st.items : [], st.active, pick)
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-    lineNumber: 1033,
+    lineNumber: 1150,
     columnNumber: 9
   });
 }, "FilterLine");
@@ -833,7 +941,7 @@ const drawScope = /* @__PURE__ */ __name((model, ref, onCell) => {
       children: [
         /* @__PURE__ */ jsxDEV("legend", { className: "visually-hidden", children: scope.legend }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1139,
+          lineNumber: 1269,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("div", { className: "dim-line__cells", "data-region": "dim-pill-track", children: scope.cells.map((cell) => /* @__PURE__ */ jsxDEV(Fragment2, { children: [
@@ -853,7 +961,7 @@ const drawScope = /* @__PURE__ */ __name((model, ref, onCell) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-              lineNumber: 1143,
+              lineNumber: 1273,
               columnNumber: 25
             }
           ),
@@ -861,21 +969,21 @@ const drawScope = /* @__PURE__ */ __name((model, ref, onCell) => {
             `${cell.label} `,
             /* @__PURE__ */ jsxDEV("span", { className: "dim-pill__count", "data-region": "dim-pill-count", hidden: !cell.hascount, children: cell.count }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-              lineNumber: 1155,
+              lineNumber: 1285,
               columnNumber: 29
             })
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1153,
+            lineNumber: 1283,
             columnNumber: 25
           })
         ] }, cell.value, true, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1142,
+          lineNumber: 1272,
           columnNumber: 21
         })) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1140,
+          lineNumber: 1270,
           columnNumber: 13
         })
       ]
@@ -884,7 +992,7 @@ const drawScope = /* @__PURE__ */ __name((model, ref, onCell) => {
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1131,
+      lineNumber: 1261,
       columnNumber: 9
     }
   );
@@ -902,81 +1010,81 @@ const drawStar = /* @__PURE__ */ __name((model) => {
       name: star.name,
       value: star.pressed ? "0" : "1",
       "aria-pressed": star.pressed ? "true" : "false",
-      title: star.label,
+      "data-dim-tip": star.label,
       "data-action": "dim-fav",
       "data-region": "dim-line-star",
       children: [
         /* @__PURE__ */ jsxDEV("i", { className: `${star.pressed ? "fa-solid" : "fa-regular"} fa-star`, "aria-hidden": "true" }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1190,
+          lineNumber: 1319,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: [
           `${star.label} `,
           /* @__PURE__ */ jsxDEV("span", { "data-region": "dim-fav-count", children: star.count }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1191,
+            lineNumber: 1320,
             columnNumber: 65
           })
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1191,
+          lineNumber: 1320,
           columnNumber: 13
         })
       ]
     },
-    "star",
+    void 0,
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1179,
+      lineNumber: 1309,
       columnNumber: 9
     }
   );
 }, "drawStar");
 const drawFilters = /* @__PURE__ */ __name((model, ref, panel) => /* @__PURE__ */ jsxDEV("details", { ref, className: "dim-toolbar__filters dim-line__filters", "data-region": "dim-filters", children: [
-  /* @__PURE__ */ jsxDEV("summary", { className: "dim-toolbar__filterstoggle", children: [
+  /* @__PURE__ */ jsxDEV("summary", { className: "dim-toolbar__filterstoggle dim-line__iconbtn", "data-dim-tip": model.filters.label, children: [
     /* @__PURE__ */ jsxDEV("i", { className: "fa fa-sliders", "aria-hidden": "true" }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1212,
+      lineNumber: 1342,
       columnNumber: 13
     }),
     " ",
-    /* @__PURE__ */ jsxDEV("span", { className: "dim-line__label dim-toolbar__filterslabel", children: model.filters.label }, void 0, false, {
+    /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden dim-line__label dim-toolbar__filterslabel", children: model.filters.label }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1214,
+      lineNumber: 1344,
       columnNumber: 13
     }),
     " ",
     /* @__PURE__ */ jsxDEV("span", { className: "dim-toolbar__filtercount", "data-region": "dim-filtercount", hidden: !model.filters.hascount, children: [
       /* @__PURE__ */ jsxDEV("span", { "aria-hidden": "true", "data-region": "dim-filtercount-number", children: model.filters.count }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1217,
+        lineNumber: 1347,
         columnNumber: 17
       }),
       /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", "data-region": "dim-filtercount-label", children: model.filters.countlabel }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1218,
+        lineNumber: 1348,
         columnNumber: 17
       })
     ] }, void 0, true, {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1216,
+      lineNumber: 1346,
       columnNumber: 13
     })
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-    lineNumber: 1211,
+    lineNumber: 1341,
     columnNumber: 9
   }),
   /* @__PURE__ */ jsxDEV("div", { ref: panel, className: "dim-toolbar__panel", "data-region": "dim-filters-panel" }, void 0, false, {
     fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-    lineNumber: 1221,
+    lineNumber: 1351,
     columnNumber: 9
   })
-] }, "filters", true, {
+] }, void 0, true, {
   fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-  lineNumber: 1210,
+  lineNumber: 1340,
   columnNumber: 5
 }), "drawFilters");
 const drawViews = /* @__PURE__ */ __name((model) => /* @__PURE__ */ jsxDEV(
@@ -990,21 +1098,21 @@ const drawViews = /* @__PURE__ */ __name((model) => /* @__PURE__ */ jsxDEV(
       "button",
       {
         type: "submit",
-        className: "dim-toolbar__viewbtn",
+        className: "dim-toolbar__viewbtn dim-line__iconbtn",
         "data-action": "dim-view",
         name: model.viewname,
         value: view.value,
         "aria-pressed": view.pressed ? "true" : "false",
-        title: view.label,
+        "data-dim-tip": view.label,
         children: [
           /* @__PURE__ */ jsxDEV("i", { className: `fa ${view.icon}`, "aria-hidden": "true" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1249,
+            lineNumber: 1379,
             columnNumber: 14
           }),
           /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: view.label }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1249,
+            lineNumber: 1379,
             columnNumber: 70
           })
         ]
@@ -1013,16 +1121,16 @@ const drawViews = /* @__PURE__ */ __name((model) => /* @__PURE__ */ jsxDEV(
       true,
       {
         fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1240,
+        lineNumber: 1370,
         columnNumber: 13
       }
     ))
   },
-  "view",
+  void 0,
   false,
   {
     fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-    lineNumber: 1232,
+    lineNumber: 1363,
     columnNumber: 5
   }
 ), "drawViews");
@@ -1046,7 +1154,7 @@ const drawList = /* @__PURE__ */ __name((model, ref, items, active, pick) => {
       children: items.length ? /* @__PURE__ */ jsxDEV("div", { role: "group", "aria-labelledby": `${id}-heading`, children: [
         /* @__PURE__ */ jsxDEV("div", { id: `${id}-heading`, className: "dim-line__suggesthead", role: "presentation", children: typed ? model.suggest.filters : model.suggest.start }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-          lineNumber: 1292,
+          lineNumber: 1422,
           columnNumber: 21
         }),
         items.map((item, index) => /* @__PURE__ */ jsxDEV(
@@ -1061,44 +1169,44 @@ const drawList = /* @__PURE__ */ __name((model, ref, items, active, pick) => {
             children: [
               /* @__PURE__ */ jsxDEV("i", { className: "fa fa-plus dim-line__optionplus", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                lineNumber: 1305,
+                lineNumber: 1435,
                 columnNumber: 29
               }),
               /* @__PURE__ */ jsxDEV("span", { className: "dim-line__optionlabel", children: pieces(item.label, term).map((piece, at) => piece.marked ? /* @__PURE__ */ jsxDEV("mark", { className: "dim-mark", children: piece.text }, at, false, {
                 fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                lineNumber: 1308,
+                lineNumber: 1438,
                 columnNumber: 39
               }) : /* @__PURE__ */ jsxDEV(Fragment2, { children: piece.text }, at, false, {
                 fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                lineNumber: 1309,
+                lineNumber: 1439,
                 columnNumber: 39
               })) }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                lineNumber: 1306,
+                lineNumber: 1436,
                 columnNumber: 29
               }),
               item.group !== "" ? /* @__PURE__ */ jsxDEV(Fragment, { children: [
                 " ",
                 /* @__PURE__ */ jsxDEV("span", { className: "dim-line__optiongroup", children: item.group }, void 0, false, {
                   fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                  lineNumber: 1311,
+                  lineNumber: 1441,
                   columnNumber: 57
                 })
               ] }, void 0, true, {
                 fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                lineNumber: 1311,
+                lineNumber: 1441,
                 columnNumber: 50
               }) : null,
               item.count !== null ? /* @__PURE__ */ jsxDEV(Fragment, { children: [
                 " ",
                 /* @__PURE__ */ jsxDEV("span", { className: "dim-line__optioncount", children: item.count }, void 0, false, {
                   fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                  lineNumber: 1312,
+                  lineNumber: 1442,
                   columnNumber: 59
                 })
               ] }, void 0, true, {
                 fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-                lineNumber: 1312,
+                lineNumber: 1442,
                 columnNumber: 52
               }) : null
             ]
@@ -1107,13 +1215,13 @@ const drawList = /* @__PURE__ */ __name((model, ref, items, active, pick) => {
           true,
           {
             fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-            lineNumber: 1296,
+            lineNumber: 1426,
             columnNumber: 25
           }
         ))
       ] }, void 0, true, {
         fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-        lineNumber: 1291,
+        lineNumber: 1421,
         columnNumber: 17
       }) : null
     },
@@ -1121,7 +1229,7 @@ const drawList = /* @__PURE__ */ __name((model, ref, items, active, pick) => {
     false,
     {
       fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
-      lineNumber: 1277,
+      lineNumber: 1407,
       columnNumber: 9
     }
   );

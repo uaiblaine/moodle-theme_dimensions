@@ -36,6 +36,8 @@ const tellAnswer = /* @__PURE__ */ __name((root, response) => {
   const options = group ? group.options || [] : [];
   const rank = /* @__PURE__ */ __name((option) => SCOPE.indexOf(String(option.value)), "rank");
   tellLine(root, LINE.answer, {
+    // The bar's count is the count sentence's number, as the server formatted it.
+    total: typeof response.countnumber === "string" ? response.countnumber : void 0,
     // No option at all is a page whose state sort was switched off under it: the scope stays as drawn.
     scope: options.length ? options.filter((option) => rank(option) >= 0).sort((a, b) => rank(a) - rank(b)) : null,
     favourites: response.favourites || null,

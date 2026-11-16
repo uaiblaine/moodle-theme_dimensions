@@ -16,46 +16,43 @@
 /**
  * The filter line's folding steps, as a rule over numbers.
  *
- * The line takes the first step at which its controls fit on its own width - full; Filters without its
- * word; the search as an icon; two lines, the scope on the second and the view toggle in the Organise
- * menu - and the last one whatever it measures.
+ * The line's controls are the same at every width - the search is its button at rest, Filters has no word - so
+ * the fold decides two things only: whether the line is one line or two (the scope on a line of its own after
+ * the controls, the Filters panel a bottom sheet), and whether the open search field fits beside the controls
+ * (it opens in place) or not (it grows over the line). The line takes the first try that fits on its own width,
+ * and the last one whatever it measures.
  *
  * Trying each step on the page and reading whether a control is drawn past an edge would force a layout on every
- * width change. This module measures, once per content, how wide the line must be for each step
- * ({@see ./measure}), and then takes a step from a width alone: a width change (a ResizeObserver entry)
- * forces no layout. The widths a step needs are the line's breakpoints for that content and language.
+ * width change. This module measures, once per content, how wide the line must be for each try
+ * ({@see ./measure}), and then takes a fold from a width alone: a width change (a ResizeObserver entry)
+ * forces no layout. The widths a try needs are the line's breakpoints for that content and language.
  *
  * @module     theme_dimensions/filterline/steps
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-/** A folding step, each a class dim-line--<step> on the line, which the stylesheet reads. */
-export type Step = 's1' | 's2' | 's3' | 's4';
+/** A folding step, each a class dim-line--<step> on the line, which the stylesheet reads: one line, or two. */
+export type Step = 's1' | 's2';
 
-/** A step, and whether the field is folded into its icon at it. */
-export type Fold = {step: Step, folded: boolean};
+/** A step, and whether the open search grows over the line at it rather than opening in place. */
+export type Fold = {step: Step, over: boolean};
 
 /** The steps, in the order they are tried. */
-export const STEPS: Step[] = ['s1', 's2', 's3', 's4'];
+export const STEPS: Step[] = ['s1', 's2'];
 
 /**
- * What is tried, in order: the third step folds the field, and the fourth keeps the field on its first
- * line while it fits there, then folds it.
+ * What is tried, in order: one line with the field open in place; one line with the search over it; two lines,
+ * the search over the first.
  */
 export const TRIES: Fold[] = [
-    {step: 's1', folded: false},
-    {step: 's2', folded: false},
-    {step: 's3', folded: true},
-    {step: 's4', folded: false},
-    {step: 's4', folded: true},
+    {step: 's1', over: false},
+    {step: 's1', over: true},
+    {step: 's2', over: true},
 ];
 
-/** The steps at which the search grows over the line; at the first two nothing moves. */
-export const MORPH_STEPS: Step[] = ['s3', 's4'];
-
 /** The step whose Filters panel is a bottom sheet and whose scope has a line of its own. */
-export const TWO_LINES: Step = 's4';
+export const TWO_LINES: Step = 's2';
 
 /**
  * Pixels a control may run past an edge and still fit: a control is past the edge only beyond one pixel, which
@@ -67,8 +64,12 @@ export const TOLERANCE = 1;
 export const CLASSES = {
     step: 'dim-line--',
     measuring: 'dim-line--measuring',
+    // The search is open in place, the field in its button's place.
+    open: 'dim-line--open',
+    // The search is open over the line.
     searching: 'dim-line--searching',
-    folded: 'dim-line--folded',
+    // The fold opens the search over the line.
+    over: 'dim-line--over',
 };
 
 /**
@@ -101,12 +102,12 @@ export const settled = (required: number[], width: number): boolean =>
     required.length >= TRIES.length || required.some((need) => need <= width + TOLERANCE);
 
 /**
- * Whether the search grows over the line at a step.
+ * Whether the search grows over the line at a fold, rather than opening in place.
  *
- * @param {object} fold The fold.
+ * @param {object} fold The fold, or null before the first measure (the server's line, where it opens in place).
  * @returns {boolean}
  */
-export const morphs = (fold: Fold | null): boolean => fold !== null && MORPH_STEPS.indexOf(fold.step) >= 0;
+export const morphs = (fold: Fold | null): boolean => fold !== null && fold.over;
 
 /**
  * Whether two folds are the same.
@@ -116,7 +117,7 @@ export const morphs = (fold: Fold | null): boolean => fold !== null && MORPH_STE
  * @returns {boolean}
  */
 export const same = (one: Fold | null, two: Fold | null): boolean =>
-    one === two || (one !== null && two !== null && one.step === two.step && one.folded === two.folded);
+    one === two || (one !== null && two !== null && one.step === two.step && one.over === two.over);
 
 /**
  * Write a fold onto the line's classes, leaving every other class it carries alone.
@@ -127,5 +128,5 @@ export const same = (one: Fold | null, two: Fold | null): boolean =>
  */
 export const paint = (line: HTMLElement, fold: Fold | null): void => {
     STEPS.forEach((name) => line.classList.toggle(CLASSES.step + name, fold !== null && fold.step === name));
-    line.classList.toggle(CLASSES.folded, fold !== null && fold.folded);
+    line.classList.toggle(CLASSES.over, fold !== null && fold.over);
 };

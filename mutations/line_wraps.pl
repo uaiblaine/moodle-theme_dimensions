@@ -1,2 +1,2 @@
-# Keep the filter line on one row however narrow: without JavaScript its controls run off the screen.
-s/(\.dim-line \{\n        position: relative;\n        display: flex;\n        )flex-wrap: wrap;/${1}flex-wrap: nowrap;/;
+# Keep the line on one row whatever it holds: without the client a narrow page scrolls sideways.
+s/(\.dim-line \{\n        --dim-bar-inner: 2rem;\n        position: relative;\n        display: flex;\n        )flex-wrap: wrap;/${1}flex-wrap: nowrap;/;

@@ -62,6 +62,18 @@ describe('theme_dimensions/filterline/model', () => {
         expect([model.viewname, model.viewlabel, model.organiselabel, model.openlabel, model.closelabel, model.manage])
             .toEqual(['view', 'View', 'Organise', 'Search courses', 'Close search', true]);
         expect(model.suggest).toEqual({id: 'dim-vitrine-suggest-7', filters: 'Filters', start: 'Start with a filter'});
+        // The result count on the bar, the count sentence's number.
+        expect(model.total).toBe('16');
+    });
+
+    it('takes the labels of the icon-only controls from their tooltip, and the result count from an answer', () => {
+        const {line} = drawPage();
+        // A title is not where a label is read from: the controls carry none.
+        (line.querySelector('[data-region="dim-line-star"]') as HTMLElement).setAttribute('title', 'Wrong');
+        const model = read(line) as Line;
+        expect(model.star?.label).toBe('Favourites');
+        expect(answered(model, {total: '1.234'}).total).toBe('1.234');
+        expect(answered(model, {filtercount: 0}).total).toBe('16');
     });
 
     it('reads what the reader did on the server\'s line before the mount', () => {

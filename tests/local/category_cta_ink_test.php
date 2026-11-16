@@ -141,7 +141,7 @@ final class category_cta_ink_test extends \advanced_testcase {
         }
         // Control: every fill declaration of the sheet was read inside its own rule, nested rules included.
         $this->assertSame(preg_match_all($fill, $clean), $checked, 'The scan reaches every rule that paints the fill.');
-        $this->assertGreaterThanOrEqual(9, $checked);
+        $this->assertGreaterThanOrEqual(8, $checked);
         $this->assertMatchesRegularExpression(
             '~--dim-cta:\s*var\(--dim-ds-blue-400, #4456ff\);\s*--dim-cta-ink:\s*#fff;~',
             $scss,

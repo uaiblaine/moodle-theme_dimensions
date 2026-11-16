@@ -1,2 +1,2 @@
-# Slide under reduced motion too.
-s/\@media \(prefers-reduced-motion: no-preference\) \{\n        \.dim-line--s3:not/\@media all {\n        .dim-line--s3:not/;
+# Let the slide run under reduced motion as well.
+s/\@media \(prefers-reduced-motion: no-preference\) \{\n        \.dim-line--over:not/\@media all {\n        .dim-line--over:not/;

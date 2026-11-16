@@ -85,7 +85,8 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     Given I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '3 courses in Test category')]" "xpath_element" should exist
-    When I set the field "Search courses" to "Online"
+    When I press "Search courses"
+    And I set the field "Search courses" to "Online"
     Then I should see "1 course for “Online”: 1 in this category" in the "[data-region='dim-vitrine-count']" "css_element"
     And I should see "Curso Online" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should not see "Resgate em Altura"
@@ -240,7 +241,8 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     Given I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '3 courses in Test category')]" "xpath_element" should exist
-    When I set the field "Search courses" to "Online"
+    When I press "Search courses"
+    And I set the field "Search courses" to "Online"
     Then I should see "1 course for “Online”: 1 in this category" in the "[data-region='dim-vitrine-count']" "css_element"
     And I should see "1" node occurrences of type "article" in the "[data-region='dim-vitrine-grid']" "css_element"
     And the url should match "[?&]q=Online"
@@ -631,7 +633,8 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     Then I should see "Combate a Incendio" in the "[data-region='dim-panel-rail']" "css_element"
     And "//article[@data-name='Open category']//button[@data-region='dim-poster-control'][@aria-expanded='true']" "xpath_element" should exist
     And "//li[@data-region='dim-panel']//button[@data-action='dim-panel-close']" "xpath_element" should exist
-    When I set the field "Search courses" to "Incendio"
+    When I press "Search courses"
+    And I set the field "Search courses" to "Incendio"
     Then I should see "1 course for “Incendio”: 1 in 1 area" in the "[data-region='dim-vitrine-count']" "css_element"
     And I wait until "//a[@data-region='dim-panel-cta'][contains(@href, 'q=Incendio')]" "xpath_element" exists
     And I should see "Combate a Incendio" in the "[data-region='dim-panel-rail']" "css_element"
@@ -667,28 +670,27 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And "//li[@data-region='dim-panel'][not(@hidden)]" "xpath_element" should exist
 
   @javascript
-  Scenario: On a phone the line folds to two lines and the view toggle moves into the Organise menu
+  Scenario: On a phone the line folds to two lines and keeps every control of the bar
     # The filter line measures its own width and takes its two-line step on a phone: the scope has a
-    # line of its own, and the view toggle is the Organise menu's "Show as", whose buttons are served
-    # by the same handler as the toggle on the line.
+    # line of its own, and the capsule keeps the same controls at every width, the view toggle
+    # among them.
     Given I change viewport size to "390x844"
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    Then "//div[@data-region='dim-line'][contains(concat(' ', @class, ' '), ' dim-line--s4 ')]" "xpath_element" should exist
-    And "[data-region='dim-view-row']" "css_element" should not be visible
-    When I click on "//details[@data-region='dim-organise']/summary" "xpath_element"
-    And I click on "List" "button" in the "[data-region='dim-showas']" "css_element"
+    Then "//div[@data-region='dim-line'][contains(concat(' ', @class, ' '), ' dim-line--s2 ')]" "xpath_element" should exist
+    And "[data-region='dim-view-row']" "css_element" should be visible
+    When I click on "List" "button" in the "[data-region='dim-view-row']" "css_element"
     Then ".dim-vitrine.dim-vitrine--list" "css_element" should exist
 
   @javascript
   Scenario: On a phone the search opens over the line and a suggestion applies its filter in place
-    # Pressing the field opens the search over the line, with a button that closes it. Typing suggests
+    # Pressing the search button opens the search over the line, with a button that closes it. Typing suggests
     # the page's own filters; choosing one applies it with the term dropped in the same request and
     # keeps the search open for the next pick. Escape closes it.
     Given I change viewport size to "390x844"
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    When I click on "Search courses" "field"
+    When I press "Search courses"
     Then "//div[@data-region='dim-line'][contains(concat(' ', @class, ' '), ' dim-line--searching ')]" "xpath_element" should exist
     And "Close search" "button" should be visible
     When I type "In-p"
@@ -776,7 +778,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     # the reader is typing in, and the count line says why a panel opened.
     Given I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    When I click on "Search courses" "field"
+    When I press "Search courses"
     And I type "Incendio"
     Then I should see "Only Open category has results; its courses are open below." in the "[data-region='dim-line-chips']" "css_element"
     And I should see "Combate a Incendio" in the "[data-region='dim-panel-rail']" "css_element"
@@ -800,7 +802,8 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     When I click on "//article[@data-name='Second category']//button[@data-region='dim-poster-control']" "xpath_element"
     Then I should see "Curso Segundo" in the "[data-region='dim-panel-rail']" "css_element"
-    When I set the field "Search courses" to "Incendio"
+    When I press "Search courses"
+    And I set the field "Search courses" to "Incendio"
     Then I should see "No results for “Incendio” in Second category." in the "[data-region='dim-panel-body']" "css_element"
     And I should see "0 results" in the "//article[@data-name='Second category']//span[@data-region='dim-poster-pill']" "xpath_element"
     And "//article[@data-name='Second category']" "xpath_element" should be visible
@@ -826,6 +829,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     When I click on "//article[@data-name='Second category']//button[@data-region='dim-poster-control']" "xpath_element"
+    And I press "Search courses"
     And I set the field "Search courses" to "Resgate"
     Then I should see "No results for “Resgate” in Second category." in the "[data-region='dim-panel-body']" "css_element"
     And I should see "Nothing for “Resgate” in one other area" in the "[data-region='dim-nomatch-summary']" "css_element"
@@ -893,7 +897,8 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     When I click on "//article[@data-name='Open category']//button[@data-region='dim-poster-control']" "xpath_element"
     Then I should see "Combate a Incendio" in the "[data-region='dim-panel-rail']" "css_element"
     And the url should match "[?&]open=[0-9]+"
-    When I set the field "Search courses" to "Incendio"
+    When I press "Search courses"
+    And I set the field "Search courses" to "Incendio"
     Then I should see "1 course for “Incendio”: 1 in 1 area" in the "[data-region='dim-vitrine-count']" "css_element"
     And the url should match "[?&]q=Incendio"
     When I press the "back" button in the browser

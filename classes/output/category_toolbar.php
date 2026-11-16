@@ -44,15 +44,17 @@ use theme_dimensions\local\landing\links;
  * carrying the view parameter, so a choice made without JavaScript still
  * reaches the server and is remembered.
  *
- * One line, in the filter line's slot order:
+ * One line, the fleet Design System's compact bar, in the filter line's slot order:
  * the scope (the state chip's values {@see criteria::SCOPE}, counted, for a
- * logged-in reader with the state sort on), the search, the favourites star,
- * the Filters disclosure, the Organise menu, the view toggle and the managers'
- * menu. Under it a second row exists only while something narrows: the count
- * sentence, then one chip per criterion the line does not show ({@see chips()}),
- * "Clear all" from two criteria up, "See all as a list" and the automatic
- * opening's note. At rest the row draws nothing but the count sentence, kept
- * in the document visually hidden because it is the page's live region.
+ * logged-in reader with the state sort on), a spacer, the cluster - the result
+ * count and a capsule of the favourites star, the Filters disclosure, the
+ * Organise menu and the view toggle - and the search's own capsule with the
+ * managers' menu. Under it a second row exists only while something narrows:
+ * the count sentence, then one chip per criterion the line does not show
+ * ({@see chips()}), "Clear all" from two criteria up, "See all as a list" and
+ * the automatic opening's note. The count sentence is the page's live region,
+ * kept in the document at every state and visually hidden wherever the bar's
+ * count says what it says.
  *
  * The Filters disclosure is a native `details`, closed on load: the chips row
  * says what narrows, so a narrowed page never needs the panel open to say so.
@@ -128,6 +130,9 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
         classifier::STATE_PENDING => 'category_chip_pending',
         classifier::STATE_FREE => 'category_chip_free',
     ];
+
+    /** @var string Where the client writes the count into the panel foot's "Show" sentence. */
+    public const SHOW_PLACEHOLDER = '{n}';
 
     /** @var string The chip's data-param for the period, whose two bounds go together. */
     public const CHIP_PERIOD = 'period';
@@ -249,7 +254,6 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             'filtercountlabel' => get_string('category_filtercount', self::COMPONENT, $this->criteria->filter_count()),
             'viewname' => self::PARAM_VIEW,
             'viewlabel' => get_string('category_view', self::COMPONENT),
-            'showaslabel' => get_string('category_showas', self::COMPONENT),
             // List first, as the filter line's contract draws it.
             'views' => [
                 [
@@ -266,6 +270,12 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
                 ],
             ],
             'submitlabel' => get_string('category_filter', self::COMPONENT),
+            // The panel foot's two buttons. "Clear filters" is the clear link's own address by another name.
+            'clearfilterslabel' => get_string('category_clearfilters', self::COMPONENT),
+            /* "Show" with the count, whose sentence the listing draws (category_listing, showlabel), and the same
+               sentence with {n} in the number's place: the client writes each answer's number into it, so the
+               words stay the server's in every language. */
+            'showtemplate' => get_string('category_showcount', self::COMPONENT, self::SHOW_PLACEHOLDER),
             // Whether the row under the line is drawn: something narrows, the search included.
             'hasfilters' => $this->criteria->has_filters(),
             'chips' => $chips,
