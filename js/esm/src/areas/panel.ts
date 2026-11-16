@@ -701,7 +701,8 @@ export const createPanel = (nodes: Nodes, ui: Ui, mode: Options = optionsOf({}))
      */
     const syncHolders = (): void => {
         const open = st.open > 0 ? String(st.open) : '';
-        const psort = st.open > 0 && st.psort === PSORT_NAME ? PSORT_NAME : '';
+        // The grouped order holds with no panel open: the next panel opens in it (criteria::$psort).
+        const psort = st.psort === PSORT_NAME ? PSORT_NAME : '';
         [document.querySelector(SELECTORS.toolbar), document.querySelector(SELECTORS.fold)].forEach((form) => {
             syncField(form, SELECTORS.openfield, 'open', open);
             syncField(form, SELECTORS.psortfield, 'psort', psort);
@@ -909,7 +910,8 @@ export const createPanel = (nodes: Nodes, ui: Ui, mode: Options = optionsOf({}))
         }
         st.open = id;
         st.openedby = options.auto ? 'auto' : 'user';
-        st.psort = options.psort || '';
+        // A panel opens in the grouped order in force unless the address it is opened from names its own.
+        st.psort = options.psort === undefined ? st.psort : options.psort;
         st.ticket += 1;
         const turn = ++st.turn;
         applyExpandable(prev);
@@ -953,7 +955,6 @@ export const createPanel = (nodes: Nodes, ui: Ui, mode: Options = optionsOf({}))
         setPosterOpen(poster, false, mode.links);
         st.open = 0;
         st.openedby = '';
-        st.psort = '';
         st.ticket += 1;
         st.turn += 1;
         window.clearTimeout(st.skeleton);
@@ -1011,7 +1012,30 @@ export const createPanel = (nodes: Nodes, ui: Ui, mode: Options = optionsOf({}))
         st.psort = value;
         paintSort();
         writeAddress();
+        // The panel's order is the listing's grouped order: "Sort by" follows it.
+        areas.dispatchEvent(new CustomEvent(EVENTS.ordered, {detail: {psort: value}}));
         request();
+    };
+
+    /**
+     * Take the grouped order the listing chose ("Sort by"): the open panel is asked in it, the next one opens in it.
+     *
+     * The listing has written the address already, so only the holders are brought in line.
+     *
+     * @param {object} detail The order event's detail: psort, the empty string (the newest first) or name.
+     * @returns {void}
+     */
+    const onOrder = (detail: {psort?: string}): void => {
+        const value = detail.psort === PSORT_NAME ? PSORT_NAME : '';
+        if (st.psort === value) {
+            return;
+        }
+        st.psort = value;
+        syncHolders();
+        if (st.open) {
+            paintSort();
+            request();
+        }
     };
 
     /**
@@ -1204,6 +1228,11 @@ export const createPanel = (nodes: Nodes, ui: Ui, mode: Options = optionsOf({}))
             return;
         }
         if (id === 0) {
+            st.psort = psort;
+            if (!st.open) {
+                syncHolders();
+                return;
+            }
             /* A focus inside the panel would be deleted with it, and one on the open poster may leave the grid
                with it when the area is zeroed: closeArea() puts either on the poster or the summary. */
             const active = document.activeElement;
@@ -1347,10 +1376,11 @@ export const createPanel = (nodes: Nodes, ui: Ui, mode: Options = optionsOf({}))
     const adopt = (): void => {
         st.allempty = loadedAllEmpty(areas, isRoot());
         const id = drawnOpen(nodes);
+        // The grouped order the address names, with a panel open or not.
+        st.psort = readPanel(window.location.href).psort;
         if (id) {
             st.open = id;
             st.openedby = 'user';
-            st.psort = readPanel(window.location.href).psort;
             st.asked = question(posterOf(areas, id) as HTMLElement, st.psort);
             st.askedticket = st.ticket;
             convertPanel();
@@ -1402,6 +1432,6 @@ export const createPanel = (nodes: Nodes, ui: Ui, mode: Options = optionsOf({}))
 
     return {
         adopt, disconnect, criteria, relayout, onAreasClick, onPanelClick, onDragClick, onPointerDown, onDragStart,
-        onKeydown, onPopState, onToggle, onScroll, onPending, onFailed, state,
+        onKeydown, onPopState, onToggle, onScroll, onPending, onFailed, onOrder, state,
     };
 };

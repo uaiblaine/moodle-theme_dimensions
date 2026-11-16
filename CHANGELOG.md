@@ -5,7 +5,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
-- **The side menu is the site's navigation alone, and Escape closes it** (2026100624). The side menu of a logged-in
+- **The side menu is the site's navigation alone, and Escape closes it** (2026100626). The side menu of a logged-in
   account no longer shows the person's name, picture and role line, nor the colour mode switch, the look and the
   language: those are in the profile layer the user button opens. It keeps the "Continue where you left off" card,
   the site's navigation and the smart menus in their sections, and their sliding sub-panels. Its rows follow the
@@ -18,6 +18,27 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   returns the card alone (`resume`); `inprogress` and `inprogresstext` are gone, and with them the statement that
   counted the courses in progress. The language strings `drawer_siteadmin`, `drawer_inprogress_one` and
   `drawer_inprogress_many` are removed.
+- **The category showcase's navigation is sorted into groups, ready for the row of pills that will draw it**
+  (2026100625). Nothing changes on the page yet: the hero still shows Moodle's tabs. A new class reads the category's navigation as Moodle
+  builds it for the viewer and sorts every destination into "Category", then "Settings", "User and access", "Courses
+  and content" and "Competencies", in that order, each listing its destinations alphabetically in the viewer's
+  language; a destination the theme does not know (Insights, or a plugin's new page) goes under "More". A group with
+  one destination for the viewer will be that destination's own pill, a group with none is left out, and a viewer
+  whose only destination is the category page itself (a learner) will get no row. Five new strings name the
+  navigation and its four groups; "More" is Moodle's own word.
+- **The category showcase's Organise and View are menus: "Group by" and "Sort by" are two choices, and View is one
+  button** (2026100624). Organise opens a menu with two sections, "Group by" (Area, No grouping) and "Sort by" (Name,
+  Most recent), each item with its icon and a tick on the chosen one, and choosing in one section keeps the other:
+  grouped by area, "Sort by" is the order of the area panel that is open and of the next one opened, also before any
+  panel is open, and it stays when the panel closes; the panel's own Recent and A-Z buttons and the menu follow each
+  other. View is one button showing the view in force with a chevron, opening "Show as" with Cards and List. Both menus
+  are keyboard menus: an arrow key on the button opens it on its chosen item, the arrows, Home and End move through
+  the items, Escape and a choice return to the button, and a press outside closes them like the bar's other layers.
+  Without JavaScript every item is a button that applies at once, and "Apply" is gone. Every address and remembered
+  state written before keeps meaning what it meant (`sort=category`, `sort=name`, `sort=recent`, `psort=name`); the
+  addresses the theme writes keep that spelling and do not grow for the default state, and the toolbar's form and the
+  listing services also take the grouping by name (`group=category` or `group=none`, with the order in `sort`).
+  The A-Z order of a grouped page is now remembered per category and kept in the address with no panel open.
 - **The user button opens the profile layer** (2026100623). A new setting on the *Identity* tab, `profilelayer`
   (on by default), prints on every page of a logged-in account a side layer built from Moodle's own user menu: the
   person's picture with the title and further lines chosen in the identity settings (masked on the server), "View

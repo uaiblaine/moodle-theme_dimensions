@@ -175,7 +175,7 @@ const addressWith = /* @__PURE__ */ __name((href, open, psort) => {
   } else {
     url.searchParams.delete(PARAM.open);
   }
-  if (open > 0 && psort === PSORT_NAME) {
+  if (psort === PSORT_NAME) {
     url.searchParams.set(PARAM.psort, PSORT_NAME);
   } else {
     url.searchParams.delete(PARAM.psort);
@@ -192,7 +192,7 @@ const holderHref = /* @__PURE__ */ __name((href, base, open, psort) => {
   } else {
     url.searchParams.delete(PARAM.open);
   }
-  if (open > 0 && psort === PSORT_NAME) {
+  if (psort === PSORT_NAME) {
     url.searchParams.set(PARAM.psort, PSORT_NAME);
   } else {
     url.searchParams.delete(PARAM.psort);

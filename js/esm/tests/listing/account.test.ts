@@ -100,8 +100,8 @@ const page = (payload: object = {}, cards = cardOf(1) + cardOf(2)): void => {
     document.body.className = '';
     document.body.innerHTML = `<section data-region="dim-vitrine" data-vitrine='${JSON.stringify(data)}'>`
         + '<form data-region="dim-vitrine-toolbar" id="t"><input type="search" name="q">'
-        + '<fieldset data-region="dim-sort"><input type="radio" name="sort" value="name">'
-        + '<input type="radio" name="sort" value="category"></fieldset>'
+        + '<div data-region="dim-organise-menu"><button data-action="dim-organise" name="group" value="category"></button>'
+        + '<button data-action="dim-organise" name="sort" value="name"></button></div>'
         + '<input type="radio" name="chip" value="open"><button data-action="dim-view" value="list">List</button></form>'
         + '<nav data-region="dim-vitrine-tree"><a data-region="dim-tree-link" data-categoryid="9" href="#">Area</a></nav>'
         + '<div data-region="dim-area"></div>'
@@ -110,13 +110,18 @@ const page = (payload: object = {}, cards = cardOf(1) + cardOf(2)): void => {
 };
 
 /**
- * Choose a radio of the toolbar.
+ * Choose a radio of the toolbar, or press an item of the Organise menu.
  *
- * @param {string} name The radio's name.
+ * @param {string} name The radio's name, or the item's section (group, sort).
  * @param {string} value Its value.
  * @returns {void}
  */
 const choose = (name: string, value: string): void => {
+    const item = document.querySelector<HTMLElement>(`[data-action="dim-organise"][name="${name}"][value="${value}"]`);
+    if (item) {
+        item.click();
+        return;
+    }
     const input = document.querySelector<HTMLInputElement>(`input[name="${name}"][value="${value}"]`) as HTMLInputElement;
     input.checked = true;
     input.dispatchEvent(new Event('change', {bubbles: true}));
@@ -203,7 +208,9 @@ describe('theme_dimensions/listing/account', () => {
         jest.advanceTimersByTime(499);
         expect(asked(REMEMBER)).toEqual([]);
         jest.advanceTimersByTime(1);
-        expect(asked(REMEMBER)).toEqual([{categoryid: 7, sort: 'name', view: 'cards', chip: 'open', fav: false, filters: []}]);
+        expect(asked(REMEMBER)).toEqual([
+            {categoryid: 7, group: 'none', sort: 'name', view: 'cards', chip: 'open', fav: false, filters: []},
+        ]);
         // Back to the same state: nothing new to remember.
         window.dispatchEvent(new PopStateEvent('popstate'));
         jest.advanceTimersByTime(1000);
@@ -245,8 +252,11 @@ describe('theme_dimensions/listing/account', () => {
         rememberAnswers = false;
         page();
         start();
-        choose('sort', 'category');
-        expect(asked(REMEMBER)).toEqual([{categoryid: 7, sort: 'category', view: 'cards', chip: '', fav: false, filters: []}]);
+        choose('group', 'category');
+        // "Group by" and "Sort by" by name: the flat A-Z order is kept as the grouped one.
+        expect(asked(REMEMBER)).toEqual([
+            {categoryid: 7, group: 'category', sort: 'name', view: 'cards', chip: '', fav: false, filters: []},
+        ]);
         expect(asked(ROWS)).toEqual([]);
         await jest.advanceTimersByTimeAsync(999);
         expect(redirected).not.toHaveBeenCalled();
@@ -263,7 +273,7 @@ describe('theme_dimensions/listing/account', () => {
         // A category no other test remembers: the shell sends a state only when it differs from the last one sent.
         page({categoryid: 8});
         start();
-        choose('sort', 'category');
+        choose('group', 'category');
         expect(asked(REMEMBER)).toHaveLength(1);
         // Changes that must make it fail: waiting for the timer alone, so the page leaves a second late.
         await jest.advanceTimersByTimeAsync(0);

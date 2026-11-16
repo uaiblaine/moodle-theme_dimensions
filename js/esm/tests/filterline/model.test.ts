@@ -62,11 +62,12 @@ describe('theme_dimensions/filterline/model', () => {
             set: true,
         });
         expect(model.views).toEqual([
-            {value: 'list', label: 'List', icon: 'fa-list', pressed: false},
-            {value: 'cards', label: 'Cards', icon: 'fa-border-all', pressed: true},
+            {value: 'list', label: 'List', icon: 'fa-list', checked: false},
+            {value: 'cards', label: 'Cards', icon: 'fa-border-all', checked: true},
         ]);
         expect([model.viewname, model.viewlabel, model.organiselabel, model.openlabel, model.closelabel, model.manage])
             .toEqual(['view', 'View', 'Organise', 'Search courses', 'Close search', true]);
+        expect([model.viewheading, model.viewheadid]).toEqual(['Show as', 'dim-view-7-head']);
         expect(model.suggest).toEqual({id: 'dim-vitrine-suggest-7', filters: 'Filters', start: 'Start with a filter'});
         // The result count on the bar, the count sentence's number.
         expect(model.total).toBe('16');
@@ -138,7 +139,7 @@ describe('theme_dimensions/filterline/model', () => {
         expect(model.search.value).toBe('');
         expect(model.scope?.cells.filter((cell) => cell.checked).map((cell) => cell.value)).toEqual(['enrolled']);
         expect(model.star?.pressed).toBe(true);
-        expect(model.views.filter((view) => view.pressed).map((view) => view.value)).toEqual(['list']);
+        expect(model.views.filter((view) => view.checked).map((view) => view.value)).toEqual(['list']);
         // A choice of "More statuses" checks no cell of the scope.
         expect(stated(model, {chip: null}).scope?.cells.some((cell) => cell.checked)).toBe(false);
         expect(stated(model, {}).scope).toBe(model.scope);

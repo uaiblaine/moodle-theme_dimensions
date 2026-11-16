@@ -119,6 +119,8 @@ final class rows {
             'favourites' => !$anonymous && !empty($args['fav']),
             'fields' => (array) ($args['filters'] ?? []),
             'sort' => (string) ($args['sort'] ?? ''),
+            // With a grouping named, the sort is its order (criteria::organisation()); a panel names none.
+            'group' => (string) ($args['group'] ?? ''),
             /* The page's own fallback when the request names no organisation, exactly as the
                address resolves it: the client sends the organisation in force, and a request that
                names none is answered the way the bare address would be. A panel asks with its
@@ -166,12 +168,37 @@ final class rows {
             || !empty($args['withcategories'])
             || !empty($args['cat'])
             || (int) ($args['page'] ?? 0) > 0
-            || $sort === criteria::SORT_CATEGORY;
+            || $sort === criteria::SORT_CATEGORY
+            || (string) ($args['group'] ?? '') === criteria::GROUP_CATEGORY;
         if ($malformed) {
             throw new \invalid_parameter_exception('A slice is an anonymous, flat, first-page request on a category.');
         }
         $args['sort'] = $sort === '' ? criteria::SORT_RECENT : $sort;
         return $args;
+    }
+
+    /**
+     * The organisation a listing service is sent, refused when it is outside its vocabulary.
+     *
+     * The page drops an unknown value and renders - it is a query string somebody may have edited -
+     * while the services refuse it: their only client is this theme's own module, and a value it
+     * never sends is a defect worth seeing rather than a listing that silently came back in another
+     * order. Without a grouping the sort is the organisation ({@see criteria::SORTS}); with one
+     * ({@see criteria::GROUPS}) it is the order ({@see criteria::ORDERS}) or nothing, the newest first.
+     *
+     * @param string $group The grouping sent, '' for none.
+     * @param string $sort The sort sent.
+     * @return void
+     * @throws \invalid_parameter_exception On a grouping, an organisation or an order outside its vocabulary.
+     */
+    public static function require_known_organisation(string $group, string $sort): void {
+        if ($group !== '' && !in_array($group, criteria::GROUPS, true)) {
+            throw new \invalid_parameter_exception('Unknown group: ' . $group);
+        }
+        $vocabulary = $group === '' ? criteria::SORTS : array_merge([''], criteria::ORDERS);
+        if (!in_array($sort, $vocabulary, true)) {
+            throw new \invalid_parameter_exception('Unknown sort: ' . $sort);
+        }
     }
 
     /**

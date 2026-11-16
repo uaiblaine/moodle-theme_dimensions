@@ -160,6 +160,8 @@ final class areas_component_source_test extends \basic_testcase {
             'question' => 'dim-areas:question',
             'unanswered' => 'dim-areas:unanswered',
             'painted' => 'dim-areas:painted',
+            'ordered' => 'dim-areas:ordered',
+            'order' => 'dim-areas:order',
         ], $areas);
         $listing = $this->names($events, 'export const LISTING = {');
         $this->assertSame([
@@ -174,7 +176,7 @@ final class areas_component_source_test extends \basic_testcase {
         $this->assertStringContainsString('export const EVENTS = {...AREAS, ...LISTING};', $panel);
         // The store, both shells', sends the listing's own names.
         $store = $this->read('js/esm/src/listing/store.ts');
-        $this->assertStringContainsString("import {LISTING, SELECTORS} from './events';", $store);
+        $this->assertStringContainsString("import {AREAS, LISTING, SELECTORS} from './events';", $store);
         $this->assertSame(2, preg_match_all('~new CustomEvent\(LISTING\.(?:pending|criteria),~', $store));
         $this->assertStringContainsString('export {EVENTS};', $this->read('js/esm/src/areas/Areas.tsx'));
         // One spelling: no other module of js/esm/src writes an event name of its own.

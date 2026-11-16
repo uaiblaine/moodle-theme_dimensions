@@ -82,7 +82,9 @@ const rowsArgs = /* @__PURE__ */ __name((page) => {
     fav: state.fav,
     perpage: state.pagesize,
     filters: Listing.filterArgs(state),
-    sort: state.sort,
+    // "Group by" and "Sort by" by name, the order in sort (criteria::organisation()).
+    group: Listing.groupOf(state),
+    sort: Listing.orderOf(state),
     datefrom: state.datefrom,
     dateto: state.dateto,
     cat: state.cat
@@ -100,7 +102,9 @@ const rememberArgs = /* @__PURE__ */ __name(() => {
   const state = current();
   return {
     categoryid: state.categoryid,
-    sort: state.sort,
+    // "Group by" and "Sort by" by name, the order in sort (criteria::organisation()).
+    group: Listing.groupOf(state),
+    sort: Listing.orderOf(state),
     view: state.view,
     chip: state.chip,
     fav: state.fav,

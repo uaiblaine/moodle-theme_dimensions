@@ -107,7 +107,8 @@ const Areas = /* @__PURE__ */ __name((props) => {
       [document, EVENTS.view, panel.relayout, false],
       [document, EVENTS.pending, (event) => panel.onPending(event.detail || {}), false],
       [document, EVENTS.failed, panel.onFailed, false],
-      [document, EVENTS.criteria, (event) => panel.criteria(event.detail || {}), false]
+      [document, EVENTS.criteria, (event) => panel.criteria(event.detail || {}), false],
+      [areas, EVENTS.order, (event) => panel.onOrder(event.detail || {}), false]
     ];
     listeners.forEach(([target, type, listener, capture]) => target.addEventListener(type, listener, capture));
     const queries = [WIDE, PHONE].map((query) => window.matchMedia(query));
@@ -138,11 +139,11 @@ const Areas = /* @__PURE__ */ __name((props) => {
   }
   const entries = summary.entries.map((entry) => /* @__PURE__ */ jsxDEV("li", { "data-categoryid": entry.id, hidden: entry.id === opened, children: entry.url ? /* @__PURE__ */ jsxDEV("a", { href: entry.url, children: entry.name }, void 0, false, {
     fileName: "public/theme/dimensions/js/esm/src/areas/Areas.tsx",
-    lineNumber: 200,
+    lineNumber: 201,
     columnNumber: 26
   }) : entry.name }, entry.id, false, {
     fileName: "public/theme/dimensions/js/esm/src/areas/Areas.tsx",
-    lineNumber: 199,
+    lineNumber: 200,
     columnNumber: 9
   }));
   return /* @__PURE__ */ jsxDEV(Fragment, { children: [
@@ -150,7 +151,7 @@ const Areas = /* @__PURE__ */ __name((props) => {
     createPortal(entries, drawn.list)
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/areas/Areas.tsx",
-    lineNumber: 204,
+    lineNumber: 205,
     columnNumber: 9
   });
 }, "Areas");

@@ -2869,7 +2869,8 @@ final class population_test extends \advanced_testcase {
             $this->assertNull($answer->panel, $what . ' opens nothing.');
             $this->assertNull($answer->panelentry);
             $this->assertSame(0, $request->open, $what . ': the request no longer names a panel.');
-            $this->assertSame('', $request->psort);
+            // The grouped order holds with no panel: the address without the panel names it too.
+            $this->assertSame('name', $request->psort, $what . ': the grouped order stays.');
             $this->assertSame($plain->ids(), $answer->ids(), $what . ': the page is the page without it.');
             $this->assertSame(array_column($plain->posters, 'id'), array_column($answer->posters, 'id'));
         }

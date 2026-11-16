@@ -374,7 +374,7 @@ final class amd_source_test extends \basic_testcase {
     public function test_the_address_carries_the_organisation_and_the_period(): void {
         $build = $this->body('buildUrl');
         $this->assertMatchesRegularExpression(
-            '~\[PARAM\.query, PARAM\.chip, PARAM\.fav, PARAM\.page, PARAM\.view, PARAM\.sort, PARAM\.from, '
+            '~\[PARAM\.query, PARAM\.chip, PARAM\.fav, PARAM\.page, PARAM\.view, PARAM\.sort, PARAM\.group, PARAM\.from, '
                 . 'PARAM\.to, PARAM\.cat\]~',
             $build,
             'Every parameter the listing owns is cleared before it is written, the tree\'s category included.'
@@ -401,17 +401,36 @@ final class amd_source_test extends \basic_testcase {
             'The bounds are never written only as a pair.'
         );
 
+        $this->assertMatchesRegularExpression(
+            "~\} else if \(state\.psort === ORDER_NAME\) \{\s*"
+                . "// [^\n]*\n\s*params\.set\(PARAM\.psort, ORDER_NAME\);\s*\} else \{\s*params\.delete\(PARAM\.psort\);~",
+            $build,
+            'The grouped A-Z order is written from the state, with a panel open or not, as order_params() mints it.'
+        );
+
         $read = $this->body('readUrl');
         $this->assertMatchesRegularExpression(
-            "~state\.sort = sortOf\(params, state\.defaultsort\);~",
+            "~const organisation = organisationOf\(params, state\.defaultsort\);\s*"
+                . "state\.sort = organisation\.sort;\s*state\.psort = organisation\.psort;~",
             $read,
-            'The back button restores the organisation from the address, the category\'s default for none.'
+            'The back button restores the organisation and the grouped order from the address, the default for none.'
         );
-        $this->assertMatchesRegularExpression(
-            "~return SORTS\.indexOf\(sort\) > 0 \? sort : \(defaultsort \|\| ''\);~",
-            $this->body('sortOf'),
+        $organisation = $this->body('organisationOf');
+        $this->assertStringContainsString(
+            "let sort = SORTS.indexOf(named) > 0 ? named : '';",
+            $organisation,
             'An address naming no organisation, or an unknown one, is not read as the category\'s default.'
         );
+        $this->assertStringContainsString("sort = sort || defaultsort || '';", $organisation);
+        $this->assertMatchesRegularExpression(
+            "~if \(GROUPS\.indexOf\(group\) >= 0\) \{\s*let order = psort === ORDER_NAME \? ORDER_NAME : 'recent';~",
+            $organisation,
+            'A grouping by name makes sort the order, as criteria::organisation() reads it.'
+        );
+        $this->assertStringContainsString("export const GROUPS = ['category', 'none'];", $this->shared());
+        $this->assertSame(['category', 'none'], criteria::GROUPS, 'The client\'s copy of the groupings drifted.');
+        $this->assertStringContainsString("export const ORDERS = ['name', 'recent'];", $this->shared());
+        $this->assertSame(['name', 'recent'], criteria::ORDERS, 'The client\'s copy of the orders drifted.');
         $this->assertStringContainsString("const SORTS = ['', 'category', 'name', 'recent'];", $this->shared());
         $this->assertSame(['', 'category', 'name', 'recent'], criteria::SORTS, 'The client\'s copy of the vocabulary drifted.');
         $this->assertMatchesRegularExpression(
@@ -433,8 +452,7 @@ final class amd_source_test extends \basic_testcase {
         $this->assertMatchesRegularExpression(
             "~const defaultsort = typeof payload\.defaultsort === 'string' \? payload\.defaultsort : '';\s*"
                 . '/\*[^*]*\*/\s*const remembered = payload\.remembered === true;\s*'
-                . "const sort = remembered && typeof payload\.sort === 'string' \? payload\.sort : "
-                . 'Listing\.sortOf\(params, defaultsort\);~',
+                . 'const \{sort, psort\} = drawnOrganisation\(payload, params, defaultsort\);~',
             $init,
             'The first load reads the organisation against the category\'s default from the payload, '
                 . 'or the payload\'s own when the page was drawn from the remembered state.'
