@@ -5,6 +5,9 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The theme requires `local_unlistedcourses` 2026100506 (v5.3-r3) or later** (2026100628); it required 2026100505.
+  Since 2026100627 the theme leaves the contexts of the unlisted courses it asks about to the plugin's own bulk read,
+  which arrived in that version; with the older one every such course cost a statement on the category showcase.
 - **On a phone the Organise menu no longer leaves the screen, and a menu item's focus ring no longer covers its
   neighbours** (2026100627). On the filter bar's two-line step the Organise and View menus hang from the line's end, as
   the date layer does; under its own button Organise started 21 px before the screen's edge at 375 px. The ring of a

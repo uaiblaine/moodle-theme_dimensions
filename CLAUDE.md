@@ -19,7 +19,7 @@ the privacy provider is a request, userlist and user preference provider: the st
 and, on deletion, cleared to 0 with the branding kept.
 Supports Moodle **5.3 only** (`$plugin->requires = 2026100500`, `$plugin->supported = [503, 503]`),
 on Boost Union's `MOODLE_503_STABLE` branch (v5.3-r1 onwards). Hard-depends on
-`theme_boost_union` (2026100500 or later) and `local_unlistedcourses` (2026100505);
+`theme_boost_union` (2026100500 or later) and `local_unlistedcourses` (2026100506);
 `customfield_picture`, `auth_loginsteps`, `local_page`, `tool_courserating`, `tool_imagepicker` and `filter_shortcodes` (which reads `db/shortcodes.php`) are optional and asked for at run time,
 never declared (`customfield_picture` through `landingfields::picture_type_available()`, `filter_shortcodes` through
 `core_component` and its config version, the other four by class name; `tool_imagepicker` through `local\imagepicker`,
