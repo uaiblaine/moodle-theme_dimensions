@@ -103,6 +103,11 @@ function theme_dimensions_get_main_scss_content($theme) {
     // class and the region's, below the sm breakpoint.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/sheets.scss');
 
+    // And the profile layer of a logged-in account (classes/local/profilelayer.php), printed once per page after the
+    // content; every rule is nested under one of the layer's own classes, and it reads the family tokens post.scss
+    // declares. Its phone step is the sheets' own, below the sm breakpoint.
+    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/profilelayer.scss');
+
     // And the navbar's controls that move into the user menu on phones (classes/local/phonenav.php), every rule under
     // the navbar's own class.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/phonenav.scss');

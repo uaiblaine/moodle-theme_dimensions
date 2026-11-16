@@ -14,14 +14,15 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The Look items of the user menu and of the mobile drawer: a choice recorded in place, then a reload.
+ * The Look items of the user menu, the profile layer and the mobile drawer: a choice recorded in place, then a reload.
  *
  * Every item is a link to flavour.php with its flavour preselected, which is the whole control without
  * JavaScript: that page shows a form and writes nothing until it is posted. With this module a press on
  * an item records the choice through theme_dimensions_choose_flavour and reloads the page, which the
- * server then draws in the new look; the current item does nothing. The listener is delegated from the
- * document, because the user menu's submenus and the drawer's panels are drawn by templates this module
- * never owns.
+ * server then draws in the new look; the current item does nothing (the user menu marks it aria-current,
+ * the profile layer's menuitemradio aria-checked). The listener is delegated from the document, because
+ * the user menu's submenus, the layer's sub-view and the drawer's panels are drawn by templates this
+ * module never owns.
  *
  * @module     theme_dimensions/flavourchoice
  * @copyright  2026 Anderson Blaine
@@ -78,7 +79,7 @@ export const init = () => {
             return;
         }
         event.preventDefault();
-        if (item.getAttribute('aria-current') === 'true') {
+        if (item.getAttribute('aria-current') === 'true' || item.getAttribute('aria-checked') === 'true') {
             return;
         }
         choose(parseInt(item.getAttribute(ATTRIBUTE), 10));

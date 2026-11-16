@@ -285,8 +285,24 @@ the reader looks for "Next".
 The settings under *Who the person is shown as* (*Identity* tab) decide what identifies the logged-in person in
 the theme's own surfaces: the name beside the avatar in the navbar (`theme_dimensions/identitynavbar`), and the
 title and the further lines of the profile layer (`theme_dimensions/identitytitle`,
-`theme_dimensions/identitylines`; the layer itself is not in this release yet, so only the navbar setting has a
-surface today).
+`theme_dimensions/identitylines`).
+
+### Profile layer
+
+The profile layer (`theme_dimensions/profilelayer`, *Identity* tab, on by default) is the theme's side layer for
+the logged-in person: their picture with the title and further lines above, "View profile" and "Edit profile" (the
+latter where Moodle's profile page offers it), a notice with the way back while an administrator is logged in as
+somebody, the site's user menu items under "My area" (Boost Union's user menu smart menus among them), Preferences
+and the role switch under "Account", the colour mode, the look and the language under "Display", and Log out at
+its foot. It is built from Moodle's own user menu on the server and printed once per page, closed, and the user
+button opens it: at the side of the page, a bottom sheet on a phone, with Look and Language as sub-views inside it.
+It is a dialog: the keyboard stays inside it while it is open, Escape leaves a sub-view first and then closes it, and
+closing gives the focus back to the user button. On a phone the navbar's controls that make room there (messages,
+local_mail's inbox, focus mode, the edit mode switch) are its first group. Where it carries the colour mode, the
+navbar's own colour mode menu is hidden at every width. Boost Union's user menu stays on the page as the fallback: if
+the layer's script does not run, the user button opens Boost Union's menu as before. Visitors, the guest account and
+the Moodle app never get it; switched off, the user menu is Boost Union's alone. It stores nothing: the colour mode,
+the look and the language keep Moodle's and the theme's existing preferences.
 
 - **The fields**: the full name in the site's format (`fullname`), the alternate name (`alternatename`), the first
   name (`firstname`), the username (`username`), the email address (`email`), the ID number (`idnumber`) and each
@@ -504,7 +520,7 @@ Settings
 | Tab | What it holds |
 |---|---|
 | General settings | Boost Union Child's two SCSS inheritance settings; leave them on *Inherit*. The *Look* section's `theme_dimensions/selectableflavours`: the Boost Union flavours a logged-in person may choose as their own look (none ticked: nobody chooses). A chosen flavour is shown to that person on every page, over the flavours Boost Union's category and cohort rules apply. Saving the list gives each listed look a cohort (*Look: ...*) and empties the cohort of a look taken off it. `theme_dimensions/lookmenufavicons` (off by default) puts each look's mark before its name in those menus: the flavour's favicon, else a dot in its brand colour; the site default shows the site's favicon. Each listed look's stylesheet is compiled before its first visitor by the warm-up task (*Boost Union flavours compiled ahead of time*); without it, the first person to pick a look after a cache reset waits for a whole theme compile. The *Guest account* section's guest home page (`theme_dimensions/guesthomepage`, `theme_dimensions/guesthomepageurl`). |
-| Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*; the visitor's actions, the side menu, the context bar while reading and its colour (`theme_dimensions/navbarcontextcolor`), auto-hide, the compact navbar on tablets and the logos for dark surfaces. Under *Who the person is shown as*: `theme_dimensions/identitynavbar` (the field beside the avatar in the navbar), `theme_dimensions/identitytitle` and `theme_dimensions/identitylines` (the title and the further lines of the profile layer) and `theme_dimensions/identitypatterns`; see *Identity fields* below. |
+| Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*; the visitor's actions, the side menu, the context bar while reading and its colour (`theme_dimensions/navbarcontextcolor`), auto-hide, the compact navbar on tablets and the logos for dark surfaces. Under *Who the person is shown as*: `theme_dimensions/identitynavbar` (the field beside the avatar in the navbar), `theme_dimensions/identitytitle` and `theme_dimensions/identitylines` (the title and the further lines of the profile layer), `theme_dimensions/identitypatterns` and `theme_dimensions/profilelayer` (the profile layer, on by default); see *Identity fields* and *Profile layer* below. |
 | Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
 | Course landing page | The banner's format (`theme_dimensions/landingheroformat`: in the content column, the default, or full width); the page model, modality and study format a new course starts with; existing courses never change. `theme_dimensions/relatedcount`: how many related courses a landing page shows at most (4 by default). |
 | Category showcase | The showcase switch, the public pages and their live listing, the page size, the grouping by state, the tree depth, the filter groups, the cover video size limit and the site-wide hero image. |

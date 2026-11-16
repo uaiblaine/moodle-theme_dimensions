@@ -1,0 +1,237 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/profile_layer
+
+    The profile layer of a logged-in account (moodle-dev/docs/design-system/components/side-layer.md), printed once
+    per page after the content by the core renderer's standard_after_main_region_html() from
+    theme_dimensions\local\profilelayer::context(). It is printed closed: the backdrop and the dialog are hidden.
+    amd/src/profilelayer.js, armed by the renderer beside this print, takes the user button over and opens it; the
+    data-region, data-view and data-action hooks below are what it addresses. Every destination it holds is a link
+    to a page of its own (the profile, Preferences, core's ?lang= address, the Look choice page), so the layer adds
+    nothing a person needs JavaScript to reach.
+
+    The group dimensions-layer-phone is empty and hidden as printed: amd/src/phonemenu.js fills it with the navbar's
+    controls that move to the user button on a phone (theme_dimensions\local\phonenav), once the layer is armed,
+    and the stylesheet draws it below md only.
+
+    The main view is headed lists of links and buttons (a dialog of links, not a menu); a sub-view of choices is a
+    role="menu" of menuitemradio links, a Boost Union smart menu's sub-view one of menuitem links. The colour mode
+    control carries core's hooks (data-region="colourmode-menu", data-action="set-colourmode"), so
+    theme_boost/colourmode applies and stores the mode. The identity values are plain text, masked on the server,
+    and escaped here once; the avatar is core's user_picture() HTML.
+
+    Context variables required for this template:
+    * avatar - core's picture of the session's user, HTML
+    * title - the title beside the picture, plain text
+    * lines - the further lines, each with text
+    * profileurl - the address of the person's profile
+    * editurl - the address of "Edit profile", or false
+    * loggedinas - false, or the notice under "log in as": text, returnurl, returnlabel
+    * groups - each with key, label, first, modes (false, or cookieattributes and options), hasrows and rows
+      (label, url, icon, ownicon, subview, value)
+    * foot - false, or Log out (core's way back under "log in as"): url, label
+    * subviews - each with key, title, radio, look and options (label, url, iscurrent, lang, flavour, mark)
+
+    Example context (json):
+    {
+        "avatar": "<img src=\"https://example.com/pix/u/f2.png\" class=\"userpicture\" width=\"35\" height=\"35\" alt=\"\">",
+        "title": "Ana Beatriz Souza",
+        "lines": [{"text": "Cap. Souza"}, {"text": "•••.456.789-••"}],
+        "profileurl": "https://example.com/user/profile.php?id=5",
+        "editurl": "https://example.com/user/edit.php?id=5&returnto=profile",
+        "loggedinas": {
+            "text": "You are logged in as this user",
+            "returnurl": "https://example.com/course/loginas.php?id=1&sesskey=abc",
+            "returnlabel": "Return to Admin User"
+        },
+        "groups": [
+            {
+                "key": "myarea",
+                "label": "My area",
+                "first": true,
+                "modes": false,
+                "hasrows": true,
+                "rows": [
+                    {"label": "Grades", "url": "https://example.com/grade/report/overview/index.php",
+                        "icon": "fa fa-clipboard-check", "ownicon": false, "subview": "", "value": ""},
+                    {"label": "Library", "url": "", "icon": "fa fa-circle-dot", "ownicon": false,
+                        "subview": "menu-1", "value": ""}
+                ]
+            },
+            {
+                "key": "account",
+                "label": "Account",
+                "first": false,
+                "modes": false,
+                "hasrows": true,
+                "rows": [
+                    {"label": "Preferences", "url": "https://example.com/user/preferences.php", "icon": "fa fa-gear",
+                        "ownicon": false, "subview": "", "value": ""}
+                ]
+            },
+            {
+                "key": "display",
+                "label": "Display",
+                "first": false,
+                "modes": {
+                    "cookieattributes": "; Max-Age=31536000; Path=/; SameSite=Lax",
+                    "options": [
+                        {"mode": "light", "label": "Light", "icon": "fa-sun", "togglelabel": "Colour mode: Light",
+                            "isactive": false},
+                        {"mode": "dark", "label": "Dark", "icon": "fa-moon", "togglelabel": "Colour mode: Dark",
+                            "isactive": false},
+                        {"mode": "auto", "label": "System", "icon": "fa-circle-half-stroke",
+                            "togglelabel": "Colour mode: System", "isactive": true}
+                    ]
+                },
+                "hasrows": true,
+                "rows": [
+                    {"label": "Look", "url": "", "icon": "fa fa-palette", "ownicon": false, "subview": "look",
+                        "value": "Harbour"},
+                    {"label": "Language", "url": "", "icon": "fa fa-language", "ownicon": false,
+                        "subview": "language", "value": "English (en)"}
+                ]
+            }
+        ],
+        "foot": {"url": "https://example.com/login/logout.php?sesskey=abc", "label": "Log out"},
+        "subviews": [
+            {
+                "key": "menu-1",
+                "title": "Library",
+                "radio": false,
+                "look": false,
+                "options": [
+                    {"label": "Catalogue", "url": "https://example.com/catalogue", "iscurrent": false, "lang": "",
+                        "flavour": "", "mark": false}
+                ]
+            },
+            {
+                "key": "look",
+                "title": "Look",
+                "radio": true,
+                "look": true,
+                "options": [
+                    {"label": "Site default", "url": "https://example.com/theme/dimensions/flavour.php?flavour=0",
+                        "iscurrent": false, "lang": "", "flavour": "0", "mark": false},
+                    {"label": "Harbour", "url": "https://example.com/theme/dimensions/flavour.php?flavour=2",
+                        "iscurrent": true, "lang": "", "flavour": "2", "mark": {"url": null, "colour": "#7a1f2b"} }
+                ]
+            },
+            {
+                "key": "language",
+                "title": "Language",
+                "radio": true,
+                "look": false,
+                "options": [
+                    {"label": "English (en)", "url": "https://example.com/my/?lang=en", "iscurrent": true, "lang": "en",
+                        "flavour": "", "mark": false},
+                    {"label": "Português - Brasil (pt_br)", "url": "https://example.com/my/?lang=pt_br",
+                        "iscurrent": false, "lang": "pt-BR", "flavour": "", "mark": false}
+                ]
+            }
+        ]
+    }
+}}
+<div class="dimensions-layer-backdrop" data-region="dimensions-layer-backdrop" hidden></div>
+<div class="dimensions-layer dimensions-layer--end" id="{{uniqid}}-profile" role="dialog" aria-modal="true" aria-labelledby="{{uniqid}}-title" data-region="dimensions-profile" hidden>
+    <div class="dimensions-layer-view" data-view="main">
+        <div class="dimensions-layer-top">
+            <div class="dimensions-layer-id">
+                <span class="dimensions-layer-avatar">{{{avatar}}}</span>
+                <div class="dimensions-layer-who">
+                    <h2 class="dimensions-layer-title" id="{{uniqid}}-title">{{title}}</h2>
+                    {{#lines}}
+                    <p class="dimensions-layer-line">{{text}}</p>
+                    {{/lines}}
+                </div>
+                <button type="button" class="dimensions-layer-iconbtn" data-action="dimensions-layer-close" aria-label="{{#str}} closebuttontitle, core {{/str}}">{{#pix}} e/cancel, core {{/pix}}</button>
+            </div>
+            <div class="dimensions-layer-actions">
+                <a class="btn btn-outline-secondary btn-sm" href="{{profileurl}}">{{#pix}} i/user, core {{/pix}}{{#str}} viewprofile, core {{/str}}</a>
+                {{#editurl}}
+                <a class="btn btn-outline-secondary btn-sm" href="{{editurl}}">{{#pix}} i/edit, core {{/pix}}{{#str}} editmyprofile, core {{/str}}</a>
+                {{/editurl}}
+            </div>
+        </div>
+        {{#loggedinas}}
+        <div class="dimensions-layer-notice" data-region="dimensions-layer-loggedinas">{{#pix}} i/permissions, core {{/pix}}<span>{{text}}</span>
+            {{#returnurl}}<a href="{{returnurl}}">{{returnlabel}}</a>{{/returnurl}}
+        </div>
+        {{/loggedinas}}
+        <div class="dimensions-layer-scroll">
+            <div class="dimensions-layer-phone" data-region="dimensions-layer-phone" hidden>
+                <ul class="dimensions-layer-list" data-region="dimensions-layer-phone-list"></ul>
+                <div class="dimensions-layer-sep" role="separator"></div>
+            </div>
+            {{#groups}}
+            {{^first}}<div class="dimensions-layer-sep" role="separator"></div>{{/first}}
+            <h3 class="dimensions-layer-head" id="{{uniqid}}-group-{{key}}">{{label}}</h3>
+            {{#modes}}
+            <div class="dimensions-layer-mode">
+                <div class="dimensions-layer-seg" role="radiogroup" aria-labelledby="{{uniqid}}-group-{{key}}" data-region="colourmode-menu" data-cookieattributes="{{cookieattributes}}">
+                    {{#options}}
+                    <button type="button" class="dimensions-layer-seg-cell{{#isactive}} active{{/isactive}}" role="radio" aria-checked="{{#isactive}}true{{/isactive}}{{^isactive}}false{{/isactive}}" data-action="set-colourmode" data-colourmode="{{mode}}" data-icon="{{icon}}" data-togglelabel="{{togglelabel}}">
+                        <i class="icon fa {{icon}} fa-fw" aria-hidden="true"></i><span>{{label}}</span>
+                    </button>
+                    {{/options}}
+                </div>
+            </div>
+            {{/modes}}
+            {{#hasrows}}
+            <ul class="dimensions-layer-list" aria-labelledby="{{uniqid}}-group-{{key}}">
+                {{#rows}}
+                <li>
+                    {{^subview}}
+                    <a class="dimensions-layer-row" href="{{url}}">{{#ownicon}}{{#pix}} {{key}}, {{component}} {{/pix}}{{/ownicon}}{{^ownicon}}<i class="icon {{icon}} fa-fw" aria-hidden="true"></i>{{/ownicon}}<span>{{label}}</span></a>
+                    {{/subview}}
+                    {{#subview}}
+                    <button type="button" class="dimensions-layer-row" data-action="dimensions-layer-open" aria-controls="{{uniqid}}-view-{{subview}}"><i class="icon {{icon}} fa-fw" aria-hidden="true"></i><span>{{label}}</span>
+                        <span class="dimensions-layer-value">{{value}}{{#pix}} t/right, core {{/pix}}</span></button>
+                    {{/subview}}
+                </li>
+                {{/rows}}
+            </ul>
+            {{/hasrows}}
+            {{/groups}}
+        </div>
+        {{#foot}}
+        <div class="dimensions-layer-foot">
+            <a class="dimensions-layer-row dimensions-layer-row--danger" href="{{url}}">{{#pix}} a/logout, core {{/pix}}<span>{{label}}</span></a>
+        </div>
+        {{/foot}}
+    </div>
+    {{#subviews}}
+    <div class="dimensions-layer-view" id="{{uniqid}}-view-{{key}}" data-view="{{key}}" hidden>
+        <div class="dimensions-layer-sub">
+            <button type="button" class="dimensions-layer-iconbtn" data-action="dimensions-layer-back" aria-label="{{#str}} back, core {{/str}}">{{#pix}} t/left, core {{/pix}}</button>
+            <h2 class="dimensions-layer-subtitle" id="{{uniqid}}-view-{{key}}-title">{{title}}</h2>
+            <button type="button" class="dimensions-layer-iconbtn" data-action="dimensions-layer-close" aria-label="{{#str}} closebuttontitle, core {{/str}}">{{#pix}} e/cancel, core {{/pix}}</button>
+        </div>
+        <div class="dimensions-layer-scroll" role="menu" aria-labelledby="{{uniqid}}-view-{{key}}-title">
+            {{#options}}
+            {{#radio}}
+            <a class="dimensions-layer-row" role="menuitemradio" href="{{url}}" aria-checked="{{#iscurrent}}true{{/iscurrent}}{{^iscurrent}}false{{/iscurrent}}"{{#lang}} lang="{{lang}}"{{/lang}}{{#look}} data-dimensions-flavour="{{flavour}}"{{/look}}>{{#mark}}{{> theme_dimensions/look_mark }}{{/mark}}<span>{{label}}</span>{{#pix}} i/checked, core {{/pix}}</a>
+            {{/radio}}
+            {{^radio}}
+            <a class="dimensions-layer-row" role="menuitem" href="{{url}}"><span>{{label}}</span></a>
+            {{/radio}}
+            {{/options}}
+        </div>
+    </div>
+    {{/subviews}}
+</div>

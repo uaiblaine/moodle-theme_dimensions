@@ -397,10 +397,12 @@ final class post_scss_test extends \basic_testcase {
 
     /**
      * The navbar's dividers are a quiet rule on a dark bar, and the colour mode menu leaves the collapsed navbar where the
-     * drawer carries the appearance switch.
+     * drawer carries the appearance switch, and the navbar at every width where the armed profile layer carries it.
      *
      * The divider's property is declared on the divider itself, where Boost Union's own declarations read it. The colour
-     * mode menu is hidden only while the drawer holds its twin (.dimensions-drawer-modes): a visitor's drawer has none.
+     * mode menu is hidden only while the drawer holds its twin (.dimensions-drawer-modes): a visitor's drawer has none;
+     * and while amd/src/profilelayer.js has written dimensions-profilelayer-modes on the body, which it does only once it
+     * has armed a layer that holds the control (profilelayer_source_test): with the module not running, the menu stays.
      *
      * @return void
      */
@@ -415,6 +417,7 @@ final class post_scss_test extends \basic_testcase {
             [
                 '@include media-breakpoint-down(md) {' . "\n" . '    body:has(.dimensions-drawer-modes) #usernavigation {',
                 "\nbody.dimensions-nav-compact:has(.dimensions-drawer-modes) #usernavigation {",
+                "\nbody.dimensions-profilelayer-modes #usernavigation {",
             ] as $scope
         ) {
             $at = strpos($scss, $scope);
