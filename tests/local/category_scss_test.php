@@ -960,6 +960,22 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~&\[aria-checked="true"\] \{\s*font-weight:\s*600;\s*\}~', $item, 'Chosen at 600.');
         $this->assertDoesNotMatchRegularExpression('~outline~', explode('&:focus-visible', $item)[0], 'No outline but the ring.');
         $this->assertMatchesRegularExpression(
+            '~&:focus-visible \{\s*outline:\s*3px solid var\(--dim-ring\);\s*outline-offset:\s*-2px;\s*\}~',
+            $item,
+            'The ring is drawn inwards: the items touch, and one drawn outside would cover the neighbours.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~\n        \.dim-line__organise,\s*\.dim-line__viewmenu \{\s*position:\s*static;\s*\}~',
+            $scss,
+            'On the two-line step a menu hangs from the line\'s end: under its button it would leave the screen.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~@media \(max-width: 575\.98px\) \{\s*\.dim-line:not\(\[data-line-drawn\]\) \.dim-line__organise,\s*'
+                . '\.dim-line:not\(\[data-line-drawn\]\) \.dim-line__viewmenu \{\s*position:\s*static;\s*\}~',
+            $scss,
+            'The same on a phone where no client measures the line.'
+        );
+        $this->assertMatchesRegularExpression(
             '~visibility:\s*visible;~',
             $this->rule_body($scss, '.dim-menu__item[aria-checked="true"] .dim-menu__tick'),
             'The tick shows on the chosen item alone.'

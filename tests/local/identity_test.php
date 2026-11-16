@@ -41,6 +41,22 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(identity::class)]
 final class identity_test extends \advanced_testcase {
     /**
+     * Start from a site with no custom profile field.
+     *
+     * Another plugin of the site may create fields when it is installed, and the vocabulary is every field of the
+     * site: each test names the whole of it.
+     *
+     * @return void
+     */
+    protected function setUp(): void {
+        global $DB;
+        parent::setUp();
+        $this->resetAfterTest();
+        $DB->delete_records('user_info_field');
+        \cache::make(identity::COMPONENT, identity::CACHE)->purge();
+    }
+
+    /**
      * A person as the session holds them, logged in.
      *
      * @param array $record The user's columns and profile_field_ values.
