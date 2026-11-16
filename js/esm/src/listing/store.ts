@@ -547,6 +547,14 @@ const listen = (): void => {
             setRange(quick.dataset.from || '', quick.dataset.to || '');
             return;
         }
+        if (Listing.closestOf(event, SELECTORS.periodclear)) {
+            // The date layer's "Clear period": in place, the layer and the focus kept; no period is nothing to fetch.
+            event.preventDefault();
+            if (state.datefrom !== '' || state.dateto !== '') {
+                setRange('', '');
+            }
+            return;
+        }
         if (Listing.closestOf(event, SELECTORS.fav)) {
             // A submit button for a reader without a client; a fetch with a history entry here.
             event.preventDefault();

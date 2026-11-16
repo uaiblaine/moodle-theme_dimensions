@@ -54,7 +54,13 @@ describe('theme_dimensions/filterline/model', () => {
             clearlabel: 'Clear text',
         });
         expect(model.star).toEqual({name: 'fav', pressed: false, count: '2', label: 'Favourites'});
-        expect(model.filters).toEqual({label: 'Filters', count: '3', countlabel: 'Applied filters: 3', hascount: true});
+        expect(model.filters).toEqual({label: 'Filters', count: '2', countlabel: 'Applied filters: 2', hascount: true});
+        expect(model.date).toEqual({
+            label: 'Start date',
+            name: 'Start date: 17 September 2026 to 24 September 2026',
+            template: 'Start date: {period}',
+            set: true,
+        });
         expect(model.views).toEqual([
             {value: 'list', label: 'List', icon: 'fa-list', pressed: false},
             {value: 'cards', label: 'Cards', icon: 'fa-border-all', pressed: true},
@@ -113,6 +119,18 @@ describe('theme_dimensions/filterline/model', () => {
         const pressed = answered(model, {favourites: {available: true, pressed: true, count: 5}, filtercount: 0});
         expect(pressed.star).toEqual({name: 'fav', pressed: true, count: '5', label: 'Favourites'});
         expect(pressed.filters).toEqual({label: 'Filters', count: '0', countlabel: '', hascount: false});
+    });
+
+    it('takes an answer\'s period into the date button\'s name and dot, and leaves it to an answer silent on it', () => {
+        const model = example();
+        const none = answered(model, {period: ''});
+        expect(none.date).toEqual(Object.assign({}, model.date, {name: 'Start date', set: false}));
+        const from = answered(none, {period: 'From 1 October 2026'});
+        expect(from.date?.name).toBe('Start date: From 1 October 2026');
+        expect(from.date?.set).toBe(true);
+        expect(answered(from, {total: '4'}).date).toEqual(from.date);
+        // A line the server drew without the button has none to name.
+        expect(answered(Object.assign({}, model, {date: null}), {period: 'From 1 October 2026'}).date).toBeNull();
     });
 
     it('takes the listing\'s state: the term, the scope\'s choice, the star, the view', () => {

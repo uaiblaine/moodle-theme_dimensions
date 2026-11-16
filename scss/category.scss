@@ -633,6 +633,7 @@ body.dim-category {
         --dim-radius-pill: var(--dim-ds-radius-pill, 50rem);
         // The fleet Design System's names the filter bar paints with and this file had no alias for. The brand tone's
         // ground and edge pair with --dim-primary-ink, its ink, in both modes (post.scss turns all three).
+        --dim-ink-faint: var(--dimensions-ink-faint, var(--bs-tertiary-color, rgba(33, 37, 41, .75)));
         --dim-radius-xs: var(--dimensions-radius-xs, 4px);
         --dim-radius-md: var(--dimensions-radius-md, 8px);
         --dim-radius-xl: var(--dimensions-radius-xl, 16px);
@@ -1151,6 +1152,7 @@ body.dim-category {
 
     // A disclosure's summary is open while its details is: the pressed face of every open control.
     .dim-toolbar__filters[open] > .dim-line__iconbtn,
+    .dim-line__date[open] > .dim-line__iconbtn,
     .dim-line__organise[open] > .dim-line__iconbtn {
         background: var(--dim-brand-tint);
         color: var(--dim-primary-ink);
@@ -1706,25 +1708,6 @@ body.dim-category {
         }
     }
 
-    // The date group is a row of its own - the field, then the quick options beside it - and it
-    // wraps when there is not room for both. The <legend> is
-    // not a flex item of it: a fieldset's rendered legend sits outside the anonymous content box
-    // that becomes the flex container, which is what lets the group name itself above the line.
-    .dim-toolbar__group--date {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px 16px;
-    }
-
-    // The field's width is its own, never the panel's: grown to the row, the one control of this
-    // filter would look like the search box. The field itself carries a floor that keeps the
-    // period readable and a ceiling that keeps it from ever being the line (.dim-daterange__field).
-    .dim-toolbar__daterange {
-        flex: 0 1 auto;
-        min-width: 0;
-    }
-
     // A label and the field it names are ONE item of this row, and the pair wraps as a unit: with
     // the four elements loose in the flex row, "To" could end one line and its own input begin
     // the next, at any viewport.
@@ -1816,26 +1799,95 @@ body.dim-category {
         }
     }
 
-    // ---- The one calendar -------------------------------------------------------------------
-    // The client mounts its field into this region and the two native fields go behind it. The
-    // region is what the popover is positioned against - not the field, whose width would then
-    // cap the month grid - so it is the positioned ancestor and nothing else here is.
-    .dim-toolbar__daterange {
-        position: relative;
+    // ---- The date button and its layer ------------------------------------------------------------
+    // The Design System's date button (date-button.md, D63, D64): a native disclosure in the capsule after
+    // Filters, its summary the calendar icon button, its layer the period's own popover under the line's end
+    // (positioned against .dim-line, so the element itself is not a positioned box), a bottom sheet at the
+    // two-line step (below). The layer holds the period's fieldset - its legend the heading, the quick options,
+    // the client's boxes and months, the two native fields where no client runs - and its foot.
+    .dim-line__date {
+        flex: none;
+        min-width: 0;
     }
 
-    .dim-daterange {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+    // The dot at the button's top end corner while a period is set: the brand fill of this file's call to
+    // action pair, which turns with the colour mode (--dim-cta), never a number - the period is not in
+    // Filters' count. Absolutely placed, so the hidden attribute alone takes it away.
+    .dim-line__dot {
+        position: absolute;
+        top: -2px;
+        inset-inline-end: -2px;
+        width: .5rem;
+        height: .5rem;
+        border-radius: 50%;
+        background: var(--dim-cta);
     }
 
-    // The start box and the end box side by side, wrapping as two units where the row is short.
-    .dim-daterange__boxes {
+    // The layer: the Filters panel's popover measures - 12px of padding, a card's line at the 12px corners,
+    // the page's surface and the medium elevation - as wide as its content up to the viewport, which two
+    // months fit from the WIDE breakpoint up. It grows with its content and never scrolls inside itself.
+    .dim-datelayer {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 2;
+        width: max-content;
+        max-width: calc(100vw - 2rem);
+        padding: .75rem;
+        border: 1px solid var(--dim-line);
+        border-radius: var(--dim-radius);
+        background: var(--dim-surface);
+        color: var(--dim-ink);
+        box-shadow: var(--dim-elevation-md);
+    }
+
+    .dim-datelayer__group {
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+
+    // The heading is the panel's group label: .75rem at 600 in the muted ink, 6px over what follows.
+    .dim-datelayer__head {
+        float: none;
+        width: auto;
+        margin: 0;
+        padding: 0 0 .375rem;
+        color: var(--dim-muted);
+        font-size: .75rem;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    .dim-datelayer .dim-toolbar__quick {
+        margin-bottom: .75rem;
+    }
+
+    // The foot (date-button.md): a hairline over "Clear period" at the start and "Show" at the end, core's
+    // small button held at the bar's 32px; the no-JavaScript "Filter" in "Show"'s place where no client runs.
+    .dim-datelayer__foot {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
-        min-width: 0;
+        align-items: center;
+        justify-content: space-between;
+        gap: .5rem;
+        margin-top: .75rem;
+        padding-top: .75rem;
+        border-top: 1px solid var(--dim-line);
+
+        .btn {
+            min-height: 2rem;
+        }
+    }
+
+    // ---- The one calendar -------------------------------------------------------------------
+    // The client mounts its boxes and months into the layer's region, in the layer's flow, and the two
+    // native fields go behind it: the months are never a popover of their own.
+    .dim-daterange__boxes {
+        display: flex;
+        gap: .375rem;
+        margin-bottom: .75rem;
     }
 
     // A box and the control that clears it are one item, and the control sits inside the box's
@@ -1843,48 +1895,44 @@ body.dim-category {
     .dim-daterange__box {
         position: relative;
         display: flex;
-        flex: 0 1 auto;
+        flex: 1 1 0;
         min-width: 0;
     }
 
-    // Each box is as tall as the quick options it shares its line with (28px: the field's own block
-    // padding goes), and focus is the design's ring rather than a halo. The inline end keeps the
-    // room the clearing control is drawn in, whether or not it is there, so a box does not change
-    // width when its date is set.
+    // A box is the open search field's: 32px, the 8px corners, the inset ground and a card's line, a 16px
+    // calendar glyph and .8125rem. The inline end keeps the room the clearing control is drawn in, whether or
+    // not it is there, so a box does not change width when its date is set.
     .dim-daterange__field {
-        display: inline-flex;
-        flex: 0 1 auto;
+        display: flex;
+        flex: 1 1 auto;
         align-items: center;
-        gap: 8px;
-        width: auto;
-        min-width: 9.5rem;
-        max-width: 14rem;
-        min-height: 1.75rem;
-        padding-top: 0;
-        padding-right: 2.25rem;
-        padding-bottom: 0;
-        border-radius: var(--dim-radius-sm);
-        font-size: .875rem;
-        text-align: left;
+        gap: .375rem;
+        min-width: 0;
+        height: 2rem;
+        padding: 0 2rem 0 .5rem;
+        border: 1px solid var(--dim-line);
+        border-radius: var(--dim-radius-md);
+        background: var(--dim-surface-strong);
+        color: var(--dim-ink);
+        font-size: .8125rem;
+        text-align: start;
         cursor: pointer;
 
         &:focus-visible {
             outline: 3px solid var(--dim-ring);
             outline-offset: 2px;
-            box-shadow: none;
         }
     }
 
-    // The box the next press of a day serves, while the popover is open: the call to action's line,
-    // which reads in both colour modes.
+    // The box the next press of a day sets: the brand tone's edge. Its words and aria-pressed say it too.
     .dim-daterange__field--active {
-        border-color: var(--dim-cta);
-        box-shadow: inset 0 0 0 1px var(--dim-cta);
+        border-color: var(--dim-brand-edge);
     }
 
     .dim-daterange__icon {
         flex: none;
         color: var(--dim-muted);
+        font-size: 1rem;
     }
 
     // The label is the empty box's whole text, in the muted ink a placeholder wears.
@@ -1903,27 +1951,27 @@ body.dim-category {
         }
     }
 
-    // A round control inside the box's inline end. Its display would otherwise outrank the hidden
-    // attribute the client writes while the box is empty.
+    // The 24px clear inside the box's inline end, at the 4px corners: the search field's eraser. Its display
+    // would otherwise outrank the hidden attribute the client writes while the box is empty.
     .dim-daterange__clear {
         position: absolute;
         top: 50%;
-        right: 6px;
+        inset-inline-end: .25rem;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 24px;
-        height: 24px;
+        width: 1.5rem;
+        height: 1.5rem;
         padding: 0;
         border: 0;
-        border-radius: var(--dim-radius-pill);
+        border-radius: var(--dim-radius-xs);
         background: transparent;
         color: var(--dim-muted);
         cursor: pointer;
         transform: translateY(-50%);
 
         &:hover {
-            background: var(--dim-surface-strong);
+            background: var(--dim-surface-subtle);
             color: var(--dim-ink);
         }
 
@@ -1937,111 +1985,102 @@ body.dim-category {
         }
     }
 
-    // Under the boxes, and the width of its own months: one month (20rem) below md and two side by
-    // side from md up, the breakpoint the calendar's component counts its months with (WIDE in
-    // daterange/DateRange.tsx). The ceiling is the viewport, the only box a popover really may not leave: the
-    // region it is positioned against is only as wide as the boxes, so capping it there would
-    // squeeze a seven-column grid to the width of the buttons that open it.
-    .dim-daterange__pop {
-        position: absolute;
-        top: calc(100% + 6px);
-        left: 0;
-        z-index: 40;
-        width: 20rem;
-        max-width: calc(100vw - 2rem);
-        padding: 10px;
-        border: 1px solid var(--dim-line);
-        border-radius: var(--dim-ds-radius-md, 8px);
-        background: var(--dim-surface);
-        box-shadow: var(--dim-shadow);
-    }
-
+    // The prompt between the two month turns, then the months.
     .dim-daterange__nav {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 8px;
-        margin-bottom: 8px;
+        gap: .5rem;
+        margin-bottom: .5rem;
     }
 
-    // Which bound the next press sets, between the two month steps.
+    // Which bound the next press sets: the layer's description, in the muted ink.
     .dim-daterange__prompt {
         flex: 1 1 auto;
         margin: 0;
-        color: var(--dim-ink);
+        color: var(--dim-muted);
         font-size: .8125rem;
-        font-weight: 600;
         text-align: center;
     }
 
-    .dim-daterange__months {
-        display: flex;
-        gap: 16px;
+    // A month turn is an icon button with a chevron (D61): the bar's 32px box at the 8px corners.
+    .dim-daterange__step {
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        border: 0;
+        border-radius: var(--dim-radius-md);
+        background: transparent;
+        color: var(--dim-muted);
+        cursor: pointer;
+
+        &:hover {
+            background: var(--dim-surface-subtle);
+            color: var(--dim-ink);
+        }
+
+        &:focus-visible {
+            outline: 3px solid var(--dim-ring);
+            outline-offset: 2px;
+        }
     }
 
-    // Two equal months: a zero basis with no minimum shares the row equally.
+    // Two months side by side, 16px apart, or the one the client draws below its WIDE breakpoint. A month is
+    // seven 32px columns; its caption is .8125rem at 600, centred.
+    .dim-daterange__months {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+    }
+
     .dim-daterange__monthblock {
-        flex: 1 1 0;
-        min-width: 0;
+        flex: none;
+        width: 14rem;
     }
 
     .dim-daterange__month {
         display: block;
-        margin-bottom: 4px;
-        font-size: .875rem;
+        margin-bottom: .25rem;
+        font-size: .8125rem;
         font-weight: 600;
         text-align: center;
-    }
-
-    .dim-daterange__step {
-        flex: none;
-        padding: 4px 10px;
-        border: 0;
-        border-radius: var(--dim-radius-pill);
-        background: transparent;
-        color: var(--dim-ink);
-        cursor: pointer;
-
-        &:hover {
-            background: var(--dim-surface-strong);
-        }
-
-        &:focus-visible {
-            outline: none;
-            box-shadow: inset 0 0 0 3px var(--dim-ring);
-        }
     }
 
     .dim-daterange__row {
         display: flex;
     }
 
-    // Seven equal columns: a zero basis with no minimum shares the row equally whatever each
-    // cell holds.
-    .dim-daterange__dow,
-    .dim-daterange__day {
-        flex: 1 1 0;
-        min-width: 0;
-        padding: 6px 0;
-        text-align: center;
-        font-size: .8125rem;
-    }
-
+    // The weekday initials, in the faint ink.
     .dim-daterange__dow {
-        color: var(--dim-muted);
-        font-weight: 600;
+        flex: none;
+        width: 2rem;
+        color: var(--dim-ink-faint);
+        font-size: .75rem;
+        line-height: 1.5rem;
+        text-align: center;
     }
 
+    // A day is a 32 x 28px cell (D64), the alternative surface under the pointer.
     .dim-daterange__day {
+        flex: none;
+        width: 2rem;
+        height: 1.75rem;
+        padding: 0;
         border: 0;
         border-radius: var(--dim-radius-sm);
         background: transparent;
         color: var(--dim-ink);
+        font-size: .8125rem;
         font-variant-numeric: tabular-nums;
+        text-align: center;
         cursor: pointer;
 
         &:hover {
-            background: var(--dim-surface-strong);
+            background: var(--dim-surface-subtle);
         }
 
         &:focus-visible {
@@ -2052,83 +2091,41 @@ body.dim-category {
 
     .dim-daterange__day--blank {
         cursor: default;
+
+        &:hover {
+            background: transparent;
+        }
     }
 
-    // The days between the ends wear the pressed tint, as a chosen range of the design's
-    // controls would; the ends are the chosen chip's own pair.
-    .dim-daterange__day--in {
+    // Today is a fact, so it is a ring and not a fill: one pixel of the brand tone's edge at the 6px corners.
+    .dim-daterange__day[aria-current="date"] {
+        border-radius: var(--dim-radius-sm);
+        box-shadow: inset 0 0 0 1px var(--dim-brand-edge);
+    }
+
+    // The days between the ends are the brand tone's band, square, so they read as one stretch.
+    .dim-daterange__day--between {
         border-radius: 0;
-        background: var(--dim-tint);
+        background: var(--dim-brand-tint);
         color: var(--dim-primary-ink);
+
+        &:hover {
+            background: var(--dim-brand-tint);
+        }
     }
 
-    // The two ends of the period, and the day the site calls today. The ends are filled rather
-    // than outlined because they are a choice; today is outlined because it is a fact. The fill
-    // is the call to action's pair: the page's surface as its ink would read under 3:1 in the
-    // dark mode.
-    .dim-daterange__day--edge {
+    // The period's two ends are a choice, so they are filled: a 6px square in this file's call to action pair,
+    // the brand fill with its computed ink in both colour modes, at 600. The pointer leaves an end its pair.
+    .dim-daterange__day--end {
+        border-radius: var(--dim-radius-sm);
         background: var(--dim-cta);
         color: var(--dim-cta-ink);
         font-weight: 600;
 
-        // The plain day's hover is a pale fill, and under the pointer that would leave the end's
-        // white digit on it: an end keeps the call to action's pair, a step darker.
         &:hover {
-            background: var(--dim-cta-hover);
-            color: #fff;
+            background: var(--dim-cta);
+            color: var(--dim-cta-ink);
         }
-    }
-
-    .dim-daterange__day[aria-current="date"] {
-        box-shadow: inset 0 0 0 1px var(--dim-control-line);
-    }
-
-    // The ends of a range of several days join the tint between them: their inner corners are
-    // square, so start, days and end read as one band. A start or an end alone stays round.
-    .dim-daterange__day--start {
-        border-radius: var(--dim-radius-sm) 0 0 var(--dim-radius-sm);
-    }
-
-    .dim-daterange__day--end {
-        border-radius: 0 var(--dim-radius-sm) var(--dim-radius-sm) 0;
-    }
-
-    // The footer that ends the choice. Two presses describe a
-    // period and the popover stays open showing it; this row is where the reader says they are
-    // finished. "Done" is the filled control because it is what the two presses were for;
-    // clearing sits at the other end, carrying the same action as the control beside the field.
-    .dim-daterange__footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        margin-top: 8px;
-        padding-top: 8px;
-        border-top: 1px solid var(--dim-line);
-    }
-
-    .dim-daterange__footerclear {
-        padding: 2px 6px;
-        color: var(--dim-muted);
-    }
-
-    // "Done" is the design's apply button. It keeps Bootstrap's button, so its colours are
-    // RE-POINTED through the variables the button reads in every state rather than outranked in
-    // one of them: a background of ours would lose to the pressed state's own.
-    .dim-daterange__done {
-        --bs-btn-bg: var(--dim-cta);
-        --bs-btn-border-color: var(--dim-cta);
-        --bs-btn-color: var(--dim-cta-ink);
-        --bs-btn-hover-bg: var(--dim-cta-hover);
-        --bs-btn-hover-border-color: var(--dim-cta-hover);
-        --bs-btn-hover-color: #fff;
-        --bs-btn-active-bg: var(--dim-cta-hover);
-        --bs-btn-active-border-color: var(--dim-cta-hover);
-        --bs-btn-active-color: #fff;
-        --bs-btn-border-radius: var(--dim-radius-sm);
-        flex: none;
-        font-family: var(--dim-font-brand);
-        font-weight: 600;
     }
 
     // ---- The row under the line ------------------------------------------------------------------
@@ -2228,8 +2225,9 @@ body.dim-category {
 
     // "Clear all" is the Design System's text button: the body ink, underlined 2px off the text,
     // no glyph and no button box beside a line of text. It is still a link, so it works with no
-    // script.
-    .dim-toolbar__clear {
+    // script. The date layer's "Clear period" is the same button.
+    .dim-toolbar__clear,
+    .dim-datelayer__clear {
         padding: 0 .25rem;
         border: 0;
         background: none;
@@ -5285,7 +5283,7 @@ body.dim-category {
     // in the capsule, which has no room for it in the flow. The line is its positioned ancestor, it is as
     // wide as its content up to the line (and 40rem where the line is wider), and the client places it
     // under the line's real bottom (its top, measured). It grows with its content and never scrolls inside
-    // itself: the date calendar opens inside the panel and a scroll container would clip it.
+    // itself until it is a sheet (below).
     .dim-toolbar__panel {
         position: absolute;
         top: calc(100% + 6px);
@@ -5303,11 +5301,9 @@ body.dim-category {
         }
     }
 
-    // At the two-line step it is a bottom sheet: fixed to the foot of the screen, the whole width,
-    // its top corners rounded, at most 80% of the screen tall and scrolling inside itself. The
-    // calendar it holds therefore opens IN its flow, under the two date boxes, and never as a
-    // popover the sheet's own scroll would clip: the sheet grows, then scrolls, and the calendar is
-    // always whole. The client lifts the toolbar's stack while the sheet is open
+    // At the two-line step the panel and the date layer are bottom sheets: fixed to the foot of the
+    // screen, the whole width, their top corners rounded, at most 80% of the screen tall and scrolling
+    // inside themselves. The client lifts the toolbar's stack while a sheet is open
     // (dim-toolbar--sheet), so nothing of the page is drawn over it but the site's own fixed navbar,
     // which the sheet never reaches.
     .dim-line--s2 {
@@ -5315,7 +5311,8 @@ body.dim-category {
             flex: none;
         }
 
-        .dim-toolbar__panel {
+        .dim-toolbar__panel,
+        .dim-datelayer {
             position: fixed;
             top: auto;
             right: 0;
@@ -5332,19 +5329,6 @@ body.dim-category {
             border-radius: var(--dim-radius-xl) var(--dim-radius-xl) 0 0;
             box-shadow: var(--dim-elevation-lg);
         }
-
-        // The control wraps, so the calendar takes a row of its own under the two boxes.
-        .dim-daterange {
-            flex-wrap: wrap;
-        }
-
-        .dim-daterange__pop {
-            position: static;
-            flex: 1 1 100%;
-            width: auto;
-            max-width: none;
-            box-shadow: none;
-        }
     }
 
     // Under Bootstrap's fixed navbar (1030), over everything else the page draws.
@@ -5358,6 +5342,7 @@ body.dim-category {
         .dim-panel__sortopt[aria-current="true"],
         .dim-pill__input:checked + .dim-pill,
         .dim-quick--on,
+        .dim-daterange__day--end,
         .dim-line__iconbtn[aria-pressed="true"],
         .dim-line__iconbtn[aria-expanded="true"],
         .dim-line [open] > .dim-line__iconbtn {
@@ -5514,8 +5499,8 @@ body.dim-category {
     // group", whose answer is its own options: a grid of equal columns wraps a wide facet inside
     // its track while another track stands empty. So the panel is a wrapping flex row and each
     // group is as wide as its content: two facets that fit together share a row, and two that
-    // do not STACK, each on one clean line. The date group is a row of its own, which is what its
-    // full basis says.
+    // do not STACK, each on one clean line. The foot is a row of its own, which is what its full
+    // basis says.
     @media (min-width: 768px) {
         .dim-toolbar__panel {
             flex-direction: row;
@@ -5528,15 +5513,8 @@ body.dim-category {
             flex: 0 1 auto;
         }
 
-        .dim-toolbar__panel > .dim-toolbar__group--date,
         .dim-toolbar__panel > .dim-toolbar__actions {
             flex: 1 1 100%;
-        }
-
-        // Two months side by side from here up, the width the calendar's component counts two months at
-        // (WIDE in daterange/DateRange.tsx): two 7-column months of 40px days, their gap and the padding.
-        .dim-daterange__pop {
-            width: 38rem;
         }
     }
 
@@ -5596,11 +5574,6 @@ body.dim-category {
         .dim-quick {
             display: inline-flex;
             align-items: center;
-            min-height: 44px;
-        }
-
-        // And so are the calendar's two boxes, which share the quick options' line.
-        .dim-daterange__field {
             min-height: 44px;
         }
 

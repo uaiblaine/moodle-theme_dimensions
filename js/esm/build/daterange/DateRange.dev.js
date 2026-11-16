@@ -2,19 +2,23 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 import { jsxDEV } from "react/jsx-dev-runtime";
 /**
- * The one calendar of the showcase, on both shells: a start box and an end box over one popover.
+ * The one calendar of the showcase, on both shells: a start box and an end box over the months, inside the date
+ * button's layer.
  *
  * The markup is the template category_daterange's, hook for hook (scss/category.scss and the Behat steps read
- * those hooks); the rules are ./model's and there is no timezone arithmetic (./calendar).
+ * those hooks); the rules are ./model's and there is no timezone arithmetic (./calendar). The layer around it -
+ * the heading, the quick options, the foot with "Clear period" and "Show" - is the server's (category_toolbar),
+ * and the layer opens and closes as a native disclosure the filter line places: nothing here opens or shuts.
  *
  * It is mounted by the listing's mountCalendar(), on both shells, as a node APPENDED
- * to the toolbar's empty dim-daterange region: core's react_autoinit observes added nodes and never
+ * to the layer's empty dim-daterange region: core's react_autoinit observes added nodes and never
  * attributes. The props are what the server resolved and the client may not compute: id, firstday,
  * today, from, to. It talks to the listing through events on that region, never through a callback:
  *
  * - it sends `dim-daterange:mounted` once it is drawn, and only then does the listing hide the two
  *   native date fields, which stay the form's transport;
- * - it sends `dim-daterange:pick`, detail {from, to}, whenever the period in force changes;
+ * - it sends `dim-daterange:pick`, detail {from, to}, whenever the period in force changes: on every press
+ *   of a day and every clear, so the list is refreshed at once while the layer stays open;
  * - it takes `dim-daterange:set`, detail {from, to}, the period the address says, silently.
  *
  * Without the day the site calls today it draws nothing and says nothing ({@see DateRange}).
@@ -43,8 +47,6 @@ const KEYS = [
   "category_dateclearto",
   "category_dateprevmonth",
   "category_datenextmonth",
-  "category_dateclear",
-  "category_datedone",
   "category_datechoosefrom",
   "category_datechooseto"
 ];
@@ -76,7 +78,7 @@ const monthsFor = /* @__PURE__ */ __name((query) => query.matches ? 2 : 1, "mont
 const report = /* @__PURE__ */ __name((failure) => load("core/notification").then((notification) => notification.exception(failure)), "report");
 const blank = /* @__PURE__ */ __name((slot) => /* @__PURE__ */ jsxDEV("span", { className: "dim-daterange__day dim-daterange__day--blank", role: "gridcell" }, `blank-${slot}`, false, {
   fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-  lineNumber: 164,
+  lineNumber: 166,
   columnNumber: 5
 }), "blank");
 const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
@@ -98,9 +100,6 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
     setModel(next);
   }, "update");
   const focusDay = /* @__PURE__ */ __name(() => setFocusing((tick) => tick + 1), "focusDay");
-  const restore = /* @__PURE__ */ __name((bound) => {
-    (bound === TO ? toBox : fromBox).current?.focus();
-  }, "restore");
   const tell = /* @__PURE__ */ __name((applied) => {
     update(applied.model);
     if (applied.changed && root.current) {
@@ -133,21 +132,14 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
     const region = element.closest(REGION);
     const onSet = /* @__PURE__ */ __name((event) => {
       const detail = event.detail || {};
-      update(State.set(state.current, detail.from, detail.to));
+      update(State.set(state.current, detail.from, detail.to, months.current));
     }, "onSet");
-    const onPointer = /* @__PURE__ */ __name((event) => {
-      if (state.current.open && event.target instanceof Node && !element.contains(event.target)) {
-        tell(State.commit(state.current));
-      }
-    }, "onPointer");
     region?.addEventListener(EVENTS.set, onSet);
-    document.addEventListener("pointerdown", onPointer);
     element.dispatchEvent(new CustomEvent(EVENTS.mounted, { bubbles: true }));
     hold.current?.resolve();
     hold.current = null;
     return () => {
       region?.removeEventListener(EVENTS.set, onSet);
-      document.removeEventListener("pointerdown", onPointer);
     };
   }, [strings]);
   useEffect(() => {
@@ -156,8 +148,8 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
       const next = monthsFor(query);
       months.current = next;
       setCount(next);
-      if (state.current.open) {
-        update(State.widen(state.current, next));
+      update(State.widen(state.current, next));
+      if (pop.current && pop.current.contains(document.activeElement)) {
         focusDay();
       }
     }, "onWidth");
@@ -175,42 +167,26 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
     return null;
   }
   const onBox = /* @__PURE__ */ __name((bound) => {
-    const current = state.current;
-    update(current.open ? State.setMode(current, bound, today, months.current) : State.open(current, bound, today, months.current));
+    update(State.setMode(state.current, bound, today, months.current));
     focusDay();
   }, "onBox");
   const onDay = /* @__PURE__ */ __name((iso) => {
-    update(State.press(state.current, iso));
+    tell(State.press(state.current, iso));
     focusDay();
   }, "onDay");
   const onStep = /* @__PURE__ */ __name((offset) => {
     update(State.step(state.current, offset));
     focusDay();
   }, "onStep");
-  const onDone = /* @__PURE__ */ __name(() => {
-    const current = state.current;
-    restore(current.field);
-    tell(State.commit(current));
-  }, "onDone");
   const onClear = /* @__PURE__ */ __name((bound) => {
     tell(State.drop(state.current, bound));
-    if (bound === FROM || bound === TO) {
-      restore(bound);
-    }
+    (bound === TO ? toBox : fromBox).current?.focus();
   }, "onClear");
   const onKey = /* @__PURE__ */ __name((event) => {
     const current = state.current;
-    if (event.key === "Escape") {
-      event.preventDefault();
-      if (current.open) {
-        update(State.close(current));
-        restore(current.field);
-      }
-      return;
-    }
     const target = stepOf(event.key, current.focused);
     const onday = event.target instanceof Element && event.target.closest(DAY);
-    if (target === null || !current.open || !onday) {
+    if (target === null || !onday) {
       return;
     }
     event.preventDefault();
@@ -220,40 +196,36 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
       focusDay();
     }
   }, "onKey");
-  const onBlur = /* @__PURE__ */ __name(() => {
-    window.setTimeout(() => {
-      const element = root.current;
-      if (element && !element.contains(document.activeElement)) {
-        update(State.close(state.current));
-      }
-    }, 0);
-  }, "onBlur");
+  const onHover = /* @__PURE__ */ __name((iso) => {
+    const next = State.hover(state.current, iso);
+    if (next !== state.current) {
+      update(next);
+    }
+  }, "onHover");
   const popid = `dim-daterange-pop-${id}`;
-  const both = model.draftfrom !== "" && model.draftto !== "";
-  let prompt = "";
-  if (model.opened) {
-    prompt = model.mode === TO ? strings.category_datechooseto : strings.category_datechoosefrom;
-  }
+  const prompt = model.mode === TO ? strings.category_datechooseto : strings.category_datechoosefrom;
+  const band = State.drawn(model);
+  const banded = band.from !== "" && band.to !== "" && band.from !== band.to;
   const box = /* @__PURE__ */ __name((bound, label, clear) => {
-    const value = bound === TO ? model.draftto : model.draftfrom;
-    const active = model.open && bound === model.mode ? " dim-daterange__field--active" : "";
+    const value = bound === TO ? model.to : model.from;
+    const active = bound === model.mode;
     return /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__box", children: [
       /* @__PURE__ */ jsxDEV(
         "button",
         {
           ref: bound === TO ? toBox : fromBox,
-          className: `form-control dim-daterange__field${active}`,
+          className: `dim-daterange__field${active ? " dim-daterange__field--active" : ""}`,
           type: "button",
           id: `dim-daterange-${id}-${bound}`,
           "data-action": "dim-daterange-open",
           "data-bound": bound,
-          "aria-expanded": model.open ? "true" : "false",
+          "aria-pressed": active ? "true" : "false",
           "aria-controls": popid,
           onClick: () => onBox(bound),
           children: [
             /* @__PURE__ */ jsxDEV("i", { className: "fa fa-calendar-days dim-daterange__icon", "aria-hidden": "true" }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-              lineNumber: 480,
+              lineNumber: 425,
               columnNumber: 21
             }),
             /* @__PURE__ */ jsxDEV(
@@ -267,13 +239,13 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-                lineNumber: 481,
+                lineNumber: 426,
                 columnNumber: 21
               }
             ),
             /* @__PURE__ */ jsxDEV("span", { className: "dim-daterange__value", "data-region": "dim-daterange-value", children: say(value, MEDIUM, language) }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-              lineNumber: 485,
+              lineNumber: 430,
               columnNumber: 21
             })
           ]
@@ -282,7 +254,7 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
         true,
         {
           fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-          lineNumber: 469,
+          lineNumber: 414,
           columnNumber: 17
         }
       ),
@@ -298,12 +270,12 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
           children: [
             /* @__PURE__ */ jsxDEV("i", { className: "fa fa-xmark", "aria-hidden": "true" }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-              lineNumber: 495,
+              lineNumber: 440,
               columnNumber: 21
             }),
             /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: clear }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-              lineNumber: 495,
+              lineNumber: 440,
               columnNumber: 71
             })
           ]
@@ -312,32 +284,25 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
         true,
         {
           fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-          lineNumber: 487,
+          lineNumber: 432,
           columnNumber: 17
         }
       )
     ] }, void 0, true, {
       fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-      lineNumber: 468,
+      lineNumber: 413,
       columnNumber: 13
     });
   }, "box");
   const day = /* @__PURE__ */ __name((iso) => {
-    const edge = iso === model.draftfrom || iso === model.draftto;
-    const inside = both && iso > model.draftfrom && iso < model.draftto;
     const classes = ["dim-daterange__day"];
-    if (inside) {
-      classes.push("dim-daterange__day--in");
+    if (banded && iso > band.from && iso < band.to) {
+      classes.push("dim-daterange__day--between");
     }
-    if (edge) {
-      classes.push("dim-daterange__day--edge");
-    }
-    if (both && model.draftfrom !== model.draftto && iso === model.draftfrom) {
-      classes.push("dim-daterange__day--start");
-    }
-    if (both && model.draftfrom !== model.draftto && iso === model.draftto) {
+    if (iso === band.from || iso === band.to) {
       classes.push("dim-daterange__day--end");
     }
+    const inforce = iso === model.from || iso === model.to || model.from !== "" && model.to !== "" && iso > model.from && iso < model.to;
     return /* @__PURE__ */ jsxDEV(
       "button",
       {
@@ -348,29 +313,29 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
         "data-date": iso,
         "aria-label": say(iso, { dateStyle: "long" }, language),
         tabIndex: iso === model.focused ? 0 : -1,
-        "aria-selected": edge || inside ? "true" : "false",
+        "aria-selected": inforce ? "true" : "false",
         "aria-current": iso === today ? "date" : void 0,
         onClick: () => onDay(iso),
+        onPointerEnter: () => onHover(iso),
         children: String(Number(iso.slice(8)))
       },
       iso,
       false,
       {
         fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-        lineNumber: 528,
+        lineNumber: 468,
         columnNumber: 13
       }
     );
   }, "day");
   const month = /* @__PURE__ */ __name((index) => {
     const hidden = index >= count;
-    const painted = model.opened && !hidden;
     const shown = monthAt(model.cursor, index);
     const captionid = `${popid}-month-${index}`;
     return /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__monthblock", "data-region": "dim-daterange-monthblock", hidden, children: [
-      /* @__PURE__ */ jsxDEV("span", { className: "dim-daterange__month", id: captionid, "data-region": "dim-daterange-month", "aria-live": "polite", children: painted ? say(firstOf(shown), { year: "numeric", month: "long" }, language) : "" }, void 0, false, {
+      /* @__PURE__ */ jsxDEV("span", { className: "dim-daterange__month", id: captionid, "data-region": "dim-daterange-month", "aria-live": "polite", children: hidden ? "" : say(firstOf(shown), { year: "numeric", month: "long" }, language) }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-        lineNumber: 559,
+        lineNumber: 499,
         columnNumber: 17
       }),
       /* @__PURE__ */ jsxDEV(
@@ -378,61 +343,61 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
         {
           className: "dim-daterange__grid",
           "data-region": "dim-daterange-grid",
-          role: painted ? "grid" : void 0,
-          "aria-labelledby": painted ? captionid : void 0,
+          role: hidden ? void 0 : "grid",
+          "aria-labelledby": hidden ? void 0 : captionid,
           children: [
-            painted ? /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__row dim-daterange__row--head", role: "row", children: weekdays(weekstart).map((name) => /* @__PURE__ */ jsxDEV(
+            hidden ? null : /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__row dim-daterange__row--head", role: "row", children: weekdays(weekstart).map((name) => /* @__PURE__ */ jsxDEV(
               "span",
               {
                 className: "dim-daterange__dow",
                 role: "columnheader",
                 "aria-label": say(name, { weekday: "long" }, language),
-                children: say(name, { weekday: "short" }, language)
+                children: say(name, { weekday: "narrow" }, language)
               },
               name,
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-                lineNumber: 571,
+                lineNumber: 511,
                 columnNumber: 33
               }
             )) }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-              lineNumber: 569,
+              lineNumber: 509,
               columnNumber: 25
-            }) : null,
-            painted ? weeks(shown, weekstart).map((row, rowindex) => /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__row", role: "row", children: row.map((iso, slot) => iso === "" ? blank(slot) : day(iso)) }, `${firstOf(shown)}-${rowindex}`, false, {
+            }),
+            hidden ? null : weeks(shown, weekstart).map((row, rowindex) => /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__row", role: "row", children: row.map((iso, slot) => iso === "" ? blank(slot) : day(iso)) }, `${firstOf(shown)}-${rowindex}`, false, {
               fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-              lineNumber: 581,
+              lineNumber: 521,
               columnNumber: 25
-            })) : null
+            }))
           ]
         },
         void 0,
         true,
         {
           fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-          lineNumber: 562,
+          lineNumber: 502,
           columnNumber: 17
         }
       )
     ] }, index, true, {
       fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-      lineNumber: 558,
+      lineNumber: 498,
       columnNumber: 13
     });
   }, "month");
-  const set = model.draftfrom !== "" || model.draftto !== "" ? " dim-daterange--set" : "";
-  return /* @__PURE__ */ jsxDEV("div", { ref: root, className: `dim-daterange${set}`, "data-region": "dim-daterange-field", onKeyDown: onKey, onBlur, children: [
+  const set = model.from !== "" || model.to !== "" ? " dim-daterange--set" : "";
+  return /* @__PURE__ */ jsxDEV("div", { ref: root, className: `dim-daterange${set}`, "data-region": "dim-daterange-field", onKeyDown: onKey, children: [
     /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__boxes", role: "group", "aria-label": strings.category_daterange, children: [
       box(FROM, strings.category_datefrom, strings.category_dateclearfrom),
       box(TO, strings.category_dateto, strings.category_dateclearto)
     ] }, void 0, true, {
       fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-      lineNumber: 593,
+      lineNumber: 533,
       columnNumber: 13
     }),
-    /* @__PURE__ */ jsxDEV("div", { ref: pop, className: "dim-daterange__pop", id: popid, "data-region": "dim-daterange-pop", hidden: !model.open, children: [
+    /* @__PURE__ */ jsxDEV("div", { ref: pop, className: "dim-daterange__pop", id: popid, "data-region": "dim-daterange-pop", children: [
       /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__nav", children: [
         /* @__PURE__ */ jsxDEV(
           "button",
@@ -444,12 +409,12 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
             children: [
               /* @__PURE__ */ jsxDEV("i", { className: "fa fa-chevron-left", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-                lineNumber: 605,
+                lineNumber: 545,
                 columnNumber: 25
               }),
               /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: strings.category_dateprevmonth }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-                lineNumber: 606,
+                lineNumber: 546,
                 columnNumber: 25
               })
             ]
@@ -458,13 +423,13 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
           true,
           {
             fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-            lineNumber: 599,
+            lineNumber: 539,
             columnNumber: 21
           }
         ),
         /* @__PURE__ */ jsxDEV("p", { className: "dim-daterange__prompt", "data-region": "dim-daterange-prompt", "aria-live": "polite", children: prompt }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-          lineNumber: 608,
+          lineNumber: 548,
           columnNumber: 21
         }),
         /* @__PURE__ */ jsxDEV(
@@ -477,12 +442,12 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
             children: [
               /* @__PURE__ */ jsxDEV("i", { className: "fa fa-chevron-right", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-                lineNumber: 615,
+                lineNumber: 555,
                 columnNumber: 25
               }),
               /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: strings.category_datenextmonth }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-                lineNumber: 616,
+                lineNumber: 556,
                 columnNumber: 25
               })
             ]
@@ -491,77 +456,37 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
           true,
           {
             fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-            lineNumber: 609,
+            lineNumber: 549,
             columnNumber: 21
           }
         )
       ] }, void 0, true, {
         fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-        lineNumber: 598,
+        lineNumber: 538,
         columnNumber: 17
       }),
-      /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__months", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__months", onPointerLeave: () => onHover(""), children: [
         month(0),
         month(1)
       ] }, void 0, true, {
         fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-        lineNumber: 619,
-        columnNumber: 17
-      }),
-      /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__footer", children: [
-        /* @__PURE__ */ jsxDEV(
-          "button",
-          {
-            className: "btn btn-link btn-sm dim-daterange__footerclear",
-            type: "button",
-            "data-action": "dim-daterange-clear",
-            onClick: () => onClear(""),
-            children: strings.category_dateclear
-          },
-          void 0,
-          false,
-          {
-            fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-            lineNumber: 624,
-            columnNumber: 21
-          }
-        ),
-        /* @__PURE__ */ jsxDEV(
-          "button",
-          {
-            className: "btn btn-primary btn-sm dim-daterange__done",
-            type: "button",
-            "data-action": "dim-daterange-done",
-            onClick: onDone,
-            children: strings.category_datedone
-          },
-          void 0,
-          false,
-          {
-            fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-            lineNumber: 630,
-            columnNumber: 21
-          }
-        )
-      ] }, void 0, true, {
-        fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-        lineNumber: 623,
+        lineNumber: 559,
         columnNumber: 17
       })
     ] }, void 0, true, {
       fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-      lineNumber: 597,
+      lineNumber: 537,
       columnNumber: 13
     })
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-    lineNumber: 592,
+    lineNumber: 532,
     columnNumber: 9
   });
 }, "Calendar");
 const DateRange = /* @__PURE__ */ __name((props) => parse(props.today) ? /* @__PURE__ */ jsxDEV(Calendar, { ...props }, void 0, false, {
   fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-  lineNumber: 651,
+  lineNumber: 577,
   columnNumber: 68
 }) : null, "DateRange");
 var DateRange_default = DateRange;

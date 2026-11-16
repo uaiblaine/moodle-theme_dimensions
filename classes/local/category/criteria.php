@@ -736,22 +736,18 @@ final class criteria {
     /**
      * How many filters the panel holds, for the number the Filters control prints on itself.
      *
-     * The badge counts what is behind it and nothing the line already shows: each custom field,
-     * the period as one however many of its two bounds are set (one control, one sentence to
-     * undo), and a state chosen among "More statuses". The search (in its own field), the scope
-     * (its cells), the favourites (the star) and the tree's category (the tree, and its chip) are
-     * all visible where they are set, so counting them here would announce twice what the reader
-     * can already see. {@see narrowing_count()} counts everything.
+     * The badge counts what is behind it and nothing the line already shows: each custom field
+     * and a state chosen among "More statuses". The search (in its own field), the scope (its
+     * cells), the favourites (the star), the period (the date button's dot, and its chip) and the
+     * tree's category (the tree, and its chip) are all visible where they are set, so counting them
+     * here would announce twice what the reader can already see. {@see narrowing_count()} counts
+     * everything.
      *
      * @return int
      */
     public function filter_count(): int {
-        $count = count($this->fields)
+        return count($this->fields)
             + ($this->state !== null && !self::is_scope($this->state) ? 1 : 0);
-        if ($this->datefrom !== '' || $this->dateto !== '') {
-            $count++;
-        }
-        return $count;
     }
 
     /**

@@ -20,6 +20,18 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   still name the administrator). The title and the further lines have no surface yet; the profile layer that draws
   them comes next. The custom fields' definitions are kept in a new shared cache (`identityfields`), emptied when a
   profile field or category changes, and read only while a setting names a custom field.
+- **The category showcase's start date has a button of its own on the filter bar** (2026100620). A calendar button
+  follows Filters in the capsule; its name says the period ("Start date: 17 November 2026 to 4 December 2026") and a
+  small dot sits on its corner while one is set. It opens its own layer, under the bar's end or as a sheet from the
+  bottom of a phone, which closes on Escape, on a press outside it or on its "Show 16", and never stands open beside
+  the Filters panel: the heading, the quick options ("Today", "This week", ...), the "From" and "To" boxes, the two
+  months (one on a narrow screen) turned with chevrons, and a foot with "Clear period" and "Show 16". A press on a day
+  sets the box in use and moves to the other one, and the list is refreshed at once while the layer stays open:
+  there is no "Done" any more. Each box clears its own day. Days are 32 x 28px; today has a thin ring, the period's two
+  ends are filled squares in the brand colour and the days between a pale band, and while a first day is set the band
+  follows the pointer. The Filters panel holds the option groups only, and its badge no longer counts the period,
+  which stays a chip under the bar. Without JavaScript the button opens the same layer with the two date fields, the
+  quick options, "Clear period" and "Filter".
 - **The category showcase's filter bar is the fleet Design System's compact bar** (2026100619). After the scope, the
   bar's end holds a grey cluster: the number of courses found, then a white capsule with the favourites star, Filters,
   Organise and the two view buttons; the search sits in a capsule of its own with the managers' menu. Every control

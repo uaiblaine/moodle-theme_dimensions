@@ -74,6 +74,9 @@ let appended = 0;
 /** Where the number goes in the Filters panel's "Show" sentence: category_toolbar::SHOW_PLACEHOLDER. */
 const SHOW_NUMBER = '{n}';
 
+/** Where the period goes in the date button's name: category_toolbar::PERIOD_PLACEHOLDER. */
+const PERIOD_SENTENCE = '{period}';
+
 /** How many times the count line has been rewritten, so a repeat still announces. */
 let announcements = 0;
 
@@ -291,8 +294,8 @@ export const paintFilterBadge = (root: HTMLElement, response: Answer): void => {
  * which every answer takes away. The sentence is visually hidden wherever the bar's count says what it says,
  * and shown where it says where the results lie across the areas, which is exactly when the answer offers
  * "See all as a list" (the template's own condition). The same number goes to the bar's count on a line the
- * server drew (the line's component is told it otherwise, tellAnswer()) and into the Filters panel's "Show",
- * through the sentence the server wrote with {n} in the number's place.
+ * server drew (the line's component is told it otherwise, tellAnswer()) and into the "Show" of the Filters panel
+ * and of the date layer, through the sentence the server wrote with {n} in the number's place.
  *
  * @param {HTMLElement} root The listing section.
  * @param {object} response The rows response: countnumber, countline and seeallurl.
@@ -304,11 +307,12 @@ export const paintCount = (root: HTMLElement, response: Answer): void => {
     if (total && !drawnByLine(total)) {
         total.textContent = number;
     }
-    const show = root.querySelector<HTMLElement>(SELECTORS.filtersshow);
-    const template = show ? show.dataset.dimTemplate || '' : '';
-    if (show && template.indexOf(SHOW_NUMBER) >= 0) {
-        show.textContent = template.split(SHOW_NUMBER).join(number);
-    }
+    root.querySelectorAll<HTMLElement>(`${SELECTORS.filtersshow}, ${SELECTORS.periodshow}`).forEach((show) => {
+        const template = show.dataset.dimTemplate || '';
+        if (template.indexOf(SHOW_NUMBER) >= 0) {
+            show.textContent = template.split(SHOW_NUMBER).join(number);
+        }
+    });
     const url = response.seeallurl || '';
     const line = root.querySelector(SELECTORS.count);
     if (!line) {
@@ -542,6 +546,34 @@ const createChip = (chip: Chip): HTMLAnchorElement => {
 };
 
 /**
+ * Bring the date button in line with an answer's period chip: its name and its dot on a line the server drew (the
+ * line's component is told the chip's sentence otherwise, tellAnswer()), and the address of the layer's "Clear
+ * period", which is the chip's own: the listing with both bounds dropped and everything else kept.
+ *
+ * @param {HTMLElement} root The listing section.
+ * @param {object|null} chip The answer's period chip, or null where no period is set.
+ * @returns {void}
+ */
+export const paintDateButton = (root: HTMLElement, chip: Chip | null): void => {
+    const button = root.querySelector<HTMLElement>(SELECTORS.periodbutton);
+    if (button && !drawnByLine(button)) {
+        const template = button.dataset.dimTemplate || '';
+        const name = chip && template.indexOf(PERIOD_SENTENCE) >= 0
+            ? template.split(PERIOD_SENTENCE).join(chip.label)
+            : button.getAttribute('data-dim-tip') || '';
+        button.setAttribute('aria-label', name);
+        const dot = button.querySelector<HTMLElement>(SELECTORS.perioddot);
+        if (dot) {
+            dot.hidden = chip === null;
+        }
+    }
+    const clear = root.querySelector<HTMLAnchorElement>(SELECTORS.periodclear);
+    if (clear && chip) {
+        clear.href = withPanel(chip.url);
+    }
+};
+
+/**
  * Bring the row under the filter line in line with an answer: whether it shows, its chips, "Clear all".
  *
  * @param {HTMLElement} root The listing section.
@@ -565,14 +597,16 @@ export const paintChips = (root: HTMLElement, response: Answer): void => {
     if (list) {
         list.replaceChildren(...chips.filter((chip) => chip.param !== CHIP_PERIOD).map(createChip));
     }
+    const periods = chips.filter((chip) => chip.param === CHIP_PERIOD);
     const period = row.querySelector(SELECTORS.rangepill);
     if (period) {
-        period.replaceChildren(...chips.filter((chip) => chip.param === CHIP_PERIOD).map(createChip));
+        period.replaceChildren(...periods.map(createChip));
     }
     const clear = row.querySelector<HTMLElement>(SELECTORS.clear);
     if (clear) {
         clear.hidden = !response.clearall;
     }
+    paintDateButton(root, periods.length ? periods[0] : null);
 };
 
 /**

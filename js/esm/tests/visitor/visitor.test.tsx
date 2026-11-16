@@ -147,8 +147,8 @@ describe('the components on the visitor\'s markup', () => {
         expect(line.querySelector('input[type="search"]')?.getAttribute('name')).toBe('q');
         expect(line.querySelector('[data-region="dim-line-star"]')).toBeNull();
         expect(line.querySelector('[data-role="scope"]')).toBeNull();
-        // The Filters panel the server drew is adopted whole, the period's region in it.
-        expect(line.querySelector('[data-region="dim-filters-panel"] [data-region="dim-daterange"]')).not.toBeNull();
+        // The date layer the server drew is adopted whole, the period's region in it.
+        expect(line.querySelector('[data-region="dim-period-layer"] [data-region="dim-daterange"]')).not.toBeNull();
     });
 
     it('draws the line again when it is mounted again after an unmount emptied it', async() => {
@@ -177,7 +177,7 @@ describe('the components on the visitor\'s markup', () => {
         expect(line.hasAttribute(DRAWN)).toBe(true);
         expect(line.querySelector('input[type="search"]')).not.toBeNull();
         expect(line.querySelectorAll('[data-region="dim-vitrine-group"][data-name^="cf_"]')).toHaveLength(fields);
-        expect(line.querySelector('[data-region="dim-filters-panel"] [data-region="dim-daterange"]')).not.toBeNull();
+        expect(line.querySelector('[data-region="dim-period-layer"] [data-region="dim-daterange"]')).not.toBeNull();
         await act(async() => {
             second.unmount();
         });

@@ -459,13 +459,15 @@ final class amd_source_test extends \basic_testcase {
      * Writing the whole paragraph's text would wipe the other regions. Nothing is composed: the
      * number and the sentence arrive formatted, and the note is the answer's own sentence, shown
      * only once the panel's module says it opened the area. The same number is the bar's count on a
-     * line the server drew and goes into the Filters panel's "Show", in the server's own sentence. The
+     * line the server drew and goes into the "Show" of the Filters panel and of the date layer, in the
+     * server's own sentence. The
      * sentence is visually hidden exactly where the answer offers no "See all as a list", the template's
      * own condition.
      *
      * Changes that must make it fail: the sentence's visibility read from anything but the answer's
      * seeallurl; the bar's count left unwritten on the server's line, or written from another key; the
-     * "Show" label composed here rather than filled into the server's sentence.
+     * "Show" label composed here rather than filled into the server's sentence; the date layer's "Show" left
+     * unwritten.
      */
     public function test_the_count_line_is_four_regions_the_answer_writes(): void {
         $count = $this->body('paintCount');
@@ -478,7 +480,13 @@ final class amd_source_test extends \basic_testcase {
             'The bar\'s count is the sentence\'s number.'
         );
         $this->assertStringContainsString("line.classList.toggle('visually-hidden', url === '');", $count);
-        $this->assertStringContainsString("const template = show ? show.dataset.dimTemplate || '' : '';", $count);
+        $this->assertStringContainsString(
+            '${SELECTORS.filtersshow}, ${SELECTORS.periodshow}',
+            $count,
+            'Both "Show" buttons: the Filters panel\'s and the date layer\'s.'
+        );
+        $this->assertStringContainsString("const template = show.dataset.dimTemplate || '';", $count);
+        $this->assertStringContainsString("periodshow: '[data-action=\"dim-period-show\"]',", $this->shared());
         $this->assertStringContainsString('show.textContent = template.split(SHOW_NUMBER).join(number);', $count);
         $this->assertStringContainsString("const SHOW_NUMBER = '{n}';", $this->shared());
         $this->assertSame(\theme_dimensions\output\category_toolbar::SHOW_PLACEHOLDER, '{n}', 'The server\'s spelling.');
@@ -801,7 +809,9 @@ final class amd_source_test extends \basic_testcase {
         );
         $this->assertStringContainsString('clear.hidden = !response.clearall;', $chips);
         $this->assertStringContainsString('chips.filter((chip) => chip.param !== CHIP_PERIOD).map(createChip)', $chips);
-        $this->assertStringContainsString('chips.filter((chip) => chip.param === CHIP_PERIOD).map(createChip)', $chips);
+        $this->assertStringContainsString('const periods = chips.filter((chip) => chip.param === CHIP_PERIOD);', $chips);
+        $this->assertStringContainsString('period.replaceChildren(...periods.map(createChip));', $chips);
+        $this->assertStringContainsString('paintDateButton(root, periods.length ? periods[0] : null);', $chips);
         $create = $this->body('createChip');
         $this->assertStringContainsString('link.href = withPanel(chip.url);', $create, 'The open panel rides along.');
         $this->assertStringContainsString("link.dataset.action = 'dim-chip-remove';", $create);
@@ -856,5 +866,57 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringContainsString("await onSearch('');", $erase);
         $this->assertStringContainsString("eraser.hidden = search.value === '';", $this->body('paintEraser'));
         $this->assertStringContainsString('paintEraser(root);', $this->body('paintControls'));
+    }
+
+    /**
+     * The date button follows each answer's period chip, and its layer's "Clear period" is the listing's own.
+     *
+     * On a line the server drew, the painter names the button with the server's sentence filled with the period
+     * chip's words, or the filter's name alone without a chip, and shows its dot exactly while there is one; a
+     * line the component draws is told the chip's words instead (tellAnswer()). "Clear period" carries the
+     * chip's address, and a press on it clears the period in place, asking nothing where no period is set.
+     *
+     * Changes that must make it fail: the painter writing into a button the component draws; the dot shown or
+     * hidden on anything but the chip; the name composed rather than filled; the component told no period;
+     * "Clear period" followed as a link, or fetching where nothing is set.
+     */
+    public function test_the_date_button_follows_the_answers_period_chip(): void {
+        $button = $this->body('paintDateButton');
+        $this->assertMatchesRegularExpression(
+            '~const button = root\.querySelector<HTMLElement>\(SELECTORS\.periodbutton\);\s*'
+                . 'if \(button && !drawnByLine\(button\)\) \{~',
+            $button,
+            'A button the component draws is never written into here.'
+        );
+        $this->assertStringContainsString('? template.split(PERIOD_SENTENCE).join(chip.label)', $button);
+        $this->assertStringContainsString(": button.getAttribute('data-dim-tip') || '';", $button, 'No chip: the name alone.');
+        $this->assertStringContainsString('dot.hidden = chip === null;', $button);
+        $this->assertStringContainsString('clear.href = withPanel(chip.url);', $button);
+        $this->assertStringContainsString("const PERIOD_SENTENCE = '{period}';", $this->shared());
+        $this->assertSame(\theme_dimensions\output\category_toolbar::PERIOD_PLACEHOLDER, '{period}', 'The server\'s spelling.');
+        $hooks = [
+            'periodbutton' => 'data-region="dim-period-button"',
+            'perioddot' => 'data-region="dim-period-dot"',
+            'periodclear' => 'data-action="dim-period-clear"',
+        ];
+        foreach ($hooks as $key => $hook) {
+            $this->assertStringContainsString("{$key}: '[{$hook}]',", $this->shared());
+        }
+
+        $mounts = $this->read('js/esm/src/listing/mounts.ts');
+        $this->assertStringContainsString('const period = chips.find((chip) => chip.param === CHIP_PERIOD);', $mounts);
+        $this->assertStringContainsString(
+            "period: period ? period.label || '' : '',",
+            $mounts,
+            'The component is told the chip\'s words.'
+        );
+
+        $store = $this->read('js/esm/src/listing/store.ts');
+        $this->assertMatchesRegularExpression(
+            "~if \(Listing\.closestOf\(event, SELECTORS\.periodclear\)\) \{.*?event\.preventDefault\(\);\s*"
+                . "if \(state\.datefrom !== '' \|\| state\.dateto !== ''\) \{\s*setRange\('', ''\);\s*\}\s*return;~s",
+            $store,
+            '"Clear period" clears in place, and asks nothing where no period is set.'
+        );
     }
 }

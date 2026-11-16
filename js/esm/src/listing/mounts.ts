@@ -26,7 +26,7 @@
  */
 
 import Pending from '@moodle/lms/core/pending';
-import {SCOPE} from './address';
+import {CHIP_PERIOD, SCOPE} from './address';
 import type {ListingState} from './address';
 import {AREAS, CALENDAR, LINE, LINE_DRAWN, SELECTORS} from './events';
 
@@ -89,8 +89,8 @@ export const tellLine = (root: HTMLElement, type: string, detail: object): boole
 
 /**
  * Tell the filter line's component an answer's numbers - the result count, and the scope in SCOPE's
- * order - called after the painters, so the panel's groups its suggestions read are painted. A visitor's
- * answer carries no scope and no favourites.
+ * order - and its period chip's sentence, called after the painters, so the panel's groups its suggestions
+ * read are painted. A visitor's answer carries no scope and no favourites.
  *
  * @param {HTMLElement} root The listing section.
  * @param {object} response The rows response.
@@ -106,6 +106,8 @@ export const tellAnswer = (root: HTMLElement, response: Record<string, unknown>)
      * @returns {number}
      */
     const rank = (option: Option): number => SCOPE.indexOf(String(option.value));
+    const chips = Array.isArray(response.chips) ? response.chips as Array<{param?: string, label?: string}> : [];
+    const period = chips.find((chip) => chip.param === CHIP_PERIOD);
     tellLine(root, LINE.answer, {
         // The bar's count is the count sentence's number, as the server formatted it.
         total: typeof response.countnumber === 'string' ? response.countnumber : undefined,
@@ -114,6 +116,8 @@ export const tellAnswer = (root: HTMLElement, response: Record<string, unknown>)
         favourites: response.favourites || null,
         filtercount: Number(response.filtercount || 0),
         filtercountlabel: response.filtercountlabel || '',
+        // The date button's name carries the period chip's words; no chip is no period, and the button its name alone.
+        period: period ? period.label || '' : '',
     });
 };
 

@@ -75,9 +75,9 @@ final class first_paint_budget_test extends \advanced_testcase {
     private const CARD_BYTES = 2455;
 
     /**
-     * @var int HTML bytes of a logged-in flat listing without its cards: measured 18,341, + 3 %.
+     * @var int HTML bytes of a logged-in flat listing without its cards: measured 19,538, + 3 %.
      */
-    private const LISTING_BYTES = 18892;
+    private const LISTING_BYTES = 20125;
 
     /** @var int HTML bytes one more card adds to a visitor's listing: measured 2,095, + 3 %. */
     private const PUBLIC_CARD_BYTES = 2158;

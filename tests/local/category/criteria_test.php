@@ -171,18 +171,18 @@ final class criteria_test extends \advanced_testcase {
         $this->assertSame(make_timestamp(2026, 9, 17, 0, 0, 0, $timezone), $start->fromtime);
         $this->assertNull($start->totime, 'A start alone has no upper bound.');
         $this->assertTrue($start->has_filters());
-        $this->assertSame(1, $start->filter_count());
+        $this->assertSame(1, $start->narrowing_count());
 
         $end = new criteria(7, ['dateto' => '2026-09-19']);
         $this->assertSame(['', '2026-09-19'], [$end->datefrom, $end->dateto]);
         $this->assertNull($end->fromtime, 'An end alone has no lower bound.');
         $this->assertSame(make_timestamp(2026, 9, 20, 0, 0, 0, $timezone), $end->totime, 'Midnight AFTER the last day.');
         $this->assertTrue($end->has_filters());
-        $this->assertSame(1, $end->filter_count());
+        $this->assertSame(1, $end->narrowing_count());
 
         $both = new criteria(7, ['datefrom' => '2026-09-17', 'dateto' => '2026-09-19']);
         $this->assertSame([$start->fromtime, $end->totime], [$both->fromtime, $both->totime]);
-        $this->assertSame(1, $both->filter_count(), 'Both bounds are still one filter.');
+        $this->assertSame(1, $both->narrowing_count(), 'Both bounds are still one filter.');
 
         // A malformed bound beside a good one is dropped, and the good one stands alone.
         $broken = new criteria(7, ['datefrom' => '2026-02-30', 'dateto' => '2026-09-19']);
@@ -297,13 +297,16 @@ final class criteria_test extends \advanced_testcase {
     }
 
     /**
-     * A date range is ONE filter, and the organisation is none.
+     * A date range is ONE criterion, it is the date button's and not the Filters badge's, and the organisation is none.
      *
-     * The number on the filter panel's own summary is what a reader judges a
-     * collapsed panel by, and the two bounds of one control are cleared together,
-     * so counting them as two filters would overstate it.
+     * The two bounds of one control are cleared together, so counting them as two would overstate what narrows. The
+     * period has a button of its own on the line, whose dot and name say it is set, so the badge on Filters - the
+     * number a reader judges a collapsed panel by - leaves it out, as it leaves out everything the line shows.
+     *
+     * Changes that must make it fail: the period counted on the badge (a bound alone or both); the period not
+     * counted among what narrows the listing (what "Clear all" is offered from).
      */
-    public function test_the_filter_count_reads_a_date_range_as_one_filter(): void {
+    public function test_the_period_is_one_criterion_and_not_on_the_badge(): void {
         $this->resetAfterTest();
         $this->assertSame(0, (new criteria(7))->filter_count());
         $this->assertSame(0, (new criteria(7, ['sort' => criteria::SORT_NAME]))->filter_count());
@@ -311,33 +314,36 @@ final class criteria_test extends \advanced_testcase {
             (new criteria(7, ['sort' => criteria::SORT_NAME]))->has_filters(),
             'Reordering a listing hides nothing, so it is not something to clear.'
         );
-        $this->assertSame(1, (new criteria(7, ['datefrom' => '2026-09-17']))->filter_count());
-        $this->assertSame(
-            1,
-            (new criteria(7, ['datefrom' => '2026-09-17', 'dateto' => '2026-09-19']))->filter_count(),
-            'Two bounds of one control are one filter.'
-        );
+        foreach ([['datefrom' => '2026-09-17'], ['dateto' => '2026-09-19']] as $bound) {
+            $alone = new criteria(7, $bound);
+            $this->assertSame(0, $alone->filter_count(), 'A bound alone is the date button\'s, not the badge\'s.');
+            $this->assertSame(1, $alone->narrowing_count());
+        }
+        $both = new criteria(7, ['datefrom' => '2026-09-17', 'dateto' => '2026-09-19']);
+        $this->assertSame(0, $both->filter_count());
+        $this->assertSame(1, $both->narrowing_count(), 'Two bounds of one control are one criterion.');
         [$fieldid] = $this->select_fields(1, 1);
         $mixed = new criteria(7, [
             'search' => 'resgate',
             'fields' => [$fieldid => 1],
             'datefrom' => '2026-09-17',
         ]);
-        $this->assertSame(2, $mixed->filter_count(), 'The field and the period are in the panel; the term is in its own box.');
+        $this->assertSame(1, $mixed->filter_count(), 'The field is in the panel; the period and the term are on the line.');
         $this->assertSame(3, $mixed->narrowing_count(), 'All three narrow the listing.');
     }
 
     /**
      * The Filters badge counts what the panel holds; "Clear all" counts everything that narrows.
      *
-     * The panel holds the custom fields, the period and "More statuses" - the state chip's values
-     * outside criteria::SCOPE. The scope's own values are cells on the line, the term is in its
-     * box, the favourites are the star and the tree's category is the tree: each is visible where
-     * it is set, so the badge leaves them out, while narrowing_count() (what "Clear all" is offered
-     * from) counts every one of them.
+     * The panel holds the custom fields and "More statuses" - the state chip's values outside
+     * criteria::SCOPE. The scope's own values are cells on the line, the term is in its box, the
+     * favourites are the star, the period is the date button's (its dot, its name) and the tree's
+     * category is the tree: each is visible where it is set, so the badge leaves them out, while
+     * narrowing_count() (what "Clear all" is offered from) counts every one of them.
      *
      * Changes that must make it fail: a scope value counted by the badge (the second assertion); a
-     * "More statuses" value left out of it (the third); the search counted by it (the fourth).
+     * "More statuses" value left out of it (the third); the search or the period counted by it (the
+     * fourth); {@see test_the_period_is_one_criterion_and_not_on_the_badge()} holds the period alone.
      */
     public function test_the_badge_counts_what_the_panel_holds_and_clear_all_counts_everything(): void {
         $this->resetAfterTest();
@@ -366,8 +372,8 @@ final class criteria_test extends \advanced_testcase {
             'dateto' => '2026-09-20',
             'cat' => 9,
         ]);
-        $this->assertSame(4, $everything->filter_count(), 'Two fields, the period and the state: what the panel holds.');
-        $this->assertSame(7, $everything->narrowing_count(), 'And the term, the star and the tree beside them.');
+        $this->assertSame(3, $everything->filter_count(), 'Two fields and the state: what the panel holds.');
+        $this->assertSame(7, $everything->narrowing_count(), 'And the term, the star, the period and the tree beside them.');
         $shown = new criteria(7, ['search' => 'resgate', 'favourites' => true, 'sort' => 'name', 'cat' => 9]);
         $this->assertSame(0, $shown->filter_count(), 'Nothing the line or the tree shows is on the badge.');
     }

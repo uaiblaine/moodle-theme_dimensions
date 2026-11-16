@@ -479,9 +479,9 @@ final class category_listing_markup_test extends \advanced_testcase {
             'The result count, then the capsule, on the cluster\'s one ground.'
         );
         $this->assertSame(
-            ['dim-line-star', 'dim-filters', 'dim-organise', 'dim-view-row'],
+            ['dim-line-star', 'dim-filters', 'dim-period', 'dim-organise', 'dim-view-row'],
             $slots($xpath->query('//div[@data-region="dim-line-capsule"]/*')),
-            'The star, Filters, Organise and the view toggle, in one capsule.'
+            'The star, Filters, the date button right after it, Organise and the view toggle, in one capsule.'
         );
         $this->assertSame(
             ['dim-search-open', 'dim-line-search', 'manage'],
@@ -525,12 +525,13 @@ final class category_listing_markup_test extends \advanced_testcase {
         $this->assertSame('Filters', $word->textContent, 'The word, in a span of its own: the summary\'s accessible name.');
         $this->assertTrue(self::has_token($word->getAttribute('class'), 'visually-hidden'), 'Out of the picture at every width.');
         $this->assertSame(1, $xpath->query('./*[@data-region="dim-filtercount"]', $summary)->length, 'And the badge.');
+        $this->assertSame(0, $xpath->query('.//input[@type="date"]', $panel->item(0))->length, 'Option groups only.');
         $this->assertSame(
             2,
-            $xpath->query('.//input[@type="date"]', $panel->item(0))->length,
-            'Two date fields, which is what the client\'s single calendar writes into.'
+            $xpath->query('//details[@data-region="dim-period"]//input[@type="date"]')->length,
+            'Two date fields in the date button\'s layer, which is what the client\'s single calendar writes into.'
         );
-        $quick = $xpath->query('.//ul[' . self::has_class('dim-toolbar__quick') . ']//a', $panel->item(0));
+        $quick = $xpath->query('//details[@data-region="dim-period"]//ul[' . self::has_class('dim-toolbar__quick') . ']//a');
         $this->assertGreaterThan(0, $quick->length, 'The quick options are links, so they work with no script.');
         foreach ($quick as $link) {
             $this->assertStringContainsString('from=', $link->getAttribute('href'));
@@ -612,6 +613,7 @@ final class category_listing_markup_test extends \advanced_testcase {
         $controls = [
             'star' => './/button[@data-region="dim-line-star"]',
             'filters' => './/details[@data-region="dim-filters"]/summary',
+            'date' => './/details[@data-region="dim-period"]/summary',
             'organise' => './/details[@data-region="dim-organise"]/summary',
             'list' => './/button[@data-action="dim-view"][@value="list"]',
             'cards' => './/button[@data-action="dim-view"][@value="cards"]',
@@ -731,6 +733,128 @@ final class category_listing_markup_test extends \advanced_testcase {
     }
 
     /**
+     * The date button: a disclosure right after Filters, its summary the calendar icon named with the period.
+     *
+     * The summary is a capsule's icon button: the calendar glyph, named by its aria-label (the filter, then the
+     * period's sentence while one is set), its tooltip the filter's name, and the dot at its corner, drawn while a
+     * period is set and out of the accessibility tree. It carries the same name with {period} in the sentence's place,
+     * which the client fills from each answer's period chip. Closed on load, as Filters is.
+     *
+     * Changes that must make it fail: the button moved off its place after Filters; the dot drawn at rest or read out;
+     * the name or the template dropped; the disclosure drawn open; the glyph a caret or no calendar.
+     */
+    public function test_the_date_button_follows_filters_named_with_its_period_and_dotted(): void {
+        $this->resetAfterTest();
+        $context = $this->example_context('category_toolbar');
+        $xpath = $this->render_context('category_toolbar', $context);
+        $details = $xpath->query(
+            '//details[@data-region="dim-filters"]/following-sibling::*[1][self::details][@data-region="dim-period"]'
+        );
+        $this->assertSame(1, $details->length, 'Right after Filters.');
+        $this->assertFalse($details->item(0)->hasAttribute('open'), 'Closed on load.');
+        $summary = $xpath->query('./summary[@data-region="dim-period-button"]', $details->item(0))->item(0);
+        $this->assertTrue(self::has_token($summary->getAttribute('class'), 'dim-line__iconbtn'));
+        $this->assertSame(1, $xpath->query('./i[@class="fa fa-calendar-days"][@aria-hidden="true"]', $summary)->length);
+        $this->assertSame($context['datebuttonlabel'], $summary->getAttribute('aria-label'));
+        $this->assertStringStartsWith(
+            $context['datelegend'] . ': ',
+            $summary->getAttribute('aria-label'),
+            'The filter, then the period.'
+        );
+        $this->assertSame($context['datelegend'], $summary->getAttribute('data-dim-tip'));
+        $this->assertSame($context['datebuttontemplate'], $summary->getAttribute('data-dim-template'));
+        $this->assertSame(
+            get_string('category_datebutton', 'theme_dimensions', (object) [
+                'filter' => get_string('category_dategroup', 'theme_dimensions'),
+                'period' => category_toolbar::PERIOD_PLACEHOLDER,
+            ]),
+            'Start date: {period}',
+            'The server\'s sentence with the client\'s placeholder in it.'
+        );
+        $dot = $xpath->query('./span[@data-region="dim-period-dot"]', $summary)->item(0);
+        $this->assertSame('dim-line__dot', $dot->getAttribute('class'));
+        $this->assertSame('true', $dot->getAttribute('aria-hidden'), 'The dot is decorative: the name says the period.');
+        $this->assertFalse($dot->hasAttribute('hidden'), 'Drawn: the example holds a period.');
+
+        $rest = $this->render_context('category_toolbar', ['hasperiod' => false, 'datebuttonlabel' => 'Start date'] + $context);
+        $this->assertTrue(
+            $rest->query('//span[@data-region="dim-period-dot"]')->item(0)->hasAttribute('hidden'),
+            'Control: with no period there is no dot.'
+        );
+        $this->assertSame(
+            'Start date',
+            $rest->query('//summary[@data-region="dim-period-button"]')->item(0)->getAttribute('aria-label')
+        );
+    }
+
+    /**
+     * The date layer holds the period and its foot; the Filters panel holds option groups only.
+     *
+     * The layer is the date fieldset - its legend the heading, the quick options, the client's empty region and
+     * the two native date fields posting the two parameters - then the foot: "Clear period", a link to this listing
+     * with both bounds dropped (the period chip's address), "Show" with the panel foot's two sentences, and
+     * "Filter" for a reader without JavaScript. Without JavaScript the summary opens the layer and both fields and
+     * the quick links work: the fields are in the toolbar form.
+     *
+     * Changes that must make it fail: the date fieldset left in the Filters panel; a native field renamed or moved
+     * out of the form; the foot's three controls missing, reordered or given another action, address or template.
+     */
+    public function test_the_date_layer_holds_the_period_and_its_foot_and_works_without_javascript(): void {
+        $this->resetAfterTest();
+        $context = $this->example_context('category_toolbar');
+        $xpath = $this->render_context('category_toolbar', $context);
+        $this->assertSame(0, $xpath->query('//details[@data-region="dim-filters"]//*[@data-region="dim-date"]')->length);
+        $this->assertSame(0, $xpath->query('//details[@data-region="dim-filters"]//input[@type="date"]')->length);
+        $layer = $xpath->query('//details[@data-region="dim-period"]/div[@data-region="dim-period-layer"]');
+        $this->assertSame(1, $layer->length);
+        $this->assertSame(
+            ['dim-date', 'dim-period-foot'],
+            array_map(
+                static fn(\DOMElement $node): string => $node->getAttribute('data-region'),
+                iterator_to_array($xpath->query('./*', $layer->item(0)))
+            ),
+            'The period\'s fieldset, then the foot.'
+        );
+        $fieldset = $xpath->query('./fieldset[@data-region="dim-date"]', $layer->item(0))->item(0);
+        $legend = $xpath->query('./legend', $fieldset)->item(0);
+        $this->assertSame($context['datelegend'], trim($legend->textContent), 'The heading.');
+        $this->assertSame((string) $context['today'], $fieldset->getAttribute('data-today'));
+        $this->assertSame((string) $context['firstday'], $fieldset->getAttribute('data-firstday'));
+        $this->assertSame(count($context['datequick']), $xpath->query('.//a[@data-action="dim-quick"]', $fieldset)->length);
+        $this->assertSame(1, $xpath->query('.//div[@data-region="dim-daterange"][not(node())]', $fieldset)->length);
+        $inputs = $xpath->query(
+            '//form[@data-region="dim-vitrine-toolbar"]//details[@data-region="dim-period"]//input[@type="date"]'
+        );
+        $this->assertSame(
+            [[criteria::PARAM_DATEFROM, $context['datefrom']], [criteria::PARAM_DATETO, $context['dateto']]],
+            array_map(
+                static fn(\DOMElement $input): array => [$input->getAttribute('name'), $input->getAttribute('value')],
+                iterator_to_array($inputs)
+            ),
+            'Without JavaScript the two native fields post the two parameters, from inside the form.'
+        );
+
+        $foot = $xpath->query('./div[@data-region="dim-period-foot"]', $layer->item(0))->item(0);
+        $this->assertSame(
+            ['dim-period-clear', 'dim-period-show', 'dim-toolbar__submit dim-nojs-only'],
+            array_map(
+                static fn(\DOMElement $node): string => $node->getAttribute('data-action') ?: $node->getAttribute('class'),
+                iterator_to_array($xpath->query('./*', $foot))
+            ),
+            '"Clear period" at the start, "Show" at the end, "Filter" in its place without JavaScript.'
+        );
+        $clear = $xpath->query('./a[@data-action="dim-period-clear"]', $foot)->item(0);
+        $this->assertSame('dim-datelayer__clear', $clear->getAttribute('class'));
+        $this->assertSame($context['dateclearurl'], $clear->getAttribute('href'));
+        $this->assertSame(get_string('category_dateclear', 'theme_dimensions'), trim($clear->textContent));
+        $show = $xpath->query('./button[@data-action="dim-period-show"]', $foot)->item(0);
+        $this->assertSame('button', $show->getAttribute('type'), 'It closes the layer; it submits nothing.');
+        $this->assertSame('btn btn-sm btn-primary dim-datelayer__show dim-live-only', $show->getAttribute('class'));
+        $this->assertSame($context['showlabel'], trim($show->textContent));
+        $this->assertSame($context['showtemplate'], $show->getAttribute('data-dim-template'));
+    }
+
+    /**
      * The state group is split by criteria::SCOPE: the line's cells, and the panel's "More statuses".
      *
      * Both halves are one radio group by name, so one choice holds across them. The client splits
@@ -825,12 +949,13 @@ final class category_listing_markup_test extends \advanced_testcase {
                 'visually-hidden dim-toolbar__defaultsubmit',
                 'dim-line-star',
                 'dim-toolbar__submit',
+                'dim-toolbar__submit',
                 'dim-toolbar__sortsubmit',
                 'dim-view',
                 'dim-view',
             ],
             $found,
-            'The default first, then the star, the panel\'s Filter, the menu\'s Apply and the two views.'
+            'The default first, the star, the panel\'s and the date layer\'s Filter, the menu\'s Apply, the two views.'
         );
         foreach (['dim-toolbar__sortsubmit', 'dim-toolbar__submit'] as $name) {
             $submit = $xpath->query('//button[@type="submit"][' . self::has_class($name) . ']');

@@ -864,11 +864,11 @@ final class category_scss_test extends \basic_testcase {
             'The quick option in force is a chosen option.'
         );
         $this->assertStringNotContainsString('--dim-surface', $quickon, 'The page\'s surface is never its ink.');
-        $edge = $this->rule_body($scss, '.dim-daterange__day--edge');
-        $this->assertMatchesRegularExpression('~background:\s*var\(--dim-cta\);\s*color:\s*var\(--dim-cta-ink\);~', $edge);
+        $end = $this->rule_body($scss, '.dim-daterange__day--end');
+        $this->assertMatchesRegularExpression('~background:\s*var\(--dim-cta\);\s*color:\s*var\(--dim-cta-ink\);~', $end);
         $this->assertMatchesRegularExpression(
-            '~&:hover \{\s*background:\s*var\(--dim-cta-hover\);\s*color:\s*#fff;~',
-            $edge,
+            '~&:hover \{\s*background:\s*var\(--dim-cta\);\s*color:\s*var\(--dim-cta-ink\);~',
+            $end,
             'An end under the pointer keeps its pair: the plain day\'s pale hover would leave a white digit on it.'
         );
 
@@ -895,7 +895,8 @@ final class category_scss_test extends \basic_testcase {
             $pressed,
             $this->rule_body(
                 $scss,
-                ".dim-toolbar__filters[open] > .dim-line__iconbtn,\n    .dim-line__organise[open] > .dim-line__iconbtn"
+                ".dim-toolbar__filters[open] > .dim-line__iconbtn,\n    .dim-line__date[open] > .dim-line__iconbtn,\n"
+                    . "    .dim-line__organise[open] > .dim-line__iconbtn"
             ),
             'An open disclosure\'s summary wears the pressed face.'
         );
@@ -978,7 +979,8 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~min-height:\s*40px;~', $apply);
         $this->assertMatchesRegularExpression('~background:\s*var\(--dim-cta\);\s*color:\s*var\(--dim-cta-ink\);~', $apply);
 
-        $clear = $this->rule_body($scss, '.dim-toolbar__clear');
+        // The date layer's "Clear period" is the same text button, by construction: one rule.
+        $clear = $this->rule_body($scss, ".dim-toolbar__clear,\n    .dim-datelayer__clear");
         $this->assertMatchesRegularExpression('~padding:\s*0 \.25rem;~', $clear, 'A text button, not a box.');
         $this->assertMatchesRegularExpression('~border:\s*0;\s*background:\s*none;~', $clear);
         $this->assertMatchesRegularExpression('~color:\s*var\(--dim-ink\);~', $clear);
@@ -1017,12 +1019,12 @@ final class category_scss_test extends \basic_testcase {
      * Equal grid tracks answer "how many columns", but the groups differ in width: a wide facet
      * wraps inside its track while another track stands empty. So this pins a wrapping flex row
      * whose groups neither grow nor take a basis of their own (`flex: 0 1 auto`; a group that grew
-     * would be an equal column again), the date group as a row of its own, and no `display: grid`
+     * would be an equal column again), the foot as a row of its own, and no `display: grid`
      * or `grid-template-columns` in the block at all. Groups that do not fit one row stack, which
      * needs no rule: it is what a wrapping row does.
      *
      * Changes that must make it fail: `flex: 1 1 0` on the groups (the second assertion);
-     * `display: grid` restored (the last); the date group's basis dropped (the third).
+     * `display: grid` restored (the last); the foot's basis dropped (the third).
      */
     public function test_the_filter_groups_are_as_wide_as_their_options_and_share_a_row_where_they_fit(): void {
         $scss = $this->stylesheet('category.scss');
@@ -1039,11 +1041,11 @@ final class category_scss_test extends \basic_testcase {
             'A group is as wide as its options: it never grows, so it is never an equal column.'
         );
         $this->assertMatchesRegularExpression(
-            '~\.dim-toolbar__panel > \.dim-toolbar__group--date,\s*'
-                . '\.dim-toolbar__panel > \.dim-toolbar__actions \{\s*flex:\s*1 1 100%;~',
+            '~\.dim-toolbar__panel > \.dim-toolbar__actions \{\s*flex:\s*1 1 100%;~',
             $wide,
-            'The date group is a row of its own: its field and its quick options sit side by side.'
+            'The foot is a row of its own.'
         );
+        $this->assertStringNotContainsString('group--date', $scss, 'The panel holds no date group any more.');
         $this->assertDoesNotMatchRegularExpression(
             '~display:\s*grid|grid-template-columns~',
             $wide,
@@ -1227,98 +1229,172 @@ final class category_scss_test extends \basic_testcase {
     }
 
     /**
-     * Each date box's width is its own, and the popover's is its months'.
+     * The date layer's boxes, months and days wear the Design System's measures (date-button.md, D64).
      *
-     * A box with a flex basis in a row as wide as the panel grows to the panel's width and looks
-     * like the search box. Each of the two is shrink-to-fit between a floor and a ceiling, which
-     * also lets the quick options share their line, and keeps the room its clearing control is
-     * drawn in whether or not the control is there. That control is positioned inside the box,
-     * and its own display would outrank the hidden attribute the client writes on it: the
-     * stylesheet has to say that hidden means hidden.
+     * The boxes are the open search field's: side by side 6px apart, each 32px at the 8px corners on the inset
+     * ground with a card's line, a 16px glyph and .8125rem, keeping the room of its 24px clear (4px corners)
+     * whether or not the clear is there; the active box takes the brand tone's edge. The clear is positioned
+     * inside its box, and its own display would outrank the hidden attribute the client writes on it: the
+     * stylesheet has to say that hidden means hidden. The months are in the layer's flow - no popover of their
+     * own - each seven 32px columns; a day is a 32 x 28px cell, the weekday initials .75rem in the faint ink, and
+     * the turns 32px icon buttons. The layer is the Filters panel's popover, capped by the viewport.
      *
-     * The popover is capped by the viewport, not by its region: the region is only as wide as
-     * the boxes, so `max-width: 100%` would squeeze a seven-column month grid into the width of
-     * the buttons that open it. It holds one month below md and two from md up.
-     *
-     * Changes that must make it fail: `flex: 1 1 14rem` back on a box (the second assertion); the
-     * popover left at `max-width: 100%`; the hidden rule of the clearing control deleted; the md
-     * width deleted.
+     * Changes that must make it fail: a box grown to the layer or given another height, corner or ground; the
+     * active box's edge dropped; the hidden rule of the clear deleted; a day's cell or a month's width moved off
+     * the scale; the months made a popover again; the layer capped by the line again.
      */
-    public function test_the_date_boxes_are_never_the_width_of_the_panel(): void {
+    public function test_the_date_layer_wears_the_date_buttons_measures(): void {
         $scss = $this->stylesheet('category.scss');
 
-        $group = [1 => $this->rule_body($scss, '.dim-toolbar__group--date')];
-        $this->assertMatchesRegularExpression('~display:\s*flex;~', $group[1], 'The boxes and the quick options are a row.');
-        $this->assertMatchesRegularExpression('~flex-wrap:\s*wrap;~', $group[1]);
+        $boxes = $this->rule_body($scss, '.dim-daterange__boxes');
+        $this->assertMatchesRegularExpression('~display:\s*flex;\s*gap:\s*\.375rem;~', $boxes, 'Side by side, 6px apart.');
+        $box = $this->rule_body($scss, '.dim-daterange__box');
+        $this->assertMatchesRegularExpression('~position:\s*relative;~', $box);
+        $this->assertMatchesRegularExpression('~flex:\s*1 1 0;\s*min-width:\s*0;~', $box, 'Two equal boxes.');
 
-        $field = [1 => $this->rule_body($scss, '.dim-daterange__field')];
-        $this->assertMatchesRegularExpression('~flex:\s*0 1 auto;~', $field[1], 'It is sized by its content.');
-        $this->assertMatchesRegularExpression('~width:\s*auto;~', $field[1]);
-        $this->assertDoesNotMatchRegularExpression('~width:\s*100%~', $field[1]);
-        $this->assertMatchesRegularExpression('~max-width:\s*14rem;~', $field[1], 'And never wider than that.');
-        $this->assertMatchesRegularExpression('~min-width:\s*9\.5rem;~', $field[1], 'Nor narrower than a date reads in.');
-        $this->assertMatchesRegularExpression('~padding-right:\s*2\.25rem;~', $field[1], 'The room of its clearing control.');
+        $field = $this->rule_body($scss, '.dim-daterange__field');
+        $this->assertMatchesRegularExpression('~height:\s*2rem;~', $field, '32px.');
+        $this->assertMatchesRegularExpression('~padding:\s*0 2rem 0 \.5rem;~', $field, 'The room of its clear.');
+        $this->assertMatchesRegularExpression(
+            '~border:\s*1px solid var\(--dim-line\);\s*border-radius:\s*var\(--dim-radius-md\);\s*'
+                . 'background:\s*var\(--dim-surface-strong\);\s*color:\s*var\(--dim-ink\);\s*font-size:\s*\.8125rem;~',
+            $field,
+            'The open search field\'s box: a card\'s line, the 8px corners, the inset ground, .8125rem.'
+        );
+        $this->assertDoesNotMatchRegularExpression('~width:\s*100%|form-control~', $field);
+        $this->assertMatchesRegularExpression(
+            '~border-color:\s*var\(--dim-brand-edge\);~',
+            $this->rule_body($scss, '.dim-daterange__field--active'),
+            'The box the next press sets: the brand tone\'s edge.'
+        );
+        $this->assertMatchesRegularExpression('~font-size:\s*1rem;~', $this->rule_body($scss, '.dim-daterange__icon'));
 
-        $boxes = [1 => $this->rule_body($scss, '.dim-daterange__boxes')];
-        $this->assertMatchesRegularExpression('~display:\s*flex;~', $boxes[1]);
-        $this->assertMatchesRegularExpression('~flex-wrap:\s*wrap;~', $boxes[1], 'The two boxes wrap as units.');
-        $this->assertMatchesRegularExpression('~position:\s*relative;~', $this->rule_body($scss, '.dim-daterange__box'));
-
-        $clear = [1 => $this->rule_body($scss, '.dim-daterange__clear')];
-        $this->assertMatchesRegularExpression('~position:\s*absolute;~', $clear[1], 'Inside its box.');
-        $this->assertMatchesRegularExpression('~display:\s*inline-flex;~', $clear[1]);
+        $clear = $this->rule_body($scss, '.dim-daterange__clear');
+        $this->assertMatchesRegularExpression('~position:\s*absolute;~', $clear, 'Inside its box.');
+        $this->assertMatchesRegularExpression('~display:\s*inline-flex;~', $clear);
+        $this->assertMatchesRegularExpression('~width:\s*1\.5rem;\s*height:\s*1\.5rem;~', $clear, '24px.');
+        $this->assertMatchesRegularExpression('~border-radius:\s*var\(--dim-radius-xs\);~', $clear, 'The 4px corners.');
         $this->assertMatchesRegularExpression(
             '~&\[hidden\] \{\s*display:\s*none;\s*\}~',
-            $clear[1],
+            $clear,
             'Its own display would otherwise draw an empty box\'s control the client has hidden.'
         );
 
-        $quick = [1 => $this->rule_body($scss, '.dim-toolbar__quick')];
+        $this->assertStringNotContainsString('.dim-daterange__pop', $scss, 'The months are in the layer\'s flow: no popover.');
+        $this->assertMatchesRegularExpression('~width:\s*14rem;~', $this->rule_body($scss, '.dim-daterange__monthblock'));
+        $this->assertMatchesRegularExpression('~gap:\s*1rem;~', $this->rule_body($scss, '.dim-daterange__months'));
+        $day = $this->rule_body($scss, '.dim-daterange__day');
+        $this->assertMatchesRegularExpression('~width:\s*2rem;\s*height:\s*1\.75rem;~', $day, 'A 32 x 28px cell.');
+        $this->assertMatchesRegularExpression('~font-size:\s*\.8125rem;~', $day);
+        $this->assertMatchesRegularExpression('~&:hover \{\s*background:\s*var\(--dim-surface-subtle\);~', $day);
+        $dow = $this->rule_body($scss, '.dim-daterange__dow');
+        $this->assertMatchesRegularExpression('~width:\s*2rem;~', $dow);
+        $this->assertMatchesRegularExpression('~color:\s*var\(--dim-ink-faint\);\s*font-size:\s*\.75rem;~', $dow);
         $this->assertMatchesRegularExpression(
-            '~margin:\s*0;~',
-            $quick[1],
-            'The options share the boxes\' line, so they carry no margin above it.'
+            '~width:\s*2rem;\s*height:\s*2rem;~',
+            $this->rule_body($scss, '.dim-daterange__step'),
+            'The turns are the bar\'s 32px icon buttons.'
         );
 
-        $pop = [1 => $this->rule_body($scss, '.dim-daterange__pop')];
-        $this->assertMatchesRegularExpression('~width:\s*20rem;~', $pop[1], 'One month below md.');
+        $layer = $this->rule_body($scss, '.dim-datelayer');
+        $this->assertMatchesRegularExpression('~position:\s*absolute;~', $layer, 'A popover under the line.');
+        $this->assertMatchesRegularExpression('~width:\s*max-content;\s*max-width:\s*calc\(100vw - 2rem\);~', $layer);
+        $this->assertMatchesRegularExpression('~padding:\s*\.75rem;~', $layer);
+        $this->assertMatchesRegularExpression('~border-radius:\s*var\(--dim-radius\);~', $layer, 'The panel\'s 12px corners.');
+        $this->assertMatchesRegularExpression('~box-shadow:\s*var\(--dim-elevation-md\);~', $layer);
         $this->assertMatchesRegularExpression(
-            '~max-width:\s*calc\(100vw - 2rem\);~',
-            $pop[1],
-            'The popover is capped by the viewport and no longer by the boxes that open it.'
+            '~padding:\s*0 0 \.375rem;\s*color:\s*var\(--dim-muted\);\s*font-size:\s*\.75rem;\s*font-weight:\s*600;~',
+            $this->rule_body($scss, '.dim-datelayer__head'),
+            'The heading is the panel\'s group label.'
         );
         $this->assertMatchesRegularExpression(
-            '~\.dim-daterange__pop \{\s*width:\s*38rem;\s*\}~',
-            $this->wide_block($scss),
-            'Two months side by side from md up.'
-        );
-
-        $phone = $this->phone_block($scss);
-        $this->assertMatchesRegularExpression(
-            '~\.dim-daterange__field \{\s*min-height:\s*44px;\s*\}~',
-            $phone,
-            'Every control of the toolbar is 44px on a phone, the two boxes included.'
+            '~justify-content:\s*space-between;[^}]*padding-top:\s*\.75rem;\s*border-top:\s*1px solid var\(--dim-line\);~',
+            $this->rule_body($scss, '.dim-datelayer__foot'),
+            'The foot: a hairline over "Clear period" and "Show".'
         );
     }
 
     /**
-     * The calendar's two-month breakpoint is one number, written in the stylesheet and read by the module.
+     * Today's ring and the period's ends are the brand tone's in both colour modes, and the dot is the brand fill.
      *
-     * The stylesheet widens the popover for two months from md up and the module draws the second
-     * month from the same width. A module drawing two months in a 20rem popover squeezes both; one
-     * drawing one month in the wide popover leaves half of it empty; and one walking the focus into
-     * a month the other has not drawn closes the control. Nothing else reads both files.
+     * Today is a fact, a 1px ring of the brand tone's edge; the ends are a choice, the call to action's pair - the
+     * fill with its computed ink, which the dark block turns to the design's blue with white - and the days between
+     * the brand tint's band in the brand ink, square. The dot is the same fill. Every one of these reads an alias
+     * the dark mode declares again, so the pairs turn with the page.
+     *
+     * Changes that must make it fail: today's ring painted in another token; an end's fill or ink swapped for a
+     * token the dark mode does not turn; the band rounded; the dot on another fill; a pair's dark half dropped.
      */
-    public function test_the_calendars_two_months_are_the_same_breakpoint_in_the_stylesheet_and_the_module(): void {
+    public function test_today_and_the_period_ends_are_the_brand_tones_in_both_modes(): void {
+        $scss = $this->stylesheet('category.scss');
+        $today = $this->rule_body($scss, '.dim-daterange__day[aria-current="date"]');
+        $this->assertMatchesRegularExpression(
+            '~border-radius:\s*var\(--dim-radius-sm\);\s*box-shadow:\s*inset 0 0 0 1px var\(--dim-brand-edge\);~',
+            $today,
+            'Today: one pixel of the brand tone\'s edge at the 6px corners.'
+        );
+        $end = $this->rule_body($scss, '.dim-daterange__day--end');
+        $this->assertMatchesRegularExpression(
+            '~border-radius:\s*var\(--dim-radius-sm\);\s*background:\s*var\(--dim-cta\);\s*color:\s*var\(--dim-cta-ink\);\s*'
+                . 'font-weight:\s*600;~',
+            $end,
+            'The ends: a 6px square in the fill with its ink, at 600.'
+        );
+        $between = $this->rule_body($scss, '.dim-daterange__day--between');
+        $this->assertMatchesRegularExpression(
+            '~border-radius:\s*0;\s*background:\s*var\(--dim-brand-tint\);\s*color:\s*var\(--dim-primary-ink\);~',
+            $between,
+            'The band: square, the brand tint, the brand ink.'
+        );
+        $dot = $this->rule_body($scss, '.dim-line__dot');
+        $this->assertMatchesRegularExpression(
+            '~position:\s*absolute;\s*top:\s*-2px;\s*inset-inline-end:\s*-2px;\s*width:\s*\.5rem;\s*height:\s*\.5rem;\s*'
+                . 'border-radius:\s*50%;\s*background:\s*var\(--dim-cta\);~',
+            $dot,
+            'The dot: 8px, round, the brand fill, at the button\'s top end corner.'
+        );
+        $this->assertDoesNotMatchRegularExpression('~display:~', $dot, 'The hidden attribute alone takes it away.');
+        // The dark halves: the fill and its ink turn in this file's dark block, the tone in post.scss's.
+        $source = (string) file_get_contents($this->plugin_root() . '/scss/category.scss');
+        $this->assertMatchesRegularExpression(
+            '~:root\[data-bs-theme="dark"\] body\.dim-category \.dim-vitrine,\s*'
+                . ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-cmodal \{\s*'
+                . '--dim-cta:\s*var\(--dim-ds-blue-400, #4456ff\);\s*--dim-cta-ink:\s*#fff;~',
+            $source
+        );
+        $this->assertMatchesRegularExpression('~--dim-primary-ink:\s*var\(--dim-ds-blue-200, #adb2f0\);~', $source);
+        $post = (string) file_get_contents($this->plugin_root() . '/scss/post.scss');
+        $this->assertGreaterThanOrEqual(2, substr_count($post, '--dimensions-brand-edge: var(--bs-primary-border-subtle);'));
+        $this->assertGreaterThanOrEqual(2, substr_count($post, '--dimensions-brand-tint: var(--bs-primary-bg-subtle);'));
+        $this->assertMatchesRegularExpression(
+            '~--dim-brand-edge:\s*var\(--dimensions-brand-edge, ~',
+            $source,
+            'The category scope reads the tone through the theme\'s alias, which the dark mode turns.'
+        );
+    }
+
+    /**
+     * The calendar's two months fit the layer from the module's breakpoint up.
+     *
+     * The module draws the second month from WIDE (768px), and the months are fixed widths: two months, their
+     * gap, the layer's padding and its border must fit the layer's ceiling (the viewport less 2rem) at that
+     * width, and one month the narrowest phone's sheet. Nothing else reads both files.
+     */
+    public function test_the_calendars_two_months_fit_the_layer_from_the_modules_breakpoint(): void {
         $scss = $this->stylesheet('category.scss');
         $module = (string) file_get_contents($this->plugin_root() . '/js/esm/src/daterange/DateRange.tsx');
-        $this->assertMatchesRegularExpression("~^const WIDE = '\(min-width: 768px\)';$~m", $module);
-        $this->assertStringContainsString('dim-daterange__pop', $this->wide_block($scss), 'The popover widens in the md block.');
-        $this->assertSame(
-            1,
-            preg_match_all('~@media \(min-width: 768px\) \{(?:(?!\n    \}).)*\.dim-daterange__pop \{~s', $scss),
-            'And the md block is the one at min-width: 768px, the module\'s WIDE.'
-        );
+        $this->assertSame(1, preg_match("~^const WIDE = '\(min-width: (\d+)px\)';$~m", $module, $wide));
+        $rem = static function (string $body, string $property): float {
+            preg_match('~(?<![\w-])' . preg_quote($property, '~') . ':\s*([\d.]+)rem;~', $body, $found);
+            return (float) ($found[1] ?? 0);
+        };
+        $month = $rem($this->rule_body($scss, '.dim-daterange__monthblock'), 'width');
+        $gap = $rem($this->rule_body($scss, '.dim-daterange__months'), 'gap');
+        $padding = $rem($this->rule_body($scss, '.dim-datelayer'), 'padding');
+        $this->assertSame([14.0, 1.0, 0.75], [$month, $gap, $padding], 'Precondition: the measures read.');
+        $two = (2 * $month + $gap + 2 * $padding) * 16 + 2;
+        $this->assertLessThanOrEqual((int) $wide[1] - 32, $two, 'Two months fit the layer at the module\'s WIDE.');
+        $this->assertLessThanOrEqual(320 - 32, ($month + 2 * $padding) * 16 + 2, 'One month fits the narrowest phone.');
     }
 
     /**
@@ -1500,7 +1576,7 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~gap:\s*\.375rem;~', $row);
         $this->assertDoesNotMatchRegularExpression(
             '~margin-left:\s*auto~',
-            $this->rule_body($scss, '.dim-toolbar__clear'),
+            $this->rule_body($scss, ".dim-toolbar__clear,\n    .dim-datelayer__clear"),
             'The clear link follows the sentence; it is not pushed to the end of the line.'
         );
         $this->assertMatchesRegularExpression('~&:empty \{\s*display:\s*none;~', $this->rule_body($scss, '.dim-toolbar__pillbar'));
@@ -1548,7 +1624,8 @@ final class category_scss_test extends \basic_testcase {
         );
         $open = $this->rule_body(
             $scss,
-            ".dim-toolbar__filters[open] > .dim-line__iconbtn,\n    .dim-line__organise[open] > .dim-line__iconbtn"
+            ".dim-toolbar__filters[open] > .dim-line__iconbtn,\n    .dim-line__date[open] > .dim-line__iconbtn,\n"
+                . "    .dim-line__organise[open] > .dim-line__iconbtn"
         );
         $this->assertMatchesRegularExpression('~background:\s*var\(--dim-brand-tint\);~', $open);
         $this->assertMatchesRegularExpression(
@@ -1991,13 +2068,12 @@ final class category_scss_test extends \basic_testcase {
             $this->rule_body($scss, '.dim-line__option--active')
         );
 
-        // The sheet of the two-line step, and the calendar in its flow.
+        // The sheets of the two-line step: the Filters panel and the date layer, one rule.
         $this->assertMatchesRegularExpression(
-            '~\.dim-line--s2 \{\s*\.dim-toolbar__filters\[open\] \{\s*flex:\s*none;\s*\}\s*\.dim-toolbar__panel \{\s*'
+            '~\.dim-line--s2 \{\s*\.dim-toolbar__filters\[open\] \{\s*flex:\s*none;\s*\}\s*'
+                . '\.dim-toolbar__panel,\s*\.dim-datelayer \{\s*'
                 . 'position:\s*fixed;\s*top:\s*auto;\s*right:\s*0;\s*bottom:\s*0;\s*left:\s*0;[^}]*max-height:\s*80vh;'
-                . '[^}]*overflow-y:\s*auto;[^}]*border-radius:\s*var\(--dim-radius-xl\) var\(--dim-radius-xl\) 0 0;[^}]*\}\s*'
-                . '\.dim-daterange \{\s*flex-wrap:\s*wrap;\s*\}\s*'
-                . '\.dim-daterange__pop \{\s*position:\s*static;\s*flex:\s*1 1 100%;~',
+                . '[^}]*overflow-y:\s*auto;[^}]*border-radius:\s*var\(--dim-radius-xl\) var\(--dim-radius-xl\) 0 0;[^}]*\}\s*\}~',
             $scss
         );
         $this->assertMatchesRegularExpression('~\.dim-toolbar--sheet \{\s*z-index:\s*1029;\s*\}~', $scss);

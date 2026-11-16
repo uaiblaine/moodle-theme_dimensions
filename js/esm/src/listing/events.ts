@@ -105,6 +105,10 @@ export const SELECTORS = {
     total: '[data-region="dim-line-total"]',
     filtersclear: '[data-region="dim-filters-clear"]',
     filtersshow: '[data-action="dim-filters-show"]',
+    periodshow: '[data-action="dim-period-show"]',
+    periodbutton: '[data-region="dim-period-button"]',
+    perioddot: '[data-region="dim-period-dot"]',
+    periodclear: '[data-action="dim-period-clear"]',
     clear: '[data-region="dim-vitrine-clear"]',
     countnumber: '[data-region="dim-vitrine-countnumber"]',
     counttext: '[data-region="dim-vitrine-counttext"]',
@@ -139,5 +143,6 @@ export const SELECTORS = {
     listbox: '[data-region="dim-line-suggest"]',
     opener: '[data-action="dim-search-open"]',
     panel: '[data-region="dim-panel"]',
-    adopted: '[data-region="dim-filters-panel"], [data-region="dim-organise-menu"], [data-region="dim-line-manage"]',
+    adopted: '[data-region="dim-filters-panel"], [data-region="dim-period-layer"], [data-region="dim-organise-menu"], '
+        + '[data-region="dim-line-manage"]',
 };
