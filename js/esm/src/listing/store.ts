@@ -137,6 +137,7 @@ const applyResponse = async(response: Rows, append: boolean, ticket: number): Pr
     Listing.paintCount(root, response);
     Listing.paintChips(root, response);
     Listing.paintGroups(root, response);
+    Listing.paintFiltersControl(root);
     Listing.paintFavourites(root, response);
     shell.painted(items);
     Listing.paintPager(root, response, append, items.length ? items[0] : null);

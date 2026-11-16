@@ -138,8 +138,8 @@ export const TOOLBAR = `<form class="dim-toolbar" id="dim-vitrine-form-7" method
                 <button type="button" class="dim-line__eraser dim-live-only" data-action="dim-search-clear" aria-label="Clear text" data-dim-tip="Clear text"><i class="fa fa-eraser" aria-hidden="true"></i></button>
             </div>
             <div class="dim-toolbar__manage" data-region="dim-line-manage"><div class="action-menu"><a href="#">Manage courses</a></div></div>
+            <button type="button" class="dim-line__iconbtn dim-line__searchclose" data-action="dim-search-close" aria-label="Close search" data-dim-tip="Close search"><i class="fa fa-xmark" aria-hidden="true"></i></button>
         </div>
-        <button type="button" class="dim-line__iconbtn dim-line__searchclose" data-action="dim-search-close" aria-label="Close search" data-dim-tip="Close search"><i class="fa fa-xmark" aria-hidden="true"></i></button>
         <div class="dim-line__suggest" id="dim-vitrine-suggest-7" data-region="dim-line-suggest" data-label-filters="Filters" data-label-start="Start with a filter" hidden></div>
     </div>
     <p class="dim-toolbar__notice" role="status" data-region="dim-toolbar-notice" hidden>Type at least 2 characters to search.</p>

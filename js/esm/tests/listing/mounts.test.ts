@@ -126,6 +126,25 @@ describe('theme_dimensions/listing/mounts', () => {
         expect(mountAreas(null, {}, {ask: jest.fn()})).toBe(false);
     });
 
+    it('tells a drawn line whether the Filters panel holds a group a reader can see', () => {
+        const root = toolbar('dim-toolbar-7');
+        const line = root.querySelector<HTMLElement>('[data-region="dim-line"]') as HTMLElement;
+        line.insertAdjacentHTML('beforeend', '<div data-region="dim-filters-panel">'
+            + '<fieldset data-region="dim-vitrine-group" data-name="cf_3"></fieldset>'
+            + '<fieldset data-region="dim-vitrine-group" data-name="chip" data-role="more" hidden></fieldset></div>');
+        const heard: Array<Record<string, unknown>> = [];
+        line.addEventListener(LINE.answer, (event) => heard.push((event as CustomEvent).detail));
+        line.setAttribute(LINE_DRAWN, '');
+        tellAnswer(root, {});
+        expect(heard[0].filtergroups).toBe(true);
+        root.querySelectorAll<HTMLElement>('[data-region="dim-filters-panel"] [data-region="dim-vitrine-group"]')
+            .forEach((group) => {
+                group.hidden = true;
+            });
+        tellAnswer(root, {});
+        expect(heard[1].filtergroups).toBe(false);
+    });
+
     it('tells a drawn line the scope in SCOPE\'s order, and an undrawn one nothing', () => {
         const root = toolbar('dim-toolbar-7');
         const line = root.querySelector<HTMLElement>('[data-region="dim-line"]') as HTMLElement;

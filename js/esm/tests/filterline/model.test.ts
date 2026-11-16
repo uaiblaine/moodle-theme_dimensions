@@ -54,7 +54,7 @@ describe('theme_dimensions/filterline/model', () => {
             clearlabel: 'Clear text',
         });
         expect(model.star).toEqual({name: 'fav', pressed: false, count: '2', label: 'Favourites'});
-        expect(model.filters).toEqual({label: 'Filters', count: '2', countlabel: 'Applied filters: 2', hascount: true});
+        expect(model.filters).toEqual({label: 'Filters', count: '2', countlabel: 'Applied filters: 2', hascount: true, available: true});
         expect(model.date).toEqual({
             label: 'Start date',
             name: 'Start date: 17 September 2026 to 24 September 2026',
@@ -118,7 +118,7 @@ describe('theme_dimensions/filterline/model', () => {
         expect(next.star).toBe(model.star);
         const pressed = answered(model, {favourites: {available: true, pressed: true, count: 5}, filtercount: 0});
         expect(pressed.star).toEqual({name: 'fav', pressed: true, count: '5', label: 'Favourites'});
-        expect(pressed.filters).toEqual({label: 'Filters', count: '0', countlabel: '', hascount: false});
+        expect(pressed.filters).toEqual({label: 'Filters', count: '0', countlabel: '', hascount: false, available: true});
     });
 
     it('takes an answer\'s period into the date button\'s name and dot, and leaves it to an answer silent on it', () => {

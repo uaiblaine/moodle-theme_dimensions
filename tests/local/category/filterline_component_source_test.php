@@ -687,8 +687,8 @@ final class filterline_component_source_test extends \advanced_testcase {
         );
         $this->assertStringContainsString('quietly(details.querySelector(\'summary\'));', $component);
         $this->assertMatchesRegularExpression(
-            '~if \(period\.current && period\.current\.open && !period\.current\.contains\(target\)\) \{\s*'
-                . 'period\.current\.open = false;~',
+            '~\[filters\.current, period\.current, organise\.current\]\.forEach\(\(layer\) => \{\s*'
+                . 'if \(layer && layer\.open && !layer\.contains\(target\)\) \{\s*layer\.open = false;~',
             $component,
             'A press outside closes the date layer, at every step.'
         );
@@ -704,5 +704,125 @@ final class filterline_component_source_test extends \advanced_testcase {
             $component
         );
         $this->assertStringNotContainsString('HOOKS.daterange', $component, 'The calendar keeps no Escape of its own.');
+    }
+    /**
+     * One press rule for the three layers of the capsule, and the managers' menu shut as the search opens.
+     *
+     * A pointer press outside an open Filters panel, date layer or Organise menu closes it - the details holds its own
+     * summary, so the press that closes it natively is not undone - and the press is neither stopped nor given a focus;
+     * the bottom sheet is the same layer. Opening the search shuts an open managers' menu, which the stylesheet hides
+     * while the field is open.
+     *
+     * Changes that must make it fail: a layer left out of the rule, or the rule dropped; the press stopped or the
+     * focus moved; the managers' menu left open under the field.
+     */
+    public function test_a_press_outside_closes_any_open_layer_and_the_search_shuts_the_managers_menu(): void {
+        $component = $this->read('js/esm/src/filterline/FilterLine.tsx');
+        $this->assertMatchesRegularExpression(
+            '~\[filters\.current, period\.current, organise\.current\]\.forEach\(\(layer\) => \{\s*'
+                . 'if \(layer && layer\.open && !layer\.contains\(target\)\) \{\s*layer\.open = false;\s*\}\s*\}\);~',
+            $component,
+            'All three layers, one rule.'
+        );
+        $press = $this->body_of($component, 'onDocumentPress');
+        $this->assertStringNotContainsString('preventDefault', $press);
+        $this->assertStringNotContainsString('stopPropagation', $press);
+        $this->assertStringNotContainsString('focus', $press, 'An outside press moves no focus.');
+        $this->assertStringNotContainsString('twolines()', $press, 'The sheet and the popover are one rule.');
+        $this->assertMatchesRegularExpression(
+            '~if \(on\) \{[^}]*const toggle = manage\.current\?\.querySelector<HTMLElement>\(\'\[aria-expanded="true"\]\'\);\s*'
+                . 'toggle\?\.click\(\);~',
+            $component,
+            'An open managers\' menu is shut as the search opens.'
+        );
+    }
+
+    /**
+     * The Filters control follows its panel: hidden while the panel holds no group, on the page's own line and the component's.
+     *
+     * One rule - a group is shown unless it carries the hidden attribute, among the groups of the panel (the scope sits
+     * outside it) - read after every answer. The server's line gets the attribute from the painter and the panel closes
+     * with it; the component's line is told the fact with the answer and draws the attribute from its model, closing the
+     * panel it holds.
+     *
+     * Changes that must make it fail: the scope counted as a group; the attribute never written, or an open panel left
+     * open; the component never told; its model or its element ignoring the fact.
+     */
+    public function test_the_filters_control_follows_the_groups_of_its_panel(): void {
+        $mounts = $this->read('js/esm/src/listing/mounts.ts');
+        $this->assertStringContainsString(
+            "const panel = root.querySelector(SELECTORS.filterspanel);\n"
+                . "    return panel !== null\n        && Array.from(panel.querySelectorAll<HTMLElement>(SELECTORS.group))"
+                . '.some((group) => !group.hidden);',
+            $mounts,
+            'Groups of the panel only, shown unless hidden.'
+        );
+        $this->assertStringContainsString('filtergroups: filterGroupsShown(root),', $mounts, 'The component is told.');
+
+        $paint = $this->read('js/esm/src/listing/paint.ts');
+        $this->assertMatchesRegularExpression(
+            '~export const paintFiltersControl = .*?if \(!control \|\| drawnByLine\(control\)\) \{\s*return;\s*\}\s*'
+                . 'const shown = filterGroupsShown\(root\);\s*control\.hidden = !shown;\s*if \(!shown\) \{\s*'
+                . 'control\.open = false;\s*\}~s',
+            $paint,
+            'The server\'s line: the attribute follows the rule, an open panel goes with it, the component\'s line is left.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~Listing\.paintGroups\(root, response\);\s*Listing\.paintFiltersControl\(root\);~',
+            $this->read('js/esm/src/listing/store.ts'),
+            'After the groups are painted.'
+        );
+
+        $model = $this->read('js/esm/src/filterline/model.ts');
+        $this->assertStringContainsString('available: filters !== null && !(filters as HTMLElement).hidden,', $model);
+        $this->assertMatchesRegularExpression(
+            '~if \(typeof answer\.filtergroups === \'boolean\'\) \{\s*'
+                . 'next\.filters = Object\.assign\(\{\}, next\.filters, \{available: answer\.filtergroups\}\);~',
+            $model,
+            'An answer that says nothing of the groups leaves the control as it is.'
+        );
+
+        $component = $this->read('js/esm/src/filterline/FilterLine.tsx');
+        $this->assertStringContainsString('hidden={!model.filters.available}', $component);
+        $this->assertMatchesRegularExpression(
+            '~if \(answer\.filtergroups === false && filters\.current\) \{\s*filters\.current\.open = false;~',
+            $component,
+            'The panel the control takes away is shut.'
+        );
+    }
+
+    /**
+     * The body of one arrow function of a module, from its declaration to the closing brace at its indent.
+     *
+     * @param string $source The module.
+     * @param string $name The function's name.
+     * @return string
+     */
+    private function body_of(string $source, string $name): string {
+        $this->assertSame(
+            1,
+            preg_match('~const ' . preg_quote($name, '~') . ' = [^\n]*\{\n(.*?)\n    \};~s', $source, $matches),
+            $name . ' is a function of the component.'
+        );
+        return $matches[1];
+    }
+
+    /**
+     * The close-search button is the last control of the search's capsule, in the managers' menu's place.
+     *
+     * It is drawn by the component inside the capsule, after the field and the menu's frame, with its ref kept: the
+     * stylesheet shows it in both open states and hides the menu there.
+     *
+     * Changes that must make it fail: the button drawn outside the capsule again; its ref dropped.
+     */
+    public function test_the_close_button_sits_in_the_search_capsule_after_the_managers_frame(): void {
+        $this->assertMatchesRegularExpression(
+            '~data-region="dim-line-manage"></div>\s*\) : null\}\n                <button\n                    ref=\{closer\}\n'
+                . '                    type="button"\n                    className="dim-line__iconbtn dim-line__searchclose"'
+                . '.*?onClick=\{\(\) => closeSearch\(true\)\}\n'
+                . '                ><i className="fa fa-xmark" aria-hidden="true"></i></button>\n'
+                . '            </div>~s',
+            $this->read('js/esm/src/filterline/FilterLine.tsx')
+        );
     }
 }

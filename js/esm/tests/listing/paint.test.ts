@@ -22,7 +22,8 @@
 
 import {LINE, LINE_DRAWN, LISTING} from '../../src/listing/events';
 import {
-    markTree, paintChips, paintControls, paintCount, paintFavToggle, paintGrid, paintGroups, paintPager, paintView, renderCards,
+    markTree, paintChips, paintControls, paintCount, paintFavToggle, paintFiltersControl, paintGrid, paintGroups, paintPager,
+    paintView, renderCards,
 } from '../../src/listing/paint';
 import type {ListingState} from '../../src/listing/address';
 
@@ -101,6 +102,37 @@ describe('theme_dimensions/listing/paint', () => {
         // No option at all: the state sort was switched off under the page, which keeps its pills.
         paintGroups(root, {statusgroup: {options: []}});
         expect(order(scope)).toEqual(['', 'open']);
+    });
+
+    it('hides the Filters control while its panel holds no group, shuts it open, and shows it when a group returns', () => {
+        // The scope sits outside the panel: it is a group, but not one the control opens.
+        const root = page('<fieldset data-region="dim-vitrine-group" data-name="chip" data-role="scope">'
+            + pill('chip', '') + '</fieldset>'
+            + '<details data-region="dim-filters" open><summary>Filters</summary><div data-region="dim-filters-panel">'
+            + '<fieldset data-region="dim-vitrine-group" data-name="chip" data-role="more" hidden>' + pill('chip', 'review')
+            + '</fieldset></div></details>');
+        const control = root.querySelector<HTMLDetailsElement>('[data-region="dim-filters"]') as HTMLDetailsElement;
+        paintGroups(root, {statusgroup: {options: [option('')]}});
+        paintFiltersControl(root);
+        expect(control.hidden).toBe(true);
+        expect(control.open).toBe(false);
+        paintGroups(root, {statusgroup: {options: [option(''), option('free')]}});
+        paintFiltersControl(root);
+        expect(control.hidden).toBe(false);
+        // A field's group alone keeps the control, whatever "More statuses" holds.
+        paintGroups(root, {statusgroup: {options: [option('')]}});
+        (root.querySelector('[data-region="dim-filters-panel"]') as HTMLElement).insertAdjacentHTML('beforeend',
+            '<fieldset data-region="dim-vitrine-group" data-name="cf_3">' + pill('cf_3', '0') + '</fieldset>');
+        paintFiltersControl(root);
+        expect(control.hidden).toBe(false);
+    });
+
+    it('leaves the Filters control to the component where it draws the line', () => {
+        const root = page('<div data-region="dim-line"><details data-region="dim-filters"><summary>Filters</summary>'
+            + '<div data-region="dim-filters-panel"></div></details></div>');
+        (root.querySelector('[data-region="dim-line"]') as HTMLElement).setAttribute(LINE_DRAWN, '');
+        paintFiltersControl(root);
+        expect(root.querySelector<HTMLElement>('[data-region="dim-filters"]')?.hidden).toBe(false);
     });
 
     it('puts a facet\'s "any" pill back at the head of its group', () => {

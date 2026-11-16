@@ -56,6 +56,7 @@ const applyResponse = /* @__PURE__ */ __name(async (response, append, ticket) =>
   Listing.paintCount(root, response);
   Listing.paintChips(root, response);
   Listing.paintGroups(root, response);
+  Listing.paintFiltersControl(root);
   Listing.paintFavourites(root, response);
   shell.painted(items);
   Listing.paintPager(root, response, append, items.length ? items[0] : null);

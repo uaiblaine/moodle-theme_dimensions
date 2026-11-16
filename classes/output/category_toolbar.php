@@ -234,6 +234,9 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             'hasfavourites' => $favourites !== null,
             'facets' => $facets,
             'hasfacets' => !empty($facets),
+            /* The Filters control is drawn only while its panel would show a group: a facet, or "More statuses"
+               with an option. The client applies the same rule after every answer (listing/mounts.ts). */
+            'hasfiltergroups' => !empty($facets) || ($more !== null && $more['hasoptions']),
             'pagesizename' => criteria::PARAM_PAGESIZE,
             'pagesize' => $this->criteria->pagesize,
             'haspagesize' => $this->criteria->pagesize !== null,
