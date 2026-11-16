@@ -317,6 +317,8 @@ templates/core/user_menu_metadata.mustache  Adds the name beside the avatar, md 
 classes/local/identity.php     Which field identifies a person (navbar name; the profile layer's title and lines),
                                its fallbacks and a custom field's visibility; identitypattern.php is the mask,
                                identitypatterns_setting.php the validated setting. See "The identity fields".
+classes/local/profilelayer.php The profile layer: whether a page gets it and its data, from core's user menu;
+                               templates/profile_layer.mustache, scss/profilelayer.scss. See "The profile layer".
 classes/local/upstream.php     The copies of core and Boost Union code and today's upstream of each; the snapshots
                                (*.upstream beside each copy), tests/local/upstream_test.php, scripts/upstream-merge.sh.
 tests/output/core_renderer_test.php  Renders real pages through a real header: the login layout (Boost Union's, or
@@ -738,8 +740,8 @@ to the alternate name site-wide (tried and abandoned: other plugins and certific
 ## The identity fields
 
 `classes/local/identity.php` (which field, its fallbacks, the visibility of a custom field) and
-`classes/local/identitypattern.php` (the mask, pure) feed the navbar's name today and the profile layer's title and
-lines next (`moodle-dev/docs/design-system/plans/user-menu-theme.md`, decisions D73, D74, D76).
+`classes/local/identitypattern.php` (the mask, pure) feed the navbar's name and the profile layer's title and
+lines (section "The profile layer"; `moodle-dev/docs/design-system/plans/user-menu-theme.md`, decisions D73, D74, D76).
 
 - **The values are the session's.** `identity` takes the user record as a parameter and the renderer hands it
   `$USER`, which under "log in as" is the account logged in as (D76; core's `userfullname` names the real user and
@@ -771,6 +773,50 @@ lines next (`moodle-dev/docs/design-system/plans/user-menu-theme.md`, decisions 
   value outside its choices without an error.
 - **A test's person is `get_complete_user_data()`**, never the generator's row (it has no `profile`), and the
   generator's `create_custom_profile_field()` fires no event: trigger core's event to see the cache emptied.
+
+## The profile layer
+
+`classes/local/profilelayer.php` decides (`applies()`) and builds (`context()`) the profile layer of
+`moodle-dev/docs/design-system/components/side-layer.md` from core's user menu; `templates/profile_layer.mustache` draws
+it and `scss/profilelayer.scss` styles it. The plan is `moodle-dev/docs/design-system/plans/user-menu-theme.md`; the
+server side is printed closed, and nothing opens it until its client module exists.
+
+- **It is printed by `core_renderer::standard_after_main_region_html()`, once, never by the end-of-body token.** Boost
+  Union's footer partial prints the end-of-body token inside its footer popover's content whenever its footer button is
+  on: core's stylesheet hides that container from sm up and core's popover copies it by `innerHTML`, so a layer there
+  is invisible on a desktop and duplicated (ids included) when the popover opens. Boost Union's drawers and columns2
+  layouts, the only ones that build the user menu, call the after-main-region method exactly once each, outside the nav
+  and the footer. The stored context is dropped as it is printed (gate `profilelayer_print_once`). Re-read both
+  layouts and `footer.mustache` on every Boost Union update.
+- **The layer's context is stored by shape, beside and before the Look guard** (`usermenu.avatardata` and
+  `usermenu.items`, gate `profilelayer_shape_guard`), from the menu as core and Boost Union wrote it, before the
+  theme adds its Look link. `flavourchoice::menu()` is asked once per renderer, through `core_renderer::look_menu()`,
+  for the user menu's Look submenu and the layer's Look sub-view together; never call it a second time for the layer.
+- **Rows are classified by address and title identifier, never by position**: Profile leaves the list, Preferences
+  and the switch role items go to "Account", Log out or core's `/course/loginas.php` to the foot, the language
+  submenu (found by core's `languageselector` title) and the Look are "Display", everything else with an address is
+  "My area" in core's order. A new kind of core item gets its place in `profilelayer::sort()` by its address.
+- **Colour mode, Look and Language come from `drawernav`'s builders** (`appearance()`, `look_from()`, `language()`):
+  the drawer keeps its own copies until stage S4, which moves the builders here; until then a change to one of them
+  changes both surfaces.
+- **"Edit profile" is a copy of core's rule for the profile page's `editprofile` node** (`lib/myprofilelib.php`),
+  asked for one's own record on the site profile, with the own-profile capability asked first so the common case
+  reads no user context. `profilelayer_test::test_edit_profile_follows_cores_profile_page` builds core's tree beside
+  it: re-read `core_myprofile_navigation()` when it reddens.
+- **The identity is `identity::title($USER)` and `identity::lines($USER)`, always `$USER`**: plain, masked, escaped once
+  by the template's double stash. Under "log in as" it is the account logged in as; the notice's link is core's way
+  back taken from the menu's items, labelled `returntooriginaluser` with the real user's name.
+- **No statement per page**: with the settings at their defaults the builder reads nothing a page has not already
+  read (`test_a_page_with_default_settings_costs_no_statement`). Nothing is stored: the layer is the session's data
+  and core's menu, printed.
+- **Until the client exists (S3) and the drawer loses its preferences (S4)**, keep the navbar's own colour mode menu
+  and its twin rule in `scss/post.scss` as they are, and touch nothing of the drawer's template, module or sheet: the
+  layer cannot be opened yet, so hiding the navbar's control now would leave a desktop without one. The twin rule is
+  re-keyed to the layer's control class only in the stage that opens the layer. The phone's entries (D75) are S3's.
+- **Every selector of `scss/profilelayer.scss` starts with one of the layer's own classes** and every colour reads a
+  `--dim-layer-*` token declared on `.dimensions-layer` over a family token (`profilelayer_scss_test`); the family's
+  dark half is the layer's dark mode. A view is `display: flex` and `hidden` at once: Bootstrap's reboot keeps
+  `[hidden]` at `display: none !important`, which is what keeps it closed.
 
 ## The user profile page
 

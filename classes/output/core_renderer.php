@@ -36,6 +36,7 @@ use theme_dimensions\local\flavourchoice;
 use theme_dimensions\local\guestnav;
 use theme_dimensions\local\identity;
 use theme_dimensions\local\phonenav;
+use theme_dimensions\local\profilelayer;
 use theme_dimensions\local\readingbar;
 
 /**
@@ -78,6 +79,21 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      */
     protected ?array $focusshell = null;
 
+    /**
+     * @var array|null The profile layer's template data for the page being rendered, {@see profilelayer::context()}.
+     *
+     * Set while a layout carrying a logged-in account's user menu renders and {@see profilelayer::applies()}, and
+     * read once, by {@see self::standard_after_main_region_html()}, which the same layout calls later in the same
+     * render. Null on every other page, and again once printed.
+     */
+    protected ?array $profilelayer = null;
+
+    /** @var bool Whether {@see self::look_menu()} has asked flavourchoice for this page's Look yet. */
+    private bool $lookasked = false;
+
+    /** @var array|null flavourchoice::menu()'s answer for this page, once asked. */
+    private ?array $lookmenu = null;
+
     /** @var bool Whether {@see boost_union_fallback()} has asked Boost Union for its fallback image yet. */
     private bool $fallbackasked = false;
 
@@ -115,6 +131,11 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * theme_boost/primary-drawer-mobile draws it in place of Boost Union's list. Guarded by the shape
      * core writes for a logged-in account: mobileprimarynav beside usermenu.avatardata.
      *
+     * The same shape, usermenu.avatardata beside usermenu.items, builds the profile layer's template data while
+     * {@see profilelayer::applies()}, read from the user menu before the theme adds its Look to it, and keeps it in
+     * {@see self::$profilelayer} for {@see self::standard_after_main_region_html()}; the context itself is not
+     * rewritten for it.
+     *
      * A layout whose primary navigation can overflow by more than {@see compactnav::MAXHIDDEN} items gets
      * {@see compactnav::BODY_ARMED} spliced into its body attributes and the compact navbar's module armed, while
      * {@see compactnav::arms()} says so. Guarded by the shape bodyattributes beside primarymoremenu: Boost
@@ -142,6 +163,14 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         }
         if (is_array($context) && isset($context['usermenu']['userfullname'])) {
             $context = $this->apply_name_in_usermenu($context);
+        }
+        /* The profile layer, keyed on the same shape as the Look submenu below and built before it, from core's and
+           Boost Union's menu as they wrote it: kept for standard_after_main_region_html(), which prints it after the
+           page's content. Boost Union's dropdown is left as it is, the layer's fallback. */
+        if (is_array($context) && isset($context['usermenu']['avatardata'], $context['usermenu']['items'])) {
+            $this->profilelayer = profilelayer::applies($this->page)
+                ? profilelayer::context((array) $context['usermenu'], $this->page, $this, $this->look_menu())
+                : null;
         }
         // The Look submenu, keyed on the shape only a logged-in account's user menu has.
         if (is_array($context) && isset($context['usermenu']['avatardata'], $context['usermenu']['items'])) {
@@ -462,7 +491,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         if (!empty($context['usermenu']['dimensionslook'])) {
             return $context;
         }
-        $menu = flavourchoice::menu($this->page->url);
+        $menu = $this->look_menu();
         if ($menu === null) {
             return $context;
         }
@@ -500,6 +529,45 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         $this->page->requires->js_call_amd('theme_dimensions/flavourchoice', 'init');
 
         return $context;
+    }
+
+    /**
+     * flavourchoice::menu()'s answer for this page, asked once per renderer: the user menu's Look submenu and the
+     * profile layer's Look sub-view both read it.
+     *
+     * @return array|null
+     */
+    protected function look_menu(): ?array {
+        if (!$this->lookasked) {
+            $this->lookasked = true;
+            $this->lookmenu = flavourchoice::menu($this->page->url);
+        }
+
+        return $this->lookmenu;
+    }
+
+    /**
+     * What core prints after the main region, with the profile layer after it on a page that carries one.
+     *
+     * Boost Union's drawers and columns2 layouts, the only ones that build the user menu, call this exactly once each,
+     * after the page's content and outside the navbar (BU/templates/theme_boost/drawers.mustache after the footer,
+     * columns2.mustache before it), so the layer is never inside the nav, whose auto-hide transform would become the
+     * fixed layer's containing block. Not the end-of-body token: Boost Union's footer partial prints that inside its
+     * footer popover's content (data-region="footer-content-popover") whenever its footer button is on, which core's
+     * stylesheet hides from sm up and core's popover copies by innerHTML on every opening. The stored context is
+     * dropped as it is printed, so a second call prints core's output alone.
+     *
+     * @return string HTML fragment.
+     */
+    public function standard_after_main_region_html() {
+        $output = parent::standard_after_main_region_html();
+        $layer = $this->profilelayer;
+        $this->profilelayer = null;
+        if ($layer === null) {
+            return $output;
+        }
+
+        return $output . $this->render_from_template('theme_dimensions/profile_layer', $layer);
     }
 
     /**

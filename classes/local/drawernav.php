@@ -359,7 +359,19 @@ final class drawernav {
      *      items (id, text, url, iscurrent, mark: null or theme_dimensions/look_mark's url and colour).
      */
     public static function look(\moodle_page $page): ?array {
-        $menu = flavourchoice::menu($page->url);
+        return self::look_from(flavourchoice::menu($page->url));
+    }
+
+    /**
+     * The Look row and its panel from a {@see flavourchoice::menu()} answer already asked for this page.
+     *
+     * The profile layer ({@see profilelayer}) builds its Look from here with the answer the renderer asked once
+     * for the user menu's Look submenu, so a page asks flavourchoice once for both.
+     *
+     * @param array|null $menu flavourchoice::menu()'s answer: null while the theme offers no choice to this person.
+     * @return array|null As {@see look()}.
+     */
+    public static function look_from(?array $menu): ?array {
         if ($menu === null) {
             return null;
         }
