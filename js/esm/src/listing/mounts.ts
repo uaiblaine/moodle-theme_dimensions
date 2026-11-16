@@ -71,6 +71,23 @@ export const drawnByLine = (element: Element | null): boolean => {
 };
 
 /**
+ * Whether the Filters panel holds a group a reader can see: a custom field's, or "More statuses" with an option.
+ *
+ * The one rule behind the Filters control: it is hidden exactly when this is false. The server applies it to the
+ * page it draws (category_toolbar's hasfiltergroups) and the listing applies it after every answer, on the
+ * groups the painters just wrote, so the panel's foot never opens on its own. A group is shown unless it carries
+ * the hidden attribute: "More statuses" is hidden while it has no option, a field's group is never hidden.
+ *
+ * @param {HTMLElement} root The listing section.
+ * @returns {boolean}
+ */
+export const filterGroupsShown = (root: HTMLElement): boolean => {
+    const panel = root.querySelector(SELECTORS.filterspanel);
+    return panel !== null
+        && Array.from(panel.querySelectorAll<HTMLElement>(SELECTORS.group)).some((group) => !group.hidden);
+};
+
+/**
  * Tell the filter line's component something, where a component draws the line.
  *
  * @param {HTMLElement} root The listing section.
@@ -116,6 +133,8 @@ export const tellAnswer = (root: HTMLElement, response: Record<string, unknown>)
         favourites: response.favourites || null,
         filtercount: Number(response.filtercount || 0),
         filtercountlabel: response.filtercountlabel || '',
+        // Whether the Filters panel holds a group, which decides whether its control is drawn.
+        filtergroups: filterGroupsShown(root),
         // The date button's name carries the period chip's words; no chip is no period, and the button its name alone.
         period: period ? period.label || '' : '',
     });

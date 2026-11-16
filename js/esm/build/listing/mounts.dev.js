@@ -23,6 +23,10 @@ const drawnByLine = /* @__PURE__ */ __name((element) => {
   const line = element ? element.closest(SELECTORS.line) : null;
   return element !== null && line !== null && line.hasAttribute(LINE_DRAWN) && !element.closest(SELECTORS.adopted);
 }, "drawnByLine");
+const filterGroupsShown = /* @__PURE__ */ __name((root) => {
+  const panel = root.querySelector(SELECTORS.filterspanel);
+  return panel !== null && Array.from(panel.querySelectorAll(SELECTORS.group)).some((group) => !group.hidden);
+}, "filterGroupsShown");
 const tellLine = /* @__PURE__ */ __name((root, type, detail) => {
   const line = root.querySelector(SELECTORS.line);
   if (!line || !line.hasAttribute(LINE_DRAWN)) {
@@ -45,6 +49,8 @@ const tellAnswer = /* @__PURE__ */ __name((root, response) => {
     favourites: response.favourites || null,
     filtercount: Number(response.filtercount || 0),
     filtercountlabel: response.filtercountlabel || "",
+    // Whether the Filters panel holds a group, which decides whether its control is drawn.
+    filtergroups: filterGroupsShown(root),
     // The date button's name carries the period chip's words; no chip is no period, and the button its name alone.
     period: period ? period.label || "" : ""
   });
@@ -156,6 +162,7 @@ const mountAreas = /* @__PURE__ */ __name((areas, props, client) => {
 }, "mountAreas");
 export {
   drawnByLine,
+  filterGroupsShown,
   focusTarget,
   mountAreas,
   mountCalendar,

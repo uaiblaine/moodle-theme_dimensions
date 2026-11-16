@@ -5,6 +5,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The category showcase's filter bar hides Filters when it has nothing to open, and its layers and tooltips behave**
+  (2026100622). A category with no custom field in the filter list and no "More statuses" option shows no Filters
+  button, for a visitor and for a signed-in reader alike; the button comes back as soon as one of the two exists, also
+  after a search or a filter changes what is offered, and an open panel goes with it. A press anywhere outside an open
+  layer of the bar (Filters, the date button, Organise) now closes it, also on a phone where the layer is a sheet,
+  without stealing the press from a card or link and without moving the keyboard focus; Escape still returns to the
+  button. The tooltips of the bar open below their button, where the category's tab row no longer covers them, and the
+  ones at the far end open towards the middle of the bar. While the search is open, in place or over the bar, its capsule
+  holds the field and a "Close search" button where the "More actions" menu sits at rest; the menu waits out of the way
+  (an open one is closed) and returns when the search folds.
 - **The category showcase's start date has a button of its own on the filter bar** (2026100620). A calendar button
   follows Filters in the capsule; its name says the period ("Start date: 17 November 2026 to 4 December 2026") and a
   small dot sits on its corner while one is set. It opens its own layer, under the bar's end or as a sheet from the

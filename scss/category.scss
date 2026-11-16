@@ -1338,16 +1338,19 @@ body.dim-category {
     }
 
     // ---- The bar's tooltip (tooltip.md, D51) ---------------------------------------------------
-    // Every icon-only control of the line names itself in data-dim-tip, which this draws above it:
+    // Every icon-only control of the line names itself in data-dim-tip, which this draws below it:
     // the body ink as its ground and the surface as its text, so the dark mode turns it light. It
     // shows after 100ms of rest under the pointer, where the pointer can hover, and on keyboard focus;
     // never while the control's own layer is open (aria-expanded, an open details), and never while
     // Escape has put the line's tooltips off (dim-line--tipsoff, the client's). The control keeps its
     // own name; the tooltip repeats it, out of the accessibility tree. The padding, the arrow's
     // offset, the shadow and the layer are tooltip.md's open questions, so they are block_compass's:
-    // .25rem .5rem, the arrow at the balloon, no shadow, and z 5, over the line's neighbours and under
-    // the floating layers, which open below the line where the tooltip opens above it. A pseudo-element
-    // of the host carries it, so core's caret rules for its kebab are outranked property by property.
+    // .25rem .5rem, the arrow at the balloon, no shadow, and z 5, over the line's neighbours. It opens
+    // BELOW its control because the line is the first thing of the content area: above it lie the category
+    // hero's tab row, which stacks at 31 over the toolbar's 30 and would cover a balloon drawn up there.
+    // The layers also open below the line, but a control's tooltip is off while its layer is open. A
+    // pseudo-element of the host carries it, so core's caret rules for its kebab are outranked property by
+    // property.
     .dim-line [data-dim-tip] {
         position: relative;
     }
@@ -1367,7 +1370,7 @@ body.dim-category {
 
     .dim-line [data-dim-tip]::after {
         content: attr(data-dim-tip);
-        bottom: calc(100% + .5rem);
+        top: calc(100% + .5rem);
         width: max-content;
         max-width: 16.25rem;
         padding: .25rem .5rem;
@@ -1382,11 +1385,28 @@ body.dim-category {
 
     .dim-line [data-dim-tip]::before {
         content: "";
-        bottom: calc(100% - 2px);
+        top: calc(100% - 2px);
         width: 0;
         height: 0;
         border: 5px solid transparent;
-        border-top-color: var(--dim-ink);
+        border-bottom-color: var(--dim-ink);
+    }
+
+    // The controls at the line's far end - the search capsule's and the button that closes the search - open
+    // their tooltip towards the line instead of centred on the control, so a long name never leaves the
+    // viewport. The arrow stays on the control's centre.
+    .dim-line__searchcap [data-dim-tip]::after,
+    .dim-line__searchclose[data-dim-tip]::after {
+        right: 0;
+        left: auto;
+        transform: none;
+    }
+
+    .dim-line__searchcap [data-dim-tip]::before,
+    .dim-line__searchclose[data-dim-tip]::before {
+        right: calc(var(--dim-bar-inner) / 2 - 5px);
+        left: auto;
+        transform: none;
     }
 
     .dim-line:not(.dim-line--tipsoff) [data-dim-tip]:not([aria-expanded="true"]) {
@@ -1639,6 +1659,12 @@ body.dim-category {
     .dim-toolbar__filters {
         flex: none;
         min-width: 0;
+    }
+
+    // A Filters control with no group to open is drawn hidden (category_toolbar's hasfiltergroups). The attribute
+    // is the only switch, and this rule keeps any display a later rule gives the disclosure from showing it.
+    .dim-toolbar__filters[hidden] {
+        display: none;
     }
 
     // The favourites toggle: the card's star as one of the capsule's icon buttons (.dim-line__iconbtn
@@ -4997,8 +5023,7 @@ body.dim-category {
     // no word at any. Without the client no step is ever written, nothing below applies, the field is
     // drawn open and the line wraps as it always did.
 
-    // What only the client draws: the search's button, and the button that closes the search over the
-    // line. The server's field stays open until the client has drawn the line (data-line-drawn); from
+    // What only the client draws: the search's button, and the button that closes the search. The server's field stays open until the client has drawn the line (data-line-drawn); from
     // then on it is the button's, and opens in place (dim-line--open) or over the line
     // (dim-line--searching).
     .dim-line__searchopen,
@@ -5023,6 +5048,12 @@ body.dim-category {
         }
 
         > .dim-line__searchcap > .dim-line__search {
+            display: inline-flex;
+        }
+
+        // The button that closes the search takes the place of the managers' menu, inside the capsule after
+        // the field, in both open states; the measure counts it as it counts the field.
+        > .dim-line__searchcap > .dim-line__searchclose {
             display: inline-flex;
         }
     }
@@ -5091,16 +5122,22 @@ body.dim-category {
     // out is hidden once it is out (visibility after the slide), so it leaves the focus order and is never
     // a control that keeps the focus invisible. Where the field opens in place nothing moves but the
     // capsule, which the field widens.
+    // While the search is open, in place or over the line, its capsule holds the field and its eraser and
+    // nothing else: the managers' menu waits until the search folds (the client shuts an open menu as the
+    // search opens). The rule is not gated on the measuring class: the fold measures the open state without
+    // it, as that state is drawn.
+    .dim-line[data-line-drawn].dim-line--open,
+    .dim-line[data-line-drawn].dim-line--searching {
+        > .dim-line__searchcap > .dim-toolbar__manage {
+            display: none;
+        }
+    }
+
     .dim-line--searching {
         column-gap: 0;
 
         > .dim-line__searchcap {
             flex: 1 1 auto;
-        }
-
-        > .dim-line__searchclose {
-            display: inline-flex;
-            margin-inline-start: .5rem;
         }
     }
 

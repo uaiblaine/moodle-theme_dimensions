@@ -391,6 +391,31 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(button.getAttribute('aria-label')).toBe('Start date: From 1 October 2026');
     });
 
+    it('hides the Filters control when an answer leaves its panel no group, and draws it when one returns', async() => {
+        const page = await mount();
+        const filters = page.line.querySelector<HTMLDetailsElement>('[data-region="dim-filters"]') as HTMLDetailsElement;
+        expect(filters.hidden).toBe(false);
+        await act(async() => {
+            filters.open = true;
+        });
+        await tell(page.line, EVENTS.answer, {filtercount: 0, filtercountlabel: '', filtergroups: false});
+        expect(filters.hidden).toBe(true);
+        expect(filters.open).toBe(false);
+        // An answer that says nothing of the groups leaves the control as it is.
+        await tell(page.line, EVENTS.answer, {total: '3'});
+        expect(filters.hidden).toBe(true);
+        await tell(page.line, EVENTS.answer, {filtergroups: true});
+        expect(filters.hidden).toBe(false);
+    });
+
+    it('draws the Filters control hidden when the server drew it hidden', async() => {
+        const page = await mount([], (drawn) => {
+            const filters = drawn.line.querySelector<HTMLElement>('[data-region="dim-filters"]') as HTMLElement;
+            filters.hidden = true;
+        });
+        expect(page.line.querySelector<HTMLElement>('[data-region="dim-filters"]')?.hidden).toBe(true);
+    });
+
     it('opens one layer of the capsule at a time', async() => {
         const page = await mount();
         const filters = page.line.querySelector('[data-region="dim-filters"]') as HTMLDetailsElement;
@@ -434,13 +459,55 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         fireEvent.pointerDown(page.line.querySelector('[data-action="dim-quick"]') as HTMLElement);
         fireEvent.pointerDown(period.querySelector('summary') as HTMLElement);
         expect(period.open).toBe(true);
-        // A press outside closes it at the one-line step too, where the Filters panel stays.
-        const filters = page.line.querySelector('[data-region="dim-filters"]') as HTMLDetailsElement;
         fireEvent.pointerDown(document.body);
         expect(period.open).toBe(false);
-        filters.open = true;
-        fireEvent.pointerDown(document.body);
-        expect(filters.open).toBe(true);
+    });
+
+    it('closes the Filters panel, the date layer and the Organise menu on a press outside, at every step', async() => {
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700, 300]);
+        const page = await mount();
+        const layers = ['dim-filters', 'dim-period', 'dim-organise'].map(
+            (region) => page.line.querySelector(`[data-region="${region}"]`) as HTMLDetailsElement
+        );
+        const star = page.line.querySelector('[data-region="dim-line-star"]') as HTMLButtonElement;
+        const focused = document.activeElement;
+        for (const layer of layers) {
+            layer.open = true;
+            // A press inside the layer, on its summary or on a control in it, leaves it open.
+            fireEvent.pointerDown(layer.querySelector('summary') as HTMLElement);
+            fireEvent.pointerDown(layer.querySelector('input, a, button') as HTMLElement);
+            expect(layer.open).toBe(true);
+            // A press on the page closes it, without stopping the press or moving the focus.
+            const press = new Event('pointerdown', {bubbles: true, cancelable: true});
+            star.dispatchEvent(press);
+            expect(layer.open).toBe(false);
+            expect(press.defaultPrevented).toBe(false);
+            expect(document.activeElement).toBe(focused);
+        }
+        // The bottom sheet is the same layer: the dimmed page around it is outside it.
+        await resize(500);
+        expect(page.line.classList.contains('dim-line--s2')).toBe(true);
+        layers[0].open = true;
+        act(() => {
+            layers[0].dispatchEvent(new Event('toggle'));
+        });
+        expect(page.form.classList.contains('dim-toolbar--sheet')).toBe(true);
+        fireEvent.pointerDown(page.form);
+        expect(layers[0].open).toBe(false);
+    });
+
+    it('shuts an open managers\' menu as the search opens', async() => {
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700, 300]);
+        const page = await mount([], empty);
+        await resize(1000);
+        const manage = page.line.querySelector('[data-region="dim-line-manage"]') as HTMLElement;
+        manage.insertAdjacentHTML('beforeend', '<button type="button" id="kebab" aria-expanded="true"></button>');
+        const kebab = manage.querySelector('#kebab') as HTMLButtonElement;
+        const pressed = jest.fn();
+        kebab.addEventListener('click', pressed);
+        fireEvent.click(page.line.querySelector('[data-action="dim-search-open"]') as HTMLButtonElement);
+        expect(page.line.classList.contains('dim-line--open')).toBe(true);
+        expect(pressed).toHaveBeenCalledTimes(1);
     });
 
     it('draws the date layer as a bottom sheet at the two-line step', async() => {
@@ -505,7 +572,7 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
         const order = Array.from(page.line.children)
             .map((child) => child.getAttribute('data-region') || child.getAttribute('data-action'));
-        expect(order.indexOf('dim-vitrine-group')).toBe(order.indexOf('dim-search-close') + 1);
+        expect(order.indexOf('dim-vitrine-group')).toBe(order.indexOf('dim-line-searchcap') + 1);
     });
 
     it('leaves an answer and the fonts drawn before the first entry to that entry\'s measure', async() => {
@@ -612,7 +679,7 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(page.line.classList.contains('dim-line--over')).toBe(true);
         expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
         const order = Array.from(page.line.children).map((child) => child.getAttribute('data-region') || child.getAttribute('data-action'));
-        expect(order.indexOf('dim-vitrine-group')).toBe(order.indexOf('dim-search-close') + 1);
+        expect(order.indexOf('dim-vitrine-group')).toBe(order.indexOf('dim-line-searchcap') + 1);
         expect(document.activeElement).toBe(page.line.querySelector('#dim-chip-7-enrolled'));
     });
 
@@ -668,6 +735,23 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         });
         expect(page.line.classList.contains('dim-line--open')).toBe(false);
         expect(opener.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('draws the close button inside the search capsule after the managers\' frame, and it folds the search in place', async() => {
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 700, 300]);
+        const page = await mount([], empty);
+        await resize(1000);
+        const capsule = page.line.querySelector('[data-region="dim-line-searchcap"]') as HTMLElement;
+        const closer = capsule.querySelector('[data-action="dim-search-close"]') as HTMLButtonElement;
+        expect(closer).not.toBeNull();
+        expect(closer.previousElementSibling?.getAttribute('data-region')).toBe('dim-line-manage');
+        expect(closer.getAttribute('data-dim-tip')).toBe('Close search');
+        fireEvent.click(page.line.querySelector('[data-action="dim-search-open"]') as HTMLButtonElement);
+        expect(page.line.classList.contains('dim-line--open')).toBe(true);
+        // Only folds: the field keeps what it holds, which the eraser alone clears.
+        fireEvent.click(closer);
+        expect(page.line.classList.contains('dim-line--open')).toBe(false);
+        expect(page.field.value).toBe('');
     });
 
     it('keeps the search open in place while it holds a text, and the eraser empties it and keeps it open', async() => {

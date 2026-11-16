@@ -61,7 +61,8 @@ export type Line = {
     },
     openlabel: string,
     star: {name: string, pressed: boolean, count: string, label: string} | null,
-    filters: {label: string, count: string, countlabel: string, hascount: boolean},
+    // Available: whether the panel holds a group; the control carries the hidden attribute while it does not.
+    filters: {label: string, count: string, countlabel: string, hascount: boolean, available: boolean},
     // The date button: the filter's name (its tooltip), its accessible name, the name with {period} in the
     // period's place, and whether a period is set (its dot); null where the server drew none.
     date: {label: string, name: string, template: string, set: boolean} | null,
@@ -91,6 +92,8 @@ export type Answer = {
     favourites?: {available?: boolean, pressed?: boolean, count?: number | string} | null,
     filtercount?: number | string,
     filtercountlabel?: string,
+    // Whether the Filters panel holds a group a reader can see.
+    filtergroups?: boolean,
     // The period chip's sentence, the empty string for no period.
     period?: string,
 };
@@ -237,6 +240,7 @@ const filtersOf = (line: Element): Line['filters'] => {
         count: text(badge ? badge.querySelector(SELECTORS.badgenumber) : null),
         countlabel: text(badge ? badge.querySelector(SELECTORS.badgelabel) : null),
         hascount: badge !== null && !badge.hidden,
+        available: filters !== null && !(filters as HTMLElement).hidden,
     };
 };
 
@@ -410,6 +414,9 @@ export const answered = (model: Line, answer: Answer): Line => {
             countlabel: answer.filtercountlabel || '',
             hascount: count !== 0,
         });
+    }
+    if (typeof answer.filtergroups === 'boolean') {
+        next.filters = Object.assign({}, next.filters, {available: answer.filtergroups});
     }
     if (model.date && typeof answer.period === 'string') {
         next.date = Object.assign({}, model.date, {name: dateName(model.date, answer.period), set: answer.period !== ''});

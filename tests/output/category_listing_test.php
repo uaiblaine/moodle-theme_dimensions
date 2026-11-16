@@ -734,6 +734,47 @@ final class category_listing_test extends \advanced_testcase {
     }
 
     /**
+     * The Filters control is drawn only while its panel would show a group: a facet, or "More statuses" with an option.
+     *
+     * Three cases of the one rule: the viewer with a configured field and no state group (the state sort off) keeps the
+     * control for the facet; a viewer with the state group and no configured field keeps it for "More statuses" (the
+     * fixture's free course is outside the line's scope); neither draws it hidden.
+     *
+     * Changes that must make it fail: the facets left out of the rule; "More statuses" left out of it.
+     */
+    public function test_the_filters_control_needs_a_facet_or_a_more_statuses_option(): void {
+        $viewer = $this->seed();
+        $this->become($viewer);
+
+        $both = $this->export()->toolbar;
+        $this->assertTrue($both->hasfacets);
+        $this->assertNotEmpty($both->more['options']);
+        $this->assertTrue($both->hasfiltergroups);
+
+        // A facet alone: with the state sort off the viewer has no state group, so no "More statuses" either.
+        set_config(population::SETTING_STATESORT, '0', 'theme_dimensions');
+        $facetsonly = $this->export()->toolbar;
+        $this->assertNull($facetsonly->more);
+        $this->assertTrue($facetsonly->hasfacets);
+        $this->assertTrue($facetsonly->hasfiltergroups, 'A configured field is a group.');
+
+        // The "More statuses" group alone: no allowlisted field.
+        set_config(population::SETTING_STATESORT, '1', 'theme_dimensions');
+        set_config(facets::SETTING, '', 'theme_dimensions');
+        $moreonly = $this->export()->toolbar;
+        $this->assertFalse($moreonly->hasfacets);
+        $this->assertTrue($moreonly->more['hasoptions']);
+        $this->assertTrue($moreonly->hasfiltergroups, '"More statuses" with an option is a group.');
+
+        // Neither: the state sort off and no field. The control is drawn hidden.
+        set_config(population::SETTING_STATESORT, '0', 'theme_dimensions');
+        $neither = $this->export()->toolbar;
+        $this->assertNull($neither->more);
+        $this->assertFalse($neither->hasfacets);
+        $this->assertFalse($neither->hasfiltergroups);
+    }
+
+    /**
      * The toolbar offers the states the viewer holds courses in, with post-filter counts, and the facet groups.
      */
     public function test_the_toolbar_offers_counted_chips_and_facets(): void {

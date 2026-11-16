@@ -803,14 +803,14 @@ final class card_markup_test extends \advanced_testcase {
             'dim-fav-count' => '//button[@data-region="dim-line-star"]//*[@data-region="dim-fav-count"]',
             'dim-fav-field' => '//form//input[@type="hidden"][@name="fav"][@data-region="dim-fav-field"]',
             /* What the filter line's component (js/esm/src/filterline) drives and nothing else draws: the search's
-               button, pointing at the field it opens; the button that closes the search over the line;
+               button, pointing at the field it opens; the button that closes the search, in the search's capsule;
                the listbox, hidden, carrying its id and its two headings; the Filters panel and the
                Organise menu it places under the line; and the panel foot's "Show", carrying the sentence
                the listing writes each answer's number into, beside "Clear filters", the clear link by
                another name. */
             'dim-search-open' => '//*[@data-region="dim-line-searchcap"]/button[@type="button"][@data-action="dim-search-open"]'
                 . '[@aria-controls="dim-vitrine-q-7"][@aria-expanded="false"]',
-            'dim-search-close' => '//*[@data-region="dim-line"]/button[@type="button"][@data-action="dim-search-close"]'
+            'dim-search-close' => '//*[@data-region="dim-line-searchcap"]/button[@type="button"][@data-action="dim-search-close"]'
                 . '[@aria-label]',
             'dim-line-suggest' => '//*[@data-region="dim-line"]/div[@data-region="dim-line-suggest"][@id="dim-vitrine-suggest-7"]'
                 . '[@data-label-filters][@data-label-start][@hidden]',

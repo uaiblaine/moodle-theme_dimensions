@@ -17,7 +17,7 @@ import { load } from "../amd";
 import { markTitles } from "../areas/mark";
 import { CHIP_PERIOD, GROUPED_SORTS, PARAM, SCOPE, withPanel } from "./address";
 import { LINE, LISTING, SELECTORS } from "./events";
-import { drawnByLine, tellCalendar, tellLine } from "./mounts";
+import { drawnByLine, filterGroupsShown, tellCalendar, tellLine } from "./mounts";
 const CARD_TEMPLATE = "theme_dimensions/category_card";
 const PAGE_WINDOW = 10;
 const TREE_PHONE = "(max-width: 767.98px)";
@@ -317,6 +317,17 @@ const paintGroups = /* @__PURE__ */ __name((root, response) => {
     paintGroup(groups.get(facet.name) || null, facet.name, [any].concat(facet.options || []));
   });
 }, "paintGroups");
+const paintFiltersControl = /* @__PURE__ */ __name((root) => {
+  const control = root.querySelector(SELECTORS.filters);
+  if (!control || drawnByLine(control)) {
+    return;
+  }
+  const shown = filterGroupsShown(root);
+  control.hidden = !shown;
+  if (!shown) {
+    control.open = false;
+  }
+}, "paintFiltersControl");
 const createChip = /* @__PURE__ */ __name((chip) => {
   const link = document.createElement("a");
   link.className = "dim-chip";
@@ -500,6 +511,7 @@ export {
   paintFavToggle,
   paintFavourites,
   paintFilterBadge,
+  paintFiltersControl,
   paintGrid,
   paintGroups,
   paintPager,

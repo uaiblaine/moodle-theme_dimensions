@@ -32,7 +32,7 @@ import {markTitles} from '../areas/mark';
 import {CHIP_PERIOD, GROUPED_SORTS, PARAM, SCOPE, withPanel} from './address';
 import type {ListingState} from './address';
 import {LINE, LISTING, SELECTORS} from './events';
-import {drawnByLine, tellCalendar, tellLine} from './mounts';
+import {drawnByLine, filterGroupsShown, tellCalendar, tellLine} from './mounts';
 import type {Option} from './mounts';
 
 /** The card partial: one template, one row schema, page one and every later page. */
@@ -520,6 +520,28 @@ export const paintGroups = (root: HTMLElement, response: Answer): void => {
         };
         paintGroup(groups.get(facet.name) || null, facet.name, [any].concat(facet.options || []));
     });
+};
+
+/**
+ * Hide the Filters control while its panel holds no group, and shut the panel it takes away.
+ *
+ * Called after paintGroups(), on the groups it wrote. The control the component draws is told the same fact by
+ * tellAnswer() instead. Its badge, its foot and the suggestions need nothing here: the badge counts what the
+ * groups hold, the foot is inside the panel, and a suggestion presses an option, not the control.
+ *
+ * @param {HTMLElement} root The listing section.
+ * @returns {void}
+ */
+export const paintFiltersControl = (root: HTMLElement): void => {
+    const control = root.querySelector<HTMLDetailsElement>(SELECTORS.filters);
+    if (!control || drawnByLine(control)) {
+        return;
+    }
+    const shown = filterGroupsShown(root);
+    control.hidden = !shown;
+    if (!shown) {
+        control.open = false;
+    }
 };
 
 /**

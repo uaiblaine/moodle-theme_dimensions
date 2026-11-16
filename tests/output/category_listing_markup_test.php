@@ -468,10 +468,10 @@ final class category_listing_markup_test extends \advanced_testcase {
             return $found;
         };
         $this->assertSame(
-            ['scope', 'spacer', 'dim-line-cluster', 'dim-line-searchcap', 'dim-search-close', 'dim-line-suggest'],
+            ['scope', 'spacer', 'dim-line-cluster', 'dim-line-searchcap', 'dim-line-suggest'],
             $slots($xpath->query('//div[@data-region="dim-line"]/*')),
-            'Scope, spacer, the cluster and the search\'s capsule: the contract\'s order, then the close button and the '
-                . 'listbox, which only the client draws.'
+            'Scope, spacer, the cluster and the search\'s capsule: the contract\'s order, then the listbox, which '
+                . 'only the client draws.'
         );
         $this->assertSame(
             ['dim-line-total', 'dim-line-capsule'],
@@ -484,9 +484,10 @@ final class category_listing_markup_test extends \advanced_testcase {
             'The star, Filters, the date button right after it, Organise and the view toggle, in one capsule.'
         );
         $this->assertSame(
-            ['dim-search-open', 'dim-line-search', 'manage'],
+            ['dim-search-open', 'dim-line-search', 'manage', 'dim-search-close'],
             $slots($xpath->query('//div[@data-region="dim-line-searchcap"]/*')),
-            'The search button, the field the server draws open for a page without the client, and the managers\' menu.'
+            'The search button, the field the server draws open for a page without the client, the managers\' menu and the '
+                . 'button that closes the search, which only the client shows.'
         );
         foreach (['dim-line-capsule', 'dim-line-searchcap'] as $capsule) {
             $this->assertTrue(
@@ -920,6 +921,28 @@ final class category_listing_markup_test extends \advanced_testcase {
         $bare = $this->render_context('category_toolbar', ['scope' => $scope, 'more' => $none] + $context);
         $this->assertTrue($bare->query('//fieldset[@data-role="more"]')->item(0)->hasAttribute('hidden'));
         $this->assertNull($method->invoke(null, null)[0], 'No state group, no scope: a visitor\'s line draws none.');
+    }
+
+    /**
+     * The Filters control is in the document either way and carries the hidden attribute only without a group.
+     *
+     * The client and the hooks find the element on every page; only its visibility follows
+     * category_toolbar's hasfiltergroups.
+     *
+     * Changes that must make it fail: the attribute dropped for a panel with no group, or written for one with.
+     */
+    public function test_the_filters_control_is_hidden_exactly_when_no_group_is_drawn(): void {
+        $query = '//div[@data-region="dim-line"]//details[@data-region="dim-filters"]';
+        $example = $this->example_context('category_toolbar');
+        $this->assertTrue($example['hasfiltergroups'], 'The example draws a group.');
+        $shown = $this->render_context('category_toolbar', $example);
+        $this->assertSame(1, $shown->query($query)->length);
+        $this->assertFalse($shown->query($query)->item(0)->hasAttribute('hidden'));
+
+        $bare = $this->render_context('category_toolbar', ['hasfiltergroups' => false] + $example);
+        $this->assertSame(1, $bare->query($query)->length, 'Still in the document.');
+        $this->assertTrue($bare->query($query)->item(0)->hasAttribute('hidden'));
+        $this->assertSame(1, $bare->query($query . '/summary')->length, 'The control keeps its summary for the client.');
     }
 
     /**
