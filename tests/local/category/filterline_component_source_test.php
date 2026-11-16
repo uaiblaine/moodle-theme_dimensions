@@ -58,6 +58,7 @@ final class filterline_component_source_test extends \advanced_testcase {
         'paintFavourites',
         'paintFilterBadge',
         'paintGroups',
+        'paintCount',
     ];
 
     /**
@@ -286,9 +287,10 @@ final class filterline_component_source_test extends \advanced_testcase {
      * drew it.
      *
      * Changes that must make it fail: any painter's guard dropped (React redraws over the write, or loses
-     * its focus); the adopted frames left out of the guard (More statuses, the fields, the sort and "Show
-     * as" would stop being painted); the state not told from paintControls() (Back
-     * and Clear all would leave the line's controls on the old state).
+     * its focus); the adopted frames left out of the guard (More statuses, the fields, the sort and the
+     * panel's foot would stop being painted); the state not told from paintControls() (Back
+     * and Clear all would leave the line's controls on the old state); the bar's count written into a drawn
+     * line (it is told in the answer instead).
      */
     public function test_no_painter_writes_into_what_the_component_draws(): void {
         $drawn = $this->body('drawnByLine');
@@ -309,6 +311,7 @@ final class filterline_component_source_test extends \advanced_testcase {
             'paintFavourites' => 'if (count && !drawnByLine(count)) {',
             'paintFilterBadge' => 'if (!badge || drawnByLine(badge)) {',
             'paintGroups' => 'if (drawnByLine(fieldset)) {',
+            'paintCount' => 'if (total && !drawnByLine(total)) {',
         ];
         $this->assertSame(self::PAINTERS, array_keys($guards));
         foreach ($guards as $painter => $guard) {
@@ -341,7 +344,10 @@ final class filterline_component_source_test extends \advanced_testcase {
     /**
      * An answer's numbers reach the component as one event, after the painters, in SCOPE's order.
      *
-     * Changes that must make it fail: the scope told in the answer's order; an answer with no status option
+     * The bar's count is the count sentence's number, told as the server formatted it, so the two never differ.
+     *
+     * Changes that must make it fail: the bar's count left out of the answer, or told from another key; the
+     * scope told in the answer's order; an answer with no status option
      * telling an empty scope (every cell would hide on a page whose state sort was switched off under it);
      * the store repainting the line instead of telling the component; tellAnswer() before the
      * painters (the suggestions would read the panel's old counts).
@@ -354,6 +360,7 @@ final class filterline_component_source_test extends \advanced_testcase {
             $answer
         );
         $parts = [
+            "total: typeof response.countnumber === 'string' ? response.countnumber : undefined,",
             'favourites: response.favourites || null,',
             'filtercount: Number(response.filtercount || 0),',
             'filtercountlabel: response.filtercountlabel || \'\',',
@@ -521,6 +528,78 @@ final class filterline_component_source_test extends \advanced_testcase {
                 $this->assertStringNotContainsString($forbidden, $code, basename($file) . " names {$forbidden}.");
             }
         }
+    }
+
+    /**
+     * The search is its button at rest at every step, and opens in place or over the line as the fold says.
+     *
+     * The component's behaviour is Jest's (FilterLine.test.tsx, steps.test.ts, measure.test.ts); this pins the
+     * source shape of each guard from PHPUnit, which the mutation sweep runs. The fold's one bit is whether the
+     * open field fits beside the controls (over); the measure draws the field open for the try that opens it in
+     * place; the search stays open while it holds the focus, and in place while it holds a text; Escape puts the
+     * tooltips off; the panel foot's "Show" closes the panel; the star's word in the suggestions is its tooltip's.
+     *
+     * Changes that must make it fail: the search kept open over the line by its text (it would cover the line);
+     * an empty field left open when the focus leaves it; the measure taking the in-place try with the search
+     * folded; the fold's over bit ignored; Escape no longer putting the tooltips off; "Show" leaving the panel
+     * open; the star's word read from a title the controls no longer carry.
+     */
+    public function test_the_search_is_a_button_at_rest_and_opens_as_the_fold_says(): void {
+        $component = $this->read('js/esm/src/filterline/FilterLine.tsx');
+        $this->assertStringContainsString(
+            "const keepsOpen = (): boolean => !morphs(st.fold) && field.current !== null && field.current.value !== '';",
+            $component
+        );
+        $this->assertMatchesRegularExpression(
+            '~const onLineBlur = \(event: FocusEvent\): void => \{.*?closeList\(\);\s*'
+                . 'if \(next && line\.contains\(next\) && next\.closest\(HOOKS\.searchpart\)\) \{\s*return;\s*\}\s*'
+                . 'if \(!keepsOpen\(\)\) \{\s*closeSearch\(false\);\s*\}\s*\};~s',
+            $component,
+            'The focus leaving the search folds it, unless it went to the eraser or the close button, or a text holds it.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~const settleSearch = \(\): void => \{\s*if \(!inSearch\(document\.activeElement\)\) \{\s*'
+                . 'const keep = keepsOpen\(\);~',
+            $component
+        );
+        $this->assertMatchesRegularExpression(
+            "~line\?\.classList\.toggle\(STEP_CLASSES\.open, st\.searching && !over\);\s*"
+                . "line\?\.classList\.toggle\(STEP_CLASSES\.searching, st\.searching && over\);~",
+            $component,
+            'In place or over the line, as the fold says.'
+        );
+        $this->assertMatchesRegularExpression(
+            "~if \(event\.key === 'Escape'\) \{\s*tipsOff\(\);\s*return;\s*\}~",
+            $component,
+            'Escape puts the tooltips off.'
+        );
+        $this->assertStringContainsString('line.classList.add(TIPSOFF);', $component);
+        $this->assertMatchesRegularExpression(
+            '~const show = event\.target instanceof Element \? event\.target\.closest\(HOOKS\.show\) : null;\s*'
+                . 'if \(show && filters\.current\) \{\s*filters\.current\.open = false;~',
+            $component,
+            'The panel foot\'s "Show" closes the panel.'
+        );
+        $steps = $this->read('js/esm/src/filterline/steps.ts');
+        $this->assertStringContainsString(
+            'export const morphs = (fold: Fold | null): boolean => fold !== null && fold.over;',
+            $steps
+        );
+        $this->assertMatchesRegularExpression(
+            "~export const TRIES: Fold\[\] = \[\s*\{step: 's1', over: false\},\s*\{step: 's1', over: true\},\s*"
+                . "\{step: 's2', over: true\},\s*\];~",
+            $steps
+        );
+        $this->assertStringContainsString(
+            'line.classList.toggle(CLASSES.open, !fold.over);',
+            $this->read('js/esm/src/filterline/measure.ts'),
+            'The in-place try is measured with the field open.'
+        );
+        $this->assertStringContainsString(
+            "add(star, star.getAttribute(TIP) || '', '', known.count);",
+            $this->read('js/esm/src/filterline/suggest.ts')
+        );
+        $this->assertStringContainsString("export const TIP = 'data-dim-tip';", $this->read('js/esm/src/filterline/model.ts'));
     }
 
     /**

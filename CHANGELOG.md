@@ -5,6 +5,20 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The category showcase's filter bar is the fleet Design System's compact bar** (2026100619). After the scope, the
+  bar's end holds a grey cluster: the number of courses found, then a white capsule with the favourites star, Filters,
+  Organise and the two view buttons; the search sits in a capsule of its own with the managers' menu. Every control
+  in the capsules is a 32px icon button with no border, grey at rest, light grey under the pointer and in the brand
+  colour's pale tint while pressed or open; the bar is 40px tall, 44px wherever the screen is touched, whatever its
+  width. Filters carries no word at any width, its badge always on its corner. The search is a magnifier button at
+  every width: a press opens the field in its place (or over the bar where the bar has no room for it), Escape or
+  leaving it empty folds it back, and its eraser clears the text and keeps it open; without JavaScript the field is
+  open as before. Each icon button names itself in a small dark tooltip after a tenth of a second on the pointer or
+  the keyboard's focus, never on a touch screen and never over its own open menu; Escape puts the tooltips away. The
+  sentence under the bar ("16 courses for ...") leaves the screen, its number now on the bar, and is still read to
+  screen readers; it stays visible where it says how the results are spread across the areas, beside "See all as a
+  list". The Filters panel ends with "Clear filters" and "Show 16" (the bar's count), which closes the panel. On a
+  phone the view buttons stay on the bar instead of moving into the Organise menu.
 - **The category showcase's filter bar wears the fleet Design System's measures** (2026100618). Its controls sit 8px
   apart. The scope ("All", "My courses" and the others) is a segmented control: 32px cells at 0.875rem on a grey
   platter with 12px corners, the chosen cell raised in white at weight 600 with no border, its count quiet. The star,

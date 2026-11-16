@@ -33,6 +33,7 @@
  */
 
 import {normalise} from './mark';
+import {TIP} from './model';
 
 /** The search's own floor (criteria::MIN_SEARCH_LENGTH): a shorter text suggests what an empty one does. */
 export const MIN_TERM = 2;
@@ -264,7 +265,8 @@ export const offers = (form: HTMLElement, rest: WeakMap<Element, Rest>): Offer[]
     if (star && star.getAttribute('aria-pressed') !== 'true') {
         const count = star.querySelector(SELECTORS.favcount);
         const known = rest.get(star) || {count: count ? Number(count.textContent) : null, hidden: false};
-        add(star, star.title || '', '', known.count);
+        // The star's word is its tooltip's, which repeats its name: it carries no title.
+        add(star, star.getAttribute(TIP) || '', '', known.count);
     }
     const date = form.querySelector(SELECTORS.date);
     if (date) {

@@ -20,6 +20,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  */
 const SELECTORS = {
   line: '[data-region="dim-line"]',
+  total: '[data-region="dim-line-total"]',
   scope: '[data-region="dim-vitrine-group"][data-role="scope"]',
   search: '[data-region="dim-line-search"]',
   field: 'input[type="search"]',
@@ -42,6 +43,7 @@ const SELECTORS = {
   listbox: '[data-region="dim-line-suggest"]',
   pillcount: '[data-region="dim-pill-count"]'
 };
+const TIP = "data-dim-tip";
 const text = /* @__PURE__ */ __name((element) => element ? (element.textContent || "").trim() : "", "text");
 const wordsOf = /* @__PURE__ */ __name((label) => Array.from(label.childNodes).filter((node) => node.nodeType === Node.TEXT_NODE).map((node) => node.textContent || "").join("").trim(), "wordsOf");
 const cellsOf = /* @__PURE__ */ __name((fieldset) => Array.from(fieldset.querySelectorAll('input[type="radio"]')).map((input) => {
@@ -77,7 +79,7 @@ const starOf = /* @__PURE__ */ __name((line) => {
     name: star.name,
     pressed: star.getAttribute("aria-pressed") === "true",
     count: text(star.querySelector(SELECTORS.favcount)),
-    label: star.title
+    label: star.getAttribute(TIP) || ""
   };
 }, "starOf");
 const filtersOf = /* @__PURE__ */ __name((line) => {
@@ -92,7 +94,7 @@ const filtersOf = /* @__PURE__ */ __name((line) => {
 }, "filtersOf");
 const viewsOf = /* @__PURE__ */ __name((row) => (row ? Array.from(row.querySelectorAll(SELECTORS.view)) : []).map((button) => ({
   value: button.value,
-  label: button.title,
+  label: button.getAttribute(TIP) || "",
   icon: (button.querySelector("i")?.className || "").replace(/^fa\s+/, ""),
   pressed: button.getAttribute("aria-pressed") === "true"
 })), "viewsOf");
@@ -106,6 +108,7 @@ const read = /* @__PURE__ */ __name((line) => {
   const row = line.querySelector(SELECTORS.viewrow);
   return {
     scope: scopeOf(line),
+    total: text(line.querySelector(SELECTORS.total)),
     search: {
       id: field.id,
       name: field.name,
@@ -114,10 +117,10 @@ const read = /* @__PURE__ */ __name((line) => {
       value: field.value,
       clearlabel: attrOf(search, SELECTORS.eraser, "aria-label")
     },
-    openlabel: attrOf(line, SELECTORS.opener, "title"),
+    openlabel: attrOf(line, SELECTORS.opener, TIP),
     star: starOf(line),
     filters: filtersOf(line),
-    organiselabel: attrOf(line, `${SELECTORS.organise} > summary`, "title"),
+    organiselabel: attrOf(line, `${SELECTORS.organise} > summary`, TIP),
     views: viewsOf(row),
     viewlabel: row ? row.getAttribute("aria-label") || "" : "",
     viewname: row ? attrOf(row, SELECTORS.view, "name") || "view" : "view",
@@ -159,6 +162,9 @@ const scopeAfter = /* @__PURE__ */ __name((cells, options) => {
 }, "scopeAfter");
 const answered = /* @__PURE__ */ __name((model, answer) => {
   const next = Object.assign({}, model);
+  if (typeof answer.total === "string") {
+    next.total = answer.total;
+  }
   if (model.scope && answer.scope && answer.scope.length) {
     next.scope = Object.assign({}, model.scope, { cells: scopeAfter(model.scope.cells, answer.scope) });
   }
@@ -196,6 +202,7 @@ const stated = /* @__PURE__ */ __name((model, told) => {
 }, "stated");
 export {
   SELECTORS,
+  TIP,
   answered,
   read,
   scopeAfter,

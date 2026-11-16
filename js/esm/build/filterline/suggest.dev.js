@@ -19,6 +19,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 import { normalise } from "./mark";
+import { TIP } from "./model";
 const MIN_TERM = 2;
 const START_COUNT = 5;
 const MATCH_COUNT = 8;
@@ -120,7 +121,7 @@ const offers = /* @__PURE__ */ __name((form, rest) => {
   if (star && star.getAttribute("aria-pressed") !== "true") {
     const count = star.querySelector(SELECTORS.favcount);
     const known = rest.get(star) || { count: count ? Number(count.textContent) : null, hidden: false };
-    add(star, star.title || "", "", known.count);
+    add(star, star.getAttribute(TIP) || "", "", known.count);
   }
   const date = form.querySelector(SELECTORS.date);
   if (date) {

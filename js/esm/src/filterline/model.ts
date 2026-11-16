@@ -49,6 +49,8 @@ export type View = {value: string, label: string, icon: string, pressed: boolean
 /** Everything the line's own controls show, as the server drew it. */
 export type Line = {
     scope: {legend: string, name: string, cells: Cell[]} | null,
+    // The result count on the bar, the count sentence's number as the server formatted it.
+    total: string,
     search: {
         id: string,
         name: string,
@@ -82,6 +84,7 @@ export type Option = {
 /** What the listing tells the line from an answer ({@see answered}). */
 export type Answer = {
     scope?: Option[] | null,
+    total?: string,
     favourites?: {available?: boolean, pressed?: boolean, count?: number | string} | null,
     filtercount?: number | string,
     filtercountlabel?: string,
@@ -93,6 +96,7 @@ export type Told = {query?: string, chip?: string | null, fav?: boolean, view?: 
 /** The hooks the line is read from, all of them written by the toolbar's template. */
 export const SELECTORS = {
     line: '[data-region="dim-line"]',
+    total: '[data-region="dim-line-total"]',
     scope: '[data-region="dim-vitrine-group"][data-role="scope"]',
     search: '[data-region="dim-line-search"]',
     field: 'input[type="search"]',
@@ -115,6 +119,13 @@ export const SELECTORS = {
     listbox: '[data-region="dim-line-suggest"]',
     pillcount: '[data-region="dim-pill-count"]',
 };
+
+/**
+ * The attribute an icon-only control names itself in for the bar's tooltip, its accessible name's words.
+ *
+ * The controls carry no title: the stylesheet draws the tooltip from this.
+ */
+export const TIP = 'data-dim-tip';
 
 /**
  * An element's text, trimmed.
@@ -199,7 +210,7 @@ const starOf = (line: Element): Line['star'] => {
         name: star.name,
         pressed: star.getAttribute('aria-pressed') === 'true',
         count: text(star.querySelector(SELECTORS.favcount)),
-        label: star.title,
+        label: star.getAttribute(TIP) || '',
     };
 };
 
@@ -229,7 +240,7 @@ const filtersOf = (line: Element): Line['filters'] => {
 const viewsOf = (row: Element | null): View[] => (row ? Array.from(row.querySelectorAll<HTMLButtonElement>(SELECTORS.view)) : [])
     .map((button) => ({
         value: button.value,
-        label: button.title,
+        label: button.getAttribute(TIP) || '',
         icon: (button.querySelector('i')?.className || '').replace(/^fa\s+/, ''),
         pressed: button.getAttribute('aria-pressed') === 'true',
     }));
@@ -254,6 +265,7 @@ export const read = (line: Element | null): Line | null => {
     const row = line.querySelector(SELECTORS.viewrow);
     return {
         scope: scopeOf(line),
+        total: text(line.querySelector(SELECTORS.total)),
         search: {
             id: field.id,
             name: field.name,
@@ -262,10 +274,10 @@ export const read = (line: Element | null): Line | null => {
             value: field.value,
             clearlabel: attrOf(search, SELECTORS.eraser, 'aria-label'),
         },
-        openlabel: attrOf(line, SELECTORS.opener, 'title'),
+        openlabel: attrOf(line, SELECTORS.opener, TIP),
         star: starOf(line),
         filters: filtersOf(line),
-        organiselabel: attrOf(line, `${SELECTORS.organise} > summary`, 'title'),
+        organiselabel: attrOf(line, `${SELECTORS.organise} > summary`, TIP),
         views: viewsOf(row),
         viewlabel: row ? row.getAttribute('aria-label') || '' : '',
         viewname: row ? attrOf(row, SELECTORS.view, 'name') || 'view' : 'view',
@@ -320,7 +332,7 @@ export const scopeAfter = (cells: Cell[], options: Option[]): Cell[] => {
 };
 
 /**
- * The line after an answer: the scope's counts and states, the star, the Filters badge.
+ * The line after an answer: the result count, the scope's counts and states, the star, the Filters badge.
  *
  * Each part the answer leaves out stays as it is: no scope options is a page whose state sort was
  * switched off under it (the listing's paintStatus() reads it the same way), and a toggle the answer
@@ -332,6 +344,9 @@ export const scopeAfter = (cells: Cell[], options: Option[]): Cell[] => {
  */
 export const answered = (model: Line, answer: Answer): Line => {
     const next: Line = Object.assign({}, model);
+    if (typeof answer.total === 'string') {
+        next.total = answer.total;
+    }
     if (model.scope && answer.scope && answer.scope.length) {
         next.scope = Object.assign({}, model.scope, {cells: scopeAfter(model.scope.cells, answer.scope)});
     }

@@ -290,6 +290,8 @@ class category_listing implements \core\output\named_templatable, \core\output\r
             'countnumber' => $count['number'],
             'countline' => $count['text'],
             'seeallurl' => $count['seeallurl'],
+            // The Filters panel's "Show {n}", the bar's count in its sentence; the client rewrites it per answer.
+            'showlabel' => get_string('category_showcount', self::COMPONENT, $count['number']),
             /* The areas' result-mode data, for the web service: the page itself reads it through
                areas() with its real open panel, the service with none. */
             'results' => self::results($this->result, $this->criteria, 0),

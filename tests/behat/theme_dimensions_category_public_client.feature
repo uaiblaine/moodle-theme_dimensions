@@ -38,7 +38,8 @@ Feature: A visitor's public category page narrows in place once the site opens i
     And I should see "2" node occurrences of type "article" in the "[data-region='dim-vitrine-grid']" "css_element"
     # The listed course of the same category, sharing the word, is what a visitor may not be told about.
     And I should not see "Curso Interno"
-    When I set the field "Search courses" to "Online"
+    When I press "Search courses"
+    And I set the field "Search courses" to "Online"
     Then I should see "1 course for “Online”" in the "[data-region='dim-vitrine-count']" "css_element"
     And I should see "1" node occurrences of type "article" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should see "Curso Online" in the "[data-region='dim-vitrine-grid']" "css_element"
@@ -148,7 +149,8 @@ Feature: A visitor's public category page narrows in place once the site opens i
     And I click on "//article[@data-name='Area publica']//a[@data-region='dim-poster-control']" "xpath_element"
     Then I should see "Curso da Area" in the "[data-region='dim-panel-rail']" "css_element"
     And I should see "Outro da Area" in the "[data-region='dim-panel-rail']" "css_element"
-    When I set the field "Search courses" to "Outro"
+    When I press "Search courses"
+    And I set the field "Search courses" to "Outro"
     Then I wait until "//a[@data-region='dim-panel-cta'][contains(@href, 'q=Outro')]" "xpath_element" exists
     And I should see "Outro da Area" in the "[data-region='dim-panel-rail']" "css_element"
     And I should not see "Curso da Area" in the "[data-region='dim-panel-rail']" "css_element"
@@ -210,6 +212,7 @@ Feature: A visitor's public category page narrows in place once the site opens i
       | categorypublicclient | 1 | theme_dimensions |
     When I am on the "PUBCAT" "theme_dimensions > Public category page" page
     And I mark the page in the browser
+    And I press "Search courses"
     And I set the field "Search courses" to "Online"
     Then I should see "1 course for “Online”" in the "[data-region='dim-vitrine-count']" "css_element"
     And the url should match "[?&]q=Online"

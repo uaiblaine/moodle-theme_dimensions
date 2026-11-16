@@ -18,7 +18,8 @@
  *
  * Most functions here read layout, and each says when it forces one. The steps' widths are measured
  * once per content - the words, the counts, the slots - with the line under the measuring class (one
- * row that never wraps, no transition, only the search shrinking, down to its step's floor) and every
+ * row that never wraps, no transition, no control shrinking and the spacer taking no room), the search
+ * drawn as each try draws it - its open field, counted at the field's floor, or its button - and every
  * cell of the scope drawn, a cell the counts hide shown for the measure and hidden again before anything
  * is painted: so a step follows the width and the language and never the numbers of the moment. A width change
  * then needs no measure at all ({@see ./steps choose()}).
@@ -40,7 +41,7 @@ export const REVEAL_PAD = 16;
 /** The narrowest the listbox is drawn where it hangs under the field rather than across the line. */
 export const MIN_LIST_WIDTH = 288;
 
-/** The search's region on the line: the one control that shrinks while the line is measured. */
+/** The open search field, inside the search's capsule: counted at its floor, whatever room it was given. */
 const SEARCH = '[data-region="dim-line-search"]';
 
 /** The listbox of the suggestions: a layer, never a control of the line. */
@@ -71,12 +72,13 @@ export const contentWidth = (line: HTMLElement): number => {
 /**
  * How wide the line must be for the controls drawn now to fit on one row.
  *
- * Under the measuring class nothing shrinks but the search, so the controls run from the first one's
- * start to the last one's end; the search is counted at its step's floor (its min-width), whatever room
- * it was given, because the room past the floor is what a narrower line takes from it first. The listbox
- * is a layer and never counts, and a control the step does not draw has no box. Forces a layout.
+ * Under the measuring class nothing shrinks and the spacer takes no room, so the controls run from the first
+ * one's start to the last one's end; the open search field, where a try draws it, is counted at its floor (its
+ * min-width), whatever room it was given, because the room past the floor is what a narrower line takes from it
+ * first. The listbox is a layer and never counts, and a control the step does not draw has no box. Forces a
+ * layout.
  *
- * @param {HTMLElement} line The line, under the measuring class and one step's classes.
+ * @param {HTMLElement} line The line, under the measuring class and one try's classes.
  * @returns {number}
  */
 export const requiredWidth = (line: HTMLElement): number => {
@@ -93,9 +95,11 @@ export const requiredWidth = (line: HTMLElement): number => {
         }
         start = Math.min(start, rect.left);
         end = Math.max(end, rect.right);
-        if (child.matches(SEARCH)) {
-            const floor = parseFloat(window.getComputedStyle(child).minWidth) || 0;
-            slack = Math.max(0, rect.width - floor);
+        const search = child.matches(SEARCH) ? child : child.querySelector(SEARCH);
+        const box = search ? search.getBoundingClientRect() : null;
+        if (search && box && box.width > 0) {
+            const floor = parseFloat(window.getComputedStyle(search).minWidth) || 0;
+            slack = Math.max(0, box.width - floor);
         }
     });
     return end > start ? end - start - slack : 0;
@@ -104,10 +108,11 @@ export const requiredWidth = (line: HTMLElement): number => {
 /**
  * The width each of TRIES needs, measured once with every scope cell drawn and nothing in transition.
  *
- * The open search is set aside for the measure (its slide would read as controls of no width), and the
- * fold the line carried, the searching class and every hidden cell are put back before the caller paints.
- * Forces one layout per try, so with a width it stops at the first try that fits: a wide line pays one
- * layout, not five ({@see ./steps settled()} says when the tries left out are needed).
+ * A try that opens the search in place is measured with the field open, every other with the search's button;
+ * the open search over the line is set aside for the measure (its slide would read as controls of no width).
+ * The fold the line carried, the open search's class and every hidden cell are put back before the caller
+ * paints. Forces one layout per try, so with a width it stops at the first try that fits: a wide line pays one
+ * layout, not three ({@see ./steps settled()} says when the tries left out are needed).
  *
  * @param {HTMLElement} line The line.
  * @param {object} drawn The fold the line carries now, put back afterwards; null for none.
@@ -116,6 +121,7 @@ export const requiredWidth = (line: HTMLElement): number => {
  */
 export const stepWidths = (line: HTMLElement, drawn: Fold | null, width?: number): number[] => {
     const searching = line.classList.contains(CLASSES.searching);
+    const open = line.classList.contains(CLASSES.open);
     const scope = line.querySelector(SCOPE);
     const absent = scope ? Array.from(scope.querySelectorAll<HTMLElement>('label[hidden]')) : [];
     line.classList.add(CLASSES.measuring);
@@ -126,6 +132,7 @@ export const stepWidths = (line: HTMLElement, drawn: Fold | null, width?: number
     const widths: number[] = [];
     for (const fold of TRIES) {
         paint(line, fold);
+        line.classList.toggle(CLASSES.open, !fold.over);
         widths.push(requiredWidth(line));
         if (width !== undefined && widths[widths.length - 1] <= width + TOLERANCE) {
             break;
@@ -135,6 +142,7 @@ export const stepWidths = (line: HTMLElement, drawn: Fold | null, width?: number
         label.hidden = true;
     });
     paint(line, drawn);
+    line.classList.toggle(CLASSES.open, open);
     line.classList.toggle(CLASSES.searching, searching);
     // The transitions come back only once the line is drawn as it stays, so nothing slides from the measure.
     void line.offsetWidth;
@@ -196,7 +204,7 @@ export const place = (line: HTMLElement, layer: HTMLElement | null, twolines: bo
 };
 
 /**
- * Place the listbox: under the field at the first two steps, across the line from the third.
+ * Place the listbox: under the field where the search opens in place, across the line where it grows over it.
  *
  * @param {HTMLElement} line The line.
  * @param {HTMLElement} listbox The listbox.

@@ -34,86 +34,100 @@ export const VISITOR_TOOLBAR = `<form class="dim-toolbar" id="dim-vitrine-form-8
         
         <button type="submit" class="visually-hidden dim-toolbar__defaultsubmit" tabindex="-1">Filter</button>
         <div class="dim-line" data-region="dim-line">
-            <div class="dim-toolbar__search dim-line__search" data-region="dim-line-search">
-                <label class="visually-hidden" for="dim-vitrine-q-8">Search courses</label>
-                <i class="fa fa-magnifying-glass dim-toolbar__searchicon" aria-hidden="true"></i>
-                <input class="form-control dim-toolbar__input" type="search" id="dim-vitrine-q-8" name="q" value="" placeholder="Search by name" autocomplete="off">
-                <button type="button" class="dim-line__eraser dim-live-only" data-action="dim-search-clear" aria-label="Clear text" title="Clear text" hidden><i class="fa fa-eraser" aria-hidden="true"></i></button>
-            </div>
-            <button type="button" class="dim-line__iconbtn dim-line__searchopen" data-action="dim-search-open" aria-controls="dim-vitrine-q-8" aria-expanded="false" title="Search courses"><i class="fa fa-magnifying-glass" aria-hidden="true"></i><span class="visually-hidden">Search courses</span></button>
-            <details class="dim-toolbar__filters dim-line__filters" data-region="dim-filters">
-                <summary class="dim-toolbar__filterstoggle"><i class="fa fa-sliders" aria-hidden="true"></i> <span class="dim-line__label dim-toolbar__filterslabel">Filters</span> <span class="dim-toolbar__filtercount" data-region="dim-filtercount" hidden><span aria-hidden="true" data-region="dim-filtercount-number">0</span><span class="visually-hidden" data-region="dim-filtercount-label">Filters applied: 0</span></span></summary>
-                <div class="dim-toolbar__panel" data-region="dim-filters-panel">
-                    <fieldset class="dim-toolbar__group" data-region="dim-vitrine-group" data-name="cf_49">
-                        <legend class="dim-toolbar__grouplabel">Modality</legend>
-                        <div class="dim-toolbar__pills" data-region="dim-pill-track">
-                            <input class="dim-pill__input visually-hidden" type="radio" name="cf_49" id="dim-cf-49-any" value="0" checked>
-                            <label class="dim-pill" for="dim-cf-49-any">All</label>
-                            <input class="dim-pill__input visually-hidden" type="radio" name="cf_49" id="dim-cf-49-1" value="1">
-                            <label class="dim-pill" for="dim-cf-49-1">Online <span class="dim-pill__count" data-region="dim-pill-count">100</span></label>
-                        </div>
-                    </fieldset>
-                    <fieldset class="dim-toolbar__group" data-region="dim-vitrine-group" data-name="cf_51">
-                        <legend class="dim-toolbar__grouplabel">Study format</legend>
-                        <div class="dim-toolbar__pills" data-region="dim-pill-track">
-                            <input class="dim-pill__input visually-hidden" type="radio" name="cf_51" id="dim-cf-51-any" value="0" checked>
-                            <label class="dim-pill" for="dim-cf-51-any">All</label>
-                            <input class="dim-pill__input visually-hidden" type="radio" name="cf_51" id="dim-cf-51-1" value="1">
-                            <label class="dim-pill" for="dim-cf-51-1">Self-paced <span class="dim-pill__count" data-region="dim-pill-count">100</span></label>
-                        </div>
-                    </fieldset>
-                    <fieldset class="dim-toolbar__group dim-toolbar__group--date" data-region="dim-date" data-firstday="1" data-today="2026-10-28">
-                        <legend class="dim-toolbar__grouplabel">Start date</legend>
-                        <div class="dim-toolbar__daterange" data-region="dim-daterange"></div>
-                        <div class="dim-toolbar__dates" data-region="dim-dateinputs">
-                            <div class="dim-toolbar__datefield">
-                                <label class="dim-toolbar__datelabel" for="dim-datefrom-8">From</label>
-                                <input class="form-control dim-toolbar__dateinput" type="date" id="dim-datefrom-8" name="from" value="">
+            <span class="dim-line__spacer" aria-hidden="true"></span>
+            <div class="dim-line__cluster" data-region="dim-line-cluster">
+                <span class="dim-line__total" data-region="dim-line-total" aria-hidden="true">100</span>
+                <div class="dim-line__capsule" data-region="dim-line-capsule">
+                    <details class="dim-toolbar__filters dim-line__filters" data-region="dim-filters">
+                        <summary class="dim-toolbar__filterstoggle dim-line__iconbtn" data-dim-tip="Filters"><i class="fa fa-sliders" aria-hidden="true"></i> <span class="visually-hidden dim-line__label dim-toolbar__filterslabel">Filters</span> <span class="dim-toolbar__filtercount" data-region="dim-filtercount" hidden><span aria-hidden="true" data-region="dim-filtercount-number">0</span><span class="visually-hidden" data-region="dim-filtercount-label">Filters applied: 0</span></span></summary>
+                        <div class="dim-toolbar__panel" data-region="dim-filters-panel">
+                            <fieldset class="dim-toolbar__group" data-region="dim-vitrine-group" data-name="cf_48">
+                                <legend class="dim-toolbar__grouplabel">Enrolment page model</legend>
+                                <div class="dim-toolbar__pills" data-region="dim-pill-track">
+                                    <input class="dim-pill__input visually-hidden" type="radio" name="cf_48" id="dim-cf-48-any" value="0" checked>
+                                    <label class="dim-pill" for="dim-cf-48-any">All</label>
+                                    <input class="dim-pill__input visually-hidden" type="radio" name="cf_48" id="dim-cf-48-1" value="1">
+                                    <label class="dim-pill" for="dim-cf-48-1">Course <span class="dim-pill__count" data-region="dim-pill-count">100</span></label>
+                                </div>
+                            </fieldset>
+                            <fieldset class="dim-toolbar__group" data-region="dim-vitrine-group" data-name="cf_49">
+                                <legend class="dim-toolbar__grouplabel">Modality</legend>
+                                <div class="dim-toolbar__pills" data-region="dim-pill-track">
+                                    <input class="dim-pill__input visually-hidden" type="radio" name="cf_49" id="dim-cf-49-any" value="0" checked>
+                                    <label class="dim-pill" for="dim-cf-49-any">All</label>
+                                    <input class="dim-pill__input visually-hidden" type="radio" name="cf_49" id="dim-cf-49-1" value="1">
+                                    <label class="dim-pill" for="dim-cf-49-1">Online <span class="dim-pill__count" data-region="dim-pill-count">100</span></label>
+                                </div>
+                            </fieldset>
+                            <fieldset class="dim-toolbar__group" data-region="dim-vitrine-group" data-name="cf_51">
+                                <legend class="dim-toolbar__grouplabel">Study format</legend>
+                                <div class="dim-toolbar__pills" data-region="dim-pill-track">
+                                    <input class="dim-pill__input visually-hidden" type="radio" name="cf_51" id="dim-cf-51-any" value="0" checked>
+                                    <label class="dim-pill" for="dim-cf-51-any">All</label>
+                                    <input class="dim-pill__input visually-hidden" type="radio" name="cf_51" id="dim-cf-51-1" value="1">
+                                    <label class="dim-pill" for="dim-cf-51-1">Self-paced <span class="dim-pill__count" data-region="dim-pill-count">100</span></label>
+                                </div>
+                            </fieldset>
+                            <fieldset class="dim-toolbar__group dim-toolbar__group--date" data-region="dim-date" data-firstday="1" data-today="2026-11-15">
+                                <legend class="dim-toolbar__grouplabel">Start date</legend>
+                                <div class="dim-toolbar__daterange" data-region="dim-daterange"></div>
+                                <div class="dim-toolbar__dates" data-region="dim-dateinputs">
+                                    <div class="dim-toolbar__datefield">
+                                        <label class="dim-toolbar__datelabel" for="dim-datefrom-8">From</label>
+                                        <input class="form-control dim-toolbar__dateinput" type="date" id="dim-datefrom-8" name="from" value="">
+                                    </div>
+                                    <div class="dim-toolbar__datefield">
+                                        <label class="dim-toolbar__datelabel" for="dim-dateto-8">To</label>
+                                        <input class="form-control dim-toolbar__dateinput" type="date" id="dim-dateto-8" name="to" value="">
+                                    </div>
+                                </div>
+                                <ul class="dim-toolbar__quick" role="list">
+                                    <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-11-15&amp;to=2026-11-15" data-action="dim-quick" data-from="2026-11-15" data-to="2026-11-15">Today</a></li>
+                                    <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-11-16&amp;to=2026-11-16" data-action="dim-quick" data-from="2026-11-16" data-to="2026-11-16">Tomorrow</a></li>
+                                    <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-11-09&amp;to=2026-11-15" data-action="dim-quick" data-from="2026-11-09" data-to="2026-11-15">This week</a></li>
+                                    <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-11-16&amp;to=2026-11-22" data-action="dim-quick" data-from="2026-11-16" data-to="2026-11-22">Next week</a></li>
+                                </ul>
+                            </fieldset>
+                            <div class="dim-toolbar__actions dim-toolbar__foot" data-region="dim-filters-foot">
+                                <a class="btn btn-sm btn-outline-secondary dim-toolbar__footclear" href="https://example.com/theme_dimensions/category/8" data-region="dim-filters-clear" data-action="dim-clear" hidden>Clear filters</a>
+                                <button type="button" class="btn btn-sm btn-primary dim-toolbar__footshow dim-live-only" data-action="dim-filters-show" data-dim-template="Show {n}">Show 100</button>
+                                <button type="submit" class="dim-toolbar__submit dim-nojs-only">Filter</button>
                             </div>
-                            <div class="dim-toolbar__datefield">
-                                <label class="dim-toolbar__datelabel" for="dim-dateto-8">To</label>
-                                <input class="form-control dim-toolbar__dateinput" type="date" id="dim-dateto-8" name="to" value="">
-                            </div>
                         </div>
-                        <ul class="dim-toolbar__quick" role="list">
-                            <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-10-28&amp;to=2026-10-28" data-action="dim-quick" data-from="2026-10-28" data-to="2026-10-28">Today</a></li>
-                            <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-10-29&amp;to=2026-10-29" data-action="dim-quick" data-from="2026-10-29" data-to="2026-10-29">Tomorrow</a></li>
-                            <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-10-26&amp;to=2026-11-01" data-action="dim-quick" data-from="2026-10-26" data-to="2026-11-01">This week</a></li>
-                            <li><a class="dim-quick" href="https://example.com/theme_dimensions/category/8?from=2026-11-02&amp;to=2026-11-08" data-action="dim-quick" data-from="2026-11-02" data-to="2026-11-08">Next week</a></li>
-                        </ul>
-                    </fieldset>
-                    <div class="dim-toolbar__actions">
-                        <button type="submit" class="dim-toolbar__submit dim-nojs-only">Filter</button>
+                    </details>
+                    <details class="dim-line__organise" data-region="dim-organise">
+                        <summary class="dim-line__iconbtn dim-line__organisetoggle" data-dim-tip="Organise"><i class="fa fa-arrow-down-wide-short" aria-hidden="true"></i><span class="visually-hidden">Organise</span></summary>
+                        <div class="dim-line__menu" data-region="dim-organise-menu">
+                            <fieldset class="dim-toolbar__group dim-toolbar__group--sort" data-region="dim-sort" data-name="sort">
+                                <legend class="dim-toolbar__grouplabel">Organise</legend>
+                                <div class="dim-toolbar__pills">
+                                    <input class="dim-pill__input visually-hidden" type="radio" name="sort" id="dim-sort-8-category" value="category" checked>
+                                    <label class="dim-pill" for="dim-sort-8-category">By area</label>
+                                    <input class="dim-pill__input visually-hidden" type="radio" name="sort" id="dim-sort-8-name" value="name">
+                                    <label class="dim-pill" for="dim-sort-8-name">A-Z</label>
+                                    <input class="dim-pill__input visually-hidden" type="radio" name="sort" id="dim-sort-8-recent" value="recent">
+                                    <label class="dim-pill" for="dim-sort-8-recent">Recent</label>
+                                </div>
+                            </fieldset>
+                            <button type="submit" class="dim-toolbar__sortsubmit dim-nojs-only">Apply</button>
+                        </div>
+                    </details>
+                    <div class="dim-toolbar__view dim-line__view" role="group" aria-label="View" data-region="dim-view-row">
+                        <button type="submit" class="dim-toolbar__viewbtn dim-line__iconbtn" data-action="dim-view" name="view" value="list" aria-pressed="false" data-dim-tip="List"><i class="fa fa-list" aria-hidden="true"></i><span class="visually-hidden">List</span></button>
+                        <button type="submit" class="dim-toolbar__viewbtn dim-line__iconbtn" data-action="dim-view" name="view" value="cards" aria-pressed="true" data-dim-tip="Cards"><i class="fa fa-border-all" aria-hidden="true"></i><span class="visually-hidden">Cards</span></button>
                     </div>
                 </div>
-            </details>
-            <details class="dim-line__organise" data-region="dim-organise">
-                <summary class="dim-line__iconbtn dim-line__organisetoggle" title="Organise"><i class="fa fa-arrow-down-wide-short" aria-hidden="true"></i><span class="visually-hidden">Organise</span></summary>
-                <div class="dim-line__menu" data-region="dim-organise-menu">
-                    <fieldset class="dim-toolbar__group dim-toolbar__group--sort" data-region="dim-sort" data-name="sort">
-                        <legend class="dim-toolbar__grouplabel">Organise</legend>
-                        <div class="dim-toolbar__pills">
-                            <input class="dim-pill__input visually-hidden" type="radio" name="sort" id="dim-sort-8-category" value="category" checked>
-                            <label class="dim-pill" for="dim-sort-8-category">By area</label>
-                            <input class="dim-pill__input visually-hidden" type="radio" name="sort" id="dim-sort-8-name" value="name">
-                            <label class="dim-pill" for="dim-sort-8-name">A-Z</label>
-                            <input class="dim-pill__input visually-hidden" type="radio" name="sort" id="dim-sort-8-recent" value="recent">
-                            <label class="dim-pill" for="dim-sort-8-recent">Recent</label>
-                        </div>
-                    </fieldset>
-                    <button type="submit" class="dim-toolbar__sortsubmit dim-nojs-only">Apply</button>
-                    <div class="dim-line__showas" role="group" aria-labelledby="dim-vitrine-form-8-showas" data-region="dim-showas">
-                        <span class="dim-toolbar__grouplabel" id="dim-vitrine-form-8-showas">Show as</span>
-                        <button type="button" class="dim-line__showasbtn" data-action="dim-view" value="list" aria-pressed="false"><i class="fa fa-list" aria-hidden="true"></i> List</button>
-                        <button type="button" class="dim-line__showasbtn" data-action="dim-view" value="cards" aria-pressed="true"><i class="fa fa-border-all" aria-hidden="true"></i> Cards</button>
-                    </div>
-                </div>
-            </details>
-            <div class="dim-toolbar__view dim-line__view" role="group" aria-label="View" data-region="dim-view-row">
-                <button type="submit" class="dim-toolbar__viewbtn" data-action="dim-view" name="view" value="list" aria-pressed="false" title="List"><i class="fa fa-list" aria-hidden="true"></i><span class="visually-hidden">List</span></button>
-                <button type="submit" class="dim-toolbar__viewbtn" data-action="dim-view" name="view" value="cards" aria-pressed="true" title="Cards"><i class="fa fa-border-all" aria-hidden="true"></i><span class="visually-hidden">Cards</span></button>
             </div>
-            <button type="button" class="dim-line__iconbtn dim-line__searchclose" data-action="dim-search-close" aria-label="Close search" title="Close search"><i class="fa fa-xmark" aria-hidden="true"></i></button>
+            <div class="dim-line__capsule dim-line__searchcap" data-region="dim-line-searchcap">
+                <button type="button" class="dim-line__iconbtn dim-line__searchopen" data-action="dim-search-open" aria-controls="dim-vitrine-q-8" aria-expanded="false" data-dim-tip="Search courses"><i class="fa fa-magnifying-glass" aria-hidden="true"></i><span class="visually-hidden">Search courses</span></button>
+                <div class="dim-toolbar__search dim-line__search" data-region="dim-line-search">
+                    <label class="visually-hidden" for="dim-vitrine-q-8">Search courses</label>
+                    <i class="fa fa-magnifying-glass dim-toolbar__searchicon" aria-hidden="true"></i>
+                    <input class="form-control dim-toolbar__input" type="search" id="dim-vitrine-q-8" name="q" value="" placeholder="Search by name" autocomplete="off">
+                    <button type="button" class="dim-line__eraser dim-live-only" data-action="dim-search-clear" aria-label="Clear text" data-dim-tip="Clear text" hidden><i class="fa fa-eraser" aria-hidden="true"></i></button>
+                </div>
+            </div>
+            <button type="button" class="dim-line__iconbtn dim-line__searchclose" data-action="dim-search-close" aria-label="Close search" data-dim-tip="Close search"><i class="fa fa-xmark" aria-hidden="true"></i></button>
             <div class="dim-line__suggest" id="dim-vitrine-suggest-8" data-region="dim-line-suggest" data-label-filters="Filters" data-label-start="Start with a filter" hidden></div>
         </div>
         <p class="dim-toolbar__notice" role="status" data-region="dim-toolbar-notice" hidden>Type at least 2 characters to search.</p>

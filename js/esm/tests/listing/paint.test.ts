@@ -116,19 +116,49 @@ describe('theme_dimensions/listing/paint', () => {
         window.history.replaceState(null, '', '/course/index.php?categoryid=7&open=9');
         const root = page('<div data-region="dim-line-chips" class="dim-line__chips--rest"><p data-region="dim-vitrine-count" class="visually-hidden"></p>'
             + '<span data-region="dim-daterange-pill"></span><span data-region="dim-line-chiplist"></span>'
-            + '<a data-region="dim-vitrine-clear" hidden></a></div>');
+            + '<a data-region="dim-vitrine-clear" hidden></a></div><a data-region="dim-filters-clear" hidden></a>');
         paintChips(root, {hasfilters: true, clearall: true, chips: [
             {param: 'period', label: 'From 1 May', url: '/course/index.php?categoryid=7', removelabel: 'Remove'},
             {param: 'cf_3', label: 'Online', url: '/course/index.php?categoryid=7&from=2026-05-01'},
         ]});
         const row = root.querySelector('[data-region="dim-line-chips"]') as HTMLElement;
         expect(row.classList.contains('dim-line__chips--rest')).toBe(false);
-        expect(row.querySelector('[data-region="dim-vitrine-count"]')?.classList.contains('visually-hidden')).toBe(false);
+        // The sentence's visibility is the count's painter's, from the answer's "See all as a list".
+        expect(row.querySelector('[data-region="dim-vitrine-count"]')?.classList.contains('visually-hidden')).toBe(true);
+        expect(root.querySelector<HTMLElement>('[data-region="dim-filters-clear"]')?.hidden).toBe(false);
         expect(row.querySelector('[data-region="dim-daterange-pill"] a')?.getAttribute('data-param')).toBe('period');
         const field = row.querySelector<HTMLAnchorElement>('[data-region="dim-line-chiplist"] a') as HTMLAnchorElement;
         expect(field.dataset.param).toBe('cf_3');
         expect(field.href).toBe('http://localhost/course/index.php?categoryid=7&from=2026-05-01&open=9');
         expect(row.querySelector<HTMLElement>('[data-region="dim-vitrine-clear"]')?.hidden).toBe(false);
+
+        // At rest the panel's "Clear filters" has nothing to clear.
+        paintChips(root, {hasfilters: false, clearall: false, chips: []});
+        expect(row.classList.contains('dim-line__chips--rest')).toBe(true);
+        expect(root.querySelector<HTMLElement>('[data-region="dim-filters-clear"]')?.hidden).toBe(true);
+    });
+
+    it('shows the count sentence only where it says where the results lie, the bar\'s count and "Show" with its number', () => {
+        const root = page('<div data-region="dim-line"><span data-region="dim-line-total">16</span></div>'
+            + '<button data-action="dim-filters-show" data-dim-template="Mostrar {n}">Mostrar 16</button>'
+            + '<p data-region="dim-vitrine-count"><b data-region="dim-vitrine-countnumber"></b>'
+            + '<span data-region="dim-vitrine-counttext"></span></p><span data-region="dim-vitrine-seeall" hidden><a href="#"></a></span>');
+        const sentence = root.querySelector('[data-region="dim-vitrine-count"]') as HTMLElement;
+        paintCount(root, {countnumber: '1.234', countline: 'cursos com estes filtros', seeallurl: ''});
+        expect(sentence.classList.contains('visually-hidden')).toBe(true);
+        expect(root.querySelector('[data-region="dim-line-total"]')?.textContent).toBe('1.234');
+        expect(root.querySelector('[data-action="dim-filters-show"]')?.textContent).toBe('Mostrar 1.234');
+        // Changes that must make it fail: the sentence's visibility read from anything but the answer's seeallurl.
+        paintCount(root, {countnumber: '16', countline: 'cursos: 2 nesta categoria e 14 em 4 áreas', seeallurl: '/all'});
+        expect(sentence.classList.contains('visually-hidden')).toBe(false);
+        expect(root.querySelector('[data-region="dim-line-total"]')?.textContent).toBe('16');
+
+        // A line the component draws is told its count instead.
+        const line = root.querySelector('[data-region="dim-line"]') as HTMLElement;
+        line.setAttribute('data-line-drawn', 'true');
+        paintCount(root, {countnumber: '7', countline: 'cursos', seeallurl: ''});
+        expect(root.querySelector('[data-region="dim-line-total"]')?.textContent).toBe('16');
+        expect(root.querySelector('[data-action="dim-filters-show"]')?.textContent).toBe('Mostrar 7');
     });
 
     it('rewrites the count so that a repeated sentence still differs, and takes the opening\'s note away', () => {

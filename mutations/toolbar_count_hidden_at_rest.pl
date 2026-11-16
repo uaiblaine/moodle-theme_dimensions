@@ -1,2 +1,2 @@
-# Show the count sentence at rest, where the hero already says how many courses the category holds.
-s/<p class="dim-vitrine__count\{\{\^hasfilters\}\} visually-hidden\{\{\/hasfilters\}\}"/<p class="dim-vitrine__count"/;
+# Show the count sentence at every state: it stands beside the bar's count wherever the bare number says it all.
+s/<p class="dim-vitrine__count\{\{\^seeallurl\}\} visually-hidden\{\{\/seeallurl\}\}"/<p class="dim-vitrine__count"/;

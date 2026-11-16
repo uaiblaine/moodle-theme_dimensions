@@ -633,6 +633,7 @@ body.dim-category {
         --dim-radius-pill: var(--dim-ds-radius-pill, 50rem);
         // The fleet Design System's names the filter bar paints with and this file had no alias for. The brand tone's
         // ground and edge pair with --dim-primary-ink, its ink, in both modes (post.scss turns all three).
+        --dim-radius-xs: var(--dimensions-radius-xs, 4px);
         --dim-radius-md: var(--dimensions-radius-md, 8px);
         --dim-radius-xl: var(--dimensions-radius-xl, 16px);
         --dim-brand-tint: var(--dimensions-brand-tint, var(--bs-primary-bg-subtle, #cfe2f2));
@@ -975,12 +976,16 @@ body.dim-category {
     }
 
     // ---- The filter line -----------------------------------------------------------------------
-    // One row, in this order: scope,
-    // search, star, Filters, Organise, view, the managers' menu. It wraps where it does not fit -
-    // which is the whole of its narrow behaviour without JavaScript - and the search is the item
-    // that grows and shrinks, so the other controls keep their size. It is the positioned ancestor
-    // of the Filters panel, which opens under the LINE rather than under its own control.
+    // The fleet Design System's compact bar (filter-bar.md), one row in this order: the scope, a
+    // spacer, the cluster - the result count and a capsule of the star, Filters, Organise and the
+    // view toggle - and the search's own capsule with the managers' menu. It wraps where it does not
+    // fit, which is the whole of its narrow behaviour without JavaScript, and it is the positioned
+    // ancestor of the Filters panel, which opens under the LINE rather than under its own control.
+    // --dim-bar-inner is the bar's height step, read by its cells, buttons and open field: 32px, which
+    // with a capsule's 3px padding and 1px border makes the 40px bar, and 36px (the 44px bar) wherever
+    // the pointer is coarse, whatever the width.
     .dim-line {
+        --dim-bar-inner: 2rem;
         position: relative;
         display: flex;
         flex-wrap: wrap;
@@ -988,11 +993,19 @@ body.dim-category {
         gap: .5rem;
     }
 
-    // The search's basis is the first step's floor (13rem, the dim-line--s1 rule below), so a line that
-    // wraps before its client measures it breaks its row exactly where that step stops fitting: at a
-    // width the client keeps at the first step, the server's first paint is already the folded line and
-    // nothing moves when the step arrives. A wider basis put a control on a second row the step then
-    // pulled back up, the line's one layout shift.
+    @media (pointer: coarse) {
+        .dim-line {
+            --dim-bar-inner: 2.25rem;
+        }
+    }
+
+    // Pushes the cluster and the search to the line's end.
+    .dim-line__spacer {
+        flex: 1 1 0;
+    }
+
+    // The search box of the root's search line (category_searchline), which grows and shrinks and
+    // never sets its row's width; on the filter line the field lives in the search's capsule.
     .dim-toolbar__search {
         position: relative;
         flex: 1 1 13rem;
@@ -1002,8 +1015,8 @@ body.dim-category {
     // The scope: one radio group drawn as the Design System's segmented control, an inset platter
     // holding counted cells, the chosen one raised in the page's surface. It wraps inside itself on
     // a narrow line rather than scrolling: a scroll container would clip the cells' focus ring,
-    // which is outside them. The platter's 3px padding and transparent 1px border make 32px cells
-    // a 40px control, the height of every other control of the line.
+    // which is outside them. The platter's 3px padding and transparent 1px border make cells of the
+    // bar's step a control of the bar's height.
     .dim-line__scope {
         flex: 0 1 auto;
     }
@@ -1020,7 +1033,7 @@ body.dim-category {
     }
 
     .dim-line__scope .dim-pill {
-        min-height: 2rem;
+        min-height: var(--dim-bar-inner);
         padding: 0 .75rem;
         border: 0;
         border-radius: var(--dim-radius-md);
@@ -1049,8 +1062,139 @@ body.dim-category {
         color: var(--dim-muted);
     }
 
-    // The search is a pill, its magnifier at the start and its eraser at the end. The eraser is
-    // a client's control (dim-live-only) and the field keeps its room whether or not it shows.
+    // The cluster: the result count, then the capsule, on one inset ground at the capsule's corners.
+    .dim-line__cluster {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        border-radius: var(--dim-radius);
+        background: var(--dim-surface-strong);
+    }
+
+    // The result count (counter.md, D52): a bare number before the star, quiet, tabular so a count
+    // that changes moves nothing beside it. It is aria-hidden: the count sentence under the line is
+    // the live region a screen reader is read, and both are written from the same answer.
+    .dim-line__total {
+        padding: 0 .5rem 0 .75rem;
+        color: var(--dim-muted);
+        font-size: .875rem;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    // A capsule: icon buttons on the page's surface, a hairline and the small elevation. Its 3px
+    // padding is the space scale's one named exception: with the 32px buttons and the border it is
+    // the 40px bar. It is not positioned, so the layers inside it hang from the line.
+    .dim-line__capsule {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: .125rem;
+        padding: .1875rem;
+        border: 1px solid var(--dim-line);
+        border-radius: var(--dim-radius);
+        background: var(--dim-surface);
+        box-shadow: var(--dim-elevation-sm);
+    }
+
+    // The search's capsule is the one item of the line that gives way when the line is short.
+    .dim-line__searchcap {
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+
+    // The bar's icon buttons (icon-button.md): the star, Filters, Organise, the two views, the search
+    // and the button that closes it. No border: transparent and muted at rest, the alternative surface
+    // under the pointer, the brand tone pressed or open, the button's 8px corners and a 16px glyph. Two
+    // of them are a disclosure's summary, so the marker goes.
+    .dim-line__iconbtn {
+        position: relative;
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: center;
+        gap: .125rem;
+        min-width: var(--dim-bar-inner);
+        height: var(--dim-bar-inner);
+        padding: 0 .375rem;
+        border: 0;
+        border-radius: var(--dim-radius-md);
+        background: transparent;
+        color: var(--dim-muted);
+        font-size: 1rem;
+        line-height: 1;
+        cursor: pointer;
+        list-style: none;
+        transition: background var(--dim-motion) var(--dim-ease), color var(--dim-motion) var(--dim-ease);
+
+        &::-webkit-details-marker {
+            display: none;
+        }
+
+        &:hover {
+            background: var(--dim-surface-subtle);
+            color: var(--dim-ink);
+        }
+
+        &[aria-pressed="true"],
+        &[aria-expanded="true"] {
+            background: var(--dim-brand-tint);
+            color: var(--dim-primary-ink);
+        }
+
+        &:focus-visible {
+            outline: 3px solid var(--dim-ring);
+            outline-offset: 2px;
+        }
+    }
+
+    // A disclosure's summary is open while its details is: the pressed face of every open control.
+    .dim-toolbar__filters[open] > .dim-line__iconbtn,
+    .dim-line__organise[open] > .dim-line__iconbtn {
+        background: var(--dim-brand-tint);
+        color: var(--dim-primary-ink);
+    }
+
+    // The Organise menu: a native disclosure whose content is a small popover under its summary.
+    .dim-line__organise {
+        position: relative;
+        flex: none;
+    }
+
+    .dim-line__menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        width: max-content;
+        padding: 12px 14px;
+        border: 1px solid var(--dim-line);
+        border-radius: var(--dim-ds-radius-md, 8px);
+        background: var(--dim-surface);
+        box-shadow: var(--dim-shadow);
+    }
+
+    // The view toggle: its two buttons are the capsule's last icon buttons, List first.
+    .dim-toolbar__view {
+        display: inline-flex;
+        flex: none;
+        gap: .125rem;
+    }
+
+    // The glyph's box is the icon's 1em: Font Awesome's grid glyph is only .875em wide.
+    .dim-toolbar__viewbtn .fa {
+        width: 1em;
+        text-align: center;
+    }
+
+    // The search box of the root's search line: a pill, its magnifier at the start and its eraser at
+    // the end; the eraser is a client's control (dim-live-only) and the field keeps its room whether
+    // or not it shows.
     .dim-line__search .dim-toolbar__input {
         padding-right: 40px;
         border-radius: var(--dim-radius-pill);
@@ -1090,73 +1234,181 @@ body.dim-category {
         display: none;
     }
 
-    // The line's icon buttons - the star, the Organise menu's summary - are 40px squares, the same
-    // face as the Filters control beside them. The Design System draws an icon button borderless
-    // inside a capsule; standing alone on the line, each keeps its own control line and surface so
-    // it does not float, and takes the button's radius and its hover and pressed tones.
-    .dim-line__iconbtn {
+    // ---- The open search field, in the search's capsule ----------------------------------------
+    // The field in the search button's place, the button's height: the magnifier at its start, the
+    // text, the eraser at its end while there is text, on the inset ground at the button's corners.
+    // The ring is the field's, on :focus-within; the input's own outline is transparent, so it still
+    // shows where forced colours draw it. Its floor is what the line is measured with: the client
+    // opens the field in place only where the line has that much room for it.
+    .dim-line .dim-line__search {
         display: inline-flex;
-        flex: 0 0 auto;
+        flex: 1 1 auto;
         align-items: center;
-        justify-content: center;
-        width: 40px;
-        min-height: 40px;
-        padding: 0;
-        border: 1px solid var(--dim-control-line);
+        gap: .375rem;
+        min-width: 10rem;
+        height: var(--dim-bar-inner);
+        padding: 0 .5rem;
         border-radius: var(--dim-radius-md);
-        background: var(--dim-surface);
-        color: var(--dim-ink);
-        cursor: pointer;
-        list-style: none;
-        transition: background var(--dim-motion) var(--dim-ease), color var(--dim-motion) var(--dim-ease);
+        background: var(--dim-surface-strong);
+        color: var(--dim-muted);
 
-        &::-webkit-details-marker {
-            display: none;
+        &:focus-within {
+            outline: 3px solid var(--dim-ring);
+            outline-offset: 2px;
         }
+    }
+
+    .dim-line .dim-toolbar__searchicon {
+        position: static;
+        flex: none;
+        font-size: 1rem;
+        transform: none;
+    }
+
+    .dim-line .dim-line__search .dim-toolbar__input {
+        flex: 1 1 auto;
+        width: 11.875rem;
+        min-width: 3.75rem;
+        height: 100%;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: var(--dim-ink);
+        font-family: inherit;
+        font-size: .875rem;
+        box-shadow: none;
+
+        &:focus {
+            outline: 2px solid transparent;
+            box-shadow: none;
+        }
+    }
+
+    // The eraser: 24px at the field's end, radius xs; it clears the text and keeps the field open.
+    .dim-line .dim-line__eraser {
+        flex: none;
+        width: 1.5rem;
+        height: 1.5rem;
+        margin-inline-end: -.25rem;
+        border-radius: var(--dim-radius-xs);
+        transform: none;
+
+        &:hover {
+            background: var(--dim-surface-subtle);
+            color: var(--dim-ink);
+        }
+    }
+
+    // The managers' menu: core's kebab, drawn as the search capsule's last icon button. Core's own
+    // .btn-icon sizes it and its .btn paints it through Bootstrap's variables, which this outranks.
+    .dim-toolbar__manage {
+        display: inline-flex;
+        flex: none;
+    }
+
+    .dim-toolbar__manage .dropdown-toggle {
+        min-width: var(--dim-bar-inner);
+        width: auto;
+        height: var(--dim-bar-inner);
+        padding: 0 .375rem;
+        border: 0;
+        border-radius: var(--dim-radius-md);
+        background: transparent;
+        color: var(--dim-muted);
+        transition: background var(--dim-motion) var(--dim-ease), color var(--dim-motion) var(--dim-ease);
 
         &:hover {
             background: var(--dim-surface-subtle);
             color: var(--dim-ink);
         }
 
+        &[aria-expanded="true"] {
+            background: var(--dim-brand-tint);
+            color: var(--dim-primary-ink);
+        }
+
         &:focus-visible {
             outline: 3px solid var(--dim-ring);
             outline-offset: 2px;
+            box-shadow: none;
         }
     }
 
-    // The Organise menu: a native disclosure whose content is a small popover under its summary,
-    // at the end of the line; open, the summary wears the pressed face of every open control here.
-    .dim-line__organise {
+    // ---- The bar's tooltip (tooltip.md, D51) ---------------------------------------------------
+    // Every icon-only control of the line names itself in data-dim-tip, which this draws above it:
+    // the body ink as its ground and the surface as its text, so the dark mode turns it light. It
+    // shows after 100ms of rest under the pointer, where the pointer can hover, and on keyboard focus;
+    // never while the control's own layer is open (aria-expanded, an open details), and never while
+    // Escape has put the line's tooltips off (dim-line--tipsoff, the client's). The control keeps its
+    // own name; the tooltip repeats it, out of the accessibility tree. The padding, the arrow's
+    // offset, the shadow and the layer are tooltip.md's open questions, so they are block_compass's:
+    // .25rem .5rem, the arrow at the balloon, no shadow, and z 5, over the line's neighbours and under
+    // the floating layers, which open below the line where the tooltip opens above it. A pseudo-element
+    // of the host carries it, so core's caret rules for its kebab are outranked property by property.
+    .dim-line [data-dim-tip] {
         position: relative;
-        flex: none;
     }
 
-    .dim-line__organise[open] > .dim-line__iconbtn {
-        border-color: var(--dim-brand-edge);
-        background: var(--dim-brand-tint);
-        color: var(--dim-primary-ink);
-    }
-
-    .dim-line__menu {
+    .dim-line [data-dim-tip]::after,
+    .dim-line [data-dim-tip]::before {
         position: absolute;
-        top: calc(100% + 6px);
-        right: 0;
-        z-index: 2;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-        width: max-content;
-        padding: 12px 14px;
-        border: 1px solid var(--dim-line);
-        border-radius: var(--dim-ds-radius-md, 8px);
-        background: var(--dim-surface);
-        box-shadow: var(--dim-shadow);
+        left: 50%;
+        z-index: 5;
+        display: block;
+        margin: 0;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-50%);
+        transition: opacity var(--dim-motion) ease;
     }
 
-    .dim-line__view {
-        flex: none;
+    .dim-line [data-dim-tip]::after {
+        content: attr(data-dim-tip);
+        bottom: calc(100% + .5rem);
+        width: max-content;
+        max-width: 16.25rem;
+        padding: .25rem .5rem;
+        border: 0;
+        border-radius: var(--dim-radius-sm);
+        background: var(--dim-ink);
+        color: var(--dim-surface);
+        font: 400 .75rem / 1.35 var(--dim-font-brand);
+        text-align: center;
+        white-space: normal;
+    }
+
+    .dim-line [data-dim-tip]::before {
+        content: "";
+        bottom: calc(100% - 2px);
+        width: 0;
+        height: 0;
+        border: 5px solid transparent;
+        border-top-color: var(--dim-ink);
+    }
+
+    .dim-line:not(.dim-line--tipsoff) [data-dim-tip]:not([aria-expanded="true"]) {
+        &:hover::after,
+        &:hover::before,
+        &:focus-visible::after,
+        &:focus-visible::before {
+            opacity: 1;
+            transition-delay: 100ms;
+        }
+    }
+
+    // A disclosure's summary names no attribute while its layer is open: the open details says so.
+    .dim-line [open] > [data-dim-tip]::after,
+    .dim-line [open] > [data-dim-tip]::before {
+        visibility: hidden;
+    }
+
+    // A touch screen keeps :hover on what was tapped: there the hover shows nothing, a keyboard's focus still does.
+    @media (hover: none) {
+        .dim-line [data-dim-tip]:not(:focus-visible):hover::after,
+        .dim-line [data-dim-tip]:not(:focus-visible):hover::before {
+            visibility: hidden;
+        }
     }
 
     // Where the design PAINTS its magnifier. Its icon is an 18px box 13px in from the
@@ -1341,105 +1593,6 @@ body.dim-category {
         color: var(--dim-primary-ink);
     }
 
-    // The view toggle and the kebab end the line, after the search that grows between.
-    //
-    // The design's segmented control: one 1px boundary round both buttons, at the corners of a
-    // field. The boundary clips the buttons' corners, so the focus ring is drawn INSIDE the
-    // button, as the design draws it, or the clip would cut it off.
-    .dim-toolbar__view {
-        display: inline-flex;
-        flex: none;
-        border: 1px solid var(--dim-control-line);
-        border-radius: var(--dim-radius-md);
-        overflow: hidden;
-    }
-
-    // The two views are icons on the line, each named by a visually hidden word and a tooltip.
-    // The glyph's box is the design's icon box (1em).
-    .dim-toolbar__viewbtn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        min-height: 40px;
-        padding: 6px 12px;
-        border: 0;
-        border-radius: 0;
-        background: var(--dim-surface);
-        color: var(--dim-ink);
-        font-family: var(--dim-font-brand);
-        font-size: .82rem;
-        font-weight: 600;
-        white-space: nowrap;
-        cursor: pointer;
-
-        &:hover {
-            background: var(--dim-surface-subtle);
-            color: var(--dim-ink);
-        }
-
-        &[aria-pressed="true"] {
-            background: var(--dim-brand-tint);
-            color: var(--dim-primary-ink);
-        }
-
-        &:focus-visible {
-            outline: 3px solid var(--dim-ring);
-            outline-offset: -3px;
-        }
-    }
-
-    // The glyph's box is the design's 1em icon box. Font Awesome's grid glyph is only .875em wide,
-    // which would make "Cards" narrower than the design's button.
-    //
-    // There is no divider between the two options, although the design's sheet writes one: its
-    // own button rule outranks that one, so the design renders none, and the pressed option's
-    // tint is what separates them. The page is matched to what the design renders.
-    .dim-toolbar__viewbtn .fa {
-        width: 1em;
-        text-align: center;
-    }
-
-    .dim-toolbar__manage {
-        flex: none;
-    }
-
-    // The kebab is the third control of the view toggle's cluster and wears its skin, or it reads
-    // as a stray glyph rather than as their sibling. The design has no kebab, so the trigger takes
-    // the language of the control beside it: the segmented toggle's 1px boundary and field corners
-    // on the page's surface, its 42px height so the cluster is one line, the hover every control
-    // here makes, and - open - the pressed face of the Filter summary (the brand tone's ground,
-    // edge and ink), because an open menu is a pressed control: a trigger that goes quiet the
-    // moment it is pressed reads as if the press did nothing.
-    .dim-toolbar__manage .dropdown-toggle {
-        width: 42px;
-        height: 42px;
-        border: 1px solid var(--dim-control-line);
-        border-radius: var(--dim-radius-md);
-        background: var(--dim-surface);
-        color: var(--dim-ink);
-        transition:
-            background var(--dim-motion) var(--dim-ease),
-            color var(--dim-motion) var(--dim-ease),
-            border-color var(--dim-motion) var(--dim-ease);
-
-        &:hover {
-            background: var(--dim-surface-subtle);
-            color: var(--dim-ink);
-        }
-
-        &[aria-expanded="true"] {
-            border-color: var(--dim-brand-edge);
-            background: var(--dim-brand-tint);
-            color: var(--dim-primary-ink);
-        }
-
-        &:focus-visible {
-            outline: 3px solid var(--dim-ring);
-            outline-offset: 2px;
-            box-shadow: none;
-        }
-    }
-
     .dim-toolbar__actions {
         display: flex;
         align-items: center;
@@ -1486,83 +1639,22 @@ body.dim-category {
         min-width: 0;
     }
 
-    // The design's Filter button: a button's corners and the control line, 40px like every control
-    // of the line, the brand face at 15px and 600, its glyph a 1em box.
-    .dim-toolbar__filterstoggle {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        min-height: 40px;
-        padding: 0 14px;
-        border: 1px solid var(--dim-control-line);
-        border-radius: var(--dim-radius-md);
-        background: var(--dim-surface);
-        color: var(--dim-ink);
-        font-family: var(--dim-font-brand);
-        font-size: .9375rem;
-        font-weight: 600;
-        cursor: pointer;
-        list-style: none;
-        transition: background var(--dim-motion) var(--dim-ease), color var(--dim-motion) var(--dim-ease);
-
-        &::-webkit-details-marker {
-            display: none;
-        }
-
-        // It is a button and hovers like one.
-        &:hover {
-            background: var(--dim-surface-subtle);
-            color: var(--dim-ink);
-        }
-
-        // The design's ring, which the site's global rule gives a button and not a summary.
-        &:focus-visible {
-            outline: 3px solid var(--dim-ring);
-            outline-offset: 2px;
-        }
+    // The favourites toggle: the card's star as one of the capsule's icon buttons (.dim-line__iconbtn
+    // carries the box and the pressed tone), its shape filled and in the card star's gold when pressed.
+    .dim-toolbar__star[aria-pressed="true"] .fa-star {
+        color: var(--dim-star-on);
     }
 
-    // The favourites toggle: the card's star as one of the line's icon buttons (.dim-line__iconbtn
-    // carries the box). Pressed, it wears the open filter control's pressed face and the card
-    // star's gold.
-    .dim-toolbar__star {
-        font-size: 1.125rem;
-
-        &[aria-pressed="true"] {
-            border-color: var(--dim-brand-edge);
-            background: var(--dim-brand-tint);
-            color: var(--dim-primary-ink);
-
-            .fa-star {
-                color: var(--dim-star-on);
-            }
-        }
-    }
-
-    // The word on that control, which the phone width hides. It is the summary's
-    // accessible NAME, so it is taken out of the picture and never out of the document: hidden
-    // with display:none it would leave the control announced as its icon and its number alone.
-    .dim-toolbar__filterslabel {
-        white-space: nowrap;
-    }
-
-    // Open, it is a pressed control: the brand tone's ground, edge and ink, which turn with the
-    // colour mode (post.scss), so the open face reads on the dark card as on the light one.
-    .dim-toolbar__filters[open] .dim-toolbar__filterstoggle {
-        border-color: var(--dim-brand-edge);
-        background: var(--dim-brand-tint);
-        color: var(--dim-primary-ink);
-    }
-
-    // The count badge is the Design System's loud counter, its brand fill this file's call to action
-    // pair: the site's primary with its contrasting ink on the light page, and in the dark mode
-    // #4456ff with white (5.2:1), where a dark primary would be a hole in the page. The page's
-    // surface is never its ink: on the dark page that would be a dark surface on a fill. A 16px
-    // disc that grows into a pill past one digit, its number centred; the sentence beside the
-    // digit is visually hidden and absolutely placed, so it is no grid item and does not move it.
+    // The Filters summary carries no word on the bar (D62): the word is visually hidden, its accessible
+    // name, with the badge's sentence. The badge is the Design System's loud counter, on the control's
+    // corner and hidden at zero, its brand fill this file's call to action pair: the site's primary with
+    // its contrasting ink on the light page, and in the dark mode #4456ff with white (5.2:1), where a
+    // dark primary would be a hole in the page. A 16px disc that grows into a pill past one digit; the
+    // sentence beside the digit is visually hidden and absolutely placed, so it takes no room.
     .dim-toolbar__filtercount {
-        display: inline-grid;
-        place-items: center;
+        position: absolute;
+        top: -.25rem;
+        right: -.25rem;
         min-width: 1rem;
         height: 1rem;
         padding: 0 .25rem;
@@ -1572,6 +1664,7 @@ body.dim-category {
         font-size: .75rem;
         font-weight: 700;
         line-height: 1rem;
+        text-align: center;
         font-variant-numeric: tabular-nums;
     }
 
@@ -1593,6 +1686,24 @@ body.dim-category {
         border-radius: var(--dim-radius);
         background: var(--dim-surface);
         color: var(--dim-ink);
+    }
+
+    // The panel's foot (filter-panel.md): a hairline over "Clear filters" and "Show", core's small
+    // buttons held at the bar's 32px, and the no-JavaScript "Filter" in their place where no client
+    // runs. It comes after .dim-toolbar__actions, whose box it replaces.
+    .dim-toolbar__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: .5rem;
+        margin-left: 0;
+        padding-top: .75rem;
+        border-top: 1px solid var(--dim-line);
+
+        .btn {
+            min-height: 2rem;
+        }
     }
 
     // The date group is a row of its own - the field, then the quick options beside it - and it
@@ -4880,26 +4991,50 @@ body.dim-category {
     }
 
     // ---- The filter line, folded by its component (filterline/) ------------------------------------
-    // The client measures the line's OWN width and writes one step on it (dim-line--s1 to s4):
-    // full; Filters without its word; the search
-    // as an icon (dim-line--folded); two lines, the scope on the second and the view toggle in the
-    // Organise menu. Without the client no step is ever written, so nothing below applies and the
-    // line wraps as it always did.
+    // The client measures the line's OWN width and writes one step on it: dim-line--s1, one line, or
+    // dim-line--s2, two lines - the scope on a line of its own after the controls, the Filters panel a
+    // bottom sheet. With either it writes dim-line--over where the line has no room for the open field
+    // beside its controls, so the search opens over the line rather than in place. The set of controls
+    // is the same at every step: the search is its button at rest at every width, and Filters carries
+    // no word at any. Without the client no step is ever written, nothing below applies, the field is
+    // drawn open and the line wraps as it always did.
 
-    // What only the client draws: the search's icon, the button that closes the search over the
-    // line, and the Organise menu's "Show as". Each step that wants one says so below.
+    // What only the client draws: the search's button, and the button that closes the search over the
+    // line. The server's field stays open until the client has drawn the line (data-line-drawn); from
+    // then on it is the button's, and opens in place (dim-line--open) or over the line
+    // (dim-line--searching).
     .dim-line__searchopen,
-    .dim-line__searchclose,
-    .dim-line__showas {
+    .dim-line__searchclose {
         display: none;
     }
 
-    // While the client measures, the line is one row that never wraps and no control shrinks but
-    // the search, down to the floor its step gives it; so a line that does not fit pushes a control
-    // past its edge, which is what the client reads. Every cell of the scope is drawn then (the
-    // client unhides them for the measure) and on the two-line step the scope, which has a line of
-    // its own, is out of the measure. Nothing is in transition: the morph's rules below are gated
-    // on the class's absence.
+    .dim-line[data-line-drawn] > .dim-line__searchcap {
+        > .dim-line__searchopen {
+            display: inline-flex;
+        }
+
+        > .dim-line__search {
+            display: none;
+        }
+    }
+
+    .dim-line[data-line-drawn].dim-line--open,
+    .dim-line[data-line-drawn].dim-line--searching {
+        > .dim-line__searchcap > .dim-line__searchopen {
+            display: none;
+        }
+
+        > .dim-line__searchcap > .dim-line__search {
+            display: inline-flex;
+        }
+    }
+
+    // While the client measures, the line is one row that never wraps, no control shrinks and the spacer
+    // takes no room, so the controls run from the first one's start to the last one's end, which is what
+    // the client reads; the open field is counted at its floor. Every cell of the scope is drawn then (the
+    // client unhides them for the measure), and on the two-line step the scope, which has a line of its
+    // own, is out of the measure. Nothing is in transition: the slide's rules below are gated on the
+    // class's absence.
     .dim-line--measuring {
         flex-wrap: nowrap;
 
@@ -4907,8 +5042,8 @@ body.dim-category {
             flex-shrink: 0;
         }
 
-        > .dim-line__search {
-            flex-shrink: 1;
+        > .dim-line__spacer {
+            flex-grow: 0;
         }
 
         .dim-line__cells {
@@ -4916,14 +5051,12 @@ body.dim-category {
         }
     }
 
-    .dim-line--measuring.dim-line--s4 > .dim-line__scope {
+    .dim-line--measuring.dim-line--s2 > .dim-line__scope {
         display: none;
     }
 
-    // The one-line steps keep their one line: the client chose the step at which it fits.
-    .dim-line--s1,
-    .dim-line--s2,
-    .dim-line--s3 {
+    // The one-line step keeps its one line: the client chose it because it fits.
+    .dim-line--s1 {
         flex-wrap: nowrap;
 
         .dim-line__cells {
@@ -4931,67 +5064,12 @@ body.dim-category {
         }
     }
 
-    // The field's floor where it shares the line with every control: under it, the next step.
-    .dim-line--s1 > .dim-line__search,
-    .dim-line--s2 > .dim-line__search {
-        min-width: 13rem;
-    }
-
-    // From the second step Filters keeps its icon and its badge, and its word leaves the picture and
-    // never the document: it is the summary's accessible name. The badge sits on the control's corner.
-    .dim-line--s2,
-    .dim-line--s3,
-    .dim-line--s4 {
-        .dim-toolbar__filterslabel {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            overflow: hidden;
-            white-space: nowrap;
-            clip-path: inset(50%);
-        }
-
-        .dim-toolbar__filterstoggle {
-            position: relative;
-            justify-content: center;
-            min-width: 40px;
-            padding: 0 11px;
-        }
-
-        .dim-toolbar__filtercount {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-        }
-    }
-
-    // The third step, and the fourth where the field does not fit beside the other controls: the
-    // field gives way to its icon, a 40px square like the line's other icon buttons.
-    .dim-line--folded > .dim-line__search {
-        display: none;
-    }
-
-    .dim-line--folded > .dim-line__searchopen {
-        display: inline-flex;
-    }
-
-    // The fourth step: two lines. The first holds the search, the star, Filters and Organise; the view
-    // toggle moves into the Organise menu ("Show as"), and the scope takes the second line, after
-    // every control in the document as on the screen (the client moves it), at full control height.
-    // The scope scrolls sideways there and never wraps; a scroll container would clip the cells'
-    // focus ring, which is outside them, so it keeps 5px of room for it and gives the 5px back as a
-    // negative margin, as the pill tracks do. A hidden side fades (the dim-scroll classes below).
-    .dim-line--s4 {
-        > .dim-line__search {
-            flex: 1 1 8rem;
-            min-width: 7rem;
-        }
-
-        > .dim-line__view {
-            display: none;
-        }
-
+    // The two-line step: the first line holds the cluster and the search's capsule, and the scope takes
+    // the second line, after every control in the document as on the screen (the client moves it). The
+    // scope scrolls sideways there and never wraps; a scroll container would clip the cells' focus ring,
+    // which is outside them, so it keeps 5px of room for it and gives the 5px back as a negative margin.
+    // A hidden side fades (the dim-scroll classes below).
+    .dim-line--s2 {
         > .dim-line__scope {
             flex: 0 0 calc(100% + 10px);
             min-width: 0;
@@ -5006,30 +5084,20 @@ body.dim-category {
             flex-wrap: nowrap;
             width: max-content;
         }
-
-        .dim-line__showas {
-            display: flex;
-        }
     }
 
-    // ---- The search grows over the line (the third and fourth steps) -----------------------------
-    // Pressing the icon, or focusing the field where it shows, opens it (dim-line--searching): the
-    // other controls slide out - their cap, their size and their opacity - the field takes the line
-    // and the close button its last place; the scope of the two-line step stays on its own line. A
-    // control slid out is hidden once it is out (visibility after the slide), so it leaves the focus
-    // order and is never a control that keeps the focus invisible. At the first two steps nothing
-    // moves: the suggestions open under the field.
+    // ---- The search grows over the line (dim-line--over) ----------------------------------------------
+    // Pressing the search button, or the slash key, opens it (dim-line--searching): the other controls
+    // slide out - their cap, their size and their opacity - the search's capsule takes the line and the
+    // close button its last place; the scope of the two-line step stays on its own line. A control slid
+    // out is hidden once it is out (visibility after the slide), so it leaves the focus order and is never
+    // a control that keeps the focus invisible. Where the field opens in place nothing moves but the
+    // capsule, which the field widens.
     .dim-line--searching {
         column-gap: 0;
 
-        > .dim-line__search {
-            display: block;
+        > .dim-line__searchcap {
             flex: 1 1 auto;
-            min-width: 0;
-        }
-
-        > .dim-line__searchopen {
-            display: none;
         }
 
         > .dim-line__searchclose {
@@ -5039,8 +5107,8 @@ body.dim-category {
     }
 
     .dim-line--searching {
-        &.dim-line--s3 > :not(.dim-line__search):not(.dim-line__searchclose):not(.dim-line__suggest),
-        &.dim-line--s4 > :not(.dim-line__search):not(.dim-line__searchclose):not(.dim-line__suggest):not(.dim-line__scope) {
+        &.dim-line--s1 > :not(.dim-line__searchcap):not(.dim-line__searchclose):not(.dim-line__suggest),
+        &.dim-line--s2 > :not(.dim-line__searchcap):not(.dim-line__searchclose):not(.dim-line__suggest):not(.dim-line__scope) {
             flex: 0 0 0;
             min-width: 0;
             max-width: 0;
@@ -5058,11 +5126,10 @@ body.dim-category {
     // rest, 220ms for the size and 160ms for the opacity, and the visibility dropped only once the
     // slide is over (and given back at once).
     @media (prefers-reduced-motion: no-preference) {
-        .dim-line--s3:not(.dim-line--measuring),
-        .dim-line--s4:not(.dim-line--measuring) {
+        .dim-line--over:not(.dim-line--measuring) {
             transition: column-gap 220ms ease;
 
-            > :not(.dim-line__search):not(.dim-line__suggest) {
+            > :not(.dim-line__searchcap):not(.dim-line__suggest) {
                 max-width: 40rem;
                 transition:
                     max-width 220ms ease,
@@ -5074,13 +5141,13 @@ body.dim-category {
         }
 
         // The scope of the two-line step keeps its line and slides nowhere.
-        .dim-line--s4:not(.dim-line--measuring) > .dim-line__scope {
+        .dim-line--s2:not(.dim-line--measuring) > .dim-line__scope {
             max-width: none;
         }
 
         .dim-line--searching:not(.dim-line--measuring) {
-            &.dim-line--s3 > :not(.dim-line__search):not(.dim-line__searchclose):not(.dim-line__suggest),
-            &.dim-line--s4 > :not(.dim-line__search):not(.dim-line__searchclose):not(.dim-line__suggest):not(.dim-line__scope) {
+            &.dim-line--s1 > :not(.dim-line__searchcap):not(.dim-line__searchclose):not(.dim-line__suggest),
+            &.dim-line--s2 > :not(.dim-line__searchcap):not(.dim-line__searchclose):not(.dim-line__suggest):not(.dim-line__scope) {
                 transition:
                     max-width 220ms ease,
                     flex-basis 220ms ease,
@@ -5091,9 +5158,9 @@ body.dim-category {
     }
 
     // ---- The suggestions: one listbox under the line -----------------------------------------------
-    // The client places it under the line's real bottom (its top, measured) and, at the first two
-    // steps, under the field (dim-line__suggest--anchored, its left and width measured); from the
-    // third it spans the line. It scrolls inside itself: it holds no other layer. The active option
+    // The client places it under the line's real bottom (its top, measured) and, where the field opens
+    // in place, under the field (dim-line__suggest--anchored, its left and width measured); where the
+    // search grows over the line it spans the line. It scrolls inside itself: it holds no other layer. The active option
     // (the field's aria-activedescendant) wears the focus ring inside its box, where the list's own
     // scroll cannot clip it.
     .dim-line__suggest {
@@ -5184,52 +5251,8 @@ body.dim-category {
         text-align: end;
     }
 
-    // ---- "Show as": the view toggle's place in the Organise menu on the two-line step --------------
-    // The same two views as the toggle it stands for, worded, the one in force in the chosen face.
-    .dim-line__showas {
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 6px;
-
-        > .dim-toolbar__grouplabel {
-            flex: 1 1 100%;
-            margin: 0;
-        }
-    }
-
-    .dim-line__showasbtn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        min-height: 36px;
-        padding: 6px 12px;
-        border: 1px solid var(--dim-control-line);
-        border-radius: var(--dim-radius-pill);
-        background: var(--dim-surface);
-        color: var(--dim-ink);
-        font-family: var(--dim-font-brand);
-        font-size: .82rem;
-        font-weight: 600;
-        cursor: pointer;
-
-        &:hover {
-            background: var(--dim-surface-strong);
-        }
-
-        &[aria-pressed="true"] {
-            border-color: var(--dim-cta);
-            background: var(--dim-cta);
-            color: var(--dim-cta-ink);
-        }
-
-        &:focus-visible {
-            outline: 3px solid var(--dim-ring);
-            outline-offset: 2px;
-        }
-    }
-
     // ---- The rows that scroll sideways: a fade on the side that hides something ---------------------
-    // The second line of the two-line step and the row under the line. The client writes the class of
+    // The second line of the two-line step. The client writes the class of
     // each side as the row scrolls, and the row fades out over 28px on that side. A mask reads the
     // ALPHA of its image and nothing else, so its opaque stop is black and is no colour of the page:
     // the row's own ink would not do, for the muted ink is translucent and would dim the whole row.
@@ -5246,68 +5269,37 @@ body.dim-category {
     }
 
     // ---- The search's chip ----------------------------------------------------------------------------
-    // A term in force is a chip of the server's (category_toolbar::chips()), and it shows only where
-    // the field does not: folded into its icon and not open over the line. Without the client the
-    // field always shows, and so the chip never does.
+    // A term in force is a chip of the server's (category_toolbar::chips()), and it shows only where the
+    // field does not: on a line the client drew, with the search folded to its button, neither open in
+    // place nor over the line. Without the client the field always shows, and so the chip never does.
     .dim-chip[data-param="q"] {
         display: none;
     }
 
-    .dim-line--folded:not(.dim-line--searching) ~ .dim-line__chips .dim-chip[data-param="q"] {
+    .dim-line[data-line-drawn]:not(.dim-line--open):not(.dim-line--searching) ~ .dim-line__chips .dim-chip[data-param="q"] {
         display: inline-flex;
     }
 
     // ---- The Filters panel as a popover --------------------------------------------------------
-    // From the sm breakpoint up the panel opens UNDER THE LINE, at its end, over what follows: the
-    // line is its positioned ancestor, it is as wide as its content up to the line (and 40rem
-    // where the line is wider). It grows with its content and never scrolls inside itself: the date
-    // calendar opens inside the panel and a scroll container would clip it.
-    // Below sm it stays in the flow, and the open disclosure takes a line of its own.
-    @media (min-width: 576px) {
-        .dim-toolbar__panel {
-            position: absolute;
-            top: calc(100% + 6px);
-            right: 0;
-            z-index: 2;
-            width: max-content;
-            max-width: 100%;
-            margin-top: 0;
-            box-shadow: var(--dim-elevation-md);
-        }
+    // The panel opens UNDER THE LINE, at its end, over what follows, at every width: its disclosure sits
+    // in the capsule, which has no room for it in the flow. The line is its positioned ancestor, it is as
+    // wide as its content up to the line (and 40rem where the line is wider), and the client places it
+    // under the line's real bottom (its top, measured). It grows with its content and never scrolls inside
+    // itself: the date calendar opens inside the panel and a scroll container would clip it.
+    .dim-toolbar__panel {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 2;
+        width: max-content;
+        max-width: 100%;
+        margin-top: 0;
+        box-shadow: var(--dim-elevation-md);
     }
 
     @media (min-width: 992px) {
         .dim-toolbar__panel {
             max-width: 40rem;
-        }
-    }
-
-    @media (max-width: 575.98px) {
-        .dim-toolbar__filters[open] {
-            flex: 1 1 100%;
-        }
-    }
-
-    // ---- The Filters panel, folded by the client ------------------------------------------------
-    // At the one-line steps the panel is the popover it is from sm up, whatever the width, so the
-    // open disclosure never takes a line of its own and the line keeps its step. The client places
-    // it under the line's real bottom (its top, measured).
-    .dim-line--s1,
-    .dim-line--s2,
-    .dim-line--s3 {
-        .dim-toolbar__filters[open] {
-            flex: none;
-        }
-
-        .dim-toolbar__panel {
-            position: absolute;
-            top: calc(100% + 6px);
-            right: 0;
-            z-index: 2;
-            width: max-content;
-            max-width: 100%;
-            margin-top: 0;
-            box-shadow: var(--dim-elevation-md);
         }
     }
 
@@ -5318,7 +5310,7 @@ body.dim-category {
     // always whole. The client lifts the toolbar's stack while the sheet is open
     // (dim-toolbar--sheet), so nothing of the page is drawn over it but the site's own fixed navbar,
     // which the sheet never reaches.
-    .dim-line--s4 {
+    .dim-line--s2 {
         .dim-toolbar__filters[open] {
             flex: none;
         }
@@ -5366,7 +5358,9 @@ body.dim-category {
         .dim-panel__sortopt[aria-current="true"],
         .dim-pill__input:checked + .dim-pill,
         .dim-quick--on,
-        .dim-toolbar__viewbtn[aria-pressed="true"] {
+        .dim-line__iconbtn[aria-pressed="true"],
+        .dim-line__iconbtn[aria-expanded="true"],
+        .dim-line [open] > .dim-line__iconbtn {
             background: Highlight;
             color: HighlightText;
             forced-color-adjust: none;
@@ -5587,49 +5581,13 @@ body.dim-category {
         }
     }
 
-    // ---- The phone's own half of the filter line ---------------------------------------------
-    // The Filters word goes and the icon and its number stay, so the control is the same control
-    // at a width where naming it would take the search box's room (the line's second folding
-    // step, dim-line--s2, which the client takes at any width once it measures the line). It is
-    // visually hidden, not removed: it is the summary's accessible name.
+    // ---- The phone's own half of the toolbar ---------------------------------------------------
+    // The bar's own controls take their 44px from the coarse pointer, at any width (--dim-bar-inner,
+    // above); what is drawn larger here is what a phone's finger presses outside the bar.
     @media (max-width: 575.98px) {
-        .dim-toolbar__filterslabel {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            overflow: hidden;
-            clip-path: inset(50%);
-        }
-
-        // Every control of the line is 44px on a phone: the search, the icon buttons, the Filters
-        // summary, the scope's cells inside their platter, and the chips under the line.
-        .dim-toolbar__input {
-            height: 44px;
-        }
-
-        .dim-line__iconbtn,
-        .dim-toolbar__filterstoggle,
+        // The chips under the line are 44px on a phone.
         .dim-chip {
             min-height: 44px;
-        }
-
-        .dim-line__iconbtn {
-            width: 44px;
-        }
-
-        // Folded to its icon and badge by the client, the Filters control is a 44px square too.
-        .dim-line--s2,
-        .dim-line--s3,
-        .dim-line--s4 {
-            .dim-toolbar__filterstoggle {
-                min-width: 44px;
-            }
-        }
-
-        // The cells take 36px, so the platter round them is 44px like the controls beside it.
-        .dim-line__scope .dim-pill {
-            min-height: 2.25rem;
         }
 
         // Every control of the toolbar is 44px on a phone: the pills of the organisation and of
@@ -5643,17 +5601,6 @@ body.dim-category {
 
         // And so are the calendar's two boxes, which share the quick options' line.
         .dim-daterange__field {
-            min-height: 44px;
-        }
-
-        // The kebab is the line's right end, and it is a control of the toolbar like the pills:
-        // 44px, its glyph kept centred by the icon button's own flex box.
-        .dim-toolbar__manage {
-            margin-left: auto;
-        }
-
-        .dim-toolbar__manage .dropdown-toggle {
-            min-width: 44px;
             min-height: 44px;
         }
 

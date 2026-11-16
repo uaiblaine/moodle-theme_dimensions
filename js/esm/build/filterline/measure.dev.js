@@ -5,7 +5,8 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  *
  * Most functions here read layout, and each says when it forces one. The steps' widths are measured
  * once per content - the words, the counts, the slots - with the line under the measuring class (one
- * row that never wraps, no transition, only the search shrinking, down to its step's floor) and every
+ * row that never wraps, no transition, no control shrinking and the spacer taking no room), the search
+ * drawn as each try draws it - its open field, counted at the field's floor, or its button - and every
  * cell of the scope drawn, a cell the counts hide shown for the measure and hidden again before anything
  * is painted: so a step follows the width and the language and never the numbers of the moment. A width change
  * then needs no measure at all ({@see ./steps choose()}).
@@ -40,15 +41,18 @@ const requiredWidth = /* @__PURE__ */ __name((line) => {
     }
     start = Math.min(start, rect.left);
     end = Math.max(end, rect.right);
-    if (child.matches(SEARCH)) {
-      const floor = parseFloat(window.getComputedStyle(child).minWidth) || 0;
-      slack = Math.max(0, rect.width - floor);
+    const search = child.matches(SEARCH) ? child : child.querySelector(SEARCH);
+    const box = search ? search.getBoundingClientRect() : null;
+    if (search && box && box.width > 0) {
+      const floor = parseFloat(window.getComputedStyle(search).minWidth) || 0;
+      slack = Math.max(0, box.width - floor);
     }
   });
   return end > start ? end - start - slack : 0;
 }, "requiredWidth");
 const stepWidths = /* @__PURE__ */ __name((line, drawn, width) => {
   const searching = line.classList.contains(CLASSES.searching);
+  const open = line.classList.contains(CLASSES.open);
   const scope = line.querySelector(SCOPE);
   const absent = scope ? Array.from(scope.querySelectorAll("label[hidden]")) : [];
   line.classList.add(CLASSES.measuring);
@@ -59,6 +63,7 @@ const stepWidths = /* @__PURE__ */ __name((line, drawn, width) => {
   const widths = [];
   for (const fold of TRIES) {
     paint(line, fold);
+    line.classList.toggle(CLASSES.open, !fold.over);
     widths.push(requiredWidth(line));
     if (width !== void 0 && widths[widths.length - 1] <= width + TOLERANCE) {
       break;
@@ -68,6 +73,7 @@ const stepWidths = /* @__PURE__ */ __name((line, drawn, width) => {
     label.hidden = true;
   });
   paint(line, drawn);
+  line.classList.toggle(CLASSES.open, open);
   line.classList.toggle(CLASSES.searching, searching);
   void line.offsetWidth;
   line.classList.remove(CLASSES.measuring);

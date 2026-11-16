@@ -84,8 +84,13 @@ class category_actions extends \core_course\output\category_action_bar {
             return '';
         }
         $actionmenu = new action_menu();
-        $actionmenu->set_kebab_trigger(get_string('moreactions'));
-        $actionmenu->set_additional_classes('ms-auto');
+        $label = get_string('moreactions');
+        $actionmenu->set_kebab_trigger($label);
+        /* The trigger is an icon-only control of the filter bar: it names itself in the bar's own tooltip
+           (data-dim-tip, drawn by the stylesheet after its delay) and never in a title, whose tooltip the browser
+           would draw beside it. Its accessible name is core's visually hidden word inside it. */
+        unset($actionmenu->triggerattributes['title']);
+        $actionmenu->triggerattributes['data-dim-tip'] = $label;
         foreach ($options as $option) {
             $actionmenu->add(new link_secondary($option['url'], null, $option['string']));
         }

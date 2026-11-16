@@ -22,6 +22,7 @@ const CARD_TEMPLATE = "theme_dimensions/category_card";
 const PAGE_WINDOW = 10;
 const TREE_PHONE = "(max-width: 767.98px)";
 let appended = 0;
+const SHOW_NUMBER = "{n}";
 let announcements = 0;
 const closestOf = /* @__PURE__ */ __name((event, selector) => {
   const target = event.target;
@@ -149,13 +150,25 @@ const paintFilterBadge = /* @__PURE__ */ __name((root, response) => {
   badge.hidden = count === 0;
 }, "paintFilterBadge");
 const paintCount = /* @__PURE__ */ __name((root, response) => {
+  const number = response.countnumber || "";
+  const total = root.querySelector(SELECTORS.total);
+  if (total && !drawnByLine(total)) {
+    total.textContent = number;
+  }
+  const show = root.querySelector(SELECTORS.filtersshow);
+  const template = show ? show.dataset.dimTemplate || "" : "";
+  if (show && template.indexOf(SHOW_NUMBER) >= 0) {
+    show.textContent = template.split(SHOW_NUMBER).join(number);
+  }
+  const url = response.seeallurl || "";
   const line = root.querySelector(SELECTORS.count);
   if (!line) {
     return;
   }
-  const number = line.querySelector(SELECTORS.countnumber);
-  if (number) {
-    number.textContent = response.countnumber || "";
+  line.classList.toggle("visually-hidden", url === "");
+  const bold = line.querySelector(SELECTORS.countnumber);
+  if (bold) {
+    bold.textContent = number;
   }
   const text = line.querySelector(SELECTORS.counttext);
   if (text) {
@@ -166,7 +179,6 @@ const paintCount = /* @__PURE__ */ __name((root, response) => {
     text.replaceChildren(document.createTextNode(response.countline || ""), marker);
   }
   const seeall = root.querySelector(SELECTORS.seeall);
-  const url = response.seeallurl || "";
   if (seeall) {
     const link = seeall.querySelector("a");
     if (link && url !== "") {
@@ -326,9 +338,9 @@ const paintChips = /* @__PURE__ */ __name((root, response) => {
   }
   const narrowed = Boolean(response.hasfilters);
   row.classList.toggle("dim-line__chips--rest", !narrowed);
-  const count = row.querySelector(SELECTORS.count);
-  if (count) {
-    count.classList.toggle("visually-hidden", !narrowed);
+  const panelclear = root.querySelector(SELECTORS.filtersclear);
+  if (panelclear) {
+    panelclear.hidden = !narrowed;
   }
   const chips = response.chips || [];
   const list = row.querySelector(SELECTORS.chiplist);
