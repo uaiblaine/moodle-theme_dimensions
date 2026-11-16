@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The category showcase's navigation is sorted into groups, ready for the row of pills that will draw it**
+  (2026100625). Nothing changes on the page yet: the hero still shows Moodle's tabs. A new class reads the category's navigation as Moodle
+  builds it for the viewer and sorts every destination into "Category", then "Settings", "User and access", "Courses
+  and content" and "Competencies", in that order, each listing its destinations alphabetically in the viewer's
+  language; a destination the theme does not know (Insights, or a plugin's new page) goes under "More". A group with
+  one destination for the viewer will be that destination's own pill, a group with none is left out, and a viewer
+  whose only destination is the category page itself (a learner) will get no row. Five new strings name the
+  navigation and its four groups; "More" is Moodle's own word.
 - **The category showcase's filter bar hides Filters when it has nothing to open, and its layers and tooltips behave**
   (2026100622). A category with no custom field in the filter list and no "More statuses" option shows no Filters
   button, for a visitor and for a signed-in reader alike; the button comes back as soon as one of the two exists, also
