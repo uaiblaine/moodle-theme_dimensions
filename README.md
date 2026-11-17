@@ -34,11 +34,24 @@ The category showcase
 ---------------------
 
 With *Category showcase > Show the category showcase* on, `/course/index.php?categoryid=N` is the
-theme's own page: a hero with the category's name, tagline, description and tabs (it shows no count: the list's count is in the filter bar under it), then the
-courses of the category and its subcategories as cards or a dense list, with search, state filters,
-filter groups built from course custom fields, a start-date filter, a category tree and real paging.
-It works with JavaScript off; with JavaScript on, every choice is applied in place.
+theme's own page: a hero with the category's name, tagline, description and the category's
+navigation, then the courses of the category and its subcategories as cards or a dense list, with
+search, state filters, filter groups built from course custom fields, a start-date filter, a
+category tree and real paging. The hero shows no count: the number of courses is shown once, in
+the filter bar under it. It works with JavaScript off; with JavaScript on, every choice is applied
+in place.
 
+- **The category's navigation is one row of pills on the hero's lower edge**, in place of Moodle's
+  tabs. *Category* comes first, then up to four groups, each a menu of the pages it holds in
+  alphabetical order: *Settings*, *User and access*, *Courses and content* and *Competencies*. A
+  group holding a single page for the reader is drawn as that page's own pill. Pages the theme does
+  not know, such as those added by other plugins, are listed under *More*, the last pill; on a narrow
+  screen the groups that do not fit move into *More* under their own names. The row lists only the
+  pages Moodle already offers the reader on that category, and the pages it leads to keep Moodle's
+  own navigation. A reader whose only page would be *Category* gets no row; with competencies
+  enabled, Moodle offers every logged-in account *Competency frameworks*, so a learner's row is
+  *Category* and that page. Visitors who are not logged in get no row. The menus open with
+  JavaScript off too.
 - **Grouped by area or not, sorted by name or the most recent.** *Organise* holds two independent
   choices, *Group by* (Area, No grouping) and *Sort by* (Name, Most recent). By area, each
   subcategory is a poster, and its courses open in a panel between the rows, in the order *Sort by*
@@ -47,9 +60,10 @@ It works with JavaScript off; with JavaScript on, every choice is applied in pla
 - **Cards that answer "can I get in?".** Each card shows the enrolment state for the reader
   (enrolled, open for enrolment, application under review, access from a date, no enrolment
   available and more), a favourite star and a "More information" dialogue.
-- A category manager styles the hero from the *Category appearance* tab: layout, background image,
-  a free colour pair refused below the WCAG AA contrast of 4.5:1, up to three crests, a card cover
-  and a short cover video that plays muted on hover.
+- A category manager styles the hero from *Category appearance*, in the *Settings* menu of the
+  hero's navigation: layout, background image, a free colour pair refused below the WCAG AA
+  contrast of 4.5:1, up to three crests, a card cover and a short cover video that plays muted on
+  hover.
 - `/course/index.php` without a category is a **directory** of the top-level categories.
 - A category local_unlistedcourses holds **public** has a page for visitors who are not logged in,
   with forced login left on, and the root directory can be opened to visitors too; both are off
@@ -85,7 +99,7 @@ with the count it would give. Choosing one adds its chip and empties the field. 
 searches the listing as you type, and the matched letters are marked in the course titles. `/`
 opens the search while the line is on screen and no field has the focus.
 
-![The Filters panel open under the line: More statuses, Modality, Study format and Level, each option with a count, and the start-date period with a two-month calendar choosing 19 to 30 October](docs/screenshots/filters.png)
+![The Filters panel open under the bar: More statuses, Enrolment page model, Modality, Study format and Level, each option with a count, and a Show button with the number of results](docs/screenshots/filters.png)
 
 **The Filters panel** opens under the line with every group the site configured from course custom
 fields, each option counted, and the start-date period. The period is two boxes and one calendar
@@ -102,7 +116,7 @@ receding cards stay legible. It answers to a mouse, a pen and keyboard focus, ne
 it decides from what each card states: a card that does not state the fact asked about is left as
 it is rather than guessed.
 
-![The showcase at tablet width: the search, the star, the Filters icon and Organise on the first line, the scope cells on the second](docs/screenshots/tablet.png)
+![The showcase at tablet width: the count and the bar's icons on the first line, the scope cells on the second, the category tree beside two columns of cards](docs/screenshots/tablet.png)
 
 **It folds on its own width.** The line measures its own space, not the screen's, and takes the
 first of four steps at which it fits: everything; *Filters* without its word; the search as an
