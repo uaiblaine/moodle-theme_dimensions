@@ -1161,6 +1161,16 @@ final class category_scss_test extends \basic_testcase {
             $this->rule_body($scss, '.dim-line .dim-line__eraser'),
             'The eraser: 24px at radius xs.'
         );
+        $this->assertMatchesRegularExpression(
+            '~position:\s*static;\s*top:\s*auto;\s*right:\s*auto;~',
+            $this->rule_body($scss, '.dim-line .dim-line__eraser'),
+            'The eraser sits in the field\'s row: the root search box\'s offsets would move it half the field down.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~position:\s*absolute;\s*top:\s*50%;\s*right:\s*4px;~',
+            $this->rule_body($scss, '.dim-line__eraser'),
+            'Control: the offsets being put back are the base rule\'s.'
+        );
         $this->assertDoesNotMatchRegularExpression(
             '~overflow|max-height~',
             $this->rule_body($scss, '.dim-toolbar__panel'),
