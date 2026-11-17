@@ -223,32 +223,26 @@ final class drawersummary_test extends \advanced_testcase {
     }
 
     /**
-     * The courses in progress are core's timeline classification, and the sentence says one or many.
+     * The summary is the card alone: the drawer counts nothing about the person (D77), so the number of courses in
+     * progress and its sentence are neither computed nor returned.
+     *
+     * The force is on: the person has a course in progress, which the summary once counted.
      *
      * @return void
      */
-    public function test_the_courses_in_progress_follow_cores_classification(): void {
+    public function test_the_summary_is_the_card_alone(): void {
+        global $DB;
         $this->resetAfterTest();
         $generator = self::getDataGenerator();
-        $student = $generator->create_user();
         $now = time();
         $running = $generator->create_course(['startdate' => $now - DAYSECS, 'enddate' => $now + WEEKSECS]);
-        $ended = $generator->create_course(['startdate' => $now - 2 * WEEKSECS, 'enddate' => $now - WEEKSECS]);
-        $future = $generator->create_course(['startdate' => $now + WEEKSECS, 'enddate' => $now + 2 * WEEKSECS]);
-        foreach ([$running, $ended, $future] as $course) {
-            $generator->enrol_user($student->id, $course->id, 'student');
-        }
+        $student = $generator->create_and_enrol($running, 'student');
+        $DB->insert_record('user_lastaccess', ['userid' => $student->id, 'courseid' => $running->id, 'timeaccess' => $now]);
         $this->setUser($student);
 
-        $this->assertSame(1, drawersummary::in_progress());
-        $this->assertSame(get_string('drawer_inprogress_one', 'theme_dimensions'), drawersummary::in_progress_text(1));
-        $this->assertSame(get_string('drawer_inprogress_many', 'theme_dimensions', 3), drawersummary::in_progress_text(3));
-        $this->assertSame('', drawersummary::in_progress_text(0));
-
-        $second = $generator->create_course(['startdate' => $now - DAYSECS, 'enddate' => 0]);
-        $generator->enrol_user($student->id, $second->id, 'student');
         $summary = drawersummary::build();
-        $this->assertSame(2, $summary['inprogress']);
-        $this->assertSame(get_string('drawer_inprogress_many', 'theme_dimensions', 2), $summary['inprogresstext']);
+
+        $this->assertSame(['resume'], array_keys($summary));
+        $this->assertTrue($summary['resume']['hasitem'], 'Control: the card was built.');
     }
 }

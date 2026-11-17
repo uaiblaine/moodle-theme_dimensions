@@ -85,7 +85,7 @@ $functions = [
     ],
     'theme_dimensions_get_drawer_summary' => [
         'classname' => 'theme_dimensions\external\get_drawer_summary',
-        'description' => 'The mobile drawer\'s deferred summary: what to continue and how many courses are in progress.',
+        'description' => 'The mobile drawer\'s deferred summary: what to continue.',
         'type' => 'read',
         'ajax' => true,
         'readonlysession' => true,

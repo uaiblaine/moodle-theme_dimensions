@@ -5,7 +5,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
-- **The category showcase's navigation is a row of pills on the hero's lower edge**. Moodle's
+- **The category showcase's navigation is a row of pills on the hero's lower edge** (2026100629). Moodle's
   tabs under the hero give way to a capsule of pills that straddles the band's edge, at every width and with the hero
   folded: "Category", the current page, is a plain pill with its dot; "Settings", "User and access", "Courses and
   content" and "Competencies" each open a menu of their destinations, every one with its icon, in alphabetical order;
@@ -24,6 +24,29 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   loaded on the showcase. A new template (`category_navpills`) draws the row and a new module
   (`theme_dimensions/navpills`, over the ES modules `navpills/row` and `navpills/fit`) arms it; the anonymous shell
   draws none, as before.
+- **The theme requires `local_unlistedcourses` 2026100506 (v5.3-r3) or later** (2026100628); it required 2026100505.
+  Since 2026100627 the theme leaves the contexts of the unlisted courses it asks about to the plugin's own bulk read,
+  which arrived in that version; with the older one every such course cost a statement on the category showcase.
+- **On a phone the Organise menu no longer leaves the screen, and a menu item's focus ring no longer covers its
+  neighbours** (2026100627). On the filter bar's two-line step the Organise and View menus hang from the line's end, as
+  the date layer does; under its own button Organise started 21 px before the screen's edge at 375 px. The ring of a
+  menu item is drawn inwards, since the items touch. The theme no longer preloads the contexts of the unlisted courses
+  it asks `local_unlistedcourses` about: the plugin reads them in one statement itself (since its v5.3-r3), so the
+  theme's loops and their two mutation gates held nothing. `identity_test` starts from a site with no custom profile
+  field, so it passes on a site where another plugin creates fields on install.
+- **The side menu is the site's navigation alone, and Escape closes it** (2026100626). The side menu of a logged-in
+  account no longer shows the person's name, picture and role line, nor the colour mode switch, the look and the
+  language: those are in the profile layer the user button opens. It keeps the "Continue where you left off" card,
+  the site's navigation and the smart menus in their sections, and their sliding sub-panels. Its rows follow the
+  Design System's side layer: 40px (44px on a touch screen) at a smaller text size, a muted icon, the current page in
+  the brand's tint and ink without the mark on its edge, and a sub-panel's head is a back button beside its title.
+  The menu is 320px wide (at most 85% of a phone's screen) instead of Moodle's 285px, the same in the tablet navbar.
+  Escape at the menu's root closes it and gives the focus back to the menu button; inside a sub-panel it still goes
+  back one level. The navbar's own colour mode menu is no longer hidden where the side menu used to carry the switch;
+  it is hidden wherever the profile layer carries it, as before. Web service: `theme_dimensions_get_drawer_summary`
+  returns the card alone (`resume`); `inprogress` and `inprogresstext` are gone, and with them the statement that
+  counted the courses in progress. The language strings `drawer_siteadmin`, `drawer_inprogress_one` and
+  `drawer_inprogress_many` are removed.
 - **The category showcase's navigation is sorted into groups, ready for the row of pills that will draw it**
   (2026100625). Nothing changes on the page yet: the hero still shows Moodle's tabs. A new class reads the category's navigation as Moodle
   builds it for the viewer and sorts every destination into "Category", then "Settings", "User and access", "Courses

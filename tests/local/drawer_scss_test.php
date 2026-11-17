@@ -42,8 +42,11 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  */
 #[CoversNothing]
 final class drawer_scss_test extends \basic_testcase {
-    /** @var string[] The only top-level selectors the file may have: the drawer, and the drawer in dark mode. */
-    private const SCOPES = ['.dimensions-drawer', ':root[data-bs-theme="dark"] .dimensions-drawer'];
+    /**
+     * @var string[] The only top-level selector the file may have: the drawer. Its dark mode is the family tokens' own,
+     *      which every token of the drawer reads.
+     */
+    private const SCOPES = ['.dimensions-drawer'];
 
     /**
      * The stylesheet, comments removed.
@@ -90,7 +93,7 @@ final class drawer_scss_test extends \basic_testcase {
     }
 
     /**
-     * Every rule is nested under the drawer's own class, the dark half under core's colour-mode signal.
+     * Every rule is nested under the drawer's own class.
      *
      * @return void
      */
@@ -153,23 +156,107 @@ final class drawer_scss_test extends \basic_testcase {
     }
 
     /**
-     * Every touch target of the drawer is at least 44px tall.
+     * The body of one rule nested one level under the drawer, by its exact selector.
+     *
+     * @param string $scss The stylesheet, comments removed.
+     * @param string $selector The selector.
+     * @return string The declarations up to the rule's first nested block or its end.
+     */
+    private function rule(string $scss, string $selector): string {
+        $found = preg_match('~\n    ' . preg_quote($selector, '~') . ' \{([^}]*)~', $scss, $matches);
+        $this->assertSame(1, $found, $selector);
+
+        return $matches[1];
+    }
+
+    /**
+     * A row is the side layer's (D69): 40px, 44px under a coarse pointer, at 0.875rem, 12px between its parts, padding
+     * 4px 8px, its glyph in the muted ink; the "Go to" link of a sub-panel stays a 44px target.
      *
      * @return void
      */
-    public function test_every_control_is_a_44px_target(): void {
+    public function test_a_row_is_the_side_layers_row(): void {
         $scss = $this->stylesheet();
 
-        $controls = [
-            '.dimensions-drawer-item',
-            '.dimensions-drawer-back',
-            '.dimensions-drawer-openparent',
-            '.dimensions-drawer-mode',
-        ];
-        foreach ($controls as $control) {
-            $found = preg_match('~\n    ' . preg_quote($control, '~') . ' \{([^}]*)~', $scss, $matches);
-            $this->assertSame(1, $found, $control);
-            $this->assertStringContainsString('min-height: 2.75rem;', $matches[1], $control);
+        $row = $this->rule($scss, '.dimensions-drawer-item');
+        $this->assertStringContainsString('min-height: 2.5rem;', $row);
+        $this->assertStringContainsString('font-size: .875rem;', $row);
+        $this->assertStringContainsString('gap: var(--dim-ds-space-sm);', $row);
+        $this->assertStringContainsString('padding: var(--dim-ds-space-xxs) var(--dim-ds-space-xs);', $row);
+        $this->assertMatchesRegularExpression(
+            '~\n    \.dimensions-drawer-item \{[^}]*@media \(pointer: coarse\) \{\s*min-height: 2\.75rem;~',
+            $scss
+        );
+        $this->assertStringContainsString('color: var(--dim-drawer-muted);', $this->rule($scss, '.dimensions-drawer-icon'));
+        $this->assertStringContainsString('--dim-drawer-muted: var(--dimensions-ink-muted, var(--bs-secondary-color));', $scss);
+        $this->assertStringContainsString('min-height: 2.75rem;', $this->rule($scss, '.dimensions-drawer-openparent'));
+    }
+
+    /**
+     * The current row is the brand's tint and ink at 600, its glyph in the ink, with no 3px mark on its edge (D72).
+     *
+     * @return void
+     */
+    public function test_the_current_row_is_tinted_without_a_mark(): void {
+        $scss = $this->stylesheet();
+
+        $current = $this->rule($scss, '.dimensions-drawer-item.is-current');
+        $this->assertStringContainsString('background-color: var(--dim-drawer-current);', $current);
+        $this->assertStringContainsString('color: var(--dim-drawer-current-ink);', $current);
+        $this->assertStringContainsString('font-weight: 600;', $current);
+        $this->assertStringContainsString(
+            '--dim-drawer-current: var(--dimensions-brand-tint, var(--bs-primary-bg-subtle));',
+            $scss
+        );
+        $this->assertStringContainsString(
+            '--dim-drawer-current-ink: var(--dimensions-brand-ink, var(--bs-primary-text-emphasis));',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dimensions-drawer-item\.is-current \{[^}]*\.dimensions-drawer-icon,[^{]*\{'
+                . '\s*color: var\(--dim-drawer-current-ink\);~',
+            $scss
+        );
+        $this->assertStringNotContainsString('box-shadow', $scss, 'No inset mark, in either colour mode.');
+        $this->assertStringNotContainsString('--dim-drawer-mark', $scss);
+    }
+
+    /**
+     * A sub-panel's head is the side layer's sub-view header: a 32px back icon button in the muted ink and the 1rem / 600
+     * title, a line under them; no close button of its own, Boost's band carries one.
+     *
+     * @return void
+     */
+    public function test_a_sub_panels_head_is_the_sub_view_header(): void {
+        $scss = $this->stylesheet();
+
+        $head = $this->rule($scss, '.dimensions-drawer-sub');
+        $this->assertStringContainsString('display: flex;', $head);
+        $this->assertStringContainsString('gap: var(--dim-ds-space-xs);', $head);
+        $this->assertStringContainsString('padding: var(--dim-ds-space-sm) var(--dim-ds-space-xs);', $head);
+        $this->assertStringContainsString('border-bottom: 1px solid var(--dim-drawer-line);', $head);
+
+        $back = $this->rule($scss, '.dimensions-drawer-back');
+        $this->assertStringContainsString('width: 2rem;', $back);
+        $this->assertStringContainsString('height: 2rem;', $back);
+        $this->assertStringContainsString('color: var(--dim-drawer-muted);', $back);
+
+        $title = $this->rule($scss, '.dimensions-drawer-title');
+        $this->assertStringContainsString('font-size: 1rem;', $title);
+        $this->assertStringContainsString('font-weight: 600;', $title);
+    }
+
+    /**
+     * The drawer draws nothing about the person (D72): no identity, no colour mode switch.
+     *
+     * @return void
+     */
+    public function test_nothing_about_the_person_is_styled(): void {
+        $scss = $this->stylesheet();
+        $this->assertStringContainsString('.dimensions-drawer-resume', $scss, 'Control: the card is styled.');
+        $gone = ['.dimensions-drawer-who', '.dimensions-drawer-name', '.dimensions-drawer-role', '.dimensions-drawer-mode'];
+        foreach ($gone as $selector) {
+            $this->assertStringNotContainsString($selector, $scss, $selector);
         }
     }
 

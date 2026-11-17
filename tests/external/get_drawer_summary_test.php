@@ -86,8 +86,22 @@ final class get_drawer_summary_test extends \advanced_testcase {
         $this->assertTrue($resume['hasitem']);
         $this->assertSame('Algebra I', $resume['name'], 'format_string() without escaping, so PARAM_TEXT keeps the answer.');
         $this->assertSame((new \moodle_url('/course/view.php', ['id' => $course->id]))->out(false), $resume['url']);
-        $this->assertSame(1, $result['data']['inprogress']);
-        $this->assertSame(get_string('drawer_inprogress_one', 'theme_dimensions'), $result['data']['inprogresstext']);
+        $this->assertSame(['resume'], array_keys($result['data']), 'The card alone: no count of courses in progress (D77).');
+    }
+
+    /**
+     * The returns are an allowlist of the card alone: nothing about the person's other courses goes back.
+     *
+     * @return void
+     */
+    public function test_the_returns_are_the_card_alone(): void {
+        $returns = get_drawer_summary::execute_returns();
+
+        $this->assertSame(['resume'], array_keys($returns->keys));
+        $this->assertSame(
+            ['hasitem', 'name', 'url', 'detail', 'hascompletion', 'completed', 'total', 'percent'],
+            array_keys($returns->keys['resume']->keys)
+        );
     }
 
     /**

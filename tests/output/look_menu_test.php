@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - Tests for the Look submenu of the user menu, the drawer's Look panel and the choice form
+ * Theme Dimensions - Tests for the Look submenu of the user menu, the profile layer's Look sub-view and the choice form
  *
  * @package    theme_dimensions
  * @category   test
@@ -27,8 +27,8 @@ namespace theme_dimensions\output;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\CoversFunction;
-use theme_dimensions\local\drawernav;
 use theme_dimensions\local\flavourchoice;
+use theme_dimensions\local\profilelayer;
 
 /**
  * The Look controls as a page draws them: the real header through Boost Union's layout.
@@ -39,7 +39,7 @@ use theme_dimensions\local\flavourchoice;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 #[CoversClass(core_renderer::class)]
-#[CoversClass(drawernav::class)]
+#[CoversClass(profilelayer::class)]
 #[CoversClass(\theme_dimensions\form\flavourchoice::class)]
 #[CoversFunction('theme_dimensions_extend_navigation_user_settings')]
 final class look_menu_test extends \advanced_testcase {
@@ -83,6 +83,26 @@ final class look_menu_test extends \advanced_testcase {
         $OUTPUT = $PAGE->get_renderer('core', null, RENDERER_TARGET_GENERAL);
 
         return $OUTPUT->header();
+    }
+
+    /**
+     * The profile layer's Look sub-view out of the whole page for the current user: the header, then the footer, which
+     * prints the layer after the content.
+     *
+     * @return string The sub-view's markup, or '' when the page draws none.
+     */
+    private function layer_look(): string {
+        global $OUTPUT;
+
+        $html = $this->header() . $OUTPUT->footer();
+        $at = strpos($html, 'data-region="dimensions-layer-backdrop"');
+        $this->assertNotFalse($at, 'Precondition: the page prints the profile layer.');
+        $view = '~<div class="dimensions-layer-view" id="[^"]*-view-' . profilelayer::VIEW_LOOK . '".*?\n    </div>~s';
+        if (!preg_match($view, substr($html, $at), $match)) {
+            return '';
+        }
+
+        return $match[0];
     }
 
     /**
@@ -171,39 +191,38 @@ final class look_menu_test extends \advanced_testcase {
     }
 
     /**
-     * The drawer has a Look row and panel: the current look is plain text, every other one a link carrying its id.
+     * The profile layer has a Look sub-view: every look a choice carrying its id, the current one checked.
      *
      * @return void
      */
-    public function test_the_drawer_carries_the_look_panel(): void {
+    public function test_the_profile_layer_carries_the_look_sub_view(): void {
         $this->resetAfterTest();
         $harbour = $this->flavour('Harbour & Co');
         $this->offer($harbour);
         $this->setUser($this->getDataGenerator()->create_user());
 
-        $html = $this->header();
+        $look = $this->layer_look();
 
-        $this->assertStringContainsString('id="' . drawernav::LOOK . '"', $html);
-        $this->assertStringContainsString('data-target="' . drawernav::LOOK . '"', $html);
+        $this->assertNotSame('', $look, 'The layer draws the Look sub-view.');
         $this->assertMatchesRegularExpression(
-            '~<a class="dimensions-drawer-item" href="[^"]*flavour\.php[^"]*" data-dimensions-flavour="' . $harbour->id . '">~',
-            $html
+            '~<a class="dimensions-layer-row" role="menuitemradio" href="[^"]*flavour\.php[^"]*" aria-checked="false"'
+                . ' data-dimensions-flavour="' . $harbour->id . '">~',
+            $look
         );
         $this->assertMatchesRegularExpression(
-            '~<span class="dimensions-drawer-item is-current" aria-current="true">\s*<span class="dimensions-drawer-text">'
+            '~aria-checked="true" data-dimensions-flavour="0"><span>'
                 . preg_quote(get_string('flavoursitedefault', 'theme_dimensions'), '~') . '</span>~',
-            $html
+            $look
         );
-
         $this->assertMatchesRegularExpression(
-            '~data-dimensions-flavour="' . $harbour->id . '">\\s*<span class="dimensions-drawer-text">Harbour &amp; Co</span>~',
-            $html,
-            'The drawer escapes the plain title once.'
+            '~data-dimensions-flavour="' . $harbour->id . '"><span>Harbour &amp; Co</span>~',
+            $look,
+            'The layer escapes the plain title once.'
         );
-        $this->assertStringNotContainsString('&amp;amp;', $html);
+        $this->assertStringNotContainsString('&amp;amp;', $look);
 
         set_config(flavourchoice::SETTING, '', 'theme_dimensions');
-        $this->assertStringNotContainsString(drawernav::LOOK, $this->header(), 'Nothing offered, no row.');
+        $this->assertSame('', $this->layer_look(), 'Nothing offered, no sub-view.');
     }
 
     /**
@@ -337,27 +356,28 @@ final class look_menu_test extends \advanced_testcase {
     }
 
     /**
-     * The drawer's Look panel draws the same marks before each name.
+     * The profile layer's Look sub-view draws the same marks before each name.
      *
      * @return void
      */
-    public function test_the_drawer_marks_each_look_while_the_setting_is_on(): void {
+    public function test_the_profile_layer_marks_each_look_while_the_setting_is_on(): void {
         $this->resetAfterTest();
         [$harbour, $campus] = $this->marked_looks();
         $this->setUser($this->getDataGenerator()->create_user());
-        $link = '~data-dimensions-flavour="' . $campus->id . '">\s*<span class="dimensions-look-mark"~';
+        $link = '~data-dimensions-flavour="' . $campus->id . '"><span class="dimensions-look-mark"~';
 
-        $this->assertDoesNotMatchRegularExpression($link, $this->header(), 'Off: no mark.');
+        $off = $this->layer_look();
+        $this->assertNotSame('', $off, 'Precondition: the sub-view is drawn.');
+        $this->assertDoesNotMatchRegularExpression($link, $off, 'Off: no mark.');
 
         set_config(flavourchoice::ICONS_SETTING, 1, 'theme_dimensions');
-        $html = $this->header();
+        $look = $this->layer_look();
 
-        $this->assertMatchesRegularExpression($link, $html);
+        $this->assertMatchesRegularExpression($link, $look);
         $this->assertMatchesRegularExpression(
-            '~data-dimensions-flavour="' . $harbour->id . '">\s*<span class="dimensions-look-mark" aria-hidden="true">'
-                . '<img class="dimensions-look-favicon"[^>]*>\s*</span>\s*'
-                . '<span class="dimensions-drawer-text">Harbour &amp; Co</span>~',
-            $html
+            '~data-dimensions-flavour="' . $harbour->id . '"><span class="dimensions-look-mark" aria-hidden="true">'
+                . '<img class="dimensions-look-favicon"[^>]*></span>\s*<span>Harbour &amp; Co</span>~',
+            $look
         );
     }
 

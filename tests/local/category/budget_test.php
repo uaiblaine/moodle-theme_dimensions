@@ -1494,10 +1494,10 @@ final class budget_test extends \advanced_testcase {
     }
 
     /**
-     * The unlisted courses the plugin is asked about cost it no context statement each: their contexts are preloaded.
+     * The unlisted courses the plugin is asked about cost no context statement each: the plugin reads them in bulk.
      *
-     * local_unlistedcourses' relationship check reads each probed course's context; the population rows carry the
-     * preload columns, so the theme puts those contexts in the cache before it asks (both page-cutting modes probe).
+     * local_unlistedcourses' relationship check reads each probed course's context, and the plugin reads them all
+     * in one statement before it asks (its prime_probe()); the theme adds none of its own (both page-cutting modes probe).
      * A root holding one unlisted course nobody is related to is measured against one holding thirteen, and the
      * single-row {context} statements are counted off the driver's own debug output: they must not grow with the
      * unlisted courses. The plugin's other per-course reads are its own and are recorded, not asserted. The page

@@ -24,6 +24,8 @@
 
 namespace theme_dimensions\local;
 
+use theme_boost\colour_mode;
+
 /**
  * Whether the page gets the profile layer, and the template data it is drawn from.
  *
@@ -32,8 +34,9 @@ namespace theme_dimensions\local;
  * the print (moodle-dev/docs/design-system/components/side-layer.md). Nothing
  * here renders: the builder reads the user menu core and Boost Union already put in the layout context
  * (core\navigation\output\primary::get_user_menu(), Boost Union's smart menus merged in), the session's user for
- * the identity ({@see identity}), and the three preferences {@see drawernav} already builds, so every clause is
- * testable alone.
+ * the identity ({@see identity}), and the three preferences the person can set here (colour mode, Look, Language),
+ * each from core's or the theme's own answer, so every clause is testable alone. The navigation drawer
+ * ({@see drawernav}) holds nothing about the person: these are this layer's alone.
  *
  * The rows of core's menu are classified by address and title identifier, never by position, because the site
  * configures the list (customusermenuitems), the extend_user_menu hook adds to it and Boost Union appends its smart
@@ -111,11 +114,23 @@ final class profilelayer {
     /** @var string The glyph of the Language row: core's i/language. */
     public const ICON_LANGUAGE = 'fa fa-language';
 
-    /** @var string The glyph of the Look row, the drawer's. */
+    /** @var string The glyph of the Look row. */
     public const ICON_LOOK = 'fa fa-palette';
 
     /** @var string The glyph of a row that has neither a mapped address nor an icon of its own: the drawer's. */
     public const DEFAULT_ICON = drawernav::DEFAULT_ICON;
+
+    /**
+     * @var array The colour modes and their glyphs, in the order the control shows them.
+     *
+     * The glyphs are colour_mode::ICONS', which is private: core's module writes the one of the chosen option onto the
+     * navbar menu's toggle, and the layer's options carry the same data-icon.
+     */
+    private const MODES = [
+        'light' => 'fa-sun',
+        'dark' => 'fa-moon',
+        'auto' => 'fa-circle-half-stroke',
+    ];
 
     /** @var string[] The title identifiers core gives the "Account" items. */
     private const ACCOUNT_IDENTIFIERS = ['preferences,moodle', 'switchroleto,moodle', 'switchrolereturn,moodle'];
@@ -191,19 +206,19 @@ final class profilelayer {
 
         $subviews = $sorted['subviews'];
         $display = [];
-        $look = drawernav::look_from($lookmenu);
+        $look = self::look($lookmenu);
         if ($look !== null) {
             $label = get_string('lookmenu', self::COMPONENT);
             $display[] = self::subview_row(self::VIEW_LOOK, $label, self::ICON_LOOK, (string) $look['current']);
             $subviews[] = self::look_view($look);
         }
-        $language = drawernav::language($page, $output);
+        $language = self::language($page, $output);
         if ($language !== null) {
             $label = get_string('language');
             $display[] = self::subview_row(self::VIEW_LANGUAGE, $label, self::ICON_LANGUAGE, (string) $language['current']);
             $subviews[] = self::language_view($language);
         }
-        $appearance = drawernav::appearance();
+        $appearance = self::appearance();
 
         $groups = [];
         foreach ([self::GROUP_MYAREA, self::GROUP_ACCOUNT] as $key) {
@@ -212,11 +227,7 @@ final class profilelayer {
             }
         }
         if ($display || $appearance !== null) {
-            $modes = $appearance === null ? false : [
-                'cookieattributes' => $appearance['cookieattributes'],
-                'options' => $appearance['modes'],
-            ];
-            $groups[] = self::group(self::GROUP_DISPLAY, $display, $modes);
+            $groups[] = self::group(self::GROUP_DISPLAY, $display, $appearance ?? false);
         }
         foreach (array_keys($groups) as $index) {
             $groups[$index]['first'] = $index === 0;
@@ -235,6 +246,118 @@ final class profilelayer {
             'foot' => $sorted['foot'] ?? false,
             'subviews' => $subviews,
         ];
+    }
+
+    /**
+     * The colour mode control, or null while core does not let this person choose a colour mode.
+     *
+     * Core's own question, colour_mode::can_choose_mode(): Boost's setting enablecolourmodes and a logged-in, non-guest
+     * session, which can store a preference. The write is core's too: the options carry the hooks of
+     * theme_boost/colourmode, which sets data-bs-theme, the preference and the cookie, and marks the chosen option in
+     * every [data-region="colourmode-menu"] of the page, this one included.
+     *
+     * @return array|null cookieattributes and options (mode, label, icon, togglelabel, isactive).
+     */
+    public static function appearance(): ?array {
+        if (!class_exists(colour_mode::class) || !colour_mode::can_choose_mode()) {
+            return null;
+        }
+
+        $current = colour_mode::get_current_mode();
+        $options = [];
+        foreach (self::MODES as $mode => $icon) {
+            if (!in_array($mode, colour_mode::get_modes(), true)) {
+                continue;
+            }
+            $label = self::mode_label($mode);
+            $options[] = [
+                'mode' => $mode,
+                'label' => $label,
+                'icon' => $icon,
+                'togglelabel' => get_string('colourmodeselected', 'theme_boost', $label),
+                'isactive' => $mode === $current,
+            ];
+        }
+
+        return ['cookieattributes' => colour_mode::get_cookie_attributes(), 'options' => $options];
+    }
+
+    /**
+     * The name core gives a colour mode.
+     *
+     * @param string $mode One of the keys of {@see self::MODES}.
+     * @return string
+     */
+    private static function mode_label(string $mode): string {
+        return match ($mode) {
+            'light' => get_string('colourmode:light', 'theme_boost'),
+            'dark' => get_string('colourmode:dark', 'theme_boost'),
+            'auto' => get_string('colourmode:auto', 'theme_boost'),
+        };
+    }
+
+    /**
+     * The Look, from a {@see flavourchoice::menu()} answer already asked for this page, or null while the theme offers
+     * no choice of flavours to this person.
+     *
+     * The renderer asks flavourchoice once per page, for the user menu's Look submenu, and hands the same answer here
+     * ({@see \theme_dimensions\output\core_renderer::look_menu()}). The items are the menu's: the site default first,
+     * each a link to the choice page with its flavour preselected, carrying the flavour id for
+     * theme_dimensions/flavourchoice, which records the choice in place.
+     *
+     * @param array|null $menu flavourchoice::menu()'s answer: null while the theme offers no choice to this person.
+     * @return array|null current (the current look's plain label) and items (id, text, url, iscurrent, mark: null or
+     *      theme_dimensions/look_mark's url and colour).
+     */
+    public static function look(?array $menu): ?array {
+        if ($menu === null) {
+            return null;
+        }
+
+        $items = [];
+        foreach ($menu['items'] as $item) {
+            $items[] = [
+                'id' => $item['id'],
+                'text' => $item['text'],
+                'url' => $item['url']->out(false),
+                'iscurrent' => $item['iscurrent'],
+                'mark' => $item['mark'],
+            ];
+        }
+
+        return ['current' => $menu['current'], 'items' => $items];
+    }
+
+    /**
+     * The language choice, or null while core's language menu offers nothing.
+     *
+     * Core decides through \core\output\language_menu: the site's langmenu setting, a course that forces its language,
+     * and fewer than two installed languages each leave its export empty. The addresses are the ones it builds (the
+     * page's own url with lang=).
+     *
+     * @param \moodle_page $page The page being rendered.
+     * @param \renderer_base $output The renderer the export is given.
+     * @return array|null current (the current language's name) and items (text, url, lang, iscurrent).
+     */
+    public static function language(\moodle_page $page, \renderer_base $output): ?array {
+        $menu = (new \core\output\language_menu($page))->export_for_template($output);
+        if (empty($menu['items'])) {
+            return null;
+        }
+
+        $items = [];
+        foreach ($menu['items'] as $node) {
+            $url = $node['url'] instanceof \moodle_url ? $node['url'] : new \moodle_url((string) $node['url']);
+            $lang = (string) $url->get_param('lang');
+            $items[] = [
+                'text' => (string) $node['text'],
+                'url' => $url->out(false),
+                'lang' => $lang !== '' ? get_html_lang_attribute_value($lang) : '',
+                'iscurrent' => !empty($node['isactive']),
+            ];
+        }
+
+        return ['current' => (string) ($menu['title'] ?? ''), 'items' => $items];
     }
 
     /**
@@ -478,7 +601,7 @@ final class profilelayer {
     /**
      * The Look sub-view: each offered look, the one in force checked.
      *
-     * @param array $look {@see drawernav::look_from()}'s answer.
+     * @param array $look {@see self::look()}'s answer.
      * @return array key, title, radio, look and options.
      */
     private static function look_view(array $look): array {
@@ -502,7 +625,7 @@ final class profilelayer {
     /**
      * The language sub-view: core's language menu, the current language checked.
      *
-     * @param array $language {@see drawernav::language()}'s answer.
+     * @param array $language {@see self::language()}'s answer.
      * @return array key, title, radio, look and options.
      */
     private static function language_view(array $language): array {

@@ -20,11 +20,13 @@
  * its panel's anchor, so the drawer works without this module. Armed, the panels become layers: one is
  * current, every other one is inert and off-screen, an opener moves the focus to the new panel's back
  * control and the way back returns it to the row that opened it, and Escape inside a sub-panel goes
- * back one level. The motion is the stylesheet's, under prefers-reduced-motion: no-preference.
+ * back one level. Escape anywhere else in Boost's primary drawer closes it through Boost's own drawers
+ * module, which gives the focus back to the menu button (D71): Boost listens for no key itself. The
+ * motion is the stylesheet's, under prefers-reduced-motion: no-preference.
  *
- * The "Continue where you left off" card and the role line's count are asked of the server once per
- * page, the first time Boost's primary drawer is shown, and never on page load: they cost statements
- * the page itself never pays. A failure takes the card away quietly.
+ * The "Continue where you left off" card is asked of the server once per page, the first time Boost's
+ * primary drawer is shown, and never on page load: it costs statements the page itself never pays. A
+ * failure takes the card away quietly.
  *
  * @module     theme_dimensions/drawer
  * @copyright  2026 Anderson Blaine
@@ -50,18 +52,10 @@ const SELECTORS = {
     RESUMETITLE: '[data-region="dimensions-drawer-resume-title"]',
     RESUMESUB: '[data-region="dimensions-drawer-resume-sub"]',
     RESUMEBAR: '[data-region="dimensions-drawer-resume-bar"]',
-    ROLE: '[data-region="dimensions-drawer-role"]',
-    MODES: '[role="radiogroup"][data-region="colourmode-menu"]',
-    MODE: '[data-action="set-colourmode"]',
 };
 
-/** The keys that move the choice of a radio group, and where each one moves it. */
-const STEPS = {
-    ArrowRight: 1,
-    ArrowDown: 1,
-    ArrowLeft: -1,
-    ArrowUp: -1,
-};
+/** The class Boost's drawers module writes on a drawer while it is shown. */
+const SHOWN = 'show';
 
 /** The rows that opened the panels on the way down, innermost last. */
 const openers = [];
@@ -164,54 +158,7 @@ const reset = (root) => {
 };
 
 /**
- * Move the choice of the appearance switch with the arrow keys, Home and End, as a radio group does.
- *
- * The press is core's: clicking the option is what makes theme_boost/colourmode apply the mode.
- *
- * @param {KeyboardEvent} event The key press.
- * @returns {boolean} Whether the key was the group's.
- */
-const stepMode = (event) => {
-    const option = event.target.closest(SELECTORS.MODE);
-    const group = option ? option.closest(SELECTORS.MODES) : null;
-    if (!group) {
-        return false;
-    }
-    const options = Array.from(group.querySelectorAll(SELECTORS.MODE));
-    const index = options.indexOf(option);
-    let next = -1;
-    if (event.key in STEPS) {
-        next = (index + STEPS[event.key] + options.length) % options.length;
-    } else if (event.key === 'Home') {
-        next = 0;
-    } else if (event.key === 'End') {
-        next = options.length - 1;
-    }
-    if (next < 0) {
-        return false;
-    }
-    options[next].focus();
-    options[next].click();
-    return true;
-};
-
-/**
- * Keep one option of the appearance switch in the tab order: the chosen one.
- *
- * @param {HTMLElement} option The option that was pressed.
- */
-const rove = (option) => {
-    const group = option.closest(SELECTORS.MODES);
-    if (!group) {
-        return;
-    }
-    group.querySelectorAll(SELECTORS.MODE).forEach((candidate) => {
-        candidate.tabIndex = candidate === option ? 0 : -1;
-    });
-};
-
-/**
- * Answer a press inside the drawer: a row with children, a back control or an appearance option.
+ * Answer a press inside the drawer: a row with children or a back control.
  *
  * @param {HTMLElement} root The drawer.
  * @param {MouseEvent} event The click.
@@ -229,35 +176,44 @@ const onClick = (root, event) => {
     if (event.target.closest(SELECTORS.BACK)) {
         event.preventDefault();
         leave(root);
-        return;
-    }
-    const option = event.target.closest(SELECTORS.MODE);
-    if (option) {
-        rove(option);
     }
 };
 
 /**
- * Answer a key inside the drawer: Escape goes back one level, the arrows move the appearance switch.
+ * Answer a key inside the drawer: Escape inside a sub-panel goes back one level, and is the drawer's alone.
  *
- * Escape at the root is left to whoever else listens; inside a sub-panel it is the drawer's alone.
+ * Escape at the root goes on to Boost's primary drawer, which {@see closeOnEscape} closes.
  *
  * @param {HTMLElement} root The drawer.
  * @param {KeyboardEvent} event The key press.
  */
 const onKey = (root, event) => {
-    if (event.key === 'Escape') {
-        const panel = current(root);
-        if (panel && panel.dataset.parent) {
-            event.preventDefault();
-            event.stopPropagation();
-            leave(root);
-        }
+    if (event.key !== 'Escape') {
         return;
     }
-    if (stepMode(event)) {
+    const panel = current(root);
+    if (panel && panel.dataset.parent) {
         event.preventDefault();
+        event.stopPropagation();
+        leave(root);
     }
+};
+
+/**
+ * Close Boost's primary drawer on an Escape no sub-panel took: the root panel's, or its header's close button's.
+ *
+ * Through Boost's own instance, so its backdrop, its events and its focus are Boost's: closeDrawer() gives the focus
+ * back to the button that opened the drawer. Boost's drawers module listens for no key of its own.
+ *
+ * @param {HTMLElement} drawer Boost's primary drawer.
+ * @param {KeyboardEvent} event The key press.
+ */
+const closeOnEscape = (drawer, event) => {
+    if (event.key !== 'Escape' || event.defaultPrevented || !drawer.classList.contains(SHOWN)) {
+        return;
+    }
+    event.preventDefault();
+    Drawers.getDrawerInstanceForNode(drawer).closeDrawer();
 };
 
 /**
@@ -287,30 +243,14 @@ const paintResume = (card, resume) => {
 };
 
 /**
- * Add the number of courses in progress to the role line the server drew.
- *
- * @param {HTMLElement} root The drawer.
- * @param {String} text The sentence, empty for none.
- */
-const paintRole = (root, text) => {
-    const role = root.querySelector(SELECTORS.ROLE);
-    if (!role || !text) {
-        return;
-    }
-    role.textContent = [role.textContent.trim(), text].filter((part) => part !== '').join(' · ');
-};
-
-/**
  * Ask for the summary and paint it.
  *
- * @param {HTMLElement} root The drawer.
  * @param {HTMLElement} card The card.
  */
-const load = async(root, card) => {
+const load = async(card) => {
     const pending = new Pending('theme_dimensions/drawer:summary');
     try {
         const summary = await Ajax.call([{methodname: SUMMARY, args: {}}])[0];
-        paintRole(root, summary.inprogresstext);
         paintResume(card, summary.resume);
     } catch (error) {
         card.remove();
@@ -337,7 +277,7 @@ const armSummary = (root) => {
             return;
         }
         document.removeEventListener(Drawers.eventTypes.drawerShown, onShown);
-        load(root, card);
+        load(card);
     };
     document.addEventListener(Drawers.eventTypes.drawerShown, onShown);
 };
@@ -356,6 +296,10 @@ export const init = (id) => {
     root.classList.add('dimensions-drawer-js');
     root.addEventListener('click', (event) => onClick(root, event));
     root.addEventListener('keydown', (event) => onKey(root, event));
+    const drawer = root.closest('#' + DRAWER);
+    if (drawer) {
+        drawer.addEventListener('keydown', (event) => closeOnEscape(drawer, event));
+    }
     document.addEventListener(Drawers.eventTypes.drawerHidden, (event) => {
         if (event.target && event.target.id === DRAWER) {
             reset(root);

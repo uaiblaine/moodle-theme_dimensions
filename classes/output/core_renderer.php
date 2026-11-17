@@ -127,9 +127,9 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      *
      * A layout drawn for a logged-in real account gets the theme's mobile drawer while
      * {@see drawernav::applies()}: its template data goes into the context as dimensionsdrawer, from the
-     * primary navigation and the user menu core already put there, and the same override of
-     * theme_boost/primary-drawer-mobile draws it in place of Boost Union's list. Guarded by the shape
-     * core writes for a logged-in account: mobileprimarynav beside usermenu.avatardata.
+     * primary navigation core already put there, and the same override of theme_boost/primary-drawer-mobile
+     * draws it in place of Boost Union's list. Guarded by the shape core writes for a logged-in account:
+     * mobileprimarynav beside usermenu.avatardata (the drawer reads nothing of the user menu itself).
      *
      * The same shape, usermenu.avatardata beside usermenu.items, builds the profile layer's template data while
      * {@see profilelayer::applies()}, read from the user menu before the theme adds its Look to it, and keeps it in
@@ -193,12 +193,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             && isset($context['mobileprimarynav'], $context['usermenu']['avatardata'])
             && drawernav::applies($this->page)
         ) {
-            $context['dimensionsdrawer'] = drawernav::context(
-                (array) $context['mobileprimarynav'],
-                (array) $context['usermenu'],
-                $this->page,
-                $this
-            );
+            $context['dimensionsdrawer'] = drawernav::context((array) $context['mobileprimarynav'], $this->page);
         }
 
         /* The category showcase's hero draws the category's navigation itself (its row of nav pills), so the

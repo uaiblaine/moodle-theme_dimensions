@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /* The mark before each look's name in the look menus (theme_dimensions/look_mark): the user menu's Look
-   submenu, the drawer's Look panel and the choice page's radios. One fixed box whatever it holds - the
+   submenu, the profile layer's Look sub-view and the choice page's radios. One fixed box whatever it holds - the
    favicon, a dot in the look's brand colour, or nothing - so the names line up. Drawn only while the
    setting theme_dimensions/lookmenufavicons is on; the classes are the theme's own. */
 .dimensions-look-mark {
@@ -42,8 +42,8 @@
     box-shadow: 0 0 0 1px var(--dim-ds-border-strong);
 }
 
-/* The drawer's row already spaces its children with a gap. */
-.dimensions-drawer-item .dimensions-look-mark {
+/* The profile layer's row already spaces its children with a gap. */
+.dimensions-layer-row .dimensions-look-mark {
     margin-inline-end: 0;
 }
 

@@ -154,7 +154,7 @@ final class scale_ratchet_test extends \basic_testcase {
             '0.9rem' => 1,
         ],
         'drawer.scss' => [
-            '0.9375rem' => 2,
+            '0.9375rem' => 1,
         ],
         'landing.scss' => [
             '0.7rem' => 1,
@@ -363,9 +363,6 @@ final class scale_ratchet_test extends \basic_testcase {
         ],
         'competency.scss' => [
             'var(--dim-ds-radius-pill)' => 6,
-        ],
-        'drawer.scss' => [
-            'var(--dim-ds-radius-pill)' => 2,
         ],
         'landing.scss' => [
             'var(--dim-ds-radius-pill)' => 3,

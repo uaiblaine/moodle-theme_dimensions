@@ -273,8 +273,9 @@ is white or dark, whichever reaches the contrast WCAG AA asks for. On a phone th
 past each other vertically; on a wider screen they fade.
 
 On a phone the navbar keeps the menu, the brand, the notifications and the user menu. The messaging
-drawer, Mail (local_mail), focus mode and the edit mode switch move to the top of the user menu, the
-last two to the context bar as well; each moves only where the navbar would have shown it.
+drawer, Mail (local_mail), focus mode and the edit mode switch move to the first group of the profile
+layer (to the top of Boost Union's user menu where the layer is switched off or its script does not
+run), the last two to the context bar as well; each moves only where the navbar would have shown it.
 
 On a phone Moodle hides the activity navigation footer ("Next", "Previous" and the completion
 button) while the reader scrolls down; the theme brings it back near the end of the page, where
@@ -285,24 +286,8 @@ the reader looks for "Next".
 The settings under *Who the person is shown as* (*Identity* tab) decide what identifies the logged-in person in
 the theme's own surfaces: the name beside the avatar in the navbar (`theme_dimensions/identitynavbar`), and the
 title and the further lines of the profile layer (`theme_dimensions/identitytitle`,
-`theme_dimensions/identitylines`).
-
-### Profile layer
-
-The profile layer (`theme_dimensions/profilelayer`, *Identity* tab, on by default) is the theme's side layer for
-the logged-in person: their picture with the title and further lines above, "View profile" and "Edit profile" (the
-latter where Moodle's profile page offers it), a notice with the way back while an administrator is logged in as
-somebody, the site's user menu items under "My area" (Boost Union's user menu smart menus among them), Preferences
-and the role switch under "Account", the colour mode, the look and the language under "Display", and Log out at
-its foot. It is built from Moodle's own user menu on the server and printed once per page, closed, and the user
-button opens it: at the side of the page, a bottom sheet on a phone, with Look and Language as sub-views inside it.
-It is a dialog: the keyboard stays inside it while it is open, Escape leaves a sub-view first and then closes it, and
-closing gives the focus back to the user button. On a phone the navbar's controls that make room there (messages,
-local_mail's inbox, focus mode, the edit mode switch) are its first group. Where it carries the colour mode, the
-navbar's own colour mode menu is hidden at every width. Boost Union's user menu stays on the page as the fallback: if
-the layer's script does not run, the user button opens Boost Union's menu as before. Visitors, the guest account and
-the Moodle app never get it; switched off, the user menu is Boost Union's alone. It stores nothing: the colour mode,
-the look and the language keep Moodle's and the theme's existing preferences.
+`theme_dimensions/identitylines`), with display patterns (`theme_dimensions/identitypatterns`) that format or partly
+hide a field there.
 
 - **The fields**: the full name in the site's format (`fullname`), the alternate name (`alternatename`), the first
   name (`firstname`), the username (`username`), the email address (`email`), the ID number (`idnumber`) and each
@@ -330,6 +315,37 @@ the look and the language keep Moodle's and the theme's existing preferences.
 Nothing is stored about a person: the values are read from the session and printed. The definitions of the
 custom profile fields (short name, type, order, visibility) are kept in the shared cache `identityfields`, read
 only while a setting names a custom field and emptied when a profile field or category changes.
+
+### Profile layer
+
+The profile layer (`theme_dimensions/profilelayer`, *Identity* tab, on by default) is the theme's side layer for
+the logged-in person, opened by the user button in place of Boost Union's user menu: their picture with the title
+and further lines (*Identity fields* above), "View profile" and "Edit profile" (the latter where Moodle's profile
+page offers it), a notice with the way back while an administrator is logged in as somebody, the site's user menu
+items under "My area" (Boost Union's user menu smart menus among them), Preferences and the role switch under
+"Account", the colour mode, the look and the language under "Display", and Log out at its foot. It is built from
+Moodle's own user menu on the server and printed once per page, closed, and the user button opens it: at the side of
+the page, a bottom sheet on a phone, with Look and Language as sub-views inside it. It is a dialog: the keyboard
+stays inside it while it is open, Escape leaves a sub-view first and then closes it, and closing gives the focus back
+to the user button. On a phone the navbar's controls that make room there (messages, local_mail's inbox, focus mode,
+the edit mode switch) are its first group. Where it carries the colour mode (Moodle's colour modes are on and the
+person may choose one), the navbar's own colour mode menu is hidden at every width. Boost Union's user menu stays on
+the page as the fallback: if the layer's script does not run, the user button opens Boost Union's menu as before.
+Visitors, the guest account and the Moodle app never get it; switched off, the user menu is Boost Union's alone. It
+stores nothing: the colour mode, the look and the language keep Moodle's and the theme's existing preferences.
+
+### Side menu
+
+The side menu of a logged-in account (`theme_dimensions/navbardrawer`, *Identity* tab, on by default) is the menu
+button's drawer on a phone and in the compact navbar on tablets. It is the site's navigation alone and holds nothing
+about the person (their name, colour mode, look and language are in the profile layer): a "Continue where you left
+off" card with the activity or course opened last and the course's progress (asked for when the menu is first opened,
+never with the page), then the site's navigation and each of Boost Union's smart menus in labelled sections, whose
+sub-menus slide in with a back button beside their title. It is 320px wide, at most 85% of a phone's screen. Escape
+inside a sub-menu goes back one level, and at the root closes the menu, giving the focus back to the menu button.
+Visitors and the guest account keep Boost Union's menu with the "New here?" card; the Moodle app never gets it;
+switched off, the menu is Boost Union's. The card reads Moodle's own records (block_recentlyaccesseditems, the
+courses entered last, completion) and stores nothing.
 
 
 ### Boost Union flavours compiled ahead of time
@@ -467,7 +483,7 @@ Requirements
 | Plugin | Version | Why |
 |---|---|---|
 | [theme_boost_union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union) | 2026100500 or later, its Moodle 5.3 version (`MOODLE_503_STABLE`, v5.3-r1 or later) | The parent theme. |
-| [local_unlistedcourses](https://github.com/uaiblaine/moodle-local_unlistedcourses) | 2026100505 or later | Decides which courses and categories are listed, unlisted or public; the category showcase, the public pages and the listings ask it. |
+| [local_unlistedcourses](https://github.com/uaiblaine/moodle-local_unlistedcourses) | 2026100506 or later | Decides which courses and categories are listed, unlisted or public; the category showcase, the public pages and the listings ask it. |
 
 ### Optional plugins
 
@@ -520,7 +536,7 @@ Settings
 | Tab | What it holds |
 |---|---|
 | General settings | Boost Union Child's two SCSS inheritance settings; leave them on *Inherit*. The *Look* section's `theme_dimensions/selectableflavours`: the Boost Union flavours a logged-in person may choose as their own look (none ticked: nobody chooses). A chosen flavour is shown to that person on every page, over the flavours Boost Union's category and cohort rules apply. Saving the list gives each listed look a cohort (*Look: ...*) and empties the cohort of a look taken off it. `theme_dimensions/lookmenufavicons` (off by default) puts each look's mark before its name in those menus: the flavour's favicon, else a dot in its brand colour; the site default shows the site's favicon. Each listed look's stylesheet is compiled before its first visitor by the warm-up task (*Boost Union flavours compiled ahead of time*); without it, the first person to pick a look after a cache reset waits for a whole theme compile. The *Guest account* section's guest home page (`theme_dimensions/guesthomepage`, `theme_dimensions/guesthomepageurl`). |
-| Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*; the visitor's actions, the side menu, the context bar while reading and its colour (`theme_dimensions/navbarcontextcolor`), auto-hide, the compact navbar on tablets and the logos for dark surfaces. Under *Who the person is shown as*: `theme_dimensions/identitynavbar` (the field beside the avatar in the navbar), `theme_dimensions/identitytitle` and `theme_dimensions/identitylines` (the title and the further lines of the profile layer), `theme_dimensions/identitypatterns` and `theme_dimensions/profilelayer` (the profile layer, on by default); see *Identity fields* and *Profile layer* below. |
+| Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*; the visitor's actions, the side menu (`theme_dimensions/navbardrawer`), the context bar while reading and its colour (`theme_dimensions/navbarcontextcolor`), auto-hide, the compact navbar on tablets and the logos for dark surfaces. Under *Who the person is shown as*: `theme_dimensions/identitynavbar` (the field beside the avatar in the navbar), `theme_dimensions/identitytitle` and `theme_dimensions/identitylines` (the title and the further lines of the profile layer), `theme_dimensions/identitypatterns` (the display patterns) and `theme_dimensions/profilelayer` (the profile layer, on by default); see *Identity fields*, *Profile layer* and *Side menu* above. |
 | Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
 | Course landing page | The banner's format (`theme_dimensions/landingheroformat`: in the content column, the default, or full width); the page model, modality and study format a new course starts with; existing courses never change. `theme_dimensions/relatedcount`: how many related courses a landing page shows at most (4 by default). |
 | Category showcase | The showcase switch, the public pages and their live listing, the page size, the grouping by state, the tree depth, the filter groups, the cover video size limit and the site-wide hero image. |
@@ -554,7 +570,7 @@ The theme also stores seven user preferences: the focus mode reading width, the 
 and filters, at most twenty categories), whether they folded a category page's header, whether
 they folded the course notice, the event keys, category and filters they left the theme's calendar
 page in (`theme_dimensions_calendar`, at `/theme/dimensions/calendar.php`), and the Boost Union flavour they chose as their look
-(`theme_dimensions_flavour`), chosen in the user menu's *Look* submenu, the mobile drawer or the page
+(`theme_dimensions_flavour`), chosen in the user menu's *Look* submenu, the profile layer or the page
 `/theme/dimensions/flavour.php`, which the *Look* link of the preferences page opens. Uninstalling the theme deletes them. Which flavour a session last
 applied as that look is kept in the session only (cache `flavourchoice`).
 

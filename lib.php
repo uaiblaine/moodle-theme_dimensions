@@ -87,7 +87,7 @@ function theme_dimensions_get_main_scss_content($theme) {
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/drawer.scss');
 
     // And the look's mark before each name in the look menus (local\flavourchoice::menu()), in the user menu, the
-    // drawer and the choice page; every rule is on the mark's own classes.
+    // profile layer and the choice page; every rule is on the mark's own classes or the layer's row.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/look.scss');
 
     // And the navbar that follows the reading (classes/local/readingbar.php): the band's track, the context layer
