@@ -72,8 +72,11 @@ in place.
 
 ### The filter line
 
-Every control of the listing sits on one line, in a fixed order: the scope, the search, the
-favourites star, *Filters*, *Organise* and *View* (one icon button whose menu offers Cards or List).
+Every control of the listing sits on one bar. The scope's cells come first; at the bar's end, the
+number of courses found sits beside a row of icon buttons - the favourites star, *Filters* with its
+badge, the start date, *Organise* and *View* (one button whose menu offers Cards or List) - and the
+search follows as a button of its own, beside Moodle's actions menu for those who manage the
+category. Each icon button names itself in a tooltip under the pointer or the keyboard's focus.
 
 - **The scope** - *All*, *My courses*, *Open for enrolment*, *Scheduled* - is a set of counted
   cells. The rarer states, *Under review* and *Free access*, are in the panel under *More
@@ -84,49 +87,60 @@ favourites star, *Filters*, *Organise* and *View* (one icon button whose menu of
   the view and the filters fill in a bare address. An address that names a criterion always wins,
   so a shared link means the same to whoever opens it.
 
-![The listing narrowed to Online and Intermediate courses: the line's count follows, and a row under the line holds the count sentence, one chip per filter and Clear all](docs/screenshots/filtered.png)
+![The listing narrowed to Online and Intermediate courses: the bar's count follows, the badge on Filters says 2, and a row under the bar holds one chip per filter and Clear all](docs/screenshots/filtered.png)
 
-**Chips under the line.** A second row shows only while something narrows the listing: the count
-sentence, then one chip per criterion the line does not already show (a custom field, the period,
-a state from *More statuses*, the tree's category). Each chip removes its own criterion and keeps
-everything else; *Clear all* appears from two criteria up. The count in the line follows the filters.
+**Chips under the line.** A second row shows only while something narrows the listing: one chip per
+criterion the line does not already show (the search term while the search is folded to its
+button, a custom field, the period, a state from *More statuses*, the tree's category). Each chip
+removes its own criterion and keeps everything else; *Clear all* appears from two criteria up. The
+count in the line follows the filters. The sentence behind it is read to screen readers, and shown
+only where it says how the results lie across the areas, beside *See all as a list*.
 
-![The search open with "in" typed: a list of matching filters with their groups and counts, and the matched letters marked in the course titles below](docs/screenshots/search.png)
+![The search open in place with "in" typed: a list of matching filters with their groups and counts, the close button beside the field, and the matched letters marked in the course titles below](docs/screenshots/search.png)
 
-**Search with suggestions.** Pressing the search opens a list of filters before anything is typed
-("Start with a filter"); typing narrows it to the filter values whose label or group matches, each
-with the count it would give. Choosing one adds its chip and empties the field. The typed text also
-searches the listing as you type, and the matched letters are marked in the course titles. `/`
-opens the search while the line is on screen and no field has the focus.
+**Search with suggestions.** The search is a button at every width. Pressed, or with `/` while the
+line is on screen and no field has the focus, its field opens beside the controls, or over them
+where they leave no room. Before anything is typed it lists filters to start with ("Start with a
+filter"); typing narrows the list to the filters whose label or group matches, each with the count
+it would give. Choosing one applies it and empties the field, which stays open for the next. The
+typed text also searches the listing as you type, and the matched letters are marked in the course
+titles. The eraser empties the field and keeps it open; Escape, or leaving it empty, folds it back.
 
 ![The Filters panel open under the bar: More statuses, Enrolment page model, Modality, Study format and Level, each option with a count, and a Show button with the number of results](docs/screenshots/filters.png)
 
-**The Filters panel** opens under the line with every group the site configured from course custom
-fields, each option counted, and the start-date period. The period is two boxes and one calendar
-of two months: press a start day, then an end day, or take a quick option (Today, Tomorrow, This
-week, Next week). *Done*, or a press outside, applies it; Escape leaves the period that was in
-force. Days are the site's days, never the browser's. The badge on *Filters* counts what the panel
-holds.
+**The Filters panel** opens under the line with *More statuses* and every group the site configured
+from course custom fields, each option counted. A choice applies at once, and *Show* with the
+number of results closes the panel. The badge on *Filters* counts what the panel holds, and the
+button is not drawn while the panel would hold nothing.
+
+**The start date** has a button of its own after *Filters*, which opens its own layer: the quick
+options (Today, Tomorrow, This week, Next week), a *From* and a *To* box, and a calendar of two
+months (one on a phone). A press on a day sets the box in use and moves to the other. Every press, a
+quick option, a box's own clear and *Clear period* apply at once while the layer stays open; *Show*,
+Escape or a press outside closes it. While a period is set, a dot marks the button, its name says
+the period and the period is a chip under the line; the badge on *Filters* does not count it. Days
+are the site's days, never the browser's.
 
 ![Pointing at the Open for enrolment cell: the open courses on screen are outlined, every other card recedes](docs/screenshots/preview.png)
 
-**Preview before you press.** Pointing at a scope cell, the star, a panel option or a suggestion
-rings the cards it would keep and recedes the rest, by colour rather than transparency, so the
-receding cards stay legible. It answers to a mouse, a pen and keyboard focus, never to a finger, and
-it decides from what each card states: a card that does not state the fact asked about is left as
-it is rather than guessed.
+**Preview before you press.** Pointing at a scope cell, the star, a panel option, a quick date or a
+suggestion rings the cards it would keep and recedes the rest, by colour rather than transparency,
+so the receding cards stay legible. It answers to a mouse, a pen and keyboard focus, never to a
+finger, and it decides from what each card states: where a card does not state the fact asked
+about, the preview marks nothing rather than guess.
 
 ![The showcase at tablet width: the count and the bar's icons on the first line, the scope cells on the second, the category tree beside two columns of cards](docs/screenshots/tablet.png)
 
-**It folds on its own width.** The line measures its own space, not the screen's, and takes the
-first of four steps at which it fits: everything; *Filters* without its word; the search as an
-icon; two lines, with the scope on the second line and the view inside *Organise*.
+**It folds on its own width.** The line measures its own space, not the screen's, with every scope
+cell counted, and takes the first arrangement that fits: one line, with the search opening beside
+the controls; one line, with the search opening over them; two lines, the controls on the first and
+the scope on the second.
 
-![Three phone screens: the showcase at rest with the scope scrolling sideways, the Filters panel as a bottom sheet, and the search grown over the line with its suggestions and a close button](docs/screenshots/phone.png)
+![Three phone screens: the showcase at rest with the bar's icons on the first line and the scope scrolling sideways on the second, the Filters panel as a bottom sheet, and the search grown over the bar with its suggestions and a close button](docs/screenshots/phone.png)
 
-**On a phone** the scope scrolls sideways, the *Filters* panel is a bottom sheet, and the search,
-pressed, grows over the whole line with a close button at its end. Without JavaScript the line
-simply wraps, and every control still works as an ordinary form.
+**On two lines, as on a phone,** the scope scrolls sideways, the *Filters* panel and the start-date
+layer are bottom sheets, and the search, pressed, grows over the controls with a close button at its
+end. Without JavaScript the line simply wraps, and every control still works as an ordinary form.
 
 ![The showcase in Moodle's dark colour mode, with the open area's panel](docs/screenshots/dark.png)
 

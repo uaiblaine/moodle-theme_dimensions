@@ -1478,8 +1478,13 @@ body.dim-category {
         }
     }
 
-    // The eraser: 24px at the field's end, radius xs; it clears the text and keeps the field open.
+    // The eraser: 24px at the field's end, radius xs; it clears the text and keeps the field open. It is an item of
+    // the field's own row here, so the offsets the root's search box places its eraser by are put back to none: left
+    // in force they move it half the field's height down.
     .dim-line .dim-line__eraser {
+        position: static;
+        top: auto;
+        right: auto;
         flex: none;
         width: 1.5rem;
         height: 1.5rem;
