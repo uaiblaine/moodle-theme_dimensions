@@ -183,10 +183,10 @@ final class category_navpills_test extends \advanced_testcase {
     }
 
     /**
-     * A page whose active tab is a group's member marks the member in the menu and the group's pill.
+     * A page whose active tab is a group's member marks the member in the menu, and the group's pill by its look alone.
      *
-     * The showcase's own page is always Category; this is the state a destination page would show (D82),
-     * drawn by the same template.
+     * The member's link carries aria-current, the one in the row (D96); the group's pill, a summary that is no link
+     * to the current page, is selected by its class and its dot.
      */
     public function test_the_current_member_marks_its_item_and_its_group(): void {
         $this->resetAfterTest();
@@ -199,10 +199,10 @@ final class category_navpills_test extends \advanced_testcase {
         $this->assertStringNotContainsString('data-key="categorymain" aria-current', $html);
         $this->assertMatchesRegularExpression(
             '~<details class="dim-navpill-group" data-group="settings">\s*'
-                . '<summary class="dim-navpill is-selected" aria-current="page">'
+                . '<summary class="dim-navpill is-selected">'
                 . '<span class="dim-navpill__dot" aria-hidden="true"></span><span class="dim-navpill__label">~',
             $html,
-            'The group holding the current page is drawn selected, with the dot and aria-current.'
+            'The group holding the current page is drawn selected, with the dot and no aria-current.'
         );
         $this->assertMatchesRegularExpression(
             '~<a class="dim-navpill-menu__item" href="[^"]*" data-key="categoryappearance" aria-current="page">'
@@ -210,8 +210,140 @@ final class category_navpills_test extends \advanced_testcase {
             $html,
             'The current item carries aria-current and its dot at the end.'
         );
-        $this->assertSame(2, substr_count($html, 'aria-current="page"'), 'The current item and the pill of its group.');
+        $this->assertSame(1, substr_count($html, 'aria-current='), 'The current item alone.');
+        $this->assertDoesNotMatchRegularExpression('~<summary[^>]*aria-current~', $html);
         $this->assertSame(1, substr_count($html, 'is-selected'), 'One group selected.');
+    }
+
+    /**
+     * Set the global page up as a page of a category at an address, for the current user, as a destination sets it up.
+     *
+     * The active node is the one at the page's address, as core finds it on a page that names no active tab.
+     *
+     * @param int $categoryid The category.
+     * @param url $address The page's address.
+     * @return \moodle_page The page, also the global one.
+     */
+    private function page_at(int $categoryid, url $address): \moodle_page {
+        global $PAGE;
+        $PAGE = new \moodle_page();
+        $PAGE->set_category_by_id($categoryid);
+        $PAGE->set_url($address);
+        navigation_node::override_active_url($address);
+        return $PAGE;
+    }
+
+    /**
+     * The address of a category's permissions page, a destination core marks current by its address.
+     *
+     * @param int $categoryid The category.
+     * @return url
+     */
+    private static function permissions(int $categoryid): url {
+        return new url('/admin/roles/permissions.php', ['contextid' => \core\context\coursecat::instance($categoryid)->id]);
+    }
+
+    /**
+     * The builder draws a destination page's row: the destination current inside its group, the one aria-current.
+     */
+    public function test_the_builder_draws_a_destination_with_its_destination_current_in_its_group(): void {
+        $this->resetAfterTest();
+        $categoryid = (int) self::getDataGenerator()->create_category()->id;
+        $this->setAdminUser();
+        $page = $this->page_at($categoryid, self::permissions($categoryid));
+
+        $row = category_navpills::for_page($page);
+
+        $this->assertNotNull($row);
+        $output = $page->get_renderer('core');
+        $context = $row->export_for_template($output);
+        $access = array_values(array_filter($context['units'], fn(array $unit): bool => $unit['key'] === 'access'));
+        $this->assertCount(1, $access, 'Precondition: the administrator holds the access group.');
+        $this->assertTrue($access[0]['isgroup']);
+        $this->assertTrue($access[0]['current'], 'The group holding the page is selected.');
+        $current = array_column(array_filter($access[0]['items'], fn(array $item): bool => $item['current']), 'key');
+        $this->assertSame(['permissions'], $current, 'The destination is current, inside its group.');
+        $this->assertFalse($context['units'][0]['current'], 'Category is not.');
+
+        $html = $output->render_from_template('theme_dimensions/category_navpills', $context);
+        $this->assertSame(1, substr_count($html, 'aria-current='), 'One aria-current in the row.');
+        $this->assertMatchesRegularExpression(
+            '~<a class="dim-navpill-menu__item" [^>]*data-key="permissions" aria-current="page">~',
+            $html
+        );
+        $this->assertStringContainsString('<summary class="dim-navpill is-selected">', $html, 'Control: the group is selected.');
+    }
+
+    /**
+     * A page whose plugin installed a secondary navigation of its own keeps it: no row.
+     */
+    public function test_a_page_with_its_own_navigation_gets_no_row(): void {
+        $this->resetAfterTest();
+        $categoryid = (int) self::getDataGenerator()->create_category()->id;
+        $this->setAdminUser();
+
+        // The control: the same viewer on the same page with core's navigation gets the row.
+        $this->assertNotNull(category_navpills::for_page($this->page_at($categoryid, self::permissions($categoryid))));
+
+        $page = $this->page_at($categoryid, self::permissions($categoryid));
+        $own = new class ($page) extends \core\navigation\views\secondary {
+        };
+        $own->initialise();
+        $page->set_secondarynav($own);
+        $this->assertNotEmpty(navgroups::rows($own), 'Precondition: the plugin\'s navigation holds the category\'s nodes.');
+
+        $this->assertNull(category_navpills::for_page($page));
+    }
+
+    /**
+     * A page that turned the secondary navigation off draws the row when it is a destination of it, and only then.
+     *
+     * The five index pages of the tool_mu plugins do so (D99); CI installs none of them, so a core destination turned
+     * off stands for them: the rule reads the row, not the plugin.
+     */
+    public function test_a_page_without_the_navigation_gets_the_row_when_it_is_a_destination(): void {
+        $this->resetAfterTest();
+        $categoryid = (int) self::getDataGenerator()->create_category()->id;
+        $this->setAdminUser();
+
+        $page = $this->page_at($categoryid, self::permissions($categoryid));
+        $page->set_secondary_navigation(false);
+        $row = category_navpills::for_page($page);
+        $this->assertNotNull($row, 'A destination draws the row with the navigation off.');
+        $context = $row->export_for_template($page->get_renderer('core'));
+        $current = [];
+        foreach ($context['units'] as $unit) {
+            foreach ($unit['isgroup'] ? $unit['items'] : [$unit] as $item) {
+                if ($item['current']) {
+                    $current[] = $item['key'];
+                }
+            }
+        }
+        $this->assertSame(['permissions'], $current, 'And the destination comes out current.');
+
+        // A page of the category that is no destination of the row, with the navigation off: no row.
+        $page = $this->page_at($categoryid, new url('/theme/dimensions/category.php', ['id' => $categoryid]));
+        $page->set_secondary_navigation(false);
+        $this->assertNull(category_navpills::for_page($page));
+    }
+
+    /**
+     * The row is a category's: a page in another context gets none, whatever its secondary navigation holds.
+     */
+    public function test_the_row_needs_a_category_context(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        $categoryid = (int) self::getDataGenerator()->create_category()->id;
+        $this->setAdminUser();
+        $this->assertNotNull(category_navpills::for_page($this->category_page($categoryid)), 'Control: the category page.');
+
+        // The root of the course index, whose secondary navigation holds a page of its own.
+        $PAGE = new \moodle_page();
+        $PAGE->set_context(\core\context\system::instance());
+        $PAGE->set_url('/course/index.php');
+        $PAGE->secondarynav->add('Another page', new url('/admin/search.php'), navigation_node::TYPE_SETTING, null, 'elsewhere');
+        $this->assertTrue(navgroups::has_row(navgroups::rows($PAGE->secondarynav)), 'Precondition: a row could be drawn.');
+        $this->assertNull(category_navpills::for_page($PAGE));
     }
 
     /**

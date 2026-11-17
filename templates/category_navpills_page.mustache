@@ -1,0 +1,87 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/category_navpills_page
+
+    The category navigation's row on a page without the hero: one of the
+    category's destination pages, or the category page with the showcase off.
+    The core renderer prints it right after the page header, where Boost
+    Union's band of tabs was (D98). The box is the row's track: the client
+    (js/esm/src/navpills/row.ts) measures the nav's parent for the room the
+    capsule has. The row itself is theme_dimensions/category_navpills.
+
+    Context variables required for this template: those of
+    theme_dimensions/category_navpills.
+
+    Example context (json):
+    {
+        "label": "Category navigation",
+        "uniqid": "dim-navpills-6740a1b2c3d4f",
+        "units": [
+            {
+                "isgroup": false,
+                "key": "categorymain",
+                "text": "Category",
+                "url": "https://example.com/course/index.php?categoryid=7",
+                "current": false,
+                "icon": {"key": "i/link", "component": "core"}
+            },
+            {
+                "isgroup": true,
+                "key": "access",
+                "name": "User and access",
+                "current": true,
+                "menuid": "dim-navpills-6740a1b2c3d4f-access",
+                "items": [
+                    {
+                        "key": "cohort",
+                        "text": "Cohorts",
+                        "url": "https://example.com/cohort/index.php?contextid=31",
+                        "current": false,
+                        "icon": {"key": "i/cohort", "component": "core"}
+                    },
+                    {
+                        "key": "permissions",
+                        "text": "Permissions",
+                        "url": "https://example.com/admin/roles/permissions.php?contextid=31",
+                        "current": true,
+                        "icon": {"key": "i/permissions", "component": "core"}
+                    }
+                ]
+            }
+        ],
+        "more": {
+            "key": "other",
+            "name": "More",
+            "current": false,
+            "menuid": "dim-navpills-6740a1b2c3d4f-other",
+            "hasitems": true,
+            "items": [
+                {
+                    "key": "insights",
+                    "text": "Insights",
+                    "url": "https://example.com/report/insights/insights.php?contextid=31",
+                    "current": false,
+                    "icon": {"key": "i/report", "component": "core"}
+                }
+            ]
+        }
+    }
+}}
+<div class="dim-navpills-page d-print-none">
+    {{> theme_dimensions/category_navpills}}
+</div>

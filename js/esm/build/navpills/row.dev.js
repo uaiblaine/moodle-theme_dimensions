@@ -17,8 +17,9 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * an item, its server-drawn icon shown. Nodes are moved, never cloned: one link per destination and no duplicate id.
  * The row is measured once per pass, with every unit put back in the server's order first, at arming (the first
  * entry of a ResizeObserver on the track), after the fonts are ready and on every change of the track's width; never
- * while a menu is open, which defers the pass to its closing. More takes the selected look when it holds the
- * current page (D82).
+ * while a menu is open, which defers the pass to its closing. More takes the selected look, its class and its dot,
+ * when it holds the current page (D82), and the pass pays for that dot; only the current page's own link carries
+ * aria-current (D96).
  *
  * The row is an account's (the visitor's shell draws none), and nothing a visitor's page loads imports this module.
  *
@@ -194,18 +195,17 @@ const close = /* @__PURE__ */ __name((row, details, focus) => {
     pill?.focus();
   }
 }, "close");
+const holdsCurrent = /* @__PURE__ */ __name((unit) => [unit.element, ...unit.items].some((link) => link.getAttribute("aria-current") === "page"), "holdsCurrent");
 const paintMore = /* @__PURE__ */ __name((row) => {
   const summary = summaryOf(row.more);
   if (row.servercurrent || !summary) {
     return;
   }
-  const current = row.moved.some((unit) => [unit.element, ...unit.items].some((link) => link.getAttribute("aria-current") === "page"));
+  const current = row.moved.some(holdsCurrent);
   summary.classList.toggle(CLASSES.selected, current);
   if (current) {
-    summary.setAttribute("aria-current", "page");
     summary.prepend(row.dot);
   } else {
-    summary.removeAttribute("aria-current");
     row.dot.remove();
   }
 }, "paintMore");
@@ -287,6 +287,14 @@ const measure = /* @__PURE__ */ __name((row) => {
   }
   const widths = row.units.map((unit) => unit.element.getBoundingClientRect().width);
   const more = row.more.getBoundingClientRect().width;
+  const current = row.units.findIndex(holdsCurrent);
+  let selected = more;
+  const summary = summaryOf(row.more);
+  if (current >= 0 && !row.servercurrent && summary) {
+    summary.prepend(row.dot);
+    selected = row.more.getBoundingClientRect().width;
+    row.dot.remove();
+  }
   const capsule = window.getComputedStyle(row.nav);
   const trackstyle = window.getComputedStyle(row.track);
   const room = track - px(trackstyle.paddingLeft) - px(trackstyle.paddingRight) - px(capsule.paddingLeft) - px(capsule.paddingRight) - px(capsule.borderLeftWidth) - px(capsule.borderRightWidth);
@@ -295,6 +303,8 @@ const measure = /* @__PURE__ */ __name((row) => {
     gap: px(capsule.columnGap),
     room,
     more,
+    selected,
+    current,
     last: row.units.findIndex((unit) => unit.main),
     own: row.own.length > 0
   }));

@@ -205,6 +205,39 @@ final class navpills_source_test extends \basic_testcase {
     }
 
     /**
+     * The client never says aria-current itself: only the current page's own link carries it, as the server drew it
+     * (D96); More takes the selected look through its class and its dot, and the pass pays for that dot.
+     *
+     * Changes that must make it fail: paintMore() (or any line of the row) writing aria-current; More's width measured
+     * without the dot it will hold; the dot measured on a server-drawn selected More, which already holds one.
+     *
+     * @return void
+     */
+    public function test_only_a_link_carries_aria_current_and_mores_dot_is_paid(): void {
+        $code = $this->uncommented($this->read(self::ROW));
+        $this->assertDoesNotMatchRegularExpression('~(?:set|remove)Attribute\(\s*\'aria-current\'~', $code);
+        $paint = $this->body('paintMore');
+        $this->assertStringContainsString('summary.classList.toggle(CLASSES.selected, current);', $paint);
+        $this->assertStringContainsString('summary.prepend(row.dot);', $paint);
+        $this->assertStringContainsString('const current = row.moved.some(holdsCurrent);', $paint);
+
+        $measure = $this->body('measure');
+        $this->assertMatchesRegularExpression(
+            '~if \(current >= 0 && !row\.servercurrent && summary\) \{\s*summary\.prepend\(row\.dot\);\s*'
+                . 'selected = row\.more\.getBoundingClientRect\(\)\.width;\s*row\.dot\.remove\(\);~',
+            $measure,
+            'More is measured once with the dot it will hold, and the dot taken off again.'
+        );
+        $this->assertStringContainsString('selected: selected,', $measure, 'And fit() is told that width.');
+        $this->assertStringContainsString('current: current,', $measure, 'And which unit selects More.');
+        $this->assertStringContainsString(
+            "selected?: number,",
+            $this->read(self::FIT),
+            'The arithmetic takes More\'s selected width.'
+        );
+    }
+
+    /**
      * Escape inside a menu closes it and gives the focus back to its pill, and is not handed on.
      *
      * @return void

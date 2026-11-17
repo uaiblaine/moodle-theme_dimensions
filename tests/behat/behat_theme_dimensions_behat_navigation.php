@@ -45,6 +45,107 @@ class behat_theme_dimensions_behat_navigation extends behat_theme_boost_union_be
     /** @var string The profile layer, to look for a link in. */
     private const LAYER = "[data-region='dimensions-profile']";
 
+    /** @var string The category navigation's row of nav pills, on the hero or after a destination page's header. */
+    private const NAVPILLS = "[data-region='dim-navpills']";
+
+    /**
+     * Go to a destination of the current page's administration: on the category navigation's row, where it is drawn.
+     *
+     * The theme draws the category's secondary navigation as a row of nav pills in place of core's tabs (D97), so
+     * core's step, which looks for the tabs' more menu, finds nothing on a category page. On a page with the row,
+     * the first node of the path is followed on the row, inside the group or "More" that holds it (D102), and the
+     * rest of the path, if any, on the page it leads to, as core's step does after a tab. A page without the row, or
+     * whose row does not hold the node, runs core's step unchanged.
+     *
+     * This overrides the METHOD of core's step `I navigate to "..." in current page administration`
+     * (lib/tests/behat/behat_navigation.php); the annotation is inherited, as for the user menu's step above.
+     *
+     * @param string $nodetext The node to follow, which may be a path ("Permissions > Assign roles").
+     * @return void
+     */
+    public function i_navigate_to_in_current_page_administration($nodetext) {
+        $nodelist = array_map('trim', explode('>', $nodetext));
+        $link = $this->row_link($nodelist[0]);
+        if ($link === null) {
+            parent::i_navigate_to_in_current_page_administration($nodetext);
+            return;
+        }
+        $this->follow_on_the_row($link);
+        if (count($nodelist) > 1) {
+            $this->select_on_administration_page(array_slice($nodelist, 1));
+        }
+    }
+
+    /**
+     * Follow a destination of the secondary navigation: on the category navigation's row, where it is drawn.
+     *
+     * The same answer as {@see self::i_navigate_to_in_current_page_administration()} for core's step
+     * `I select "..." from secondary navigation`, whose annotation is inherited: the link is followed on the row,
+     * inside its group or "More", and a page without the row, or whose row does not hold it, runs core's step.
+     *
+     * @param string $link The destination's text.
+     * @return void
+     */
+    public function i_select_from_secondary_navigation(string $link) {
+        $node = $this->row_link($link);
+        if ($node === null) {
+            parent::i_select_from_secondary_navigation($link);
+            return;
+        }
+        $this->follow_on_the_row($node);
+    }
+
+    /**
+     * The destination of the row whose text is the given one, or else holds it; null without a row or such a link.
+     *
+     * Every destination is a link inside the row's nav, a plain pill, an item of a group's menu or of "More", whether
+     * or not a script has moved it, so the row's markup is read as it is, without waiting. A group's pill is a summary,
+     * never a link, so a group's name is no destination.
+     *
+     * @param string $text The destination's text.
+     * @return \Behat\Mink\Element\NodeElement|null
+     */
+    private function row_link(string $text): ?\Behat\Mink\Element\NodeElement {
+        $row = $this->getSession()->getPage()->find('css', self::NAVPILLS);
+        if ($row === null) {
+            return null;
+        }
+        $text = trim($text);
+        $partial = null;
+        foreach ($row->findAll('css', 'a[href]') as $link) {
+            $label = trim((string) preg_replace('~\s+~u', ' ', strip_tags($link->getHtml())));
+            if ($label === $text) {
+                return $link;
+            }
+            if ($partial === null && str_contains($label, $text)) {
+                $partial = $link;
+            }
+        }
+        return $partial;
+    }
+
+    /**
+     * Follow a link of the row, opening first the group or "More" that holds it when a script runs and it is closed.
+     *
+     * Without JavaScript the link is in the page and followed as it is: a closed disclosure hides nothing from the
+     * browser kit. A summary is not a button to press: it is clicked as an element.
+     *
+     * @param \Behat\Mink\Element\NodeElement $link The link.
+     * @return void
+     */
+    private function follow_on_the_row(\Behat\Mink\Element\NodeElement $link): void {
+        if ($this->running_javascript() && !$link->isVisible()) {
+            $disclosure = $link->find('xpath', 'ancestor::details[1]');
+            if ($disclosure !== null && !$disclosure->hasAttribute('open')) {
+                $summary = $disclosure->find('xpath', './summary');
+                if ($summary !== null) {
+                    $this->execute('behat_general::i_click_on', [$summary, 'NodeElement']);
+                }
+            }
+        }
+        $this->execute('behat_general::i_click_on', [$link, 'NodeElement']);
+    }
+
     /**
      * Click on an entry in the user menu: in the profile layer, where the theme's module took the user button over.
      *

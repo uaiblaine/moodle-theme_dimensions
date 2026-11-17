@@ -30,8 +30,9 @@
  * an item, its server-drawn icon shown. Nodes are moved, never cloned: one link per destination and no duplicate id.
  * The row is measured once per pass, with every unit put back in the server's order first, at arming (the first
  * entry of a ResizeObserver on the track), after the fonts are ready and on every change of the track's width; never
- * while a menu is open, which defers the pass to its closing. More takes the selected look when it holds the
- * current page (D82).
+ * while a menu is open, which defers the pass to its closing. More takes the selected look, its class and its dot,
+ * when it holds the current page (D82), and the pass pays for that dot; only the current page's own link carries
+ * aria-current (D96).
  *
  * The row is an account's (the visitor's shell draws none), and nothing a visitor's page loads imports this module.
  *
@@ -374,7 +375,20 @@ export const close = (row: Row, details: HTMLDetailsElement, focus: boolean): vo
 };
 
 /**
+ * Whether a unit holds the current page: a plain pill that is it, or a group with it among its links.
+ *
+ * Only a link carries aria-current (D96): a group's pill, a summary, shows the selected look through its class.
+ *
+ * @param {object} unit The unit.
+ * @returns {boolean}
+ */
+const holdsCurrent = (unit: Unit): boolean =>
+    [unit.element, ...unit.items].some((link) => link.getAttribute('aria-current') === 'page');
+
+/**
  * Give More the selected look while it holds the current page, unless the server drew it so.
+ *
+ * The look is the class and the dot, never aria-current: More is a summary, not the current page's link (D96).
  *
  * @param {object} row The row.
  * @returns {void}
@@ -384,14 +398,11 @@ const paintMore = (row: Row): void => {
     if (row.servercurrent || !summary) {
         return;
     }
-    const current = row.moved.some((unit) =>
-        [unit.element, ...unit.items].some((link) => link.getAttribute('aria-current') === 'page'));
+    const current = row.moved.some(holdsCurrent);
     summary.classList.toggle(CLASSES.selected, current);
     if (current) {
-        summary.setAttribute('aria-current', 'page');
         summary.prepend(row.dot);
     } else {
-        summary.removeAttribute('aria-current');
         row.dot.remove();
     }
 };
@@ -513,6 +524,15 @@ export const measure = (row: Row): void => {
     }
     const widths = row.units.map((unit) => unit.element.getBoundingClientRect().width);
     const more = row.more.getBoundingClientRect().width;
+    // More's width once it holds the current page, with the dot paintMore() then adds: unless the server drew it so.
+    const current = row.units.findIndex(holdsCurrent);
+    let selected = more;
+    const summary = summaryOf(row.more);
+    if (current >= 0 && !row.servercurrent && summary) {
+        summary.prepend(row.dot);
+        selected = row.more.getBoundingClientRect().width;
+        row.dot.remove();
+    }
     const capsule = window.getComputedStyle(row.nav);
     const trackstyle = window.getComputedStyle(row.track);
     const room = track - px(trackstyle.paddingLeft) - px(trackstyle.paddingRight)
@@ -522,6 +542,8 @@ export const measure = (row: Row): void => {
         gap: px(capsule.columnGap),
         room: room,
         more: more,
+        selected: selected,
+        current: current,
         last: row.units.findIndex((unit) => unit.main),
         own: row.own.length > 0,
     }));

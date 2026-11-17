@@ -16,10 +16,10 @@
 /**
  * A row of the category navigation as templates/category_navpills.mustache draws it, and the layout jsdom lacks.
  *
- * The row: Category (current), the groups Settings and User and access, a plain pill Restore course (a group of
- * one), the group Competencies, and More, hidden and empty unless it holds a node of its own (Insights). jsdom lays
- * nothing out, so each unit's width and the track's are stubbed, and a ResizeObserver is faked so a test says when
- * its entry comes.
+ * The row: Category (current unless a test names another destination), the groups Settings and User and access, a
+ * plain pill Restore course (a group of one), the group Competencies, and More, hidden and empty unless it holds a
+ * node of its own (Insights). jsdom lays nothing out, so each unit's width and the track's are stubbed (More is DOT
+ * wider while its pill holds a dot), and a ResizeObserver is faked so a test says when its entry comes.
  *
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -37,6 +37,9 @@ export const WIDTHS: Record<string, number> = {
     competencies: 130,
     other: 70,
 };
+
+/** What More's dot adds to its width: the 4px dot and the pill's 6px gap. */
+export const DOT = 10;
 
 /**
  * One destination of a menu, as the template draws it.
@@ -59,11 +62,14 @@ const item = (key: string, text: string, current = false): string =>
  * @param {string} name Its name.
  * @param {string} items Its destinations' markup.
  * @param {string} more For More: its own class and attributes after the group's; nothing for a group.
+ * @param {boolean} selected Whether it holds the current page: its pill selected, with the dot.
  * @returns {string}
  */
-const group = (key: string, name: string, items: string, more = ''): string =>
+const group = (key: string, name: string, items: string, more = '', selected = false): string =>
     `<details class="dim-navpill-group${more ? ' dim-navpill-group--more' : ''}" data-group="${key}"${more}>`
-    + `<summary class="dim-navpill"><span class="dim-navpill__label">${name}</span>`
+    + `<summary class="dim-navpill${selected ? ' is-selected' : ''}">`
+    + `${selected ? '<span class="dim-navpill__dot" aria-hidden="true"></span>' : ''}`
+    + `<span class="dim-navpill__label">${name}</span>`
     + '<span class="dim-navpill__chevron"><i class="icon fa fa-chevron-down" aria-hidden="true"></i></span></summary>'
     + `<div class="dim-navpill-menu" id="${ID}-${key}">${items}</div></details>`;
 
@@ -84,19 +90,31 @@ const pill = (key: string, text: string, current = false): string =>
 /**
  * Draw the row in the document, in the hero's wrapper and track, with a link after it.
  *
+ * The group holding the current destination is drawn as the server draws it: its pill selected, with the dot, and no
+ * aria-current, which the destination's own link alone carries (D96).
+ *
  * @param {boolean} own Whether More holds a node of its own.
+ * @param {string} current The key of the current destination.
  * @returns {HTMLElement} The row's nav.
  */
-export const drawRow = (own = false): HTMLElement => {
+export const drawRow = (own = false, current = 'categorymain'): HTMLElement => {
     const more = own ? item('insights', 'Insights') : '';
+    const items = (pairs: Array<[string, string]>): string =>
+        pairs.map(([key, text]) => item(key, text, key === current)).join('');
+    const holds = (pairs: Array<[string, string]>): boolean => pairs.some(([key]) => key === current);
+    const settings: Array<[string, string]> = [['categoryappearance', 'Category appearance'], ['edit', 'Settings']];
+    const access: Array<[string, string]> = [['cohort', 'Cohorts'], ['permissions', 'Permissions']];
+    const competencies: Array<[string, string]> = [
+        ['competencyframeworks', 'Competency frameworks'],
+        ['learningplantemplates', 'Learning plan templates'],
+    ];
     document.body.innerHTML = '<div class="dim-hero__nav"><div class="dim-hero__navtrack">'
         + `<nav class="dim-navpills" id="${ID}" aria-label="Category navigation" data-region="dim-navpills">`
-        + pill('categorymain', 'Category', true)
-        + group('settings', 'Settings', item('categoryappearance', 'Category appearance') + item('edit', 'Settings'))
-        + group('access', 'User and access', item('cohort', 'Cohorts') + item('permissions', 'Permissions'))
-        + pill('restorecourse', 'Restore course')
-        + group('competencies', 'Competencies',
-            item('competencyframeworks', 'Competency frameworks') + item('learningplantemplates', 'Learning plan templates'))
+        + pill('categorymain', 'Category', current === 'categorymain')
+        + group('settings', 'Settings', items(settings), '', holds(settings))
+        + group('access', 'User and access', items(access), '', holds(access))
+        + pill('restorecourse', 'Restore course', current === 'restorecourse')
+        + group('competencies', 'Competencies', items(competencies), '', holds(competencies))
         + group('other', 'More', more, ` data-region="dim-navpills-more"${own ? '' : ' hidden'}`)
         + '</nav></div></div><a href="https://example.com/after" id="after">After</a>';
     return document.getElementById(ID) as HTMLElement;
@@ -159,6 +177,8 @@ export const removeObserver = (): void => {
 /**
  * Lay the row out: the track as wide as the room, each unit and More as wide as WIDTHS says, no gap or padding.
  *
+ * More is DOT wider while its pill holds a dot, as a browser draws it.
+ *
  * @param {HTMLElement} nav The row's nav.
  * @param {number} room The track's width.
  * @returns {void}
@@ -169,7 +189,8 @@ export const layout = (nav: HTMLElement, room: number): void => {
     Array.from(nav.children).forEach((child) => {
         const element = child as HTMLElement;
         const key = element.dataset.group || element.dataset.key || '';
-        element.getBoundingClientRect = () => ({width: WIDTHS[key] ?? 0, height: 32} as DOMRect);
+        const dot = (): number => (key === 'other' && element.querySelector(':scope > summary > .dim-navpill__dot') ? DOT : 0);
+        element.getBoundingClientRect = () => ({width: (WIDTHS[key] ?? 0) + dot(), height: 32} as DOMRect);
     });
 };
 

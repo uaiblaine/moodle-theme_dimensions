@@ -32,8 +32,9 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  *
  * Both stylesheets are concatenated into the theme's main SCSS and reach every
  * page of the site, so every rule of them has to be scoped under the body class
- * of the page they belong to; stylelint knows nothing about which page a rule
- * reaches. There are two: scss/category.scss under the showcase's own body class,
+ * of the page they belong to, or, for the category navigation's row, which is
+ * drawn on the category's destination pages too, under the row's own classes;
+ * stylelint knows nothing about which page a rule reaches. There are two: scss/category.scss under the showcase's own body class,
  * and scss/categoryhero.scss - the appearance editor's swatches, pair preview
  * and contrast panel - under the editor page's. Each must read only custom
  * properties it declares (an unresolved var() invalidates the whole declaration),
@@ -73,6 +74,18 @@ final class category_scss_test extends \basic_testcase {
      * @var string
      */
     private const DARK_PREFIX = ':root[data-bs-theme="dark"] ';
+
+    /**
+     * The classes of the category navigation's row, which scope its rules in category.scss instead of the body class.
+     *
+     * The row is drawn on the showcase's hero and, after the page header, on the category's destination pages, which
+     * carry no body class of the showcase (D97, D98). Its rules are qualified by the classes of its own markup
+     * (templates/category_navpills.mustache and category_navpills_page.mustache), which nothing else writes, so a rule
+     * naming one of them reaches the row and nothing else.
+     *
+     * @var string[]
+     */
+    private const ROW_CLASSES = ['dim-navpills', 'dim-navpills-page'];
 
     /** @var string The second half of the card's transition while motion is welcome: the surface a preview recedes. */
     private const PREVIEW_EASE = 'background-color var(--dim-card-transition) var(--dim-ease)';
@@ -168,7 +181,7 @@ final class category_scss_test extends \basic_testcase {
            the film the band's playing class and the Font Awesome glyph each toggle swaps to. */
         $files[] = $root . '/amd/src/covervideo.js';
         $files[] = $root . '/amd/src/local/coverfilm.js';
-        /* Nor does the client of the hero's row of nav pills, which writes the live class, the
+        /* Nor does the client of the category navigation's row of nav pills, which writes the live class, the
            sections, headings and separators of More and the selected look. */
         $files[] = $root . '/js/esm/src/navpills/row.ts';
         /* The refusal page, what a reader gets instead of a listing, does not match the globs
@@ -214,6 +227,7 @@ final class category_scss_test extends \basic_testcase {
             'category_directory_card.mustache',
             'category_panel.php',
             'category_navpills.mustache',
+            'category_navpills_page.mustache',
             'category_navpills.php',
             'row.ts',
             'categoryhero.js',
@@ -256,9 +270,29 @@ final class category_scss_test extends \basic_testcase {
     }
 
     /**
-     * Every rule of each stylesheet is scoped under the body class of the page it belongs to.
+     * Does this one selector part name one of the row's own classes, whole?
+     *
+     * dim-navpills is a prefix of dim-navpills-page and of every class of the row's parts (dim-navpill-*), so the
+     * class has to end where it is written, as a body class does in {@see self::is_scoped()}.
+     *
+     * @param string $part One comma-separated part of a top-level selector, trimmed.
+     * @return bool
+     */
+    private function names_the_row(string $part): bool {
+        foreach (self::ROW_CLASSES as $class) {
+            if (preg_match('~\.' . preg_quote($class, '~') . '(?![\w-])~', $part)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Every rule of each stylesheet is scoped under the body class of the page it belongs to, or, in category.scss,
+     * under the category navigation's row.
      */
     public function test_every_top_level_selector_is_scoped_to_its_own_page(): void {
+        $rowrules = 0;
         foreach (self::SHEETS as $sheet => $scope) {
             $selectors = $this->top_level_selectors($this->stylesheet($sheet));
             $this->assertNotEmpty($selectors, $sheet . ' has no rules at all, so this proves nothing.');
@@ -268,13 +302,28 @@ final class category_scss_test extends \basic_testcase {
                     if ($part === '') {
                         continue;
                     }
+                    $row = $sheet === 'category.scss' && !$this->is_scoped($part, $scope) && $this->names_the_row($part);
+                    $rowrules += $row ? 1 : 0;
                     $this->assertTrue(
-                        $this->is_scoped($part, $scope),
+                        $this->is_scoped($part, $scope) || $row,
                         $sheet . ': unscoped selector, it would reach every page: ' . $part
                     );
                 }
             }
         }
+        $this->assertGreaterThan(0, $rowrules, 'Precondition: the row\'s rules are outside the body class.');
+    }
+
+    /**
+     * The row's scope is its own class, whole: a near miss is not the row's, and categoryhero.scss has no such scope.
+     */
+    public function test_the_rows_scope_is_its_own_class_whole(): void {
+        $this->assertTrue($this->names_the_row('.dim-navpills .dim-navpill'));
+        $this->assertTrue($this->names_the_row('.dim-navpills-page'));
+        $this->assertTrue($this->names_the_row(':root[data-bs-theme="dark"] #page nav.dim-navpills a.dim-navpill[href]'));
+        $this->assertFalse($this->names_the_row('.dim-navpill'), 'A part of the row is not the row.');
+        $this->assertFalse($this->names_the_row('.dim-navpills-other .x'), 'A longer class is not the row\'s.');
+        $this->assertFalse($this->names_the_row('.dim-card'));
     }
 
     /**
@@ -1923,29 +1972,63 @@ final class category_scss_test extends \basic_testcase {
      *
      * The wrapper rises by half the capsule and the band pays the same half as padding, both from one
      * token, so the foot's controls never sit under the capsule; with no row the band pays nothing. The
-     * capsule and its pills carry the component's measures (nav-pill.md), the menus menu.md's. The hero
-     * paints its own ink as the focus ring, white by default and invisible on the capsule's surface, so
-     * the row's controls take the family's ring back with a selector that outweighs the hero's. Nothing of
-     * the tab strip the row replaced is left.
+     * capsule and its pills carry the component's measures (nav-pill.md), the menus menu.md's, in rules outside
+     * the showcase's body class, which a destination page's row reads too (D98); the hero keeps its straddle and
+     * its ring. The hero paints its own ink as the focus ring, white by default and invisible on the capsule's
+     * surface, so the hero gives the row's controls the family's ring back with a selector that outweighs its own.
+     * Nothing of the tab strip the row replaced is left.
      *
      * @return void
      */
     public function test_the_category_navigation_is_a_capsule_on_the_heros_edge(): void {
+        global $CFG;
         $scss = $this->stylesheet('category.scss');
         $half = 'calc\(var\(--dim-navpills-height\) / ';
 
         $this->assertMatchesRegularExpression('~--dim-navpills-height:\s*2\.5rem;~', $this->rule_body($scss, '.dim-hero'));
-        // Core's dark mode underlines the page header's links at (1,6,1); the row's own rule outweighs it.
+        // Core's dark mode underlines the links of the page header at (1,6,1); the row's own rule outweighs it in both
+        // placements, inside #page, which holds the hero's header and the destination page's track.
+        $core = (string) file_get_contents($CFG->dirroot . '/theme/boost/scss/moodle/dark.scss');
+        $link = 'a:not(.btn):not(.nav-link):not(.dropdown-item):not(.list-group-item):not(.page-link)';
+        $this->assertStringContainsString("    #page-header,\n", $core, "Precondition: core's rule reaches the page header.");
+        $cores = self::specificity('[data-bs-theme="dark"] #page-header ' . $link);
+        $this->assertSame([1, 6, 1], $cores);
+        $dark = [
+            ':root[data-bs-theme="dark"] #page nav.dim-navpills a.dim-navpill[href]:not(.btn)',
+            ':root[data-bs-theme="dark"] #page nav.dim-navpills a.dim-navpill-menu__item[href]:not(.btn)',
+        ];
         $this->assertMatchesRegularExpression(
-            '~:root\[data-bs-theme="dark"\] body\.dim-category \{\s*#page-header \.dim-navpills '
-                . 'a\[href\]:not\(\.btn\) \{\s*text-decoration:\s*none;~',
+            '~^' . preg_quote($dark[0], '~') . ',\s*' . preg_quote($dark[1], '~') . ' \{\s*text-decoration:\s*none;~m',
             $scss
         );
-        $this->assertMatchesRegularExpression(
-            '~@media \(pointer: coarse\) \{\s*\.dim-hero \{\s*--dim-navpills-height:\s*2\.75rem;\s*\}\s*'
-                . '\.dim-navpills \.dim-navpill \{\s*height:\s*2\.25rem;~',
+        foreach ($dark as $selector) {
+            $weight = self::specificity($selector);
+            $this->assertGreaterThan(0, $weight <=> $cores, $selector . ' must outweigh core: ' . implode(',', $weight));
+        }
+        $this->assertDoesNotMatchRegularExpression(
+            '~body\.dim-category[^{]*\{[^{}]*#page-header \.dim-navpills~',
             $scss,
-            'A coarse pointer takes the 36px pill and the 44px capsule together.'
+            'No dark rule of the row is the showcase\'s alone: a destination page has no body.dim-category.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~@media \(pointer: coarse\) \{\s*\.dim-hero \{\s*--dim-navpills-height:\s*2\.75rem;\s*\}\s*\}~',
+            $scss,
+            'A coarse pointer takes the 44px capsule, whose half the hero\'s band pays.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~^@media \(pointer: coarse\) \{\s*\.dim-navpills \.dim-navpill \{\s*height:\s*2\.25rem;~m',
+            $scss,
+            'And the 36px pill in both placements.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~margin-bottom:\s*1rem;~',
+            $this->rule_body($scss, '.dim-navpills-page'),
+            'A destination page\'s row: after the header, on the page\'s ground, a 16px step before the content.'
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '~margin-top|position|z-index~',
+            $this->rule_body($scss, '.dim-navpills-page'),
+            'It straddles nothing (D98).'
         );
         $nav = $this->rule_body($scss, '.dim-hero__nav');
         $this->assertMatchesRegularExpression('~margin-top:\s*' . $half . '-2\);~', $nav, 'The row rises by half the capsule.');
@@ -2001,12 +2084,15 @@ final class category_scss_test extends \basic_testcase {
             $this->rule_body($scss, '.dim-hero :focus-visible'),
             'Precondition: the hero paints its ink as the ring.'
         );
+        $this->assertMatchesRegularExpression(
+            '~outline-color:\s*var\(--dimensions-focus-ring,~',
+            $this->rule_body($scss, '.dim-hero .dim-navpills :focus-visible'),
+            'The hero gives the row the family\'s ring back.'
+        );
         $heros = self::specificity('body.dim-category .dim-hero :focus-visible');
-        foreach (['.dim-navpills .dim-navpill:focus-visible', '.dim-navpills .dim-navpill-menu__item:focus-visible'] as $own) {
-            $weight = self::specificity('body.dim-category ' . $own);
-            $this->assertGreaterThan(0, $weight <=> $heros, $own . ' must outweigh the hero\'s ring: ' . implode(',', $weight));
-        }
-        $selected = ".dim-navpills .dim-navpill[aria-current=\"page\"],\n    .dim-navpills .dim-navpill.is-selected";
+        $back = self::specificity('body.dim-category .dim-hero .dim-navpills :focus-visible');
+        $this->assertGreaterThan(0, $back <=> $heros, 'The ring given back must outweigh the hero\'s: ' . implode(',', $back));
+        $selected = ".dim-navpills .dim-navpill[aria-current=\"page\"],\n.dim-navpills .dim-navpill.is-selected";
         $this->assertMatchesRegularExpression(
             '~font-weight:\s*600;~',
             $this->rule_body($scss, $selected),

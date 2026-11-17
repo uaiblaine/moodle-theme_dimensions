@@ -90,7 +90,10 @@ final class category_hero_test extends \advanced_testcase {
     }
 
     /**
-     * Export a hero on a page without a secondary navigation.
+     * Export a hero on a page that draws no row: the navigation off, at an address that is no destination of the row.
+     *
+     * The address is the anonymous shell's, the one page of a category that turns the secondary navigation off: a
+     * page that turned it off and IS a destination draws the row ({@see category_navpills::for_page()}).
      *
      * @param category_hero $hero The hero.
      * @return \stdClass The context.
@@ -98,7 +101,8 @@ final class category_hero_test extends \advanced_testcase {
     private function export(category_hero $hero): \stdClass {
         global $PAGE;
         $PAGE->set_context(\core\context\coursecat::instance($hero->category_id()));
-        $PAGE->set_url('/course/index.php', ['categoryid' => $hero->category_id()]);
+        $PAGE->set_url('/theme/dimensions/category.php', ['id' => $hero->category_id()]);
+        \core\navigation\navigation_node::override_active_url($PAGE->url);
         $PAGE->set_secondary_navigation(false);
         return $hero->export_for_template($PAGE->get_renderer('core'));
     }

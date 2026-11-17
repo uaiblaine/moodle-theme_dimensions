@@ -19,7 +19,9 @@
 
     The category's secondary navigation as a row of nav pills in a capsule
     (the fleet Design System's nav-pill.md), drawn by the category hero on the
-    band's lower edge. The units come from the theme's key-to-group map: a
+    band's lower edge and, on the category's destination pages, after the page
+    header (theme_dimensions/category_navpills_page). The units come from the
+    theme's table of destinations: a
     plain unit is a link to its destination; a group is a native disclosure
     whose summary is its pill and whose menu holds one link per destination,
     each with its icon. "More", last, holds the nodes the map does not know: it
@@ -27,8 +29,9 @@
 
     It works without JavaScript: every link is in the page and every disclosure
     opens natively. The current destination carries aria-current="page" and
-    the dot, on the row or in a menu; the pill of the group that holds it takes
-    the selected look, the dot and aria-current too. The dot, the chevron and every icon are
+    the dot, on the row or in a menu, and nothing else carries the attribute:
+    the pill of the group that holds it, a summary and no link, takes the
+    selected look and the dot through a class (D96). The dot, the chevron and every icon are
     decorative (the pix helper with no alternative text). Every destination
     carries its node's key as data-key; a group carries its own as data-group.
 
@@ -54,7 +57,7 @@
                 "key": "categorymain",
                 "text": "Category",
                 "url": "https://example.com/course/index.php?categoryid=7",
-                "current": true,
+                "current": false,
                 "icon": {"key": "i/link", "component": "core"}
             },
             {
@@ -106,7 +109,7 @@
     {{/isgroup}}
     {{#isgroup}}
     <details class="dim-navpill-group" data-group="{{key}}">
-        <summary class="dim-navpill{{#current}} is-selected{{/current}}"{{#current}} aria-current="page"{{/current}}>{{#current}}<span class="dim-navpill__dot" aria-hidden="true"></span>{{/current}}<span class="dim-navpill__label">{{name}}</span><span class="dim-navpill__chevron">{{#pix}} t/expanded, core {{/pix}}</span></summary>
+        <summary class="dim-navpill{{#current}} is-selected{{/current}}">{{#current}}<span class="dim-navpill__dot" aria-hidden="true"></span>{{/current}}<span class="dim-navpill__label">{{name}}</span><span class="dim-navpill__chevron">{{#pix}} t/expanded, core {{/pix}}</span></summary>
         <div class="dim-navpill-menu" id="{{menuid}}">
             {{#items}}
             <a class="dim-navpill-menu__item" href="{{url}}" data-key="{{key}}"{{#current}} aria-current="page"{{/current}}>{{#pix}} {{icon.key}}, {{icon.component}} {{/pix}}<span class="dim-navpill-menu__label">{{text}}</span>{{#current}}<span class="dim-navpill__dot" aria-hidden="true"></span>{{/current}}</a>
@@ -117,7 +120,7 @@
     {{/units}}
     {{#more}}
     <details class="dim-navpill-group dim-navpill-group--more" data-group="{{key}}" data-region="dim-navpills-more"{{^hasitems}} hidden{{/hasitems}}>
-        <summary class="dim-navpill{{#current}} is-selected{{/current}}"{{#current}} aria-current="page"{{/current}}>{{#current}}<span class="dim-navpill__dot" aria-hidden="true"></span>{{/current}}<span class="dim-navpill__label">{{name}}</span><span class="dim-navpill__chevron">{{#pix}} t/expanded, core {{/pix}}</span></summary>
+        <summary class="dim-navpill{{#current}} is-selected{{/current}}">{{#current}}<span class="dim-navpill__dot" aria-hidden="true"></span>{{/current}}<span class="dim-navpill__label">{{name}}</span><span class="dim-navpill__chevron">{{#pix}} t/expanded, core {{/pix}}</span></summary>
         <div class="dim-navpill-menu" id="{{menuid}}">
             {{#items}}
             <a class="dim-navpill-menu__item" href="{{url}}" data-key="{{key}}"{{#current}} aria-current="page"{{/current}}>{{#pix}} {{icon.key}}, {{icon.component}} {{/pix}}<span class="dim-navpill-menu__label">{{text}}</span>{{#current}}<span class="dim-navpill__dot" aria-hidden="true"></span>{{/current}}</a>

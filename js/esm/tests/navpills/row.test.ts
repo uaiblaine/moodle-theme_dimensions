@@ -363,13 +363,39 @@ describe('overflow', () => {
         const category = moreMenu().querySelector('a[data-key="categorymain"]');
         expect(category?.getAttribute('aria-current')).toBe('page');
         expect(more.classList.contains(CLASSES.selected)).toBe(true);
-        expect(more.getAttribute('aria-current')).toBe('page');
         expect(more.firstElementChild?.classList.contains(CLASSES.dot)).toBe(true);
+        // The look is the class and the dot: aria-current stays on the current page's own link (D96).
+        expect(more.hasAttribute('aria-current')).toBe(false);
+        expect(nav.querySelectorAll('[aria-current]')).toHaveLength(1);
 
         resize(nav, 1000);
         expect(more.classList.contains(CLASSES.selected)).toBe(false);
         expect(more.hasAttribute('aria-current')).toBe(false);
         expect(more.querySelector(`.${CLASSES.dot}`)).toBeNull();
+    });
+
+    it('pays for More\'s dot when the unit it takes holds the current page', () => {
+        // Every unit but Competencies, beside More unselected: 450 + 70 = 520, which fits exactly.
+        const control = drawRow(false, 'categorymain');
+        arm(control);
+        resize(control, 520);
+        expect(rowKeys(control)).toEqual(['categorymain', 'settings', 'access', 'restorecourse', 'other']);
+        removeObserver();
+        installObserver();
+
+        // Competencies holds the current page: More takes it and its dot, 80 wide, so Restore course moves as well.
+        const nav = drawRow(false, 'learningplantemplates');
+        arm(nav);
+        resize(nav, 520);
+        expect(rowKeys(nav)).toEqual(['categorymain', 'settings', 'access', 'other']);
+        const more = pillOf(group('other'));
+        expect(more.classList.contains(CLASSES.selected)).toBe(true);
+        expect(more.querySelectorAll(`.${CLASSES.dot}`)).toHaveLength(1);
+        expect(more.hasAttribute('aria-current')).toBe(false);
+        // The one aria-current of the row is the destination's own link, wherever it now is.
+        const current = nav.querySelectorAll('[aria-current]');
+        expect(current).toHaveLength(1);
+        expect((current[0] as HTMLElement).dataset.key).toBe('learningplantemplates');
     });
 
     it('never measures while a menu is open, and measures when it closes', () => {
@@ -438,18 +464,22 @@ describe('the selected look the server drew on More', () => {
     it('is never cleared, and no dot is added, whatever the row holds', () => {
         const nav = drawRow(true);
         const more = pillOf(group('other'));
+        // The server's look: the class and its dot, and no aria-current (D96).
+        const serverdot = document.createElement('span');
+        serverdot.className = CLASSES.dot;
         more.classList.add(CLASSES.selected);
-        more.setAttribute('aria-current', 'page');
+        more.prepend(serverdot);
         arm(nav);
 
         resize(nav, 1000);
         expect(more.classList.contains(CLASSES.selected)).toBe(true);
-        expect(more.getAttribute('aria-current')).toBe('page');
+        expect(more.querySelectorAll(`.${CLASSES.dot}`)).toHaveLength(1);
 
         // Category, the current page, moves into More: the server's look stands and carries no second dot.
         resize(nav, 100);
         expect(more.classList.contains(CLASSES.selected)).toBe(true);
-        expect(more.querySelector(`.${CLASSES.dot}`)).toBeNull();
+        expect(more.querySelectorAll(`.${CLASSES.dot}`)).toHaveLength(1);
+        expect(more.hasAttribute('aria-current')).toBe(false);
     });
 });
 

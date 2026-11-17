@@ -52,8 +52,9 @@ use theme_dimensions\local\landing\links;
  * is computed per request and never cached. The crests on the title's line are the category's
  * own, from that same payload, never a course's.
  * The navigation is core's own secondary navigation, regrouped by {@see navgroups} into a row of
- * nav pills ({@see category_navpills}) that straddles the band's lower edge; the band Boost Union's
- * layout would render under the header is switched off by the core renderer while a hero is armed.
+ * nav pills ({@see category_navpills::for_page()}, the row's one builder) that straddles the band's lower edge;
+ * the band Boost Union's layout would render under the header is switched off by the core renderer while a hero
+ * is armed.
  * The trail above the title is the hero's own ({@see trail()}).
  *
  * The fold is the one thing the hero remembers per person: folded, the hero keeps its title row
@@ -65,8 +66,8 @@ use theme_dimensions\local\landing\links;
  * The root of the course index is the one category drawn without a row behind it: the system
  * context, the branding defaults (no statement) over the site-wide fallback image, no pencil (the
  * appearance editor brands one real category), no trail, and a title other than top()'s own name,
- * "Top" ({@see root_title()}). Its navigation is whatever secondary navigation core gave that page,
- * and a visitor has none.
+ * "Top" ({@see root_title()}), and no row of navigation: the system context has no category navigation
+ * (core's secondary navigation there is the site administration's).
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -355,26 +356,21 @@ class category_hero implements renderable, templatable {
     /**
      * The page's secondary navigation as a row of nav pills, or null when the hero draws none.
      *
-     * Three refusals: the anonymous shell (a visitor has no secondary navigation, and the shell
-     * says so through $withtabs), a page without a secondary navigation, and a viewer whose only
-     * destination is the page itself (a learner): a pill is never alone on a row
-     * ({@see navgroups::has_row()}). The nodes are read, never changed: the same tree feeds
-     * other readers of the page.
+     * The anonymous shell draws none (a visitor has no secondary navigation, and the shell says so through
+     * $withtabs); every other refusal is the row's builder's ({@see category_navpills::for_page()}), the same one
+     * the destination pages ask: a page outside a category's context (the root of the course index), a plugin's own
+     * navigation, and a viewer whose only destination is the page itself (a learner,
+     * {@see navgroups::has_row()}).
      *
      * @return category_navpills|null
      */
     private function navpills(): ?category_navpills {
         global $PAGE;
 
-        $page = $this->page ?? $PAGE;
-        if (!$this->withtabs || !$page->has_secondary_navigation()) {
+        if (!$this->withtabs) {
             return null;
         }
-        $units = navgroups::rows($page->secondarynav);
-        if (!navgroups::has_row($units)) {
-            return null;
-        }
-        return new category_navpills($units);
+        return category_navpills::for_page($this->page ?? $PAGE);
     }
 
     /**

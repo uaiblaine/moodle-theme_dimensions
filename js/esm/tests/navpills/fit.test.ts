@@ -76,6 +76,16 @@ describe('fit', () => {
         expect(fitIn(618, true)).toEqual({keep: [0, 1, 2, 3], move: [4], more: true});
     });
 
+    it('pays for More\'s dot once it holds the unit with the current page, which can move one more unit', () => {
+        // Category to Courses and content with More: 490 + 70 + 4 * 2 = 568. Selected, More is 80 wide: 578.
+        const holding = (current: number) =>
+            fit({widths: WIDTHS, gap: GAP, room: 568, more: MORE, selected: MORE + 10, current: current, last: 0});
+        expect(holding(4)).toEqual({keep: [0, 1, 2], move: [3, 4], more: true});
+        // Control: the current page stays on the row, More stays unselected and the same room keeps four units.
+        expect(holding(1)).toEqual({keep: [0, 1, 2, 3], move: [4], more: true});
+        expect(holding(-1)).toEqual({keep: [0, 1, 2, 3], move: [4], more: true});
+    });
+
     it('moves every unit in a room of zero, or of nothing at all', () => {
         expect(fitIn(0)).toEqual({keep: [], move: [0, 1, 2, 3, 4], more: true});
         expect(fitIn(-20)).toEqual({keep: [], move: [0, 1, 2, 3, 4], more: true});

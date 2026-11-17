@@ -311,6 +311,42 @@ final class navgroups_test extends \advanced_testcase {
     }
 
     /**
+     * Core marks a page's node and its parent active alike: the row's current destination is the page's own.
+     */
+    public function test_an_active_parent_yields_to_its_active_child(): void {
+        $root = self::root();
+        self::add($root, 'categorymain', 'Category');
+        $permissions = self::add($root, 'permissions', 'Permissions');
+        $roles = self::add($permissions, 'roles', 'Assign roles');
+        self::add($permissions, 'rolecheck', 'Check permissions');
+
+        // The control: alone, the parent is the current destination.
+        $permissions->isactive = true;
+        $this->assertSame(['permissions'], self::current(navgroups::rows($root)));
+
+        $roles->isactive = true;
+        $this->assertSame(['roles'], self::current(navgroups::rows($root)));
+    }
+
+    /**
+     * The keys of the current destinations of a row, plain units and menu items alike.
+     *
+     * @param array $units What rows() returned.
+     * @return array The keys, in the row's order.
+     */
+    private static function current(array $units): array {
+        $keys = [];
+        foreach ($units as $unit) {
+            foreach ($unit['items'] ?? [$unit] as $destination) {
+                if ($destination['current']) {
+                    $keys[] = $destination['key'];
+                }
+            }
+        }
+        return $keys;
+    }
+
+    /**
      * A node without an address is no destination, and its children still are.
      */
     public function test_a_node_without_an_address_is_skipped_and_its_children_are_not(): void {
@@ -449,14 +485,19 @@ final class navgroups_test extends \advanced_testcase {
     }
 
     /**
-     * A declared icon is kept with its component; none, or core's empty box, becomes the generic icon.
+     * A destination's icon is the table's, else the one its node declares, else the generic one (D101).
+     *
+     * Each order is read on a node of its own: a line with an icon whose node declares another (the table's wins), a
+     * line without one whose node declares one (the node's, its component kept), and nodes with neither, or with
+     * core's empty box, which Font Awesome draws as nothing (the generic link).
      */
-    public function test_a_declared_icon_is_kept_and_the_empty_box_becomes_the_generic_icon(): void {
+    public function test_an_icon_is_the_tables_then_the_nodes_then_the_generic_one(): void {
         $root = self::root();
         self::add($root, 'categorymain', 'Category');
         self::add($root, 'edit', 'Settings', '', new pix_icon('i/edit', ''));
         self::add($root, 'tool_recyclebin', 'Recycle bin', '', new pix_icon('trash', 'Recycle bin', 'tool_recyclebin'));
-        self::add($root, 'tool_muprog_programs', 'Programs');
+        self::add($root, 'tool_muprog_programs', 'Programs', '', new pix_icon('icon', 'Programs', 'tool_muprog'));
+        self::add($root, 'tool_mucertify_certifications', 'Certifications');
         self::add($root, 'insights', 'Insights', '', new pix_icon('i/navigationitem', ''));
 
         $icons = [];
@@ -466,13 +507,115 @@ final class navgroups_test extends \advanced_testcase {
             }
         }
 
-        $generic = ['key' => navgroups::GENERIC_ICON, 'component' => 'core'];
-        $this->assertSame('i/link', navgroups::GENERIC_ICON);
+        // The table's: whatever the node declares, a plugin's own image included.
+        $this->assertSame('theme_dimensions:navpill/programs', navgroups::DESTINATIONS['tool_muprog_programs'][1]);
+        $this->assertSame(['key' => 'navpill/programs', 'component' => 'theme_dimensions'], $icons['tool_muprog_programs']);
+        $this->assertSame(
+            ['key' => 'navpill/certifications', 'component' => 'theme_dimensions'],
+            $icons['tool_mucertify_certifications']
+        );
+        // The node's, for a line without an icon (edit) and for a node the table does not know (the recycle bin's
+        // line has none either).
+        $this->assertArrayNotHasKey(1, navgroups::DESTINATIONS['edit'], 'Precondition: the line names no icon.');
         $this->assertSame(['key' => 'i/edit', 'component' => 'moodle'], $icons['edit']);
         $this->assertSame(['key' => 'trash', 'component' => 'tool_recyclebin'], $icons['tool_recyclebin']);
+        // The generic link, for no icon at all and for core's empty box.
+        $generic = ['key' => navgroups::GENERIC_ICON, 'component' => 'core'];
+        $this->assertSame('i/link', navgroups::GENERIC_ICON);
         $this->assertSame($generic, $icons['categorymain']);
-        $this->assertSame($generic, $icons['tool_muprog_programs']);
         $this->assertSame($generic, $icons['insights']);
+    }
+
+    /**
+     * Every line of the table names a group of the row, and every icon a line names is a glyph the theme maps.
+     *
+     * A line in a group the row does not have would throw when its pill is named; an icon the icon map does not know
+     * would be drawn as an image file the theme does not ship. Core's own check of an icon map (lib/tests/output/
+     * plugin_checks_test.php) asks for the map's component and an SVG under pix/, which this repeats for the theme.
+     */
+    public function test_every_line_of_the_table_names_a_group_and_a_mapped_glyph(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/theme/dimensions/lib.php');
+        $map = theme_dimensions_get_fontawesome_icon_map();
+        $lines = navgroups::DESTINATIONS + navgroups::PATHS;
+        $this->assertArrayHasKey('/admin/tool/uploadcourse/index.php', $lines, 'Precondition: the path rules are read.');
+        $icons = 0;
+        foreach ($lines as $key => $line) {
+            $this->assertContains($line[0], navgroups::GROUPS, $key . ' names no group of the row.');
+            $this->assertNotSame('', navgroups::name($line[0]));
+            $this->assertLessThanOrEqual(2, count($line), $key . ': a line is a group and an icon, nothing else.');
+            if (!isset($line[1])) {
+                continue;
+            }
+            $icons++;
+            [$component, $pix] = explode(':', $line[1], 2);
+            $this->assertSame('theme_dimensions', $component, $key . ': the table names the theme\'s glyphs only.');
+            $this->assertArrayHasKey($line[1], $map, $key . ' names an icon the theme does not map.');
+            $this->assertStringStartsWith('fa-', $map[$line[1]]);
+            $this->assertFileExists($CFG->dirroot . '/theme/dimensions/pix/' . $pix . '.svg');
+        }
+        $this->assertSame(4, $icons, 'The four destinations that fell to the link have a glyph (D101).');
+        foreach (array_keys($map) as $icon) {
+            $this->assertStringStartsWith('theme_dimensions:', $icon, 'Core\'s check: the map names its own icons only.');
+        }
+        $this->assertSame(
+            ['fa-rectangle-list', 'fa-award', 'fa-house', 'fa-diagram-project'],
+            [
+                $map[navgroups::DESTINATIONS['tool_mucatalog_management'][1]],
+                $map[navgroups::DESTINATIONS['tool_mucertify_certifications'][1]],
+                $map[navgroups::DESTINATIONS['tool_muhome_management'][1]],
+                $map[navgroups::DESTINATIONS['tool_muprog_programs'][1]],
+            ]
+        );
+    }
+
+    /**
+     * The icon font draws the table's glyphs: the theme's map is merged into core's.
+     */
+    public function test_the_icon_font_draws_the_tables_glyphs(): void {
+        \cache::make('core', 'plugin_functions')->purge();
+        \cache::make('core', 'fontawesomeiconmapping')->purge();
+        \core\output\icon_system::reset_caches();
+        $system = \core\output\icon_system::instance(\core\output\icon_system::FONTAWESOME);
+        $map = $system->get_icon_name_map();
+
+        $this->assertSame('fa fa-diagram-project', $map['theme_dimensions:navpill/programs'] ?? null);
+        $this->assertSame('fa fa-house', $map['theme_dimensions:navpill/home'] ?? null);
+        // Control: core's own entries are in the same map, so the theme's are merged into it, not instead of it.
+        $this->assertArrayHasKey('core:i/link', $map);
+    }
+
+    /**
+     * The row's one builder is the only reader of rows(): no other file of the theme regroups a navigation itself.
+     *
+     * The hero and the destination pages both ask category_navpills::for_page(), so a group changed in the table
+     * changes on every page (D100). Comments are left out: a docblock may name rows() to say where the units come
+     * from.
+     */
+    public function test_the_builder_is_the_only_reader_of_rows(): void {
+        $root = dirname(__DIR__, 3);
+        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
+        $readers = [];
+        $scanned = 0;
+        foreach ($files as $file) {
+            $path = substr($file->getPathname(), strlen($root) + 1);
+            if ($file->getExtension() !== 'php' || str_starts_with($path, 'tests/')) {
+                continue;
+            }
+            $scanned++;
+            $code = '';
+            foreach (token_get_all((string) file_get_contents($file->getPathname())) as $token) {
+                if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+                    continue;
+                }
+                $code .= is_array($token) ? $token[1] : $token;
+            }
+            if (preg_match('~navgroups::rows\s*\(~', $code)) {
+                $readers[] = $path;
+            }
+        }
+        $this->assertGreaterThan(100, $scanned, 'Precondition: the scan reads the theme\'s PHP.');
+        $this->assertSame(['classes/output/category_navpills.php'], $readers);
     }
 
     /**
@@ -557,7 +700,7 @@ final class navgroups_test extends \advanced_testcase {
         $this->assertSame('Courses and content', navgroups::name('courses'));
         $this->assertSame('Competencies', navgroups::name('competencies'));
         $this->assertSame(get_string('moremenu'), navgroups::name(navgroups::OTHER));
-        $this->assertSame(['settings', 'access', 'courses', 'competencies'], array_keys(navgroups::GROUPS));
+        $this->assertSame(['settings', 'access', 'courses', 'competencies'], navgroups::GROUPS);
 
         [$root] = self::administrators_tree();
         $names = array_column(array_slice(navgroups::rows($root), 1), 'name');

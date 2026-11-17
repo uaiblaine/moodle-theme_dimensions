@@ -282,8 +282,10 @@ classes/local/category/branding.php  The hero of a category: the row, the audite
 classes/output/category_hero.php   The hero renderable and its static registry (armed by the
                                listing, drawn by full_header()); the fold preference.
 templates/category_hero.mustache   The hero; includes category_navpills, the category's navigation.
-classes/output/category_navpills.php, templates/category_navpills.mustache  The hero's row of nav pills: navgroups'
-                               units as a context, and their markup. See "The category navigation".
+classes/output/category_navpills.php, templates/category_navpills.mustache  The category's row of nav pills: the
+                               one builder (for_page()), navgroups' units as a context, and their markup;
+                               category_navpills_page.mustache is its track on a page without the hero. See "The
+                               category navigation".
 templates/category_searchline.mustache  The root's toolbar: its search line alone (round EL-3).
 categoryhero.php, classes/form/categoryhero.php  The category appearance editor: a plain moodleform.
 db/install.xml, db/caches.php, db/events.php, db/uninstall.php  The branding table, its cache,
@@ -293,14 +295,14 @@ classes/local/category/        The category showcase's decision layer (stage 2):
                                classifier (eleven states, five statements), facets, cards, criteria,
                                scope, page_result, unavailable_exception, dialogue (the course
                                dialogue's fetched content) and navgroups (the category navigation's
-                               key-to-group map). See "The category showcase".
+                               one table of destinations: group and icon). See "The category showcase".
 amd/src/category*.js           The showcase's AMD modules left: categoryhero (the appearance editor) and categorycoursemodal
                                (the course dialogue, a real account's only); covervideo.js + local/coverfilm.js are the cover film.
-amd/src/listing{account,visitor}.js, navpills.js  The js_call_amd bridges of the two shells and of the hero's row, each
+amd/src/listing{account,visitor}.js, navpills.js  The js_call_amd bridges of the two shells and of the category navigation's row, each
                                loading its ES module through core/esm!.
 js/esm/src/                    The showcase's client: daterange/, filterline/, areas/ (the three React components, on both
                                shells), listing/ (the shared listing, its store, the shells visitor.ts and account.ts)
-                               and navpills/ (the hero's row: row.ts, and fit.ts, its pure arithmetic).
+                               and navpills/ (the category navigation's row: row.ts, and fit.ts, its pure arithmetic).
                                listing/star.ts is the card's star, armed by account.ts.
 classes/output/category_pages.php  The pages strip (T2): local_page's catalogue, asked by class
                                name, under two rules of the theme's own. See "The category showcase".
@@ -1446,7 +1448,8 @@ decision ids (D1-D39, OD-n) are the private design record's.
     `store.ts`, and the two shells `visitor.ts` and `account.ts`;
   - `areas/` (the posters and the panel, `Areas.tsx`), `filterline/` (`FilterLine.tsx`), `daterange/`
     (`DateRange.tsx`): the three React components, on both shells;
-  - `navpills/` (`row.ts`, `fit.ts`): the hero's row, an account's only, through the AMD entry `navpills`;
+  - `navpills/` (`row.ts`, `fit.ts`): the category navigation's row (the hero's and a destination page's), an
+    account's only, through the AMD entry `navpills`;
   - AMD left on these pages: the two entries below, `covervideo` with `local/coverfilm` (the card's film, armed for
     everybody), `categorycoursemodal` (the course dialogue, armed beside `listingaccount` for a real account only)
     and, on the appearance editor, `categoryhero`. `js_call_amd` cannot
@@ -1492,18 +1495,36 @@ service, no `fetchOne` (`listing_source_test::test_the_store_reaches_no_shell`, 
 
 ### The category navigation
 
-The hero's row of nav pills is the fleet Design System's `components/nav-pill.md` (measures, states, the decisions'
-reasons; the theme's plan is `plans/nav-pill-theme.md` beside it, both under `moodle-dev/docs/design-system/`).
+The category's row of nav pills is the fleet Design System's `components/nav-pill.md` (measures, states, the
+decisions' reasons; the theme's plan is `plans/nav-pill-theme.md` beside it, both under `moodle-dev/docs/design-system/`).
 
-- **Every decision is `local\category\navgroups`'s**, over the children of `$PAGE->secondarynav` (what core chose to
-  offer, after its removals and its active-node scan): the groups in `GROUPS`' order, a node classified by its OWN
-  key (a null-keyed node by its path, `PATHS`), a group's destinations and More's own items alphabetical through
-  `core_collator`, a group of one drawn as its destination's plain pill, an empty group dropped, a node the map does
-  not know an item of "More", the last pill, even when it is the only one. It changes no node (focus mode's "More"
-  reads the same tree): never `make_active()`, `remove()` or `set_force_into_more_menu()`. `category_navpills` only
-  exports and the client decides nothing. `category_hero::navpills()` draws no row for the anonymous shell
-  (`withtabs`), a page without a secondary navigation, or "Category" alone (`navgroups::has_row()`); the hero then
-  carries `dim-hero--notabs` (old name, kept) and its band pays no half.
+- **One table: `local\category\navgroups::DESTINATIONS`**, one line per destination key, `[group, icon?]`; the icon
+  is `component:pix key` of a glyph the theme maps in `theme_dimensions_get_fontawesome_icon_map()` (`lib.php`, an
+  SVG under `pix/` beside each key, as core's icon-map check asks), never a plugin's image file. **Mapping a plugin
+  is one line there**; `PATHS` holds the same shape for a node core keyed by position. `GROUPS` is the row's order,
+  `name()` the groups' strings. An icon is the line's, else the node's, else `GENERIC_ICON` (D101).
+- **One builder: `category_navpills::for_page($page)`**, the only caller of `navgroups::rows()`
+  (`navgroups_test::test_the_builder_is_the_only_reader_of_rows`). It holds every condition: a category context; the
+  page's `secondarynav` of core's exact class (a plugin's subclass keeps its own tabs), or the navigation turned off
+  and the page a destination of a row built from a `secondary` the builder makes itself, one destination coming out
+  current (D99: the tool_mu index pages); `navgroups::has_row()`. Never add a plugin list or a second reader.
+- **Two placements, one row.** The hero (`category_hero::navpills()`, the anonymous shell excluded by `withtabs`)
+  straddles the band. Every other page: `core_renderer::render_from_template()` asks the builder beside the
+  `secondarymoremenu` guard when no hero is armed, sets that key false exactly when a row comes back, and
+  `full_header()` appends `category_navpills_page` (the track `.dim-navpills-page`, whose width `row.ts` measures)
+  after the header. That covers the destination pages and the category page with the showcase off.
+- **Every decision about the units is `navgroups`'s**, over the children of the secondary navigation (what core chose
+  to offer, after its removals and its active-node scan): the groups in `GROUPS`' order, a node classified by its OWN
+  key, a group's destinations and More's own items alphabetical through `core_collator`, a group of one drawn as its
+  destination's plain pill, an empty group dropped, a node the table does not know an item of "More", the last pill.
+  It changes no node (focus mode's "More" reads the same tree): never `make_active()`, `remove()` or
+  `set_force_into_more_menu()`. `category_navpills` only exports and the client decides nothing.
+- **One destination is current.** Core's scan marks a page's node and its parent active alike (Assign roles and
+  Permissions), so `navgroups` lets an active node yield to an active node under it (gate
+  `navgroups_active_parent_yields`).
+- **`aria-current="page"` is on the current destination's link alone (D96)**: a group's or More's `summary` takes
+  `is-selected` and the dot, never the attribute, in the template and in `row.ts` (`paintMore()`); the CSS paints the
+  selected look from the class. `fit.ts` pays More's dot (`selected`) once More holds the unit with the current page.
 - **The server's row works without JavaScript**: plain pills are links, a group is a native `details`/`summary` with
   one link per destination, "More" is drawn by the server (hidden while empty), and no menu role is in its markup.
   `navpills/row.ts` adds the roles (`menu`, `menuitem`, `aria-haspopup`, `aria-controls`, `aria-expanded`) with the
@@ -1511,16 +1532,20 @@ reasons; the theme's plan is `plans/nav-pill-theme.md` beside it, both under `mo
   headed section, "Category" last): MOVED, never cloned. `fit.ts` is that move's pure arithmetic, the part Jest
   tests directly.
 - **Armed only for a row with a menu** (a group, or "More" with items of its own), by `core_renderer::full_header()`
-  (`arm_navpills()`, the nav's id as the argument); a row of plain pills loads no module.
-- **The stylesheet**, `scss/category.scss`'s section "The category navigation (nav-pill.md)": the wrapper
-  `.dim-hero__nav` rises by half the capsule (`--dim-navpills-height`), which the band pays as bottom padding, and
-  stacks at `z-index: 31` over the filter line's 30 with no overflow and no `clip-path` (a menu overflows it). The
-  hero paints its ink as the focus ring (`.dim-hero :focus-visible`, white by default: invisible on the capsule), so
-  the row's controls take the family's ring back with a selector that outweighs it. Colours read the family's
-  `--dimensions-*`, never the listing's `--dim-*` aliases (declared on its roots only). In dark mode core underlines
-  the page header's links but its own controls (it skips `.nav-link`, which a pill is not); one rule at the file's
-  foot outweighs it for the row. `category_scss_test` fails `dim-hero__tabs`, `moremenu`, `nav-tabs`, `nav-link` or
+  (`arm_navpills()`, the nav's id as the argument) in both placements; a row of plain pills loads no module.
+- **The stylesheet**, `scss/category.scss`: the row's own rules are OUTSIDE `body.dim-category`, in the top-level
+  section "The category navigation (nav-pill.md)", every selector qualified by `.dim-navpills` or
+  `.dim-navpills-page` (`category_scss_test::ROW_CLASSES`, the scope test's second scope). The hero keeps only its
+  placement inside the body block: `.dim-hero__nav` rises by half the capsule (`--dim-navpills-height`), which the
+  band pays as bottom padding, at `z-index: 31` over the filter line's 30 with no overflow and no `clip-path`; and
+  `.dim-hero .dim-navpills :focus-visible` gives the row the family's ring back over the hero's ink. Colours read the
+  family's `--dimensions-*` (declared on the root), never the listing's `--dim-*` aliases. Core's dark mode
+  underlines links of `#page-header`; the one dark rule (`#page nav.dim-navpills a...`, (1,6,2)) holds in both
+  placements. `category_scss_test` fails `dim-hero__tabs`, `moremenu`, `nav-tabs`, `nav-link` or
   `--dim-hero-page-primary-ink` anywhere in `category.scss`, comments included.
+- **Behat**: the theme's `behat_theme_dimensions_behat_navigation` answers core's `I navigate to "X" in current page
+  administration` and `I select "X" from secondary navigation` on the row (the group or More opened first under
+  JavaScript), and falls back to core's step without a row or without the link on it (D102).
 - **Tests**: render a template with the test's page renderer (`$PAGE->get_renderer('core')`), never the global
   `$OUTPUT`, which belongs to whichever page first asked for output. Two nodes with one address are one destination
   (`rows()` keeps the first), so a built tree gives every node its own. `first_paint_budget_test`'s page stands in the
@@ -1728,12 +1753,13 @@ Client and stylesheet:
 - **The stylesheets**: `scss/category.scss` under `body.dim-category` and `scss/categoryhero.scss` under
   `body.dim-categoryhero` (a dark rule is `:root[data-bs-theme="dark"] body.dim-category ...`, kept at the file's
   foot); no `color-mix()`, `text-wrap` or physical `border-left` (the Bootstrap 4 scanner reads it as a class); the
-  hero's row has rules of its own (section "The category navigation" above); the Filters popover is no scroll
+  row of nav pills is styled outside the body class, under its own classes (section "The category navigation"
+  above); the Filters popover is no scroll
   container (it would clip the calendar); nothing between the tree and `#region-main` carries an overflow (the
   sidebar is sticky). `category_scss_test` holds most of these [visual refinement, D3, EL-1, T1-T4].
 - **Behat**: scope course names to `[data-region='dim-vitrine-grid']` (on a grouped page `.dim-vitrine__grid` is the
   posters' grid); a poster's control is an `<a>` without JavaScript and a `<button>` with it (a visitor's stays an
-  `<a>`); open the Filters summary before pressing what is inside it; assert a destination of the hero's row by its
+  `<a>`); open the Filters summary before pressing what is inside it; assert a destination of the row by its
   `data-key` and a group by its `data-group`, and open a group by clicking its name as "text" in its `summary`
   (`I press` finds no summary); Mink empties a field one character at a time, so a colour field passes through valid
   prefixes [stage 4, round F, D1, EL-1].
@@ -1763,13 +1789,13 @@ Client and stylesheet:
   `category_navpills.mustache` changes. The components' guards are mutation-checked by hand; the sweep runs
   PHPUnit alone.
 - Behat: `theme_dimensions_category.feature` (the server-drawn page and the editor, "More information" as a link,
-  the hero's row with and without JavaScript),
+  the row with and without JavaScript, on the hero and on a destination page, core's navigation steps on it),
   `theme_dimensions_category_client.feature` (the account, the course dialogue),
   `theme_dimensions_category_public_client.feature` (the visitor), `theme_dimensions_category_pages.feature`
   (`@local_page`).
 - Gates: `mutations/gates.conf`, grouped by stage and round in file order (the dialogue's service: the `dialogue_*`
-  gates of the L2 block; the ratings: the R1 block after it; the hero's row: the `navgroups_*`, `hero_navpills_*` and
-  `navpills_*` gates; the root's total: `hero_root_only_total`). A pattern that matches nothing is a hard exit for
+  gates of the L2 block; the ratings: the R1 block after it; the category navigation's row: the `navgroups_*`, `hero_navpills_*`,
+  `navpills_*` and `navpills_builder_*` gates; the root's total: `hero_root_only_total`). A pattern that matches nothing is a hard exit for
   `mdl mutate`: dry-match every line after moving code between functions.
 
 ### The performance probe (R0)

@@ -6,7 +6,8 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * The row module measures once ({@see ./row measure()}) and hands the numbers here, so the decision reads no layout
  * and is tested in Jest on its own. Units move from the row's end, the page itself ("Category") last of all (D83);
  * "More" is shown when anything moved or when it holds nodes of its own (D89), and its width is then paid on the
- * row, with the gap before it.
+ * row, with the gap before it: the width it takes selected, its dot included, once it holds the unit with the
+ * current page (D82).
  *
  * @module     theme_dimensions/navpills/fit
  * @copyright  2026 Anderson Blaine
@@ -22,6 +23,8 @@ const fit = /* @__PURE__ */ __name((measures) => {
   const { widths, gap, more } = measures;
   const room = Number.isFinite(measures.room) ? Math.max(0, measures.room) : 0;
   const last = measures.last ?? -1;
+  const current = measures.current ?? -1;
+  const selected = measures.selected ?? more;
   const own = Boolean(measures.own);
   const all = widths.map((width, index) => index);
   if (!own && span(widths, all, gap, 0) <= room + TOLERANCE) {
@@ -34,7 +37,7 @@ const fit = /* @__PURE__ */ __name((measures) => {
   const moved = /* @__PURE__ */ new Set();
   for (const index of order) {
     const kept = all.filter((candidate) => !moved.has(candidate));
-    if (span(widths, kept, gap, more) <= room + TOLERANCE) {
+    if (span(widths, kept, gap, moved.has(current) ? selected : more) <= room + TOLERANCE) {
       break;
     }
     moved.add(index);

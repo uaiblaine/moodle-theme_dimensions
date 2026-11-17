@@ -502,6 +502,9 @@ Feature: The category showcase lists what a person may discover, and its filters
     And ".dim-vitrine" "css_element" should not exist
     And I should see "Resgate em Altura"
     And I should not see "Restricted One"
+    # The category's navigation is still the row, after Boost Union's header: Category and the competency frameworks.
+    And "[data-region='dim-navpills'] a[data-key='competencyframeworks']" "css_element" should exist in the ".dim-navpills-page" "css_element"
+    And ".secondary-navigation" "css_element" should not exist
 
   Scenario: A manager's category navigation is a row of nav pills on the hero and the band below it is gone
     Given I log in as "admin"
@@ -563,6 +566,34 @@ Feature: The category showcase lists what a person may discover, and its filters
     And I press the escape key
     Then the focused element is "[data-region='dim-navpills-more'] > summary" "css_element"
     And "[data-region='dim-navpills-more'][open]" "css_element" should not exist
+
+  Scenario: A destination page draws the row where the band was, its destination current inside its group
+    Given I log in as "admin"
+    And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
+    # Core's step, answered on the hero's row: the destination is followed inside its group.
+    When I navigate to "Permissions" in current page administration
+    Then "[data-region='dim-navpills']" "css_element" should exist in the ".dim-navpills-page" "css_element"
+    And ".secondary-navigation" "css_element" should not exist
+    And "[data-region='dim-navpills'] details[data-group='access'] a[data-key='permissions'][aria-current='page']" "css_element" should exist
+    And "[data-region='dim-navpills'] details[data-group='access'] > summary.is-selected" "css_element" should exist
+    # Only the destination's own link is the current page: the group's pill is a summary, selected by its class.
+    And "[data-region='dim-navpills'] summary[aria-current]" "css_element" should not exist
+    # Core's other step reaches another destination from the destination page.
+    When I select "Category appearance" from secondary navigation
+    Then "Tagline" "field" should exist
+    And "[data-region='dim-navpills'] details[data-group='settings'] a[data-key='categoryappearance'][aria-current='page']" "css_element" should exist
+
+  @javascript
+  Scenario: With the script core's steps open the group that holds the destination, on the hero and on a destination page
+    Given I log in as "admin"
+    And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
+    When I navigate to "Permissions" in current page administration
+    Then "[data-region='dim-navpills'].dim-navpills--live" "css_element" should exist in the ".dim-navpills-page" "css_element"
+    When I navigate to "Category appearance" in current page administration
+    Then "Tagline" "field" should exist
+    And "[data-region='dim-navpills'] a[data-key='categoryappearance'][aria-current='page']" "css_element" should exist
+    When I select "Permissions" from secondary navigation
+    Then "[data-region='dim-navpills'] a[data-key='permissions'][aria-current='page']" "css_element" should exist
 
   Scenario: A manager gives the category a tagline, a colour pair and its two descriptions
     Given I log in as "admin"
