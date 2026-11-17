@@ -42,16 +42,17 @@ Feature: The category showcase lists what a person may discover, and its filters
     And I should see "Test category" in the "h1.dim-hero__title" "css_element"
     # The courses section holds the courses sitting directly here; the course of the open
     # subcategory is behind that subcategory's own poster instead of being drawn twice. The
-    # hero's number is the control: it counts the whole subtree, which is what says the course
+    # count line below is the control: it counts the whole subtree, which is what says the course
     # was partitioned away rather than withheld.
     And I should see "Resgate em Altura" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should not see "Combate a Incendio"
     And I should not see "Restricted One"
     And I should not see "Restricted Inner"
-    # At rest the count line counts the whole subtree, the hero's own number; the partition is
+    # At rest the count line counts the whole subtree; the partition is
     # what the two sections below it are for.
     And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '2 courses in Test category')]" "xpath_element" should exist
-    And I should see "2 courses and events" in the ".dim-hero__stats" "css_element"
+    # The hero carries no total on a category page: the count line above is the page's one number.
+    And I should not see "courses and events" in the "#page-header" "css_element"
     # The areas name a subcategory the learner may browse; an unlisted one is not among them.
     # (The tree is drawn for the flat orders alone: on this grouped page the posters name the
     # children.)
@@ -84,12 +85,12 @@ Feature: The category showcase lists what a person may discover, and its filters
     When I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     Then I should see "Restricted One" in the "[data-region='dim-vitrine-grid']" "css_element"
     # The unlisted course of the unlisted subcategory is not withheld from an administrator - it
-    # is partitioned behind that subcategory's own poster, which is drawn right here. The hero
-    # still counts all four.
+    # is partitioned behind that subcategory's own poster, which is drawn right here. The count
+    # line still counts all four.
     And I should not see "Restricted Inner"
     And I should see "Restricted category" in the "[data-region='dim-areas']" "css_element"
     And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '4 courses in Test category')]" "xpath_element" should exist
-    And I should see "4 courses and events" in the ".dim-hero__stats" "css_element"
+    And I should not see "courses and events" in the "#page-header" "css_element"
 
   Scenario: The tree narrows the listing in place, and the grouped organisation draws none
     # The tree's links are filters of this same page rather than ways out of it, and the grouped

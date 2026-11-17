@@ -6,7 +6,7 @@ moodle-theme_dimensions
 A Moodle 5.3 theme for catalogues people browse: a category showcase with one filter line, course
 landing pages, focus mode and Moodle's competency pages in one design.
 
-![The category showcase of Educator Academy: the hero with its counts, the filter line, the posters of the areas and the open area's courses in a panel between the rows](docs/screenshots/vitrine.png)
+![The category showcase of Educator Academy: the hero, the filter line, the posters of the areas and the open area's courses in a panel between the rows](docs/screenshots/vitrine.png)
 
 Dimensions is a child of
 [Boost Union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union), which makes it a
@@ -34,7 +34,7 @@ The category showcase
 ---------------------
 
 With *Category showcase > Show the category showcase* on, `/course/index.php?categoryid=N` is the
-theme's own page: a hero with the category's name, tagline, description, counts and tabs, then the
+theme's own page: a hero with the category's name, tagline, description, your enrolments (and, for staff, the hidden courses) and tabs, then the
 courses of the category and its subcategories as cards or a dense list, with search, state filters,
 filter groups built from course custom fields, a start-date filter, a category tree and real paging.
 It works with JavaScript off; with JavaScript on, every choice is applied in place.
@@ -70,12 +70,12 @@ favourites star, *Filters*, *Organise* and *View* (one icon button whose menu of
   the view and the filters fill in a bare address. An address that names a criterion always wins,
   so a shared link means the same to whoever opens it.
 
-![The listing narrowed to Online and Intermediate courses: the hero counts follow, and a row under the line holds the count sentence, one chip per filter and Clear all](docs/screenshots/filtered.png)
+![The listing narrowed to Online and Intermediate courses: the line's count follows, and a row under the line holds the count sentence, one chip per filter and Clear all](docs/screenshots/filtered.png)
 
 **Chips under the line.** A second row shows only while something narrows the listing: the count
 sentence, then one chip per criterion the line does not already show (a custom field, the period,
 a state from *More statuses*, the tree's category). Each chip removes its own criterion and keeps
-everything else; *Clear all* appears from two criteria up. The hero's counts follow the filters.
+everything else; *Clear all* appears from two criteria up. The count in the line follows the filters.
 
 ![The search open with "in" typed: a list of matching filters with their groups and counts, and the matched letters marked in the course titles below](docs/screenshots/search.png)
 
