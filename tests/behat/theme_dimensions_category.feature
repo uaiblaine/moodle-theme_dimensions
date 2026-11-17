@@ -51,8 +51,12 @@ Feature: The category showcase lists what a person may discover, and its filters
     # At rest the count line counts the whole subtree; the partition is
     # what the two sections below it are for.
     And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '2 courses in Test category')]" "xpath_element" should exist
-    # The hero carries no total on a category page: the count line above is the page's one number.
+    # The hero carries no count at all: the count line above is the page's one number (the control), and none of
+    # the panel's former sentences is in the header. This learner has no enrolment, so the enrolments' sentence
+    # is pinned by category_hero_test, which gives its learner one.
     And I should not see "courses and events" in the "#page-header" "css_element"
+    And I should not see "you are enrolled in" in the "#page-header" "css_element"
+    And I should not see "hidden from students" in the "#page-header" "css_element"
     # The areas name a subcategory the learner may browse; an unlisted one is not among them.
     # (The tree is drawn for the flat orders alone: on this grouped page the posters name the
     # children.)

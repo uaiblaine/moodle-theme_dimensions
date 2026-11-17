@@ -1432,9 +1432,8 @@ decision ids (D1-D39, OD-n) are the private design record's.
   registry and drawn by the core renderer's `full_header()`; any miss of the guards resets the registry first. The
   band below the header is switched off by SHAPE (`secondarymoremenu` in any context while a hero is armed), and
   `core_renderer_test`'s drift test is the one to read after a Boost Union update [stage 4]. The hero draws the
-  category's navigation itself (section "The category navigation" below). Its panel counts the viewer's enrolments
-  and, for staff, the hidden courses; the total is the root's alone (`stats()`: a category page's filter bar counts
-  the list, the root's search line does not).
+  category's navigation itself (section "The category navigation" below) and shows no count: the list's count is the
+  filter bar's.
 - **The services**: `get_category_rows`, `get_card_details`, `get_course_dialogue`, `toggle_wishlist` and
   `remember_category_state` for an account; `get_public_category_rows` (`loginrequired => false`, answered by
   `service-nologin.php`) for a visitor. The card's `rating` key (tool_courserating's, below) is in both rows answers.
@@ -1647,7 +1646,9 @@ Server and data:
   past it, deliberately (D27) [stage 6b].
 - **The root resolves the whole site**: `population::resolve_root()` is its short circuit, it reads its term ALONE
   (`criteria::root_from_request()`, the resolver, the service and the shells' `rootOnly()`), and its `total` is the
-  hero's number. A statement count cannot see a per-site row count [stage 6b, EL-3].
+  whole site's. A statement count cannot see a per-site row count [stage 6b, EL-3].
+- **`page_result::$hidden` is counted and drawn nowhere**, on purpose: the hero's counts are gone and the owner kept
+  the hidden-courses counter for a later surface. Do not remove it as dead code.
 - **Dates are ISO strings on the wire, resolved once in `criteria` in the SITE timezone**: never `strtotime()` nor
   86,400-second days; `day_start($iso, 1)` is the exclusive upper bound; keep `c.startdate > 0`. The calendar does no
   timezone arithmetic (`daterange/calendar.ts` works on `Date.UTC`; `daterange_component_source_test` counts it)

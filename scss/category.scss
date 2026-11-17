@@ -335,24 +335,6 @@ body.dim-category {
         }
     }
 
-    // The panel of counts: a frosted card on the navy - blur over the navy is the one blur the design allows.
-    // It sits in the left column, under the description, because the right one holds the crests.
-    // inline-flex rather than flex keeps it the width of its own numbers inside a block column - a
-    // block-level flex box would stretch the frosted card the whole way across - with no width
-    // property.
-    .dim-hero__stats {
-        display: inline-flex;
-        gap: 26px;
-        min-width: 220px;
-        margin: 16px 0 0;
-        padding: 14px 18px;
-        list-style: none;
-        border: 1px solid rgba(255, 255, 255, .24);
-        border-radius: var(--dim-hero-radius-lg);
-        background: rgba(255, 255, 255, .1);
-        backdrop-filter: blur(6px);
-    }
-
     // ---- The category's own crests in the hero -----------------------------------------------
     // One translucent box per crest, in the right column of the band on the title's line: white
     // at 14%, its border at 22%, a 4px blur (blur over the navy is the one blur the design system
@@ -422,24 +404,6 @@ body.dim-category {
         .dim-hero--compact .dim-hero__badge img {
             width: 26px;
             height: 29px;
-        }
-    }
-
-    .dim-hero__stat {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-
-        b {
-            font-size: 1.375rem;
-            font-weight: 800;
-            letter-spacing: -.02em;
-            font-variant-numeric: tabular-nums;
-        }
-
-        span {
-            font-size: .75rem;
-            color: var(--dim-hero-ink-muted);
         }
     }
 
@@ -727,7 +691,7 @@ body.dim-category {
         }
     }
 
-    // Narrow screens: the band shrinks and the counts and the fold go; the navigation keeps its place on the edge.
+    // Narrow screens: the band shrinks and the fold goes; the navigation keeps its place on the edge.
     @media (max-width: 767.98px) {
         .dim-hero__band {
             padding: 20px 16px calc(var(--dim-navpills-height) / 2);
@@ -750,7 +714,6 @@ body.dim-category {
             font-size: 1.5rem;
         }
 
-        .dim-hero__stats,
         .dim-hero__fold {
             display: none;
         }

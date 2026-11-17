@@ -560,7 +560,7 @@ class category_listing implements \core\output\named_templatable, \core\output\r
      * Result mode is a grouped page with areas and a criterion - at the root, a search, the one
      * criterion it reads - and every number here comes from the accordion already in hand: nothing
      * costs a statement. The root has no course of its own (a course never sits directly in the
-     * pseudo-category, and its total is the hero's number rather than a partition), so there
+     * pseudo-category, and its total is the whole site's rather than a partition), so there
      * "nothing anywhere" means no area holds a match, and no area is opened by itself.
      *
      * - The "nothing in N areas" sentence, in two counts: every zero area (`nomatchlabelall`) and
@@ -587,7 +587,7 @@ class category_listing implements \core\output\named_templatable, \core\output\r
      */
     public static function results(page_result $result, criteria $criteria, int $openid): array {
         $isroot = $criteria->categoryid === 0;
-        // The root's total is the hero's number: no course sits directly in the pseudo-category.
+        // The root's total is the whole site's: no course sits directly in the pseudo-category.
         $direct = $isroot ? 0 : $result->total;
         $entries = array_values($result->accordion);
         $filtered = $criteria->has_filters() && $entries !== [];

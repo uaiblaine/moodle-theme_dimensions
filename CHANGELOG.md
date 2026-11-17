@@ -5,6 +5,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The category hero shows no count at all** (2026100631). The panel of numbers under the description is gone, on a
+  category page and at the root of the course index, for a signed-in reader and for a visitor: it no longer shows the
+  courses you are enrolled in, the hidden courses or the site's total. The list's own count stays in the filter bar
+  under the hero. An administrator or teacher loses the count of hidden courses: it is no longer shown anywhere on the
+  category page (the hidden courses themselves are still listed, with their state), and the root of the course
+  index no longer shows a total. The three strings of the panel are removed.
 - **The category hero no longer shows the course count** (2026100630). The filter bar under it
   already shows the list's count, so a category page's panel keeps only the viewer's enrolments and, for staff, the
   hidden courses, and is not drawn when neither applies. The root of the course index keeps its total: its toolbar

@@ -34,12 +34,12 @@ The category showcase
 ---------------------
 
 With *Category showcase > Show the category showcase* on, `/course/index.php?categoryid=N` is the
-theme's own page: a hero with the category's name, tagline, description, your enrolments (and, for
-staff, the hidden courses) and the category's navigation, then the courses of the category and its
-subcategories as cards or a dense list, with search, state filters, filter groups built from course
-custom fields, a start-date filter, a category tree and real paging. The number of courses is shown
-once, in the filter line; only the directory without a category shows a total in its hero. It works
-with JavaScript off; with JavaScript on, every choice is applied in place.
+theme's own page: a hero with the category's name, tagline, description and the category's
+navigation, then the courses of the category and its subcategories as cards or a dense list, with
+search, state filters, filter groups built from course custom fields, a start-date filter, a
+category tree and real paging. The hero shows no count: the number of courses is shown once, in
+the filter bar under it. It works with JavaScript off; with JavaScript on, every choice is applied
+in place.
 
 - **The category's navigation is one row of pills on the hero's lower edge**, in place of Moodle's
   tabs. *Category* comes first, then up to four groups, each a menu of the pages it holds in
@@ -99,7 +99,7 @@ with the count it would give. Choosing one adds its chip and empties the field. 
 searches the listing as you type, and the matched letters are marked in the course titles. `/`
 opens the search while the line is on screen and no field has the focus.
 
-![The Filters panel open under the line: More statuses, Modality, Study format and Level, each option with a count, and the start-date period with a two-month calendar choosing 19 to 30 October](docs/screenshots/filters.png)
+![The Filters panel open under the bar: More statuses, Enrolment page model, Modality, Study format and Level, each option with a count, and a Show button with the number of results](docs/screenshots/filters.png)
 
 **The Filters panel** opens under the line with every group the site configured from course custom
 fields, each option counted, and the start-date period. The period is two boxes and one calendar
@@ -116,7 +116,7 @@ receding cards stay legible. It answers to a mouse, a pen and keyboard focus, ne
 it decides from what each card states: a card that does not state the fact asked about is left as
 it is rather than guessed.
 
-![The showcase at tablet width: the search, the star, the Filters icon and Organise on the first line, the scope cells on the second](docs/screenshots/tablet.png)
+![The showcase at tablet width: the count and the bar's icons on the first line, the scope cells on the second, the category tree beside two columns of cards](docs/screenshots/tablet.png)
 
 **It folds on its own width.** The line measures its own space, not the screen's, and takes the
 first of four steps at which it fits: everything; *Filters* without its word; the search as an

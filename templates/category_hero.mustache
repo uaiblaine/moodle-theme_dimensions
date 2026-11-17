@@ -21,8 +21,7 @@
     that page: the band (a photograph behind the colour overlay, the solid
     colour, or the compact title row), the trail of the category's ancestors,
     the page's one h1 with the manager's pencil beside it, the tagline, the
-    category's own description, the panel of counts (the viewer's enrolments and, for staff, the
-    hidden courses; the course index's root alone adds the total), the fold control as a GET
+    category's own description, the fold control as a GET
     form, and the category's navigation - core's secondary navigation as a row
     of nav pills (theme_dimensions/category_navpills) straddling the band's
     lower edge, on a track of its own. The trail is the hero's own
@@ -36,8 +35,8 @@
     with the address they rewrite after this was drawn.
 
     The right column of the band holds the category's own crests, one per
-    translucent box, on the title's line; the counts sit under the description
-    in the left column, so the two never compete for a corner. On a narrow
+    translucent box, on the title's line; the description sits in the left
+    column, so the two never compete for a corner. On a narrow
     viewport the row wraps under the title and keeps its size: the full band
     shows a crest at 80x88 at every width, while the compact band and the
     cards draw it smaller. The crests are the category's own - a course card
@@ -81,11 +80,6 @@
         "hastagline": true,
         "descriptionhtml": "<p>This is the area of the Alpha organisation on the platform.</p>",
         "hasdescription": true,
-        "stats": [
-            {"value": 3, "label": "you are enrolled in"},
-            {"value": 2, "label": "hidden from students"}
-        ],
-        "hasstats": true,
         "badges": [
             {"url": "https://example.com/pluginfile.php/31/theme_dimensions/categorybadge1/7/abc/crest-alpha.png", "alt": "crest alpha"},
             {"url": "https://example.com/pluginfile.php/31/theme_dimensions/categorybadge2/7/def/dimensions.svg", "alt": "dimensions"}
@@ -188,13 +182,6 @@
                 {{#hasdescription}}
                 <div class="dim-hero__desc">{{{descriptionhtml}}}</div>
                 {{/hasdescription}}
-                {{#hasstats}}
-                <ul class="dim-hero__stats" role="list">
-                    {{#stats}}
-                    <li class="dim-hero__stat"><b>{{value}}</b> <span>{{label}}</span></li>
-                    {{/stats}}
-                </ul>
-                {{/hasstats}}
                 {{/compact}}
             </div>
             {{#hasbadges}}

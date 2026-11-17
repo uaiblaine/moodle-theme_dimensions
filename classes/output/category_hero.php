@@ -40,16 +40,15 @@ use theme_dimensions\local\category\request;
 use theme_dimensions\local\landing\links;
 
 /**
- * The page header of the category showcase: branding, counts, the category's navigation, the fold control.
+ * The page header of the category showcase: branding, the category's navigation, the fold control.
  *
  * Built by the page's two entries - the course renderer's course_category(), which core calls
  * before the page header is rendered, and request::handle() for the anonymous shell - and armed
- * in a static registry the core renderer's full_header() reads while the layout renders. A hero
- * built where the listing is built knows the listing's post-filter counts at no extra statement.
+ * in a static registry the core renderer's full_header() reads while the layout renders.
  * A test that renders the showcase resets the registry.
  *
  * What the hero prints about the category comes from {@see branding} (cached across requests,
- * viewer-independent); what it prints about the viewer - the counts, the pencil, the navigation -
+ * viewer-independent); what it prints about the viewer - the pencil, the navigation -
  * is computed per request and never cached. The crests on the title's line are the category's
  * own, from that same payload, never a course's.
  * The navigation is core's own secondary navigation, regrouped by {@see navgroups} into a row of
@@ -58,7 +57,7 @@ use theme_dimensions\local\landing\links;
  * The trail above the title is the hero's own ({@see trail()}).
  *
  * The fold is the one thing the hero remembers per person: folded, the hero keeps its title row
- * and its navigation and drops the tagline, the description and the counts. It is written from the
+ * and its navigation and drops the tagline and the description. It is written from the
  * hero's own GET form, so the page without JavaScript remembers it too, and the preference
  * belongs to the person rather than to the category - which is why the root's hero keeps it and
  * submits to /course/index.php with no category of its own.
@@ -90,7 +89,7 @@ class category_hero implements renderable, templatable {
      * Constructor.
      *
      * @param core_course_category $category The category, already admitted by both gates.
-     * @param page_result $result The resolved page: its counts feed the hero's numbers.
+     * @param page_result $result The resolved page.
      * @param criteria $criteria The request: the fold form carries its filters.
      * @param bool $folded Whether the hero is folded for this viewer.
      * @param string $descriptionhtml The category's formatted description (final HTML), or ''.
@@ -298,7 +297,6 @@ class category_hero implements renderable, templatable {
            the crests, smaller, on the title's line; the size is the stylesheet's alone, and the
            context is the same in both bands. */
         $badges = branding::badges_for_output($categoryid, $branding['badges']);
-        $stats = $this->stats($context);
         $fold = ($layout === branding::LAYOUT_COMPACT) ? null : $this->fold_form();
         $calendar = $this->calendar_link();
         $trail = $this->trail();
@@ -325,8 +323,6 @@ class category_hero implements renderable, templatable {
             'badges' => $badges,
             'hasbadges' => !empty($badges),
             'badgeslabel' => get_string('category_badges', self::COMPONENT),
-            'stats' => $stats,
-            'hasstats' => !empty($stats),
             'fold' => $fold,
             'hasfold' => $fold !== null,
             'calendar' => $calendar,
@@ -437,49 +433,6 @@ class category_hero implements renderable, templatable {
             ];
         }
         return $trail;
-    }
-
-    /**
-     * The numbers of the panel, every one post-filter: the viewer's enrolments, the hidden courses, and at the root the total.
-     *
-     * A category page carries no total: the filter bar below the hero already shows the list's
-     * count, and a level shows one count. The root of the course index keeps it, because its
-     * toolbar is the search line alone and the hero's number is the only one on that page.
-     * A category page of a viewer with no enrolment and no hidden course has no entry, and no
-     * panel is drawn.
-     *
-     * The enrolment count is offered when the viewer has one. The hidden count is a staff
-     * number about the category and is shown behind the capability that names it, in the
-     * category's context: the population admits a hidden course on that capability in the
-     * course's context, which a teacher holds in their own hidden course, and "hidden from
-     * students" is not a line for that teacher's hero. In the SQL-cut mode (categorystatesort
-     * off) the population holds the total alone.
-     *
-     * @param \core\context $context The category's context.
-     * @return array Entries of ['value' => int, 'label' => string].
-     */
-    private function stats(\core\context $context): array {
-        $counts = $this->result->counts;
-        $stats = [];
-        if ((int) $this->category->id === 0) {
-            $stats[] = [
-                'value' => (int) ($counts['total'] ?? $this->result->total),
-                'label' => get_string('categoryhero_stat_total', self::COMPONENT),
-            ];
-        }
-        if (!$this->result->anonymous && (int) ($counts['enrolled'] ?? 0) > 0) {
-            $stats[] = [
-                'value' => (int) $counts['enrolled'],
-                'label' => get_string('categoryhero_stat_enrolled', self::COMPONENT),
-            ];
-        }
-        if ($this->result->hidden > 0 && has_capability('moodle/course:viewhiddencourses', $context)) {
-            $stats[] = [
-                'value' => $this->result->hidden,
-                'label' => get_string('categoryhero_stat_hidden', self::COMPONENT),
-            ];
-        }
-        return $stats;
     }
 
     /**

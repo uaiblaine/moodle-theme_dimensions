@@ -133,7 +133,6 @@ final class scale_ratchet_test extends \basic_testcase {
             '1.18rem' => 1,
             '1.32rem' => 1,
             '1.35rem' => 3,
-            '1.375rem' => 1,
             '1.6rem' => 1,
             '18px' => 1,
         ],
@@ -183,7 +182,7 @@ final class scale_ratchet_test extends \basic_testcase {
      */
     private const OFF_SCALE_FONT_WEIGHT = [
         'category.scss' => [
-            800 => 6,
+            800 => 5,
         ],
         'landing.scss' => [
             800 => 4,
@@ -217,13 +216,13 @@ final class scale_ratchet_test extends \basic_testcase {
             '118px' => 1,
             '128px' => 1,
             '13px' => 1,
-            '14px' => 19,
+            '14px' => 18,
             '164px' => 2,
-            '18px' => 12,
+            '18px' => 11,
             '1px' => 1,
             '22px' => 2,
             '24px' => 3,
-            '26px' => 3,
+            '26px' => 2,
             '28px' => 2,
             '30px' => 1,
             '36px' => 1,
