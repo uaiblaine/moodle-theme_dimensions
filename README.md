@@ -34,11 +34,24 @@ The category showcase
 ---------------------
 
 With *Category showcase > Show the category showcase* on, `/course/index.php?categoryid=N` is the
-theme's own page: a hero with the category's name, tagline, description, your enrolments (and, for staff, the hidden courses) and tabs, then the
-courses of the category and its subcategories as cards or a dense list, with search, state filters,
-filter groups built from course custom fields, a start-date filter, a category tree and real paging.
-It works with JavaScript off; with JavaScript on, every choice is applied in place.
+theme's own page: a hero with the category's name, tagline, description, your enrolments (and, for
+staff, the hidden courses) and the category's navigation, then the courses of the category and its
+subcategories as cards or a dense list, with search, state filters, filter groups built from course
+custom fields, a start-date filter, a category tree and real paging. The number of courses is shown
+once, in the filter line; only the directory without a category shows a total in its hero. It works
+with JavaScript off; with JavaScript on, every choice is applied in place.
 
+- **The category's navigation is one row of pills on the hero's lower edge**, in place of Moodle's
+  tabs. *Category* comes first, then up to four groups, each a menu of the pages it holds in
+  alphabetical order: *Settings*, *User and access*, *Courses and content* and *Competencies*. A
+  group holding a single page for the reader is drawn as that page's own pill. Pages the theme does
+  not know, such as those added by other plugins, are listed under *More*, the last pill; on a narrow
+  screen the groups that do not fit move into *More* under their own names. The row lists only the
+  pages Moodle already offers the reader on that category, and the pages it leads to keep Moodle's
+  own navigation. A reader whose only page would be *Category* gets no row; with competencies
+  enabled, Moodle offers every logged-in account *Competency frameworks*, so a learner's row is
+  *Category* and that page. Visitors who are not logged in get no row. The menus open with
+  JavaScript off too.
 - **Grouped by area or not, sorted by name or the most recent.** *Organise* holds two independent
   choices, *Group by* (Area, No grouping) and *Sort by* (Name, Most recent). By area, each
   subcategory is a poster, and its courses open in a panel between the rows, in the order *Sort by*
@@ -47,9 +60,10 @@ It works with JavaScript off; with JavaScript on, every choice is applied in pla
 - **Cards that answer "can I get in?".** Each card shows the enrolment state for the reader
   (enrolled, open for enrolment, application under review, access from a date, no enrolment
   available and more), a favourite star and a "More information" dialogue.
-- A category manager styles the hero from the *Category appearance* tab: layout, background image,
-  a free colour pair refused below the WCAG AA contrast of 4.5:1, up to three crests, a card cover
-  and a short cover video that plays muted on hover.
+- A category manager styles the hero from *Category appearance*, in the *Settings* menu of the
+  hero's navigation: layout, background image, a free colour pair refused below the WCAG AA
+  contrast of 4.5:1, up to three crests, a card cover and a short cover video that plays muted on
+  hover.
 - `/course/index.php` without a category is a **directory** of the top-level categories.
 - A category local_unlistedcourses holds **public** has a page for visitors who are not logged in,
   with forced login left on, and the root directory can be opened to visitors too; both are off

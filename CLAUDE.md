@@ -184,9 +184,10 @@ React and TypeScript live in `js/esm/src`, built to `js/esm/build`, tested in `j
 
   `grunt esm` rebuilds every ES module of the core checkout too (byte for byte the same), and
   `grunt jsconfig` rewrites core's gitignored `tsconfig.aliases.json` and `jsconfig.json` from what is
-  mounted: copy both aside first and put them back after, because other sessions' Jest and tsc read
-  them. Judge the run by the file times in the worktree's `js/esm/build`. Commit `X.js`, `X.dev.js` and
-  `X.dev.js.map` per source, and `js/esm/src/swizzle.json` when the build writes one (a `.tsx` that
+  mounted (the run also rewrites core's generated, git-ignored `.eslintignore`, `.stylelintignore`,
+  `phpcs.xml` and `.types/`): copy the two aside first and put them back after, because other sessions'
+  Jest and tsc read them. Judge the run by the file times in the worktree's `js/esm/build`. Commit `X.js`,
+  `X.dev.js` and `X.dev.js.map` per source, and `js/esm/src/swizzle.json` when the build writes one (a `.tsx` that
   exports a component); then `mdl purge` the stack, because a served ESM module is cached until the JS
   revision moves.
 - **Jest runs offline under core's own `jest.config.js`**, with core's AMD mock (`mockAmdModule()`):
@@ -280,7 +281,9 @@ classes/local/category/branding.php  The hero of a category: the row, the audite
                                cached payload, the image area and its route (every check in resolve()).
 classes/output/category_hero.php   The hero renderable and its static registry (armed by the
                                listing, drawn by full_header()); the fold preference.
-templates/category_hero.mustache   The hero; includes core/moremenu for the merged tabs.
+templates/category_hero.mustache   The hero; includes category_navpills, the category's navigation.
+classes/output/category_navpills.php, templates/category_navpills.mustache  The hero's row of nav pills: navgroups'
+                               units as a context, and their markup. See "The category navigation".
 templates/category_searchline.mustache  The root's toolbar: its search line alone (round EL-3).
 categoryhero.php, classes/form/categoryhero.php  The category appearance editor: a plain moodleform.
 db/install.xml, db/caches.php, db/events.php, db/uninstall.php  The branding table, its cache,
@@ -288,13 +291,16 @@ db/install.xml, db/caches.php, db/events.php, db/uninstall.php  The branding tab
 classes/local/category/        The category showcase's decision layer (stage 2):
                                population (the two gates, the clamps, the probe cap, the page),
                                classifier (eleven states, five statements), facets, cards, criteria,
-                               scope, page_result, unavailable_exception, and dialogue (the course
-                               dialogue's fetched content). See "The category showcase".
+                               scope, page_result, unavailable_exception, dialogue (the course
+                               dialogue's fetched content) and navgroups (the category navigation's
+                               key-to-group map). See "The category showcase".
 amd/src/category*.js           The showcase's AMD modules left: categoryhero (the appearance editor) and categorycoursemodal
                                (the course dialogue, a real account's only); covervideo.js + local/coverfilm.js are the cover film.
-amd/src/listing{account,visitor}.js  The js_call_amd bridges of the two shells, each loading its shell through core/esm!.
+amd/src/listing{account,visitor}.js, navpills.js  The js_call_amd bridges of the two shells and of the hero's row, each
+                               loading its ES module through core/esm!.
 js/esm/src/                    The showcase's client: daterange/, filterline/, areas/ (the three React components, on both
-                               shells) and listing/ (the shared listing, its store, the shells visitor.ts and account.ts).
+                               shells), listing/ (the shared listing, its store, the shells visitor.ts and account.ts)
+                               and navpills/ (the hero's row: row.ts, and fit.ts, its pure arithmetic).
                                listing/star.ts is the card's star, armed by account.ts.
 classes/output/category_pages.php  The pages strip (T2): local_page's catalogue, asked by class
                                name, under two rules of the theme's own. See "The category showcase".
@@ -1425,7 +1431,10 @@ decision ids (D1-D39, OD-n) are the private design record's.
 - **The hero** is armed by `course_category()` (it runs BEFORE `$OUTPUT->header()`) in `category_hero`'s static
   registry and drawn by the core renderer's `full_header()`; any miss of the guards resets the registry first. The
   band below the header is switched off by SHAPE (`secondarymoremenu` in any context while a hero is armed), and
-  `core_renderer_test`'s drift test is the one to read after a Boost Union update [stage 4].
+  `core_renderer_test`'s drift test is the one to read after a Boost Union update [stage 4]. The hero draws the
+  category's navigation itself (section "The category navigation" below). Its panel counts the viewer's enrolments
+  and, for staff, the hidden courses; the total is the root's alone (`stats()`: a category page's filter bar counts
+  the list, the root's search line does not).
 - **The services**: `get_category_rows`, `get_card_details`, `get_course_dialogue`, `toggle_wishlist` and
   `remember_category_state` for an account; `get_public_category_rows` (`loginrequired => false`, answered by
   `service-nologin.php`) for a visitor. The card's `rating` key (tool_courserating's, below) is in both rows answers.
@@ -1438,6 +1447,7 @@ decision ids (D1-D39, OD-n) are the private design record's.
     `store.ts`, and the two shells `visitor.ts` and `account.ts`;
   - `areas/` (the posters and the panel, `Areas.tsx`), `filterline/` (`FilterLine.tsx`), `daterange/`
     (`DateRange.tsx`): the three React components, on both shells;
+  - `navpills/` (`row.ts`, `fit.ts`): the hero's row, an account's only, through the AMD entry `navpills`;
   - AMD left on these pages: the two entries below, `covervideo` with `local/coverfilm` (the card's film, armed for
     everybody), `categorycoursemodal` (the course dialogue, armed beside `listingaccount` for a real account only)
     and, on the appearance editor, `categoryhero`. `js_call_amd` cannot
@@ -1480,6 +1490,46 @@ service, no `fetchOne` (`listing_source_test::test_the_store_reaches_no_shell`, 
   `start()` calls first, whatever the page draws (the root's directory and the panels' cards included). One delegated
   listener on the document, idempotent; its mark is `dim-star-js`; it calls the theme's own `toggle_wishlist`, never
   core's favourite service. `amd/src/listingaccount.js` is the `js_call_amd` bridge only and imports its shell alone.
+
+### The category navigation
+
+The hero's row of nav pills is the fleet Design System's `components/nav-pill.md` (measures, states, the decisions'
+reasons; the theme's plan is `plans/nav-pill-theme.md` beside it, both under `moodle-dev/docs/design-system/`).
+
+- **Every decision is `local\category\navgroups`'s**, over the children of `$PAGE->secondarynav` (what core chose to
+  offer, after its removals and its active-node scan): the groups in `GROUPS`' order, a node classified by its OWN
+  key (a null-keyed node by its path, `PATHS`), a group's destinations and More's own items alphabetical through
+  `core_collator`, a group of one drawn as its destination's plain pill, an empty group dropped, a node the map does
+  not know an item of "More", the last pill, even when it is the only one. It changes no node (focus mode's "More"
+  reads the same tree): never `make_active()`, `remove()` or `set_force_into_more_menu()`. `category_navpills` only
+  exports and the client decides nothing. `category_hero::navpills()` draws no row for the anonymous shell
+  (`withtabs`), a page without a secondary navigation, or "Category" alone (`navgroups::has_row()`); the hero then
+  carries `dim-hero--notabs` (old name, kept) and its band pays no half.
+- **The server's row works without JavaScript**: plain pills are links, a group is a native `details`/`summary` with
+  one link per destination, "More" is drawn by the server (hidden while empty), and no menu role is in its markup.
+  `navpills/row.ts` adds the roles (`menu`, `menuitem`, `aria-haspopup`, `aria-controls`, `aria-expanded`) with the
+  keys that make them true, one open menu at a time, and the move of what does not fit into "More" (a group as a
+  headed section, "Category" last): MOVED, never cloned. `fit.ts` is that move's pure arithmetic, the part Jest
+  tests directly.
+- **Armed only for a row with a menu** (a group, or "More" with items of its own), by `core_renderer::full_header()`
+  (`arm_navpills()`, the nav's id as the argument); a row of plain pills loads no module.
+- **The stylesheet**, `scss/category.scss`'s section "The category navigation (nav-pill.md)": the wrapper
+  `.dim-hero__nav` rises by half the capsule (`--dim-navpills-height`), which the band pays as bottom padding, and
+  stacks at `z-index: 31` over the filter line's 30 with no overflow and no `clip-path` (a menu overflows it). The
+  hero paints its ink as the focus ring (`.dim-hero :focus-visible`, white by default: invisible on the capsule), so
+  the row's controls take the family's ring back with a selector that outweighs it. Colours read the family's
+  `--dimensions-*`, never the listing's `--dim-*` aliases (declared on its roots only). In dark mode core underlines
+  the page header's links but its own controls (it skips `.nav-link`, which a pill is not); one rule at the file's
+  foot outweighs it for the row. `category_scss_test` fails `dim-hero__tabs`, `moremenu`, `nav-tabs`, `nav-link` or
+  `--dim-hero-page-primary-ink` anywhere in `category.scss`, comments included.
+- **Tests**: render a template with the test's page renderer (`$PAGE->get_renderer('core')`), never the global
+  `$OUTPUT`, which belongs to whichever page first asked for output. Two nodes with one address are one destination
+  (`rows()` keeps the first), so a built tree gives every node its own. `first_paint_budget_test`'s page stands in the
+  SYSTEM context unless `logged_in()` is asked for the category's, so it has no category navigation and the hero's
+  budget is measured without the row. With competencies on, core gives every authenticated user the competency
+  frameworks node in a category (`moodle/competency:competencyview`, the user archetype), so a learner's row is
+  "Category" and that one plain pill; without them a learner gets no category navigation at all (core drops the empty
+  branch).
 
 ### Invariants
 
@@ -1676,15 +1726,16 @@ Client and stylesheet:
   [visual refinement, EL-1].
 - **The stylesheets**: `scss/category.scss` under `body.dim-category` and `scss/categoryhero.scss` under
   `body.dim-categoryhero` (a dark rule is `:root[data-bs-theme="dark"] body.dim-category ...`, kept at the file's
-  foot); no `color-mix()`, `text-wrap` or physical `border-left` (the Bootstrap 4 scanner reads it as a class); never
-  `clip-path` on the tab strip; `.dim-hero__tabs .moremenu` keeps a fixed height (core's collapse reads it); the tab
-  rail is no scroll container and stacks at `z-index: 31`, over the toolbar's 30; the Filters popover is no scroll
+  foot); no `color-mix()`, `text-wrap` or physical `border-left` (the Bootstrap 4 scanner reads it as a class); the
+  hero's row has rules of its own (section "The category navigation" above); the Filters popover is no scroll
   container (it would clip the calendar); nothing between the tree and `#region-main` carries an overflow (the
   sidebar is sticky). `category_scss_test` holds most of these [visual refinement, D3, EL-1, T1-T4].
 - **Behat**: scope course names to `[data-region='dim-vitrine-grid']` (on a grouped page `.dim-vitrine__grid` is the
   posters' grid); a poster's control is an `<a>` without JavaScript and a `<button>` with it (a visitor's stays an
-  `<a>`); open the Filters summary before pressing what is inside it; assert a tab by its `data-key`; Mink empties a
-  field one character at a time, so a colour field passes through valid prefixes [stage 4, round F, D1, EL-1].
+  `<a>`); open the Filters summary before pressing what is inside it; assert a destination of the hero's row by its
+  `data-key` and a group by its `data-group`, and open a group by clicking its name as "text" in its `summary`
+  (`I press` finds no summary); Mink empties a field one character at a time, so a colour field passes through valid
+  prefixes [stage 4, round F, D1, EL-1].
 - **Write the `version.php` bump at commit time and ask before upgrading the shared stacks**: a bump on disk puts
   every stack mounting the checkout into an upgrade, cron suspended, under everyone using it [T1-T4].
 
@@ -1692,8 +1743,9 @@ Client and stylesheet:
 
 - PHPUnit, server: `tests/local/category/` (`population_test`, `criteria_test`, `classifier_test`, `facets_test`,
   `cards_test`, `budget_test`, `guard_test`, `branding_test`, `remembered_test`, `rows_anonymous_test`,
-  `publicaccess_test`, `card_markup_test`, `preview_facts_test`), `tests/output/` (`category_listing_test`,
-  `category_listing_markup_test`, `category_hero_test`, `category_pages_test`, `category_card_modal_test`),
+  `publicaccess_test`, `card_markup_test`, `preview_facts_test`, `navgroups_test`), `tests/output/`
+  (`category_listing_test`, `category_listing_markup_test`, `category_hero_test`, `category_navpills_test`,
+  `category_pages_test`, `category_card_modal_test`),
   `tests/output/core/course_renderer_test.php` (the logged-in entry, the render budget),
   `tests/output/core/first_paint_budget_test.php` (the exact AMD modules and strings a page asks for at load, on
   both shells), `tests/external/` (one per service; the dialogue's is `get_course_dialogue_test`, with
@@ -1702,19 +1754,22 @@ Client and stylesheet:
   history, the entries), `listing_account_source_test`, `amd_source_test` (the shared listing's contracts, read in
   `listing/store.ts`), `areas_component_source_test`, `filterline_component_source_test`,
   `daterange_component_source_test`, `covervideo_source_test`, `categorycoursemodal_source_test`,
-  `categoryhero_source_test`, `tests/local/category_scss_test.php`, `tests/local/esm_source_test.php`.
-  The star: `listing_star_source_test` and `js/esm/tests/listing/star.test.ts`.
-- Jest, the behaviour gate of the ES tree: `js/esm/tests/{listing,areas,filterline,daterange,visitor}`; recapture
-  `js/esm/tests/visitor/page.ts` from an anonymous page and re-render `js/esm/tests/filterline/toolbar.ts` when the
-  toolbar's or the posters' templates change. The components' guards are mutation-checked by hand; the sweep runs
+  `categoryhero_source_test`, `navpills_source_test` (the row's ES source), `tests/local/category_scss_test.php`,
+  `tests/local/esm_source_test.php`. The star: `listing_star_source_test` and `js/esm/tests/listing/star.test.ts`.
+- Jest, the behaviour gate of the ES tree: `js/esm/tests/{listing,areas,filterline,daterange,visitor,navpills}`;
+  recapture `js/esm/tests/visitor/page.ts` from an anonymous page and re-render `js/esm/tests/filterline/toolbar.ts`
+  when the toolbar's or the posters' templates change, and redraw `js/esm/tests/navpills/page.ts` when
+  `category_navpills.mustache` changes. The components' guards are mutation-checked by hand; the sweep runs
   PHPUnit alone.
-- Behat: `theme_dimensions_category.feature` (the server-drawn page and the editor, "More information" as a link),
+- Behat: `theme_dimensions_category.feature` (the server-drawn page and the editor, "More information" as a link,
+  the hero's row with and without JavaScript),
   `theme_dimensions_category_client.feature` (the account, the course dialogue),
   `theme_dimensions_category_public_client.feature` (the visitor), `theme_dimensions_category_pages.feature`
   (`@local_page`).
 - Gates: `mutations/gates.conf`, grouped by stage and round in file order (the dialogue's service: the `dialogue_*`
-  gates of the L2 block; the ratings: the R1 block after it). A pattern that matches nothing is a hard exit for `mdl mutate`: dry-match every line after
-  moving code between functions.
+  gates of the L2 block; the ratings: the R1 block after it; the hero's row: the `navgroups_*`, `hero_navpills_*` and
+  `navpills_*` gates; the root's total: `hero_root_only_total`). A pattern that matches nothing is a hard exit for
+  `mdl mutate`: dry-match every line after moving code between functions.
 
 ### The performance probe (R0)
 
