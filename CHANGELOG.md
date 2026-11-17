@@ -5,6 +5,21 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The category's destination pages draw the same row of pills** (2026100632). The pages the row leads to (the
+  category's settings, permissions, cohorts, competency frameworks and the rest) and the category page with the
+  showcase off show the row after their page header, where Moodle's tabs were, start-aligned on the page's ground,
+  with the page itself marked current inside its group; Moodle's tabs are no longer drawn there. A page whose plugin
+  draws a navigation of its own keeps it. The index pages of programs, certifications, catalogue sections, home pages
+  and cohort management (the tool_mu plugins), which switch Moodle's tabs off, now draw the row too. Only the current
+  page's own link is marked as the current page for a screen reader: the pill of the group or of "More" that holds it
+  keeps its selected look and its dot, without the attribute. With JavaScript, "More" makes room for its dot when it
+  takes the current page. Programs, certifications, catalogue sections and home pages have an icon of their own in
+  the menus (a diagram, an award, a list and a house, from the icon font), where they had the generic link. The map
+  of the pages to their groups and icons is one table in the theme, and the hero and the destination pages build the
+  row through one function. The root of the course index no longer draws a row: it is not a category's page. Moodle's
+  Behat steps "I navigate to ... in current page administration" and "I select ... from secondary navigation" follow
+  the destination on the row. A new template (`category_navpills_page`) draws the row's track after the header, and
+  the theme maps four icons (`theme_dimensions_get_fontawesome_icon_map()`).
 - **The category hero shows no count at all** (2026100631). The panel of numbers under the description is gone, on a
   category page and at the root of the course index, for a signed-in reader and for a visitor: it no longer shows the
   courses you are enrolled in, the hidden courses or the site's total. The list's own count stays in the filter bar

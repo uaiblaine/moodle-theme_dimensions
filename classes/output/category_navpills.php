@@ -24,6 +24,8 @@
 
 namespace theme_dimensions\output;
 
+use core\context\coursecat;
+use core\navigation\views\secondary;
 use core\output\renderable;
 use core\output\renderer_base;
 use core\output\templatable;
@@ -33,9 +35,10 @@ use theme_dimensions\local\category\navgroups;
  * The category's secondary navigation as a row of nav pills in a capsule (the Design System's nav-pill.md).
  *
  * The units are {@see navgroups::rows()}' and every decision about them is that class's: which group a node
- * belongs to, the order, a group of one drawn plain, the current group. This class only turns them into the
- * template's context. Who gets a row at all is the hero's ({@see category_hero}): the anonymous shell, a page
- * without a secondary navigation and a viewer whose only destination is the page itself get none.
+ * belongs to, the order, a group of one drawn plain, the current group. Which page gets a row at all is
+ * {@see self::for_page()}'s, the one builder: the hero ({@see category_hero}) and the destination pages (the core
+ * renderer, after the page header) both ask it, so the row is the same wherever it is drawn. Besides it, this class
+ * only turns the units into the template's context.
  *
  * The page works without JavaScript: a plain unit is a link, a group is a native disclosure whose menu holds one
  * link per destination, so every destination is one press away with no script. "More" is drawn by the server
@@ -71,6 +74,49 @@ final class category_navpills implements renderable, templatable {
         ?string $uniqid = null,
     ) {
         $this->uniqid = $uniqid ?? uniqid(self::ID_PREFIX);
+    }
+
+    /**
+     * The row of a page, or null when the page draws none: the one place that decides it.
+     *
+     * Every condition is here, in this order:
+     *
+     * - the page stands in a category's context: the row is the category's navigation, and core builds that
+     *   navigation in no other context;
+     * - the page's secondary navigation is core's own class, exactly: a plugin that installed a subclass on its page
+     *   (set_secondarynav()) drew navigation of its own, which keeps its own tabs; or the page turned the secondary
+     *   navigation off and is itself a destination of the row (D99): the row is then built from a category navigation
+     *   made here, as core would have made it, and one of its destinations must come out current. That reads the row,
+     *   never a list of plugins: whoever follows a pill lands on a page that shows the same row with that pill current;
+     * - the row holds something besides the page itself ({@see navgroups::has_row()}).
+     *
+     * The navigation is read, never changed. Nothing is stored: the row is built per request, for the viewer core
+     * built the navigation for.
+     *
+     * @param \moodle_page $page The page.
+     * @return self|null
+     */
+    public static function for_page(\moodle_page $page): ?self {
+        if (!($page->context instanceof coursecat)) {
+            return null;
+        }
+        if ($page->has_secondary_navigation()) {
+            if (get_class($page->secondarynav) !== secondary::class) {
+                return null;
+            }
+            $units = navgroups::rows($page->secondarynav);
+        } else {
+            $nav = new secondary($page);
+            $nav->initialise();
+            $units = navgroups::rows($nav);
+            if (!in_array(true, array_column($units, 'current'), true)) {
+                return null;
+            }
+        }
+        if (!navgroups::has_row($units)) {
+            return null;
+        }
+        return new self($units);
     }
 
     /**

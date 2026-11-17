@@ -426,13 +426,10 @@ body.dim-category {
         margin: 0;
     }
 
-    // ---- The category navigation (nav-pill.md) ------------------------------------------------
-    // The fleet Design System's nav pills in the filter bar's capsule, straddling the band's lower
-    // edge at every width and with the hero folded. Every colour, radius and elevation is a family
-    // token (post.scss declares each in both modes, so the family's dark half is the row's dark mode)
-    // read with Bootstrap's own as the fallback; the --dim-* aliases of the listing are declared on its
-    // roots only, which the hero is not. Without a script the capsule wraps and every group is a native
-    // disclosure; the client keeps it on one line and moves what does not fit into "More".
+    // ---- The category navigation on the hero (nav-pill.md) -------------------------------------
+    // The row itself is styled once, outside this block, for both of its placements (the section "The category
+    // navigation" after it); what is here is the hero's placement: the straddle of the band's lower edge, at every
+    // width and with the hero folded, and the hero's ring given back to the row.
     //
     // The wrapper rises by half the capsule over the band, which pays that half as padding: the two
     // halves read the same token. It stacks over the filter line (.dim-toolbar, 30) that follows the
@@ -452,242 +449,16 @@ body.dim-category {
         padding-inline: $dim-main-pad;
     }
 
-    // The capsule: as wide as its pills and never stretched, the page's surface and ink inside the
-    // hero's white ink, the bar's 3px padding (the space scale's one named exception).
-    .dim-navpills {
-        display: inline-flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: .125rem;
-        max-width: 100%;
-        padding: .1875rem;
-        border: 1px solid var(--dimensions-line, var(--bs-border-color, #dee2e6));
-        border-radius: var(--dimensions-radius-lg, 12px);
-        background: var(--dimensions-surface, var(--bs-body-bg, #fff));
-        color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
-        box-shadow: var(--dimensions-elevation-sm, 0 1px 2px rgba(7, 0, 147, .08), 0 1px 3px rgba(7, 0, 147, .06));
+    // The hero paints its ink as the ring (.dim-hero :focus-visible), white by default: invisible on the capsule's
+    // surface. The row's controls take the family's ring back, with a selector that outweighs the hero's.
+    .dim-hero .dim-navpills :focus-visible {
+        outline-color: var(--dimensions-focus-ring, var(--bs-emphasis-color, #000));
     }
 
-    // A pill: a link, or a group's summary. Muted with no ground at rest; its width follows its label.
-    .dim-navpills .dim-navpill {
-        display: inline-flex;
-        flex: none;
-        align-items: center;
-        gap: .375rem;
-        height: 2rem;
-        padding: 0 .75rem;
-        border: 0;
-        border-radius: var(--dimensions-radius-md, 8px);
-        background: transparent;
-        color: var(--dimensions-ink-muted, var(--bs-secondary-color, #6a737b));
-        font-size: .875rem;
-        font-weight: 500;
-        line-height: 1.25;
-        text-decoration: none;
-        white-space: nowrap;
-        cursor: pointer;
-        list-style: none;
-        transition:
-            background-color var(--dimensions-motion-fast, 150ms) var(--dimensions-motion-ease, ease),
-            color var(--dimensions-motion-fast, 150ms) var(--dimensions-motion-ease, ease);
-
-        &::-webkit-details-marker {
-            display: none;
-        }
-
-        &:hover {
-            background: var(--dimensions-surface-alt, var(--bs-tertiary-bg, #f8f9fa));
-            color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
-            text-decoration: none;
-        }
-
-        &:active {
-            background: var(--dimensions-surface-inset, var(--bs-secondary-bg, #e9ecef));
-        }
-
-        // The hero paints its ink as the ring (.dim-hero :focus-visible), white by default: invisible on
-        // the capsule's surface. The row's own controls take the family's ring back, with a selector that
-        // outranks the hero's.
-        &:focus-visible {
-            outline: var(--dimensions-focus-width, 3px) solid var(--dimensions-focus-ring, var(--bs-emphasis-color, #000));
-            outline-offset: 2px;
-        }
-    }
-
-    // Selected: the current page, or the group that holds it (D79, D82).
-    .dim-navpills .dim-navpill[aria-current="page"],
-    .dim-navpills .dim-navpill.is-selected {
-        background: var(--dimensions-surface-inset, var(--bs-secondary-bg, #e9ecef));
-        color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
-        font-weight: 600;
-    }
-
-    // Open: the brand tone, as the bar's open controls (D12).
-    .dim-navpills .dim-navpill-group[open] > .dim-navpill {
-        background: var(--dimensions-brand-tint, var(--bs-primary-bg-subtle, #cfe2f2));
-        color: var(--dimensions-brand-ink, var(--bs-primary-text-emphasis, #052c65));
-    }
-
-    // The dot of the current page: before a pill's label, at the end of a menu's item.
-    .dim-navpills .dim-navpill__dot {
-        flex: none;
-        width: .25rem;
-        height: .25rem;
-        border-radius: 50%;
-        background: var(--dimensions-brand-fill, var(--bs-primary, #0f6cbf));
-    }
-
-    // A plain pill's icon is for a menu, where every item has one: not drawn on the row.
-    .dim-navpills .dim-navpill__icon {
-        display: none;
-    }
-
-    // The 12px chevron of a pill that opens a menu; core's icon box would otherwise pay its own margin.
-    .dim-navpills .dim-navpill__chevron .icon {
-        width: auto;
-        height: auto;
-        margin: 0;
-        font-size: .75rem;
-    }
-
-    // A group: the pill and its menu, which hangs under it, start-aligned ("More" end-aligned).
-    .dim-navpills .dim-navpill-group {
-        position: relative;
-        flex: none;
-    }
-
-    // A menu (menu.md): 4px around its items, the hairline, the menu's 8px corners, the middle elevation.
-    .dim-navpills .dim-navpill-menu {
-        position: absolute;
-        top: calc(100% + .375rem);
-        inset-inline-start: 0;
-        z-index: 20;
-        min-width: 13.75rem;
-        padding: .25rem;
-        border: 1px solid var(--dimensions-line, var(--bs-border-color, #dee2e6));
-        border-radius: var(--dimensions-radius-md, 8px);
-        background: var(--dimensions-surface, var(--bs-body-bg, #fff));
-        color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
-        box-shadow: var(--dimensions-elevation-md, 0 4px 12px rgba(7, 0, 147, .10));
-    }
-
-    // "More" is the row's last pill: its menu opens towards the row's start, and it scrolls past 22rem.
-    .dim-navpills .dim-navpill-group--more .dim-navpill-menu {
-        inset-inline: auto 0;
-        max-height: 22rem;
-        overflow-y: auto;
-    }
-
-    // An item: its icon, its word and, for the current page, the dot at its end; no border and no
-    // outline at rest or hovered (D50), the ring by the keyboard's focus alone, drawn inside the item
-    // because "More" scrolls and would clip a ring drawn outside.
-    .dim-navpills .dim-navpill-menu__item {
-        display: flex;
-        align-items: center;
-        gap: .5rem;
-        width: 100%;
-        min-height: 2rem;
-        padding: .25rem .5rem;
-        border-radius: var(--dimensions-radius-xs, 4px);
-        color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
-        font-size: .875rem;
-        text-decoration: none;
-        white-space: nowrap;
-        transition: background-color var(--dimensions-motion-fast, 150ms) var(--dimensions-motion-ease, ease);
-
-        &:hover {
-            background: var(--dimensions-surface-alt, var(--bs-tertiary-bg, #f8f9fa));
-            color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
-            text-decoration: none;
-        }
-
-        &[aria-current="page"] {
-            font-weight: 600;
-        }
-
-        &:focus-visible {
-            outline: var(--dimensions-focus-width, 3px) solid var(--dimensions-focus-ring, var(--bs-emphasis-color, #000));
-            outline-offset: -2px;
-        }
-
-        .icon {
-            flex: none;
-            width: 1rem;
-            height: auto;
-            margin: 0;
-            color: var(--dimensions-ink-muted, var(--bs-secondary-color, #6a737b));
-            font-size: 1rem;
-            text-align: center;
-        }
-
-        .dim-navpill__dot {
-            margin-inline-start: auto;
-        }
-    }
-
-    .dim-navpills .dim-navpill-menu__label {
-        flex: 0 1 auto;
-    }
-
-    // Armed (js/esm/src/navpills/row.ts), the capsule keeps one line: what does not fit moves into "More".
-    .dim-navpills.dim-navpills--live {
-        flex-wrap: nowrap;
-    }
-
-    // A group's menu the client found crossing the viewport's end opens end-aligned to its pill.
-    .dim-navpills .dim-navpill-menu.dim-navpill-menu--end {
-        inset-inline: auto 0;
-    }
-
-    // More's sections, written by the client (menu.md): a moved group's own name heads its items, a
-    // hairline between sections.
-    .dim-navpills .dim-navpill-menu__head {
-        padding: .375rem .5rem .125rem;
-        color: var(--dimensions-ink-muted, var(--bs-secondary-color, #6a737b));
-        font-size: .75rem;
-        font-weight: 600;
-        white-space: nowrap;
-    }
-
-    // A border, not a ground, so forced colours keep it.
-    .dim-navpills .dim-navpill-menu__sep {
-        margin: .25rem 0;
-        border-block-start: 1px solid var(--dimensions-line, var(--bs-border-color, #dee2e6));
-    }
-
-    // A plain pill moved into More is an item: the icon it carries hidden on the row is shown, and the
-    // dot of the current page goes to the item's end, as on every item.
-    .dim-navpills .dim-navpill-menu__item .dim-navpill__icon {
-        display: contents;
-    }
-
-    .dim-navpills .dim-navpill-menu__item .dim-navpill__dot {
-        order: 1;
-    }
-
-    // A coarse pointer takes the bar's 36px step (the 44px capsule), whatever the width.
+    // A coarse pointer takes the bar's 36px step: the 44px capsule, whose half the band pays.
     @media (pointer: coarse) {
         .dim-hero {
             --dim-navpills-height: 2.75rem;
-        }
-
-        .dim-navpills .dim-navpill {
-            height: 2.25rem;
-        }
-    }
-
-    // Forced colours replace every ground: the selected and open pills keep a frame (the ring's while
-    // focused), and the dot keeps its fill.
-    @media (forced-colors: active) {
-        .dim-navpills .dim-navpill[aria-current="page"]:not(:focus-visible),
-        .dim-navpills .dim-navpill.is-selected:not(:focus-visible),
-        .dim-navpills .dim-navpill-group[open] > .dim-navpill:not(:focus-visible) {
-            outline: 1px solid Highlight;
-        }
-
-        .dim-navpills .dim-navpill__dot {
-            background: Highlight;
-            forced-color-adjust: none;
         }
     }
 
@@ -6394,9 +6165,7 @@ body.dim-category {
         .dim-card__title a,
         .dim-pill,
         .dim-card__star,
-        .dim-menu__item,
-        .dim-navpills .dim-navpill,
-        .dim-navpills .dim-navpill-menu__item {
+        .dim-menu__item {
             transition: none;
         }
 
@@ -6441,6 +6210,263 @@ body.dim-category {
             background: var(--dim-surface-strong);
             animation: none;
         }
+    }
+}
+
+// ---- The category navigation (nav-pill.md) ------------------------------------------------
+// The fleet Design System's nav pills in the filter bar's capsule, styled once for both placements of the row: on
+// the showcase's hero (its straddle is in the body.dim-category block above) and, on the category's destination
+// pages, after the page header (D98). So these rules are outside the showcase's body class: each is qualified by
+// the row's own class, which nothing but templates/category_navpills.mustache writes, and that class is what makes
+// it outweigh core's rules. Every colour, radius and elevation is a family token (post.scss declares each on the
+// root, in both modes) read with Bootstrap's own as the fallback; the --dim-* aliases of the listing are declared on
+// its roots only, which the row is not. Without a script the capsule wraps and every group is a native disclosure;
+// the client keeps it on one line and moves what does not fit into "More".
+
+// The capsule: as wide as its pills and never stretched, the page's surface and ink (inside the hero's white ink
+// too), the bar's 3px padding (the space scale's one named exception).
+.dim-navpills {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .125rem;
+    max-width: 100%;
+    padding: .1875rem;
+    border: 1px solid var(--dimensions-line, var(--bs-border-color, #dee2e6));
+    border-radius: var(--dimensions-radius-lg, 12px);
+    background: var(--dimensions-surface, var(--bs-body-bg, #fff));
+    color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
+    box-shadow: var(--dimensions-elevation-sm, 0 1px 2px rgba(7, 0, 147, .08), 0 1px 3px rgba(7, 0, 147, .06));
+}
+
+// A pill: a link, or a group's summary. Muted with no ground at rest; its width follows its label.
+.dim-navpills .dim-navpill {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: .375rem;
+    height: 2rem;
+    padding: 0 .75rem;
+    border: 0;
+    border-radius: var(--dimensions-radius-md, 8px);
+    background: transparent;
+    color: var(--dimensions-ink-muted, var(--bs-secondary-color, #6a737b));
+    font-size: .875rem;
+    font-weight: 500;
+    line-height: 1.25;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    list-style: none;
+    transition:
+        background-color var(--dimensions-motion-fast, 150ms) var(--dimensions-motion-ease, ease),
+        color var(--dimensions-motion-fast, 150ms) var(--dimensions-motion-ease, ease);
+
+    &::-webkit-details-marker {
+        display: none;
+    }
+
+    &:hover {
+        background: var(--dimensions-surface-alt, var(--bs-tertiary-bg, #f8f9fa));
+        color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
+        text-decoration: none;
+    }
+
+    &:active {
+        background: var(--dimensions-surface-inset, var(--bs-secondary-bg, #e9ecef));
+    }
+
+    // The family's ring: the hero gives its own back to the row (.dim-hero .dim-navpills :focus-visible).
+    &:focus-visible {
+        outline: var(--dimensions-focus-width, 3px) solid var(--dimensions-focus-ring, var(--bs-emphasis-color, #000));
+        outline-offset: 2px;
+    }
+}
+
+// Selected: the current page (a link's aria-current), or the group or "More" that holds it, a summary that carries
+// the class and no aria-current (D79, D82, D96).
+.dim-navpills .dim-navpill[aria-current="page"],
+.dim-navpills .dim-navpill.is-selected {
+    background: var(--dimensions-surface-inset, var(--bs-secondary-bg, #e9ecef));
+    color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
+    font-weight: 600;
+}
+
+// Open: the brand tone, as the bar's open controls (D12).
+.dim-navpills .dim-navpill-group[open] > .dim-navpill {
+    background: var(--dimensions-brand-tint, var(--bs-primary-bg-subtle, #cfe2f2));
+    color: var(--dimensions-brand-ink, var(--bs-primary-text-emphasis, #052c65));
+}
+
+// The dot of the current page: before a pill's label, at the end of a menu's item.
+.dim-navpills .dim-navpill__dot {
+    flex: none;
+    width: .25rem;
+    height: .25rem;
+    border-radius: 50%;
+    background: var(--dimensions-brand-fill, var(--bs-primary, #0f6cbf));
+}
+
+// A plain pill's icon is for a menu, where every item has one: not drawn on the row.
+.dim-navpills .dim-navpill__icon {
+    display: none;
+}
+
+// The 12px chevron of a pill that opens a menu; core's icon box would otherwise pay its own margin.
+.dim-navpills .dim-navpill__chevron .icon {
+    width: auto;
+    height: auto;
+    margin: 0;
+    font-size: .75rem;
+}
+
+// A group: the pill and its menu, which hangs under it, start-aligned ("More" end-aligned).
+.dim-navpills .dim-navpill-group {
+    position: relative;
+    flex: none;
+}
+
+// A menu (menu.md): 4px around its items, the hairline, the menu's 8px corners, the middle elevation.
+.dim-navpills .dim-navpill-menu {
+    position: absolute;
+    top: calc(100% + .375rem);
+    inset-inline-start: 0;
+    z-index: 20;
+    min-width: 13.75rem;
+    padding: .25rem;
+    border: 1px solid var(--dimensions-line, var(--bs-border-color, #dee2e6));
+    border-radius: var(--dimensions-radius-md, 8px);
+    background: var(--dimensions-surface, var(--bs-body-bg, #fff));
+    color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
+    box-shadow: var(--dimensions-elevation-md, 0 4px 12px rgba(7, 0, 147, .10));
+}
+
+// "More" is the row's last pill: its menu opens towards the row's start, and it scrolls past 22rem.
+.dim-navpills .dim-navpill-group--more .dim-navpill-menu {
+    inset-inline: auto 0;
+    max-height: 22rem;
+    overflow-y: auto;
+}
+
+// An item: its icon, its word and, for the current page, the dot at its end; no border and no
+// outline at rest or hovered (D50), the ring by the keyboard's focus alone, drawn inside the item
+// because "More" scrolls and would clip a ring drawn outside.
+.dim-navpills .dim-navpill-menu__item {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    width: 100%;
+    min-height: 2rem;
+    padding: .25rem .5rem;
+    border-radius: var(--dimensions-radius-xs, 4px);
+    color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
+    font-size: .875rem;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color var(--dimensions-motion-fast, 150ms) var(--dimensions-motion-ease, ease);
+
+    &:hover {
+        background: var(--dimensions-surface-alt, var(--bs-tertiary-bg, #f8f9fa));
+        color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
+        text-decoration: none;
+    }
+
+    &[aria-current="page"] {
+        font-weight: 600;
+    }
+
+    &:focus-visible {
+        outline: var(--dimensions-focus-width, 3px) solid var(--dimensions-focus-ring, var(--bs-emphasis-color, #000));
+        outline-offset: -2px;
+    }
+
+    .icon {
+        flex: none;
+        width: 1rem;
+        height: auto;
+        margin: 0;
+        color: var(--dimensions-ink-muted, var(--bs-secondary-color, #6a737b));
+        font-size: 1rem;
+        text-align: center;
+    }
+
+    .dim-navpill__dot {
+        margin-inline-start: auto;
+    }
+}
+
+.dim-navpills .dim-navpill-menu__label {
+    flex: 0 1 auto;
+}
+
+// Armed (js/esm/src/navpills/row.ts), the capsule keeps one line: what does not fit moves into "More".
+.dim-navpills.dim-navpills--live {
+    flex-wrap: nowrap;
+}
+
+// A group's menu the client found crossing the viewport's end opens end-aligned to its pill.
+.dim-navpills .dim-navpill-menu.dim-navpill-menu--end {
+    inset-inline: auto 0;
+}
+
+// More's sections, written by the client (menu.md): a moved group's own name heads its items, a
+// hairline between sections.
+.dim-navpills .dim-navpill-menu__head {
+    padding: .375rem .5rem .125rem;
+    color: var(--dimensions-ink-muted, var(--bs-secondary-color, #6a737b));
+    font-size: .75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+// A border, not a ground, so forced colours keep it.
+.dim-navpills .dim-navpill-menu__sep {
+    margin: .25rem 0;
+    border-block-start: 1px solid var(--dimensions-line, var(--bs-border-color, #dee2e6));
+}
+
+// A plain pill moved into More is an item: the icon it carries hidden on the row is shown, and the
+// dot of the current page goes to the item's end, as on every item.
+.dim-navpills .dim-navpill-menu__item .dim-navpill__icon {
+    display: contents;
+}
+
+.dim-navpills .dim-navpill-menu__item .dim-navpill__dot {
+    order: 1;
+}
+
+// The destination page's track (templates/category_navpills_page.mustache): where Boost Union's band was, after the
+// page header, on the page's ground; the capsule is start-aligned and as wide as its pills, and straddles nothing.
+.dim-navpills-page {
+    margin-bottom: 1rem;
+}
+
+// A coarse pointer takes the bar's 36px step, whatever the width.
+@media (pointer: coarse) {
+    .dim-navpills .dim-navpill {
+        height: 2.25rem;
+    }
+}
+
+// Forced colours replace every ground: the selected and open pills keep a frame (the ring's while
+// focused), and the dot keeps its fill.
+@media (forced-colors: active) {
+    .dim-navpills .dim-navpill[aria-current="page"]:not(:focus-visible),
+    .dim-navpills .dim-navpill.is-selected:not(:focus-visible),
+    .dim-navpills .dim-navpill-group[open] > .dim-navpill:not(:focus-visible) {
+        outline: 1px solid Highlight;
+    }
+
+    .dim-navpills .dim-navpill__dot {
+        background: Highlight;
+        forced-color-adjust: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dim-navpills .dim-navpill,
+    .dim-navpills .dim-navpill-menu__item {
+        transition: none;
     }
 }
 
@@ -6578,13 +6604,14 @@ body.dim-category {
     }
 }
 
-// The category navigation's pills and menu items are links in the page header, where core's dark mode underlines every
-// link but its own controls (theme/boost/scss/moodle/dark.scss, at (1,6,1)). Their capsule and their menu already tell
-// them apart, so they keep the light mode's none; the weight here is (1,6,2) (category_scss_test).
-:root[data-bs-theme="dark"] body.dim-category {
-    #page-header .dim-navpills a[href]:not(.btn) {
-        text-decoration: none;
-    }
+// The category navigation's pills and menu items are links, and core's dark mode underlines every link of the page
+// header, the main region and the footer but its own controls (theme/boost/scss/moodle/dark.scss, at (1,6,1)). Their
+// capsule and their menu already tell them apart, so they keep the light mode's none, in both placements: the hero's
+// row is in the page header, and a destination page's follows it inside #page, which holds both. The weight here is
+// (1,6,2) (category_scss_test).
+:root[data-bs-theme="dark"] #page nav.dim-navpills a.dim-navpill[href]:not(.btn),
+:root[data-bs-theme="dark"] #page nav.dim-navpills a.dim-navpill-menu__item[href]:not(.btn) {
+    text-decoration: none;
 }
 
 // ---- The filter line's preview in the dark mode -----------------------------------------------------------

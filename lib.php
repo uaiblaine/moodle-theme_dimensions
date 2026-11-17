@@ -549,6 +549,27 @@ function theme_dimensions_extend_navigation_category_settings(
 }
 
 /**
+ * The theme's own icons, for the Font Awesome icon system.
+ *
+ * The glyphs the category navigation's table names for the destinations that declare no icon of their own
+ * ({@see \theme_dimensions\local\category\navgroups::DESTINATIONS}): each a glyph of Font Awesome 6.7.2, the free
+ * solid set core 5.3 bundles. Core merges this map in
+ * {@see \core\output\icon_system_fontawesome::get_icon_name_map()} and adds the family, so "fa-house" draws as
+ * "fa fa-house"; each key has its SVG under pix/ for an icon system that is not the font, as core's plugin checks
+ * require. The map is cached by core and rebuilt on a cache purge, which a version bump runs.
+ *
+ * @return array Icon key => Font Awesome class.
+ */
+function theme_dimensions_get_fontawesome_icon_map(): array {
+    return [
+        'theme_dimensions:navpill/catalogue' => 'fa-rectangle-list',
+        'theme_dimensions:navpill/certifications' => 'fa-award',
+        'theme_dimensions:navpill/home' => 'fa-house',
+        'theme_dimensions:navpill/programs' => 'fa-diagram-project',
+    ];
+}
+
+/**
  * Add this theme's recommendations to Boost Union's recommendations overview.
  *
  * Boost Union calls this through get_plugins_with_function(), which caches the list of plugins that

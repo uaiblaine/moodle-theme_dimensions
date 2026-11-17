@@ -1,2 +1,2 @@
 # Never mark a destination as the current page.
-s/\(bool\) \$node->isactive/false/;
+s/'current' => \$node->isactive && /'current' => false && /;

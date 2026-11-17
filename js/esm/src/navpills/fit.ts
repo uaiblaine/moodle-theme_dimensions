@@ -19,7 +19,8 @@
  * The row module measures once ({@see ./row measure()}) and hands the numbers here, so the decision reads no layout
  * and is tested in Jest on its own. Units move from the row's end, the page itself ("Category") last of all (D83);
  * "More" is shown when anything moved or when it holds nodes of its own (D89), and its width is then paid on the
- * row, with the gap before it.
+ * row, with the gap before it: the width it takes selected, its dot included, once it holds the unit with the
+ * current page (D82).
  *
  * @module     theme_dimensions/navpills/fit
  * @copyright  2026 Anderson Blaine
@@ -39,6 +40,10 @@ export type Measures = {
     room: number,
     /** The width of the "More" pill. */
     more: number,
+    /** The width of "More" once it holds the current page, its dot drawn; `more` when not given. */
+    selected?: number,
+    /** The index of the unit that holds the current page, whose move selects "More"; -1 for none. */
+    current?: number,
     /** The index of the unit that moves last of all, the page itself; -1 for none. */
     last?: number,
     /** Whether "More" holds nodes of its own, which show it whatever fits. */
@@ -72,7 +77,8 @@ const span = (widths: number[], kept: number[], gap: number, more: number): numb
  *
  * Nothing moves and "More" stays hidden when every unit fits and "More" has nothing of its own. Otherwise "More" is
  * shown and paid for, and units move from the row's end until the rest fit beside it; the unit named last moves only
- * once every other has. A room of zero, or one no unit fits, moves every unit.
+ * once every other has. "More" is paid at its selected width from the move of the unit holding the current page on,
+ * which can move one more unit. A room of zero, or one no unit fits, moves every unit.
  *
  * @param {object} measures What the row measured.
  * @returns {object} The indexes kept and moved, and whether "More" is shown.
@@ -81,6 +87,8 @@ export const fit = (measures: Measures): Fitted => {
     const {widths, gap, more} = measures;
     const room = Number.isFinite(measures.room) ? Math.max(0, measures.room) : 0;
     const last = measures.last ?? -1;
+    const current = measures.current ?? -1;
+    const selected = measures.selected ?? more;
     const own = Boolean(measures.own);
     const all = widths.map((width, index) => index);
 
@@ -96,7 +104,7 @@ export const fit = (measures: Measures): Fitted => {
     const moved = new Set<number>();
     for (const index of order) {
         const kept = all.filter((candidate) => !moved.has(candidate));
-        if (span(widths, kept, gap, more) <= room + TOLERANCE) {
+        if (span(widths, kept, gap, moved.has(current) ? selected : more) <= room + TOLERANCE) {
             break;
         }
         moved.add(index);

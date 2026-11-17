@@ -47,11 +47,17 @@ in place.
   group holding a single page for the reader is drawn as that page's own pill. Pages the theme does
   not know, such as those added by other plugins, are listed under *More*, the last pill; on a narrow
   screen the groups that do not fit move into *More* under their own names. The row lists only the
-  pages Moodle already offers the reader on that category, and the pages it leads to keep Moodle's
-  own navigation. A reader whose only page would be *Category* gets no row; with competencies
+  pages Moodle already offers the reader on that category. The pages it leads to draw the same row,
+  after their page header where Moodle's tabs were, with the page itself marked inside its group,
+  and so does the category page when the showcase is off; a page whose plugin draws a navigation of
+  its own keeps it. Programs, certifications, catalogue sections, home pages and cohort management
+  (the tool_mu plugins), whose index pages switch Moodle's tabs off, draw the row too. Programs,
+  certifications, catalogue sections and home pages have an icon of the theme's own in the menus. A
+  reader whose only page would be *Category* gets no row; with competencies
   enabled, Moodle offers every logged-in account *Competency frameworks*, so a learner's row is
   *Category* and that page. Visitors who are not logged in get no row. The menus open with
-  JavaScript off too.
+  JavaScript off too. The theme's map of the pages to their groups (and their icons) is one table,
+  `classes/local/category/navgroups.php`.
 - **Grouped by area or not, sorted by name or the most recent.** *Organise* holds two independent
   choices, *Group by* (Area, No grouping) and *Sort by* (Name, Most recent). By area, each
   subcategory is a poster, and its courses open in a panel between the rows, in the order *Sort by*

@@ -564,9 +564,10 @@ final class core_renderer_test extends \advanced_testcase {
      * is armed - or not - by the same decision the page makes.
      *
      * @param int $categoryid The category.
+     * @param callable|null $before What a page's own script would do to the page before its header, given the page.
      * @return string The rendered header (the whole start of the page, through Boost Union's layout).
      */
-    private function category_header(int $categoryid): string {
+    private function category_header(int $categoryid, ?callable $before = null): string {
         global $PAGE, $OUTPUT;
 
         $PAGE->set_category_by_id($categoryid);
@@ -582,6 +583,9 @@ final class core_renderer_test extends \advanced_testcase {
         $courserenderer = $PAGE->get_renderer('core', 'course', RENDERER_TARGET_GENERAL);
         $courserenderer->course_category($categoryid);
         $PAGE->set_secondary_active_tab('categorymain');
+        if ($before !== null) {
+            $before($PAGE);
+        }
 
         return $OUTPUT->header();
     }
@@ -723,11 +727,15 @@ final class core_renderer_test extends \advanced_testcase {
     }
 
     /**
-     * With the showcase off the category page keeps Boost Union's header and its band - the control of the drift test.
+     * With the showcase off the category page keeps Boost Union's header, and the row takes the band's place after it.
+     *
+     * The page draws no hero, so the core renderer finds the row itself (category_navpills::for_page()), switches the
+     * band off and prints the row in its own track right after the header (D97, D98): one navigation, the row, armed
+     * as the hero's is. The track is outside the header, on the page's ground.
      *
      * @return void
      */
-    public function test_a_switched_off_showcase_keeps_boost_unions_header_and_band(): void {
+    public function test_a_switched_off_showcase_draws_the_row_after_boost_unions_header(): void {
         $this->resetAfterTest();
         $generator = self::getDataGenerator();
         $category = $generator->create_category(['name' => 'Showcase Category']);
@@ -740,10 +748,59 @@ final class core_renderer_test extends \advanced_testcase {
         $this->assertNull(category_hero::current());
         $this->assertStringNotContainsString('dim-hero', $html);
         $this->assertStringContainsString('id="page-header"', $html);
-        $this->assertStringContainsString('class="secondary-navigation', $html, 'Control: the band the hero switches off is live.');
         $this->assertSame(1, substr_count($html, self::PRIMARY_NAV), 'The primary navigation.');
+        // The row, once, in its track after the header.
+        $this->assertSame(1, substr_count($html, '<nav class="dim-navpills"'), 'One row.');
+        $this->assertMatchesRegularExpression(
+            '~</header>\s*<div class="dim-navpills-page d-print-none">\s*<nav class="dim-navpills" id="([^"]+)"~',
+            $html,
+            'The row\'s track follows the header.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~<a class="dim-navpill" href="[^"]*" data-key="categorymain" aria-current="page">~',
+            $html,
+            'Category is the current page.'
+        );
+        // And never the band.
+        $this->assertStringNotContainsString('class="secondary-navigation', $html);
+        $this->assertStringNotContainsString(self::BAND_NAV, $html);
+        $this->assertSame(0, substr_count($html, '<nav class="moremenu navigation"'), 'No plain more menu on the page.');
+        // The row has groups, so its client is armed once, under its id.
+        preg_match('~<nav class="dim-navpills" id="([^"]+)"~', $html, $nav);
+        $amd = $this->collected_amd();
+        $this->assertSame(1, substr_count($amd, "require(['theme_dimensions/navpills']"), 'The row\'s client, once.');
+        $this->assertStringContainsString('amd.init(' . json_encode($nav[1]) . ');', $amd);
+    }
+
+    /**
+     * A page whose plugin installed a secondary navigation of its own keeps Boost Union's band, and draws no row.
+     *
+     * The control of the drift test and of the band's switch: the band is live on a category page exactly when no row
+     * is drawn. A plugin's subclass of core's navigation is that page (D97); the showcase is off, so no hero is armed.
+     *
+     * @return void
+     */
+    public function test_a_plugins_own_navigation_keeps_its_band_and_draws_no_row(): void {
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category(['name' => 'Showcase Category']);
+        $generator->create_course(['category' => $category->id]);
+        $this->setAdminUser();
+        set_config(population::SETTING_ENABLED, '0', 'theme_dimensions');
+
+        $html = $this->category_header((int) $category->id, function (\moodle_page $page): void {
+            $own = new class ($page) extends \core\navigation\views\secondary {
+            };
+            $own->initialise();
+            $page->set_secondarynav($own);
+        });
+
+        $this->assertNull(category_hero::current());
+        $this->assertStringContainsString('class="secondary-navigation', $html, 'The band is live.');
         $this->assertSame(1, substr_count($html, self::BAND_NAV), 'The band, as core\'s React tab bar.');
         $this->assertSame(1, substr_count($html, '<nav class="moremenu navigation"'), 'The band\'s no-JS fallback, once.');
+        $this->assertStringNotContainsString('dim-navpills', $html, 'And no row beside it.');
+        $this->assertStringNotContainsString('theme_dimensions/navpills', $this->collected_amd(), 'No row, no client.');
     }
 
     /**

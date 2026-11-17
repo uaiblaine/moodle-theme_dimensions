@@ -107,6 +107,14 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     private array $coursecategories = [];
 
     /**
+     * @var category_navpills|null The category navigation's row of a page without a hero, drawn after its header.
+     *
+     * Set by {@see self::render_from_template()} on the layout that switches Boost Union's band off for it, and read
+     * once by {@see self::full_header()}, which that layout calls later in the same render.
+     */
+    private ?category_navpills $pagenavpills = null;
+
+    /**
      * Renders a template, rewriting the layout contexts this theme draws differently.
      *
      * A layout carrying the user menu gets the navbar's colour and the name block in the menu, because Boost
@@ -196,12 +204,18 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $context['dimensionsdrawer'] = drawernav::context((array) $context['mobileprimarynav'], $this->page);
         }
 
-        /* The category showcase's hero draws the category's navigation itself (its row of nav pills), so the
-           secondary navigation band is switched off while a hero is armed, keyed on the key Boost Union's layout
-           writes for it. If Boost Union renames the key the band comes back beside the hero's row, which
-           core_renderer_test's drift test catches. */
-        if (is_array($context) && array_key_exists('secondarymoremenu', $context) && category_hero::current() !== null) {
-            $context['secondarymoremenu'] = false;
+        /* The category's navigation is the theme's row of nav pills wherever core would draw its own (D97): the hero
+           draws it on the showcase, and a destination page gets it after its header ({@see self::full_header()}).
+           Boost Union's band is switched off, keyed on the key its layout writes for it, while a hero is armed (it
+           replaces the header, row or no row) and on any other page exactly when a row is drawn: the builder answers
+           null for a page that keeps its band (a plugin's own navigation). If Boost Union renames the key the band
+           comes back beside the row, which core_renderer_test's drift test catches. */
+        if (is_array($context) && array_key_exists('secondarymoremenu', $context)) {
+            $heroarmed = category_hero::current() !== null;
+            $this->pagenavpills = $heroarmed ? null : category_navpills::for_page($this->page);
+            if ($heroarmed || $this->pagenavpills !== null) {
+                $context['secondarymoremenu'] = false;
+            }
         }
 
         // The compact navbar on tablets: see the docblock. The module is armed where the decision is made.
@@ -296,7 +310,11 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * armed the parent draws its header unchanged, but for the header actions of a page that opens in
      * focus mode ({@see self::focus_full_header()}).
      *
-     * The hero's row of nav pills is armed here, where it is drawn ({@see self::arm_navpills()}).
+     * A page without a hero whose layout found it a row of the category's navigation ({@see self::$pagenavpills})
+     * gets that row right after the header, where Boost Union's band was: on the page's ground, start-aligned, in a
+     * track of its own, which the client measures (D98).
+     *
+     * Either row is armed here, where it is drawn ({@see self::arm_navpills()}).
      *
      * @return string HTML to display the main header.
      */
@@ -307,7 +325,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         }
         $hero = category_hero::current();
         if ($hero === null) {
-            return $this->focus_full_header();
+            return $this->focus_full_header() . $this->page_navpills();
         }
         $context = $hero->export_for_template($this);
         $this->arm_navpills($context->navpills);
@@ -318,7 +336,25 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
-     * Arm the client of the hero's row of nav pills, when the row has a menu to open.
+     * The row of nav pills a page without a hero draws after its header, in its own track, or '' when it has none.
+     *
+     * Drawn once: the row is forgotten as it is printed.
+     *
+     * @return string HTML.
+     */
+    private function page_navpills(): string {
+        $row = $this->pagenavpills;
+        $this->pagenavpills = null;
+        if ($row === null) {
+            return '';
+        }
+        $context = $row->export_for_template($this);
+        $this->arm_navpills($context);
+        return $this->render_from_template('theme_dimensions/category_navpills_page', $context);
+    }
+
+    /**
+     * Arm the client of a row of nav pills, the hero's or a destination page's, when the row has a menu to open.
      *
      * A row with a group, or with "More" holding nodes of its own, gets the module: it claims the
      * menu roles with their keys, keeps one menu open at a time and moves what does not fit into
