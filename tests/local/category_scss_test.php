@@ -1928,7 +1928,7 @@ final class category_scss_test extends \basic_testcase {
         // Core's dark mode underlines the page header's links at (1,6,1); the row's own rule outweighs it.
         $this->assertMatchesRegularExpression(
             '~:root\[data-bs-theme="dark"\] body\.dim-category \{\s*#page-header \.dim-navpills '
-                . 'a\[href\]:not\(\.btn\):not\(\.nav-link\):not\(\.dropdown-item\) \{\s*text-decoration:\s*none;~',
+                . 'a\[href\]:not\(\.btn\) \{\s*text-decoration:\s*none;~',
             $scss
         );
         $this->assertMatchesRegularExpression(

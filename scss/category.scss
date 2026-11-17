@@ -6612,9 +6612,9 @@ body.dim-category {
 
 // The category navigation's pills and menu items are links in the page header, where core's dark mode underlines every
 // link but its own controls (theme/boost/scss/moodle/dark.scss, at (1,6,1)). Their capsule and their menu already tell
-// them apart, so they keep the light mode's none; the weight here is (1,8,2) (category_scss_test).
+// them apart, so they keep the light mode's none; the weight here is (1,6,2) (category_scss_test).
 :root[data-bs-theme="dark"] body.dim-category {
-    #page-header .dim-navpills a[href]:not(.btn):not(.nav-link):not(.dropdown-item) {
+    #page-header .dim-navpills a[href]:not(.btn) {
         text-decoration: none;
     }
 }
