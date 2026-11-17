@@ -155,7 +155,8 @@ final class page_result {
     /**
      * @var int How many courses of the population are hidden from students - only a viewer the
      *   population admitted hidden courses to has any; 0 in the SQL-cut mode, which reads no
-     *   population row. The hero's third number.
+     *   population row. Nothing draws it today (the hero's panel of counts is gone): it is kept, with its
+     *   tests, for a page that tells staff how many courses students cannot see.
      */
     public int $hidden = 0;
 

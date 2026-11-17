@@ -1597,7 +1597,9 @@ Server and data:
   past it, deliberately (D27) [stage 6b].
 - **The root resolves the whole site**: `population::resolve_root()` is its short circuit, it reads its term ALONE
   (`criteria::root_from_request()`, the resolver, the service and the shells' `rootOnly()`), and its `total` is the
-  hero's number. A statement count cannot see a per-site row count [stage 6b, EL-3].
+  whole site's. A statement count cannot see a per-site row count [stage 6b, EL-3].
+- **`page_result::$hidden` is counted and drawn nowhere**, on purpose: the hero's counts are gone and the owner kept
+  the hidden-courses counter for a later surface. Do not remove it as dead code.
 - **Dates are ISO strings on the wire, resolved once in `criteria` in the SITE timezone**: never `strtotime()` nor
   86,400-second days; `day_start($iso, 1)` is the exclusive upper bound; keep `c.startdate > 0`. The calendar does no
   timezone arithmetic (`daterange/calendar.ts` works on `Date.UTC`; `daterange_component_source_test` counts it)

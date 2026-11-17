@@ -825,7 +825,7 @@ final class category_listing_test extends \advanced_testcase {
             'And the first quick option is that same day, from the same helper: one source, two readers.'
         );
         /* Two numbers side by side on one export: the "all" pill, the Online facet above and the
-           count line at rest count the whole subtree, five courses, the hero's number; the grid
+           count line at rest count the whole subtree, five courses; the grid
            draws the page, which on the grouped organisation holds this category's own four. An
            implementation that cut the population instead of the page, or a count line printing
            the page's total, would print four in both places. */
@@ -2357,7 +2357,7 @@ final class category_listing_test extends \advanced_testcase {
      * The root under a search is in result mode with no course of its own and opens nothing by itself.
      *
      * results() reads a page's total as the courses sitting directly in it, and the root's total
-     * is the hero's number - the matches of the whole site - so without the root's own reading
+     * is the matches of the whole site - so without the root's own reading
      * "nothing anywhere" could never be said at the root while anything matched in a category no
      * poster shows, and an area would open by itself whenever one poster held every match; the
      * root never opens an area by itself. A category page with the same numbers is the control:
