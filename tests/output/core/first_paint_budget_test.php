@@ -87,13 +87,17 @@ final class first_paint_budget_test extends \advanced_testcase {
 
     /**
      * @var string[] The theme's AMD modules the logged-in flat page asks for at load, in order: exactly these. The
-     *   course dialogue is armed beside the account's shell, for a real account only.
+     *   course dialogue is armed beside the account's shell, for a real account only. The viewer is a learner, whose
+     *   hero's row is two plain pills (Category and the competency frameworks), which arms no client.
      */
     private const MODULES = [
         'theme_dimensions/listingaccount',
         'theme_dimensions/categorycoursemodal',
         'theme_dimensions/covervideo',
     ];
+
+    /** @var string The client of the hero's row of nav pills, armed after the listing's for a row with a group. */
+    private const ROW_MODULE = 'theme_dimensions/navpills';
 
     /**
      * @var string[] The theme's AMD modules the visitor's page asks for at load, the live listing open: exactly these.
@@ -155,15 +159,23 @@ final class first_paint_budget_test extends \advanced_testcase {
      *
      * @param int $categoryid The category.
      * @param array $query The query string.
+     * @param bool $incategory Whether the page stands in the category's context, as course/index.php's does, so the
+     *     category's secondary navigation exists; the budgets are measured without it.
      * @return array [listing html, hero html, AMD modules, strings_for_js added]
      */
-    private function logged_in(int $categoryid, array $query): array {
+    private function logged_in(int $categoryid, array $query, bool $incategory = false): array {
         global $PAGE, $SITE;
         self::forget();
         $_GET = $query;
         $PAGE = new \moodle_page();
-        $PAGE->set_context(\context_system::instance());
-        $PAGE->set_course($SITE);
+        if ($incategory) {
+            $PAGE->set_category_by_id($categoryid);
+            $PAGE->set_pagetype('course-index-category');
+            $PAGE->set_secondary_active_tab('categorymain');
+        } else {
+            $PAGE->set_context(\context_system::instance());
+            $PAGE->set_course($SITE);
+        }
         $PAGE->set_url('/course/index.php', ['categoryid' => $categoryid] + $query);
         $PAGE->force_theme('dimensions');
         $strings = $this->strings();
@@ -323,6 +335,21 @@ final class first_paint_budget_test extends \advanced_testcase {
         [, , $modules, $strings] = $this->logged_in($categoryid, [criteria::PARAM_SORT => criteria::SORT_NAME]);
         $this->record('first paint modules', ['modules' => $modules, 'strings' => $strings]);
         $this->assertSame(self::MODULES, self::theirs($modules));
+        $this->assertSame(self::STRINGS, $strings);
+    }
+
+    /**
+     * A manager's page asks for the same modules and, last, the client of the hero's row, which has groups.
+     *
+     * The row is drawn by the core renderer's full_header(), after the listing, and armed there only when it has
+     * a menu to open; its words are the server's, so it adds no string.
+     */
+    public function test_a_managers_page_also_asks_for_the_rows_client(): void {
+        [$categoryid] = $this->seed(6);
+        $this->become(get_admin());
+        [, $hero, $modules, $strings] = $this->logged_in($categoryid, [criteria::PARAM_SORT => criteria::SORT_NAME], true);
+        $this->assertMatchesRegularExpression('~<details class="dim-navpill-group" data-group="~', $hero, 'Precondition: a group.');
+        $this->assertSame(array_merge(self::MODULES, [self::ROW_MODULE]), self::theirs($modules));
         $this->assertSame(self::STRINGS, $strings);
     }
 

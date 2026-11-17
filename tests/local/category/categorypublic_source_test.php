@@ -97,14 +97,18 @@ final class categorypublic_source_test extends \basic_testcase {
     ];
 
     /**
-     * @var string[] Theme modules a visitor's page may never load: the session's star, the logged-in clients and the
-     *   course dialogue, whose content comes from a service a session alone may call.
+     * @var string[] Theme modules a visitor's page may never load: the session's star, the logged-in clients, the
+     *   course dialogue, whose content comes from a service a session alone may call, and the client of the hero's
+     *   row of nav pills, an account's navigation the visitor's shell never draws.
      */
     private const FORBIDDEN_MODULES = [
         self::ESM . 'listing/star',
         'listingaccount',
         self::ESM . 'listing/account',
         'categorycoursemodal',
+        'navpills',
+        self::ESM . 'navpills/row',
+        self::ESM . 'navpills/fit',
     ];
 
     /**

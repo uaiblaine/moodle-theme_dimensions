@@ -24,7 +24,6 @@
 
 namespace theme_dimensions\output;
 
-use core\navigation\output\more_menu;
 use core\output\renderable;
 use core\output\renderer_base;
 use core\output\templatable;
@@ -34,13 +33,14 @@ use theme_dimensions\local\calendar\page as calendarpage;
 use theme_dimensions\local\calendar\visitor;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\criteria;
+use theme_dimensions\local\category\navgroups;
 use theme_dimensions\local\category\page_result;
 use theme_dimensions\local\category\publicaccess;
 use theme_dimensions\local\category\request;
 use theme_dimensions\local\landing\links;
 
 /**
- * The page header of the category showcase: branding, counts, the category's tabs, the fold control.
+ * The page header of the category showcase: branding, counts, the category's navigation, the fold control.
  *
  * Built by the page's two entries - the course renderer's course_category(), which core calls
  * before the page header is rendered, and request::handle() for the anonymous shell - and armed
@@ -49,16 +49,16 @@ use theme_dimensions\local\landing\links;
  * A test that renders the showcase resets the registry.
  *
  * What the hero prints about the category comes from {@see branding} (cached across requests,
- * viewer-independent); what it prints about the viewer - the counts, the pencil, the tabs -
+ * viewer-independent); what it prints about the viewer - the counts, the pencil, the navigation -
  * is computed per request and never cached. The crests on the title's line are the category's
  * own, from that same payload, never a course's.
- * The tabs are core's own secondary navigation, exported through core's more_menu into the
- * hero's template; the band Boost Union's layout would render under the header is switched
- * off by the core renderer while a hero is armed. The trail above the title is the hero's own
- * ({@see trail()}).
+ * The navigation is core's own secondary navigation, regrouped by {@see navgroups} into a row of
+ * nav pills ({@see category_navpills}) that straddles the band's lower edge; the band Boost Union's
+ * layout would render under the header is switched off by the core renderer while a hero is armed.
+ * The trail above the title is the hero's own ({@see trail()}).
  *
  * The fold is the one thing the hero remembers per person: folded, the hero keeps its title row
- * and its tabs and drops the tagline, the description and the counts. It is written from the
+ * and its navigation and drops the tagline, the description and the counts. It is written from the
  * hero's own GET form, so the page without JavaScript remembers it too, and the preference
  * belongs to the person rather than to the category - which is why the root's hero keeps it and
  * submits to /course/index.php with no category of its own.
@@ -66,8 +66,8 @@ use theme_dimensions\local\landing\links;
  * The root of the course index is the one category drawn without a row behind it: the system
  * context, the branding defaults (no statement) over the site-wide fallback image, no pencil (the
  * appearance editor brands one real category), no trail, and a title other than top()'s own name,
- * "Top" ({@see root_title()}). Its tabs are whatever secondary navigation core gave that page, and a
- * visitor has none.
+ * "Top" ({@see root_title()}). Its navigation is whatever secondary navigation core gave that page,
+ * and a visitor has none.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -95,7 +95,7 @@ class category_hero implements renderable, templatable {
      * @param bool $folded Whether the hero is folded for this viewer.
      * @param string $descriptionhtml The category's formatted description (final HTML), or ''.
      * @param bool $withtabs Whether to draw the page's secondary navigation; the anonymous shell draws none.
-     * @param \moodle_page|null $page The page whose navigation the tabs are, the global page when null.
+     * @param \moodle_page|null $page The page whose secondary navigation the row draws, the global page when null.
      */
     public function __construct(
         /** @var core_course_category The category. */
@@ -108,9 +108,9 @@ class category_hero implements renderable, templatable {
         private readonly bool $folded = false,
         /** @var string The category description as final HTML, or ''. */
         private readonly string $descriptionhtml = '',
-        /** @var bool Whether to draw the tabs. */
+        /** @var bool Whether to draw the page's secondary navigation. */
         private readonly bool $withtabs = true,
-        /** @var \moodle_page|null The page whose navigation the tabs are. */
+        /** @var \moodle_page|null The page whose secondary navigation the row draws. */
         private readonly ?\moodle_page $page = null,
     ) {
     }
@@ -213,8 +213,9 @@ class category_hero implements renderable, templatable {
      * (asserted by category_hero_test on a real export and on a poisoned row).
      *
      * The stops turn translucent under a photograph, at the overlay the manager chose; the strip
-     * stays opaque at every layout, because white tabs on a see-through strip vanish into the
-     * picture. The ring is the ink, not white: a white focus ring on a pale band is invisible.
+     * stays the opaque mid colour at every layout, though no rule of the stylesheet paints with it
+     * (the row of nav pills is on the page's own surface): it is part of the vocabulary the tests pin.
+     * The ring is the ink, not white: a white focus ring on a pale band is invisible.
      *
      * @param array $branding The payload of {@see branding::for_category()}.
      * @param string $layout The layout actually drawn, which is not the stored one when an image
@@ -276,8 +277,9 @@ class category_hero implements renderable, templatable {
         if ($this->folded) {
             $classes[] = 'dim-hero--folded';
         }
-        $tabs = $this->tabs($output);
-        if (empty($tabs)) {
+        // The class keeps its name: a hero without a row of navigation ends plainly, its chamfer on the band.
+        $navpills = $this->navpills();
+        if ($navpills === null) {
             $classes[] = 'dim-hero--notabs';
         }
 
@@ -329,8 +331,8 @@ class category_hero implements renderable, templatable {
             'hasfold' => $fold !== null,
             'calendar' => $calendar,
             'hascalendar' => $calendar !== null,
-            'tabs' => $tabs ?: null,
-            'hastabs' => !empty($tabs),
+            'navpills' => $navpills?->export_for_template($output),
+            'hasnavpills' => $navpills !== null,
         ];
     }
 
@@ -355,20 +357,28 @@ class category_hero implements renderable, templatable {
     }
 
     /**
-     * The page's secondary navigation as core's more_menu exports it, or an empty array for none.
+     * The page's secondary navigation as a row of nav pills, or null when the hero draws none.
      *
-     * @param renderer_base $output The renderer.
-     * @return array
+     * Three refusals: the anonymous shell (a visitor has no secondary navigation, and the shell
+     * says so through $withtabs), a page without a secondary navigation, and a viewer whose only
+     * destination is the page itself (a learner): a pill is never alone on a row
+     * ({@see navgroups::has_row()}). The nodes are read, never changed: the same tree feeds
+     * other readers of the page.
+     *
+     * @return category_navpills|null
      */
-    private function tabs(renderer_base $output): array {
+    private function navpills(): ?category_navpills {
         global $PAGE;
 
         $page = $this->page ?? $PAGE;
         if (!$this->withtabs || !$page->has_secondary_navigation()) {
-            return [];
+            return null;
         }
-        $menu = new more_menu($page->secondarynav, 'nav-tabs', true, $page->has_tablist_secondary_navigation());
-        return $menu->export_for_template($output);
+        $units = navgroups::rows($page->secondarynav);
+        if (!navgroups::has_row($units)) {
+            return null;
+        }
+        return new category_navpills($units);
     }
 
     /**

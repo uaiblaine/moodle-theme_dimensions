@@ -57,7 +57,7 @@ final class core_renderer_test extends \advanced_testcase {
 
     /**
      * @var string The band as 5.3 draws it: core/secondarymoremenu, a React mount of core's tab bar around a
-     *      no-JS fallback that is a plain "moremenu navigation" nav, as the hero's tabs are.
+     *      no-JS fallback that is a plain "moremenu navigation" nav.
      */
     private const BAND_NAV = 'data-react-component="@moodle/lms/core/nav/Nav"';
 
@@ -657,17 +657,17 @@ final class core_renderer_test extends \advanced_testcase {
     }
 
     /**
-     * The category page renders the hero with the category's tabs inside it, one h1, and no band below.
+     * The category page renders the hero with the category's row of nav pills on its edge, one h1, and no band below.
      *
      * The band is the drift test: Boost Union's layout writes the secondary navigation under
      * the key this theme switches off (secondarymoremenu, read by BU's theme_boost/drawers
      * section around core/secondarymoremenu), and if that key is ever renamed the band comes
-     * back under the hero's own tab strip - two tab strips on one page, which this reads as the
-     * band's wrapper, core's React tab bar and a second plain more menu.
+     * back under the hero's own row - two navigations on one page, which this reads as the
+     * band's wrapper, core's React tab bar and its plain more menu.
      *
      * @return void
      */
-    public function test_the_category_page_renders_the_hero_with_the_tabs_and_no_band(): void {
+    public function test_the_category_page_renders_the_hero_with_the_row_and_no_band(): void {
         $this->resetAfterTest();
         $generator = self::getDataGenerator();
         $category = $generator->create_category(['name' => 'Showcase Category']);
@@ -692,17 +692,32 @@ final class core_renderer_test extends \advanced_testcase {
         $this->assertSame(1, substr_count($html, '<h1'), 'Exactly one h1: the hero\'s.');
         $this->assertStringContainsString('A tagline for the header', $html);
         $this->assertStringContainsString(get_string('categoryhero_pencil', 'theme_dimensions'), $html);
-        // One tab row, the hero's: core/moremenu inside the hero's strip, exactly once.
+        // One navigation, the hero's: the row of nav pills on its track, exactly once.
         $this->assertSame(1, substr_count($html, self::PRIMARY_NAV), 'Precondition: the primary navigation is drawn.');
-        $this->assertMatchesRegularExpression('~<div class="dim-hero__tabs">\s*<nav class="moremenu navigation">~', $html);
-        $this->assertSame(1, substr_count($html, '<nav class="moremenu navigation"'), 'The hero\'s tabs, once.');
-        // And never the band: neither its wrapper nor core's React tab bar, nor its no-JS fallback above.
+        $this->assertMatchesRegularExpression(
+            '~<div class="dim-hero__nav">\s*<div class="dim-hero__navtrack">\s*<nav class="dim-navpills"[^>]*'
+                . 'data-region="dim-navpills">~',
+            $html
+        );
+        $this->assertSame(1, substr_count($html, '<nav class="dim-navpills"'), 'The hero\'s row, once.');
+        // And never the band: neither its wrapper nor core's React tab bar, nor its no-JS fallback, nor core's more menu.
         $this->assertStringNotContainsString('class="secondary-navigation', $html);
         $this->assertStringNotContainsString(self::BAND_NAV, $html);
-        // The tabs by their node keys: the category's own page and its settings, and this theme's editor.
-        $this->assertStringContainsString('data-key="categorymain"', $html);
-        $this->assertStringContainsString('data-key="edit"', $html);
-        $this->assertStringContainsString('data-key="categoryappearance"', $html);
+        $this->assertSame(0, substr_count($html, '<nav class="moremenu navigation"'), 'No plain more menu on the page.');
+        // The destinations by their node keys: the category's own page, current, and in the Settings group its
+        // settings and this theme's editor.
+        $this->assertMatchesRegularExpression(
+            '~<a class="dim-navpill" href="[^"]*" data-key="categorymain" aria-current="page">~',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '~<details class="dim-navpill-group" data-group="settings">.*?</details>~s',
+            $html,
+            'The Settings group is a native disclosure.'
+        );
+        preg_match('~<details class="dim-navpill-group" data-group="settings">.*?</details>~s', $html, $settings);
+        $this->assertStringContainsString('data-key="edit"', $settings[0]);
+        $this->assertStringContainsString('data-key="categoryappearance"', $settings[0]);
         $this->assertStringContainsString(get_string('categoryhero_nav', 'theme_dimensions'), $html);
         $this->assertStringContainsString('name="' . category_hero::PARAM_FOLD . '"', $html);
     }
@@ -732,26 +747,90 @@ final class core_renderer_test extends \advanced_testcase {
     }
 
     /**
-     * A learner's hero carries the single category tab and no pencil.
+     * A learner's hero draws no row - "Category" would be alone on it - and no pencil.
+     *
+     * Competencies are off: with them on, every authenticated user reads the category's competency
+     * frameworks (moodle/competency:competencyview, archetype user), and Category is not alone
+     * (category_hero_test holds both halves).
      *
      * @return void
      */
-    public function test_a_learners_hero_carries_the_category_tab_and_no_pencil(): void {
+    public function test_a_learners_hero_draws_no_row_and_no_pencil(): void {
         $this->resetAfterTest();
         $generator = self::getDataGenerator();
         $category = $generator->create_category(['name' => 'Showcase Category']);
         $generator->create_course(['category' => $category->id]);
+        set_config('enabled', 0, 'core_competency');
         $this->setUser($generator->create_user());
 
         $html = $this->category_header((int) $category->id);
 
-        $this->assertStringContainsString('dim-hero__tabs', $html);
-        $this->assertStringContainsString('data-key="categorymain"', $html);
+        $this->assertStringContainsString('<h1 class="dim-hero__title">Showcase Category</h1>', $html, 'Control: the hero.');
+        $this->assertStringContainsString('dim-hero--notabs', $html);
+        $this->assertStringNotContainsString('dim-navpills', $html);
+        $this->assertStringNotContainsString('dim-hero__nav', $html);
+        $this->assertStringNotContainsString('data-key="categorymain"', $html);
         $this->assertStringNotContainsString('data-key="edit"', $html);
         $this->assertStringNotContainsString('data-key="categoryappearance"', $html);
         $this->assertStringNotContainsString(get_string('categoryhero_pencil', 'theme_dimensions'), $html);
         $this->assertStringNotContainsString('class="secondary-navigation', $html);
         $this->assertSame(1, substr_count($html, '<h1'));
+        $this->assertStringNotContainsString('theme_dimensions/navpills', $this->collected_amd(), 'No row, no client.');
+    }
+
+    /**
+     * The row's client is armed where the row is drawn, once, under the row's own id, for a row with a group.
+     *
+     * @return void
+     */
+    public function test_a_row_with_a_group_arms_its_client_once_under_its_id(): void {
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category(['name' => 'Showcase Category']);
+        $generator->create_course(['category' => $category->id]);
+        $this->setAdminUser();
+
+        $html = $this->category_header((int) $category->id);
+
+        $this->assertSame(1, preg_match('~<nav class="dim-navpills" id="([^"]+)"~', $html, $nav), 'Precondition: the row.');
+        $group = '~<details class="dim-navpill-group" data-group="~';
+        $this->assertMatchesRegularExpression($group, $html, 'Precondition: a group.');
+        $amd = $this->collected_amd();
+        $this->assertSame(1, substr_count($amd, "require(['theme_dimensions/navpills']"), 'The row\'s client, once.');
+        $this->assertStringContainsString('amd.init(' . json_encode($nav[1]) . ');', $amd, 'Told the row\'s own id.');
+    }
+
+    /**
+     * A row of plain pills is drawn and not armed: it has no menu whose roles and keys the client would add.
+     *
+     * Competencies on, a learner reads Category and the competency frameworks: two plain pills, the row
+     * drawn (the control), the client not asked for ({@see core_renderer::arm_navpills()}).
+     *
+     * @return void
+     */
+    public function test_a_row_of_plain_pills_is_not_armed(): void {
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category(['name' => 'Showcase Category']);
+        $generator->create_course(['category' => $category->id]);
+        set_config('enabled', 1, 'core_competency');
+        $this->setUser($generator->create_user());
+
+        $html = $this->category_header((int) $category->id);
+
+        $this->assertMatchesRegularExpression(
+            '~<a class="dim-navpill" href="[^"]*" data-key="competencyframeworks">~',
+            $html,
+            'Precondition: the learner\'s row holds a second plain pill.'
+        );
+        $this->assertDoesNotMatchRegularExpression('~<details class="dim-navpill-group" data-group="~', $html, 'No group.');
+        $this->assertMatchesRegularExpression(
+            '~<details class="dim-navpill-group dim-navpill-group--more" data-group="other" '
+                . 'data-region="dim-navpills-more" hidden>~',
+            $html,
+            'And More empty, hidden.'
+        );
+        $this->assertStringNotContainsString('theme_dimensions/navpills', $this->collected_amd(), 'Plain pills, no client.');
     }
 
     /**

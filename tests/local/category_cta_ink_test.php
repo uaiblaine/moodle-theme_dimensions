@@ -148,35 +148,4 @@ final class category_cta_ink_test extends \advanced_testcase {
             'The dark mode pairs its fixed blue with white.'
         );
     }
-
-    /**
-     * The hero's active tab is painted on the site's primary too, so its ink is derived the same way.
-     */
-    public function test_the_hero_tab_ink_follows_its_primary(): void {
-        foreach (['#ffd500', '#a5d6a7', '#f5e663'] as $primary) {
-            $ink = $this->ink($primary, '--dim-hero-primary-ink');
-            $this->assertGreaterThanOrEqual(4.5, branding::contrast($primary, $ink), $primary);
-            $this->assertLessThan(4.5, branding::contrast($primary, '#ffffff'), 'Control: white fails on ' . $primary);
-        }
-        foreach (['#0f6cbf', '#070093'] as $primary) {
-            $this->assertSame('#ffffff', $this->ink($primary, '--dim-hero-primary-ink'), $primary);
-        }
-    }
-
-    /**
-     * No rule that paints --dim-hero-primary pins white on it.
-     */
-    public function test_no_rule_pins_white_on_the_hero_primary(): void {
-        $clean = preg_replace('~/\*.*?\*/|(?<!:)//[^\n]*~s', '', $this->source());
-        $fill = '~(?<![\w-])background:\s*var\(--dim-hero-primary\)~';
-        $checked = 0;
-        foreach ($this->own_declarations($clean) as $block) {
-            if (preg_match($fill, $block)) {
-                $checked++;
-                $this->assertDoesNotMatchRegularExpression('~(?<![\w-])color:\s*#fff~', $block, $block);
-            }
-        }
-        $this->assertSame(preg_match_all($fill, $clean), $checked);
-        $this->assertGreaterThanOrEqual(1, $checked);
-    }
 }

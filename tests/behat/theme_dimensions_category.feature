@@ -498,23 +498,66 @@ Feature: The category showcase lists what a person may discover, and its filters
     And I should see "Resgate em Altura"
     And I should not see "Restricted One"
 
-  Scenario: A manager's category tabs sit inside the hero and the band below it is gone
+  Scenario: A manager's category navigation is a row of nav pills on the hero and the band below it is gone
     Given I log in as "admin"
     When I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     Then I should see "Test category" in the "h1.dim-hero__title" "css_element"
-    # The tabs are core's own secondary navigation, drawn as the hero's last row.
-    And I should see "Category" in the ".dim-hero__tabs" "css_element"
-    And I should see "Settings" in the ".dim-hero__tabs" "css_element"
+    # Core's secondary navigation, regrouped: Category is the current page, the rest are groups.
+    And "[data-region='dim-navpills'] a[data-key='categorymain'][aria-current='page']" "css_element" should exist
+    And I should see "Settings" in the "[data-region='dim-navpills'] details[data-group='settings'] > summary" "css_element"
     And ".secondary-navigation" "css_element" should not exist
     And I should see "Customise category" in the ".dim-hero" "css_element"
+    # Without JavaScript a group is a native disclosure whose links are in the page: a summary is no
+    # button to press, so the destination is followed from inside it.
+    When I click on "Category appearance" "link" in the "[data-region='dim-navpills'] details[data-group='settings']" "css_element"
+    Then "Tagline" "field" should exist
 
-  Scenario: A learner's hero carries the single category tab and no pencil
-    Given I log in as "student1"
+  Scenario: A learner whose only destination is the category gets no row and no pencil
+    # Competencies off: every account reads a category's competency frameworks by default, which is a
+    # destination of its own.
+    Given the following config values are set as admin:
+      | enabled | 0 | core_competency |
+    And I log in as "student1"
     When I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    Then I should see "Category" in the ".dim-hero__tabs" "css_element"
-    And I should not see "Settings" in the ".dim-hero__tabs" "css_element"
+    Then I should see "Test category" in the "h1.dim-hero__title" "css_element"
+    And ".dim-hero.dim-hero--notabs" "css_element" should exist
+    And "[data-region='dim-navpills']" "css_element" should not exist
     And ".secondary-navigation" "css_element" should not exist
     And I should not see "Customise category"
+
+  @javascript
+  Scenario: With the script a group's pill opens its menu, one menu at a time, and a destination is followed
+    Given I log in as "admin"
+    When I am on the "TESTCAT" "theme_dimensions > Category showcase" page
+    # Armed, the row claims the menu roles the keys now keep.
+    Then "[data-region='dim-navpills'].dim-navpills--live" "css_element" should exist
+    And "[data-region='dim-navpills'] details[data-group='settings'] > summary[aria-haspopup='menu']" "css_element" should exist
+    # A summary is no button to press: its name is clicked as text.
+    When I click on "Settings" "text" in the "[data-region='dim-navpills'] details[data-group='settings'] > summary" "css_element"
+    Then "[data-region='dim-navpills'] details[data-group='settings'] a[role='menuitem'][data-key='categoryappearance']" "css_element" should be visible
+    When I click on "User and access" "text" in the "[data-region='dim-navpills'] details[data-group='access'] > summary" "css_element"
+    Then "[data-region='dim-navpills'] details[data-group='access'][open]" "css_element" should exist
+    And "[data-region='dim-navpills'] details[data-group='settings'][open]" "css_element" should not exist
+    When I click on "Settings" "text" in the "[data-region='dim-navpills'] details[data-group='settings'] > summary" "css_element"
+    And I click on "Category appearance" "link" in the "[data-region='dim-navpills'] details[data-group='settings']" "css_element"
+    Then "Tagline" "field" should exist
+
+  @javascript
+  Scenario: In a narrow window the groups that do not fit move into More under their names, and Escape returns the focus
+    Given I change viewport size to "480x900"
+    And I log in as "admin"
+    When I am on the "TESTCAT" "theme_dimensions > Category showcase" page
+    Then "[data-region='dim-navpills-more']:not([hidden])" "css_element" should exist
+    # The page itself moves last: it keeps its place on the row and its aria-current; the last group moves first.
+    And "[data-region='dim-navpills'] > a[data-key='categorymain'][aria-current='page']" "css_element" should exist
+    And "[data-region='dim-navpills'] > details[data-group='competencies'][hidden]" "css_element" should exist
+    When I click on "More" "text" in the "[data-region='dim-navpills-more'] > summary" "css_element"
+    Then "//div[contains(concat(' ', normalize-space(@class), ' '), ' dim-navpill-menu__head ')][normalize-space(.)='Competencies']" "xpath_element" should exist in the "[data-region='dim-navpills-more']" "css_element"
+    And "[data-region='dim-navpills-more'] [role='group'] a[role='menuitem'][data-key='competencyframeworks']" "css_element" should be visible
+    When I press the down key
+    And I press the escape key
+    Then the focused element is "[data-region='dim-navpills-more'] > summary" "css_element"
+    And "[data-region='dim-navpills-more'][open]" "css_element" should not exist
 
   Scenario: A manager gives the category a tagline, a colour pair and its two descriptions
     Given I log in as "admin"

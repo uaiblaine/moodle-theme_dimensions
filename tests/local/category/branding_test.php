@@ -1857,7 +1857,7 @@ final class branding_test extends \advanced_testcase {
             ['from' => '#0f3b41', 'mid' => '#12484f', 'to' => '#2e5e64'],
             branding::stops('#12484f')
         );
-        // The MID stop is always the colour itself, whatever it is: the tab strip paints it.
+        // The MID stop is always the colour itself, whatever it is: the strip colour is that stop.
         foreach (['#000000', '#ffffff', '#ffc107'] as $bg) {
             $this->assertSame($bg, branding::stops($bg)['mid']);
         }
