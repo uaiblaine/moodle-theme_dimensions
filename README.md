@@ -34,7 +34,7 @@ The category showcase
 ---------------------
 
 With *Category showcase > Show the category showcase* on, `/course/index.php?categoryid=N` is the
-theme's own page: a hero with the category's name, tagline, description, your enrolments (and, for staff, the hidden courses) and tabs, then the
+theme's own page: a hero with the category's name, tagline, description and tabs (it shows no count: the list's count is in the filter bar under it), then the
 courses of the category and its subcategories as cards or a dense list, with search, state filters,
 filter groups built from course custom fields, a start-date filter, a category tree and real paging.
 It works with JavaScript off; with JavaScript on, every choice is applied in place.

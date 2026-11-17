@@ -104,21 +104,16 @@ final class category_hero_test extends \advanced_testcase {
     }
 
     /**
-     * The export names the category in the plain spelling, prints the tagline, and counts post-filter.
+     * The export names the category in the plain spelling and prints the tagline and the description.
      */
-    public function test_the_export_names_the_category_the_tagline_and_the_counts(): void {
+    public function test_the_export_names_the_category_and_prints_the_tagline(): void {
         $this->resetAfterTest();
         $generator = self::getDataGenerator();
         $category = $generator->create_category(['name' => 'Brigada & Resgate']);
         $categoryid = (int) $category->id;
         $one = $generator->create_course(['category' => $categoryid]);
-        $generator->create_course(['category' => $categoryid]);
-        $hidden = $generator->create_course(['category' => $categoryid, 'visible' => 0]);
         $viewer = $generator->create_user();
         $generator->enrol_user($viewer->id, $one->id);
-        $insider = $generator->create_user();
-        $generator->enrol_user($insider->id, $hidden->id);
-        $generator->enrol_user($insider->id, $one->id);
         $this->setAdminUser();
         branding::save($categoryid, (object) ['tagline' => 'Formação continuada']);
 
@@ -129,81 +124,83 @@ final class category_hero_test extends \advanced_testcase {
         $this->assertTrue($context->hastagline);
         $this->assertSame('<p>Descrição</p>', $context->descriptionhtml);
         $this->assertTrue($context->hasdescription);
-        $totallabel = get_string('categoryhero_stat_total', 'theme_dimensions');
-        $this->assertSame([1], array_column($context->stats, 'value'), 'Enrolled in one; the total is the filter bar\'s.');
-        $this->assertSame(get_string('categoryhero_stat_enrolled', 'theme_dimensions'), $context->stats[0]['label']);
-        $this->assertNotContains($totallabel, array_column($context->stats, 'label'), 'No total on a category page.');
         $this->assertFalse($context->compact);
         $this->assertFalse($context->haspencil);
-
-        // The administrator sees the hidden course counted, and as hidden.
-        $this->setAdminUser();
-        self::forget();
-        $context = $this->export($this->hero($categoryid));
-        $this->assertSame([1], array_column($context->stats, 'value'), 'The hidden course is the one number left.');
-        $hiddenlabel = get_string('categoryhero_stat_hidden', 'theme_dimensions');
-        $this->assertSame($hiddenlabel, $context->stats[0]['label']);
-        $this->assertNotContains($totallabel, array_column($context->stats, 'label'));
-        $this->assertTrue($context->hastagline);
-
-        // A student enrolled in the hidden course and in one visible course is not admitted to the
-        // hidden one, as in core: the enrolment does not count it, and "hidden from students" is a
-        // staff number, never a line for that student.
-        $this->become($insider);
-        $context = $this->export($this->hero($categoryid));
-        $this->assertSame(
-            [1],
-            array_column($context->stats, 'value'),
-            'Enrolled in one visible course; the hidden one is neither listed nor counted.'
-        );
-        $this->assertNotContains($hiddenlabel, array_column($context->stats, 'label'));
-        $this->assertSame(get_string('categoryhero_stat_enrolled', 'theme_dimensions'), $context->stats[0]['label']);
     }
 
     /**
-     * A teacher of a hidden course has it listed and counted, and is still not told how many courses are hidden.
+     * The hero is drawn without any count: not the viewer's enrolments, not the hidden courses, not a total.
      *
-     * The population admits a hidden course on the capability in the COURSE's context, which a
-     * teacher holds in their own course; the hidden count is a number about the category, so the
-     * hero asks for the capability in the CATEGORY's context. The control is the population's own
-     * hidden count, and an administrator's hero of the same category, which does print it.
+     * Four heroes, each of a viewer the panel used to speak to: a learner with an enrolment, an
+     * administrator in a category with a hidden course, the root of the course index, and a visitor.
+     * The control of each is something the same hero still draws (its title and, where it has one,
+     * its tagline), read from the rendered markup, so an empty page cannot pass; the list's own
+     * count belongs to the filter bar, which is not part of this template and is asserted by the
+     * category feature.
      */
-    public function test_a_teacher_of_a_hidden_course_is_not_told_the_hidden_count(): void {
+    public function test_the_hero_shows_no_count_to_anyone(): void {
+        global $PAGE;
+
         $this->resetAfterTest();
         $generator = self::getDataGenerator();
-        $categoryid = (int) $generator->create_category()->id;
-        $generator->create_course(['category' => $categoryid]);
+        $categoryid = (int) $generator->create_category(['name' => 'Brigada'])->id;
+        $visible = $generator->create_course(['category' => $categoryid]);
         $hidden = $generator->create_course(['category' => $categoryid, 'visible' => 0]);
-        $teacher = $generator->create_user();
-        $generator->enrol_user($teacher->id, $hidden->id, 'editingteacher');
-        $categorycontext = \core\context\coursecat::instance($categoryid);
-        $this->assertTrue(has_capability('moodle/course:viewhiddencourses', \core\context\course::instance($hidden->id), $teacher));
-        $this->assertFalse(has_capability('moodle/course:viewhiddencourses', $categorycontext, $teacher));
+        $learner = $generator->create_user();
+        $generator->enrol_user($learner->id, $visible->id);
+        $this->setAdminUser();
+        branding::save($categoryid, (object) ['tagline' => 'Formação continuada']);
 
-        $this->become($teacher);
+        // A learner with one enrolment: the population still counts it, the hero does not print it.
+        $this->become($learner);
         $result = population::resolve(new criteria($categoryid));
-        $this->assertContains((int) $hidden->id, $result->ids(), 'The control: the hidden course is the teacher\'s to see.');
-        $this->assertSame(1, $result->hidden, 'And the population counted it as hidden.');
+        $this->assertSame(1, $result->counts['enrolled'], 'Precondition: the learner has an enrolment to count.');
+        $this->assert_no_count_panel($this->export($this->hero($categoryid)), 'Brigada', 'Formação continuada');
 
-        self::forget();
-        $context = $this->export($this->hero($categoryid));
-        $this->assertNotContains(
-            get_string('categoryhero_stat_hidden', 'theme_dimensions'),
-            array_column($context->stats, 'label'),
-            'The hidden count is the category\'s staff number, not the teacher\'s.'
-        );
-        $this->assertSame(
-            [get_string('categoryhero_stat_enrolled', 'theme_dimensions')],
-            array_column($context->stats, 'label'),
-            'The teacher\'s own enrolment is the one number left; the total is not a category page\'s.'
-        );
-
-        // Control: the administrator's hero of the same category prints the hidden count.
+        // An administrator: the hidden course is listed and counted as hidden, and the hero says nothing of it.
         $this->setAdminUser();
         self::forget();
-        $context = $this->export($this->hero($categoryid));
-        $this->assertSame([1], array_column($context->stats, 'value'));
-        $this->assertTrue($context->hasstats);
+        $result = population::resolve(new criteria($categoryid));
+        $this->assertSame(1, $result->hidden, 'Precondition: the population counted the hidden course.');
+        $this->assertContains((int) $hidden->id, $result->ids());
+        $this->assert_no_count_panel($this->export($this->hero($categoryid)), 'Brigada', 'Formação continuada');
+
+        // The root of the course index, which kept a total in its hero until now.
+        $criteria = new criteria(0);
+        $result = population::resolve($criteria);
+        $this->assertGreaterThan(0, $result->total, 'Precondition: the root has courses to count.');
+        $PAGE->set_url('/course/index.php');
+        $PAGE->set_secondary_navigation(false);
+        $hero = new category_hero(core_course_category::top(), $result, $criteria);
+        $root = $hero->export_for_template($PAGE->get_renderer('core'));
+        $this->assert_no_count_panel($root, get_string('courses'), null);
+    }
+
+    /**
+     * Assert that a hero's export and markup carry no panel of counts, over a control the same hero draws.
+     *
+     * @param \stdClass $context The hero's export.
+     * @param string $title The title the h1 must carry (the control).
+     * @param string|null $tagline The tagline the markup must carry too, or null where the hero has none.
+     * @return void
+     */
+    private function assert_no_count_panel(\stdClass $context, string $title, ?string $tagline): void {
+        global $PAGE;
+        $this->assertFalse(property_exists($context, 'stats'), 'The export carries no list of counts.');
+        $this->assertFalse(property_exists($context, 'hasstats'), 'And no flag for one.');
+        $html = $PAGE->get_renderer('core')->render_from_template('theme_dimensions/category_hero', $context);
+        $this->assertMatchesRegularExpression(
+            '~<h1 class="dim-hero__title">' . preg_quote($title, '~') . '</h1>~',
+            $html,
+            'The control: the hero is drawn, with its title.'
+        );
+        if ($tagline !== null) {
+            $this->assertStringContainsString($tagline, $html, 'The control: the tagline is drawn.');
+        }
+        $this->assertStringNotContainsString('dim-hero__stat', $html, 'No panel of counts.');
+        foreach (['you are enrolled in', 'hidden from students', 'courses and events'] as $sentence) {
+            $this->assertStringNotContainsString($sentence, $html, 'No count sentence: ' . $sentence);
+        }
     }
 
     /**
@@ -211,7 +208,7 @@ final class category_hero_test extends \advanced_testcase {
      *
      * One rule in three parts: the crests are the category's and inherit nothing (a parent with
      * crests leaves a child without any showing none), they arrive in the editor's order with a
-     * gap closed, and a folded band, which drops the tagline and the counts, keeps them.
+     * gap closed, and a folded band, which drops the tagline, keeps them.
      */
     public function test_the_hero_draws_the_categorys_own_crests(): void {
         $this->resetAfterTest();
@@ -590,16 +587,15 @@ final class category_hero_test extends \advanced_testcase {
     }
 
     /**
-     * A hero built for a visitor posts its fold form to the public page and counts nothing personal.
+     * A hero built for a visitor posts its fold form to the public page and draws no count.
      *
-     * The enrolled viewer's own hero of the same category, in the same run, is the control for
-     * both halves: it posts to core's /course/index.php with the categoryid the showcase reads,
-     * and it carries the enrolment line the visitor's hero has no viewer to count. Neither hero
-     * carries the category's total.
+     * The enrolled viewer's own hero of the same category, in the same run, is the control: it
+     * posts to core's /course/index.php with the categoryid the showcase reads. Neither hero
+     * carries a panel of counts, and each is checked on its rendered markup over its title.
      *
      * @return void
      */
-    public function test_an_anonymous_hero_targets_the_public_page_and_counts_nothing_personal(): void {
+    public function test_an_anonymous_hero_targets_the_public_page_and_shows_no_count(): void {
         $this->resetAfterTest();
         [$categoryid, $viewer] = $this->public_category();
         $category = core_course_category::get($categoryid, MUST_EXIST, true);
@@ -614,8 +610,7 @@ final class category_hero_test extends \advanced_testcase {
         $this->assertStringEndsWith('/theme/dimensions/category.php', $context->fold['action']);
         $this->assertSame([['name' => 'id', 'value' => $categoryid, 'region' => '']], $context->fold['params']);
         $this->assertFalse($context->haspencil, 'User 0 holds no capability.');
-        $this->assertSame([], $context->stats, 'No viewer to count, and no total on a category page.');
-        $this->assertFalse($context->hasstats);
+        $this->assert_no_count_panel($context, 'Brigada', null);
 
         // Control: the enrolled viewer's own hero of the same category.
         $this->become($viewer);
@@ -624,7 +619,7 @@ final class category_hero_test extends \advanced_testcase {
         $context = $this->export(new category_hero($category, $result, $criteria));
         $this->assertStringEndsWith('/course/index.php', $context->fold['action']);
         $this->assertContains(['name' => 'categoryid', 'value' => $categoryid, 'region' => ''], $context->fold['params']);
-        $this->assertSame([1], array_column($context->stats, 'value'), 'Their own enrolment, and no total.');
+        $this->assert_no_count_panel($context, 'Brigada', null);
 
         // Control: a manager of the same category does get the pencil.
         $this->become($this->user_with('moodle/category:manage', \core\context\coursecat::instance($categoryid)));
@@ -837,12 +832,6 @@ final class category_hero_test extends \advanced_testcase {
         $this->assertNull($context->pencil);
         $this->assertFalse($context->hastrail);
         $this->assertSame([], $context->trail);
-        $this->assertTrue($context->hasstats, 'The counts panel is drawn at the root too.');
-        $this->assertSame(
-            get_string('categoryhero_stat_total', 'theme_dimensions'),
-            $context->stats[0]['label'],
-            'The root keeps the total: its toolbar shows no count.'
-        );
         $this->assertTrue($context->hasfold);
         $this->assertStringEndsWith('/course/index.php', $context->fold['action']);
         $this->assertSame([], $context->fold['params'], 'No category travels with the root\'s fold.');
