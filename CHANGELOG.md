@@ -5,6 +5,10 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The category hero no longer shows the course count** (2026100630). The filter bar under it
+  already shows the list's count, so a category page's panel keeps only the viewer's enrolments and, for staff, the
+  hidden courses, and is not drawn when neither applies. The root of the course index keeps its total: its toolbar
+  is the search line alone and carries no count.
 - **The category showcase's navigation is a row of pills on the hero's lower edge** (2026100629). Moodle's
   tabs under the hero give way to a capsule of pills that straddles the band's edge, at every width and with the hero
   folded: "Category", the current page, is a plain pill with its dot; "Settings", "User and access", "Courses and

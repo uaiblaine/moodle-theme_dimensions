@@ -440,7 +440,13 @@ class category_hero implements renderable, templatable {
     }
 
     /**
-     * The numbers of the panel, every one post-filter: the total, the viewer's enrolments, the hidden courses.
+     * The numbers of the panel, every one post-filter: the viewer's enrolments, the hidden courses, and at the root the total.
+     *
+     * A category page carries no total: the filter bar below the hero already shows the list's
+     * count, and a level shows one count. The root of the course index keeps it, because its
+     * toolbar is the search line alone and the hero's number is the only one on that page.
+     * A category page of a viewer with no enrolment and no hidden course has no entry, and no
+     * panel is drawn.
      *
      * The enrolment count is offered when the viewer has one. The hidden count is a staff
      * number about the category and is shown behind the capability that names it, in the
@@ -454,10 +460,13 @@ class category_hero implements renderable, templatable {
      */
     private function stats(\core\context $context): array {
         $counts = $this->result->counts;
-        $stats = [[
-            'value' => (int) ($counts['total'] ?? $this->result->total),
-            'label' => get_string('categoryhero_stat_total', self::COMPONENT),
-        ]];
+        $stats = [];
+        if ((int) $this->category->id === 0) {
+            $stats[] = [
+                'value' => (int) ($counts['total'] ?? $this->result->total),
+                'label' => get_string('categoryhero_stat_total', self::COMPONENT),
+            ];
+        }
         if (!$this->result->anonymous && (int) ($counts['enrolled'] ?? 0) > 0) {
             $stats[] = [
                 'value' => (int) $counts['enrolled'],
