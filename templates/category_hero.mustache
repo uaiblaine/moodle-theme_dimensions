@@ -22,8 +22,9 @@
     colour, or the compact title row), the trail of the category's ancestors,
     the page's one h1 with the manager's pencil beside it, the tagline, the
     category's own description, the panel of counts, the fold control as a GET
-    form, and the category's tabs - core's secondary navigation through the
-    core/moremenu partial - as the band's last row. The trail is the hero's own
+    form, and the category's navigation - core's secondary navigation as a row
+    of nav pills (theme_dimensions/category_navpills) straddling the band's
+    lower edge, on a track of its own. The trail is the hero's own
     because core's breadcrumb is empty on every filtered address. The header
     keeps core's id and data attribute so everything that addresses the page
     header still finds it.
@@ -45,7 +46,7 @@
     The layout is a class on the header; the colour is the manager's free
     background and text pair, carried by a single inline style attribute
     holding the custom properties the stylesheet reads: the gradient stops, the
-    tab strip's tone, the ink, the muted ink and the focus ring.
+    strip's tone, the ink, the muted ink and the focus ring.
 
     That attribute is a CSS context, which Mustache escaping does not protect:
     the double stash keeps a value inside the attribute but not inside the
@@ -108,17 +109,52 @@
         "headeractions": [],
         "hasheaderextras": false,
         "headerextras": [],
-        "hastabs": true,
-        "tabs": {
-            "navbarstyle": "nav-tabs",
-            "istablist": false,
-            "moremenuid": "614c104dbacfa",
-            "nodecollection": {
-                "children": [
-                    {"text": "Category", "action": "https://example.com/course/index.php?categoryid=7", "isactive": true},
-                    {"text": "Settings", "action": "https://example.com/course/editcategory.php?id=7"}
-                ]
-            }
+        "hasnavpills": true,
+        "navpills": {
+            "label": "Category navigation",
+            "uniqid": "dim-navpills-6740a1b2c3d4e",
+            "units": [
+                {
+                    "isgroup": false,
+                    "key": "categorymain",
+                    "text": "Category",
+                    "url": "https://example.com/course/index.php?categoryid=7",
+                    "current": true,
+                    "icon": {"key": "i/link", "component": "core"}
+                },
+                {
+                    "isgroup": true,
+                    "key": "settings",
+                    "name": "Settings",
+                    "current": false,
+                    "menuid": "dim-navpills-6740a1b2c3d4e-settings",
+                    "items": [
+                        {
+                            "key": "categoryappearance",
+                            "text": "Category appearance",
+                            "url": "https://example.com/theme/dimensions/categoryhero.php?id=7",
+                            "current": false,
+                            "icon": {"key": "i/edit", "component": "core"}
+                        },
+                        {
+                            "key": "edit",
+                            "text": "Settings",
+                            "url": "https://example.com/course/editcategory.php?id=7",
+                            "current": false,
+                            "icon": {"key": "i/edit", "component": "core"}
+                        }
+                    ]
+                }
+            ],
+            "more": {
+                "key": "other",
+                "name": "More",
+                "current": false,
+                "menuid": "dim-navpills-6740a1b2c3d4e-other",
+                "hasitems": false,
+                "items": []
+            },
+            "hasgroups": true
         }
     }
 }}
@@ -187,13 +223,15 @@
             {{/hasfold}}
         </div>
     </div>
-    {{#hastabs}}
-    <div class="dim-hero__tabs">
-        {{#tabs}}
-        {{> core/moremenu}}
-        {{/tabs}}
+    {{#hasnavpills}}
+    <div class="dim-hero__nav">
+        <div class="dim-hero__navtrack">
+            {{#navpills}}
+            {{> theme_dimensions/category_navpills}}
+            {{/navpills}}
+        </div>
     </div>
-    {{/hastabs}}
+    {{/hasnavpills}}
     {{#hasheaderextras}}
     <div class="header-extras-container ms-auto" data-region="header-extras-container">
         {{#headerextras}}

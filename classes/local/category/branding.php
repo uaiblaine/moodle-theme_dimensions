@@ -169,7 +169,7 @@ final class branding {
     /** @var string A band in the solid colour. */
     public const LAYOUT_SOLID = 'solid';
 
-    /** @var string The title row and the tabs alone. */
+    /** @var string The title row and the navigation alone. */
     public const LAYOUT_COMPACT = 'compact';
 
     /** @var string[] Every layout the editor offers. */
@@ -209,9 +209,9 @@ final class branding {
      *
      * 0 is "Transparent": the three gradient stops become fully transparent and the photograph is
      * painted alone, so nothing measured by the contrast panel applies to the text over it - the
-     * help text says so. The tab strip keeps the opaque mid stop at every overlay
-     * ({@see \theme_dimensions\output\category_hero::style()}), so the tabs read on a
-     * bare photograph whatever this is set to.
+     * help text says so. The strip property keeps the opaque mid stop at every overlay
+     * ({@see \theme_dimensions\output\category_hero::style()}); the row of nav pills sits on the
+     * page's own surface, so it reads on a bare photograph whatever this is set to.
      */
     public const OVERLAYS = [0, 60, 78, 90];
 
@@ -439,9 +439,8 @@ final class branding {
      * The three gradient stops of a band colour.
      *
      * The band is one colour with a darker head and a lighter tail, derived so that any colour
-     * reads as a gradient rather than a flat slab. The mid stop is the colour itself, and it is
-     * what the tab strip paints - an opaque tone under white tabs, whatever the photograph
-     * behind it.
+     * reads as a gradient rather than a flat slab. The mid stop is the colour itself, and the
+     * hero's strip property carries it opaque, whatever the photograph behind it.
      *
      * @param string $bg The band colour; anything {@see hex()} refuses yields the default's stops.
      * @return array Keys from, mid and to, each a lower-case #rrggbb.

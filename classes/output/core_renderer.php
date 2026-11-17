@@ -196,9 +196,9 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $context['dimensionsdrawer'] = drawernav::context((array) $context['mobileprimarynav'], $this->page);
         }
 
-        /* The category showcase's hero draws the category's tabs itself, so the secondary navigation
-           band is switched off while a hero is armed, keyed on the key Boost Union's layout writes for
-           it. If Boost Union renames the key the band comes back beside the hero's tabs, which
+        /* The category showcase's hero draws the category's navigation itself (its row of nav pills), so the
+           secondary navigation band is switched off while a hero is armed, keyed on the key Boost Union's layout
+           writes for it. If Boost Union renames the key the band comes back beside the hero's row, which
            core_renderer_test's drift test catches. */
         if (is_array($context) && array_key_exists('secondarymoremenu', $context) && category_hero::current() !== null) {
             $context['secondarymoremenu'] = false;
@@ -296,6 +296,8 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * armed the parent draws its header unchanged, but for the header actions of a page that opens in
      * focus mode ({@see self::focus_full_header()}).
      *
+     * The hero's row of nav pills is armed here, where it is drawn ({@see self::arm_navpills()}).
+     *
      * @return string HTML to display the main header.
      */
     public function full_header() {
@@ -308,10 +310,32 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             return $this->focus_full_header();
         }
         $context = $hero->export_for_template($this);
+        $this->arm_navpills($context->navpills);
         $context->headeractions = $this->page->get_header_actions();
         $context->headerextras = $this->page->get_header_extras();
         $context->hasheaderextras = !empty($context->headerextras);
         return $this->render_from_template('theme_dimensions/category_hero', $context);
+    }
+
+    /**
+     * Arm the client of the hero's row of nav pills, when the row has a menu to open.
+     *
+     * A row with a group, or with "More" holding nodes of its own, gets the module: it claims the
+     * menu roles with their keys, keeps one menu open at a time and moves what does not fit into
+     * "More". A row of plain pills is not armed. It has no menu, so no role or key to add, and its
+     * only overflow is the wrapping capsule every row has without a script (it holds at most one
+     * pill per group, each a destination of its own, which wraps cleanly on a phone): arming it would
+     * load the module for every viewer with a right or two in the category, for nothing a reader
+     * could not already reach. No row (the anonymous shell, a learner) arms nothing.
+     *
+     * @param array|null $navpills The row's exported context ({@see category_navpills::export_for_template()}), or null.
+     * @return void
+     */
+    private function arm_navpills(?array $navpills): void {
+        if ($navpills === null || empty($navpills['hasgroups'])) {
+            return;
+        }
+        $this->page->requires->js_call_amd('theme_dimensions/navpills', 'init', [$navpills['uniqid']]);
     }
 
     /**

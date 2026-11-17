@@ -266,7 +266,7 @@ function theme_dimensions_user_preferences(): array {
             'permissioncallback' => [core_user::class, 'is_current_user'],
         ],
         // The fold of the showcase's hero: folded, the hero keeps its title row and its
-        // tabs and drops the tagline, the description and the counts. Written from the hero's own
+        // navigation and drops the tagline, the description and the counts. Written from the hero's own
         // GET form for a logged-in person, so the page without JavaScript remembers it too.
         \theme_dimensions\output\category_hero::PREFERENCE_FOLDED => [
             'type' => PARAM_BOOL,
@@ -519,8 +519,8 @@ function theme_dimensions_pluginfile($course, $cm, $context, $filearea, $args, $
  * Add the category appearance editor to a category's settings navigation.
  *
  * Core folds the category's settings into its secondary navigation, so the node becomes one
- * of the tabs the showcase's hero merges into itself, and the page's own "More" menu holds it
- * when the row is full. Gated exactly as the editor is (moodle/category:manage) and
+ * of the destinations of the showcase hero's row, in its Settings group
+ * (\theme_dimensions\local\category\navgroups). Gated exactly as the editor is (moodle/category:manage) and
  * only while the showcase is switched on, because the hero the editor shapes is not drawn
  * otherwise.
  *

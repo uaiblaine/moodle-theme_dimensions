@@ -5,6 +5,25 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The category showcase's navigation is a row of pills on the hero's lower edge** (2026100629). Moodle's
+  tabs under the hero give way to a capsule of pills that straddles the band's edge, at every width and with the hero
+  folded: "Category", the current page, is a plain pill with its dot; "Settings", "User and access", "Courses and
+  content" and "Competencies" each open a menu of their destinations, every one with its icon, in alphabetical order;
+  a group holding one destination for the viewer is that destination's own pill. A destination the theme does not
+  know is listed under "More", the row's last pill, which is drawn only when it has something to hold. A viewer whose
+  only destination is the category page itself gets no row, and the hero ends plainly; note that on a site with
+  competencies enabled every account can read the category's competency frameworks, so a learner's row there is
+  "Category" and "Competency frameworks". The row works without JavaScript: every group is a disclosure that opens by
+  itself and the capsule wraps when it does not fit. With JavaScript, for a row that has a menu to open, the menus
+  behave as menus: the arrow keys, Enter or Space open one on its first item, the arrows, Home and End move inside it,
+  Escape closes it and puts the focus back on its pill, Tab or a press outside closes it, and only one is open at a
+  time. The capsule then keeps one line, and what does not fit moves into "More" from the row's end, "Category" last:
+  a group as a section headed by its name, a pill as an item with its icon, a separator between sections; "More"
+  takes the selected look when it holds the current page. The row is measured again when the fonts arrive and when
+  its width changes, never while a menu is open. A row of plain pills loads no script. Moodle's more menu is no longer
+  loaded on the showcase. A new template (`category_navpills`) draws the row and a new module
+  (`theme_dimensions/navpills`, over the ES modules `navpills/row` and `navpills/fit`) arms it; the anonymous shell
+  draws none, as before.
 - **The theme requires `local_unlistedcourses` 2026100506 (v5.3-r3) or later** (2026100628); it required 2026100505.
   Since 2026100627 the theme leaves the contexts of the unlisted courses it asks about to the plugin's own bulk read,
   which arrived in that version; with the older one every such course cost a statement on the category showcase.

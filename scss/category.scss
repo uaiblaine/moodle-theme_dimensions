@@ -21,12 +21,10 @@
 // One markup serves two views: the view is one class on the container (--cards / --list).
 
 // The 18px cut of the design's bottom-left corner, drawn as a page-coloured triangle rather
-// than with clip-path. A clip-path on the tab strip would clip core's "More" dropdown, which
-// overflows it; the triangle is a pseudo-element under the dropdown and clips nothing. It
-// belongs to whichever element closes the navy block: the strip when the hero has tabs, the
-// band when it has none and on the phone, where the strip leaves the block. Its z-index is
-// the band's stack: over the photograph and its overlay (0 and 1), under the hero's own
-// content (2) so it can never paint over a control, and far under the dropdown's 1000.
+// than with clip-path, on the band, which closes the navy block at every width: the row of nav
+// pills straddles the band's edge from outside it. Its z-index is the band's stack: over the
+// photograph and its overlay (0 and 1), under the hero's own content (2) so it can never paint
+// over a control.
 @mixin dim-chamfer {
     position: absolute;
     bottom: 0;
@@ -105,9 +103,9 @@ body.dim-category {
         }
     }
 
-    // ---- The hero: the page header, navy, with the category's tabs merged into it ----------
+    // ---- The hero: the page header, navy, with the category's navigation on its lower edge --
     // The layout is a class on the header; the colour is not. The manager picks a free
-    // background and text pair in the editor, so the three gradient stops, the tab strip's tone,
+    // background and text pair in the editor, so the three gradient stops, the strip's tone,
     // the ink and the focus ring arrive as custom properties in one inline style attribute,
     // built by category_hero::style() from values branding::hex() has normalised. That attribute
     // is a CSS-context sink; the guard is that vocabulary, not the template.
@@ -119,8 +117,8 @@ body.dim-category {
         --dim-hero-from: var(--dim-ds-blue-800, #030050);
         --dim-hero-mid: var(--dim-ds-blue-600, #070093);
         --dim-hero-to: var(--dim-ds-blue-500, #2a31c9);
-        // The tab strip's own colour: always the OPAQUE background, even under a photograph,
-        // where the three stops above turn translucent and the ink on them would vanish.
+        // The strip's colour, the OPAQUE background even under a photograph: the attribute's
+        // vocabulary carries it, and no rule paints with it since the row sits on the page's surface.
         --dim-hero-strip: var(--dim-ds-blue-600, #070093);
         --dim-hero-ink: #fff;
         --dim-hero-ink-muted: var(--dim-ds-text-inverse-muted, #d6d8f7);
@@ -130,17 +128,9 @@ body.dim-category {
         --dim-hero-chamfer: 18px;
         --dim-hero-band: var(--dimensions-navbar-band, var(--dim-ds-accent-highlight, #4456ff));
         --dim-hero-page: var(--bs-body-bg, #fff);
-        --dim-hero-page-ink: var(--bs-body-color, #1f1f1f);
-        // The brand ink of the page colour. It is resolved here and inherited, never read from
-        // inside the tab list: a theme's core/moremenu override may stamp its own data-bs-theme on
-        // the more menu's <ul>, and every --bs-* token read below that element would then be that
-        // mode's, leaving the active tab unreadable on the dark page.
-        --dim-hero-page-primary-ink: var(--bs-primary-text-emphasis, var(--bs-body-color, #1f1f1f));
-        --dim-hero-page-strong: var(--bs-secondary-bg, #e9ecef);
-        --dim-hero-page-muted: var(--bs-secondary-color, #6a737b);
-        --dim-hero-primary: var(--bs-primary, #0f6cbf);
-        // The ink on that fill, derived from the same $primary the way --dim-cta-ink is: a brand colour can be light.
-        --dim-hero-primary-ink: #{color-contrast($primary)};
+        // The capsule of the category's navigation, whose half the band pays and the row's wrapper
+        // rises by (the straddle, below): its 32px pills, the capsule's 3px padding and its 1px border.
+        --dim-navpills-height: 2.5rem;
         margin-bottom: 0;
         padding: 0;
         color: var(--dim-hero-ink);
@@ -154,15 +144,22 @@ body.dim-category {
         outline-color: var(--dim-hero-ring);
     }
 
+    // The band pays the upper half of the navigation's capsule as its bottom padding, so the foot's
+    // controls never sit under the capsule that straddles its edge (.dim-hero__nav rises by the same half).
     .dim-hero__band {
         position: relative;
         overflow: hidden;
-        padding: 26px $dim-bleed 0;
+        padding: 26px $dim-bleed calc(var(--dim-navpills-height) / 2);
         background: linear-gradient(120deg, var(--dim-hero-from), var(--dim-hero-mid) 58%, var(--dim-hero-to));
     }
 
-    // With no tab strip the band closes the header, and the chamfer of the design goes on it.
-    .dim-hero--notabs .dim-hero__band::after {
+    // A hero without a row (the anonymous shell, a learner) ends plainly, with no half to pay.
+    .dim-hero--notabs .dim-hero__band {
+        padding-bottom: 0;
+    }
+
+    // The band closes the navy block at every width, so the chamfer of the design is always its own.
+    .dim-hero__band::after {
         @include dim-chamfer;
     }
 
@@ -185,8 +182,8 @@ body.dim-category {
     // sibling than the overlay pseudo-element, so with everything at z-index auto the
     // photograph paints on top of the overlay that darkens it, and the eyebrow reads 2.9:1 on
     // the bare photo against 8.3:1 through the overlay.
-    // Nothing here reaches the strip's dropdown, which carries Bootstrap's z-index 1000 and
-    // is not inside a stacking context of the hero's making.
+    // Nothing here reaches the navigation's menus: the row is outside the band, in a stacking
+    // context of its own (.dim-hero__nav).
     .dim-hero__image {
         position: absolute;
         inset: 0;
@@ -465,97 +462,288 @@ body.dim-category {
         margin: 0;
     }
 
-    // The tab strip: core's more menu, on the band's own colour so an inactive tab reads on the page.
-    // Boost gives .moremenu and every .nav-link inside it a fixed 60px height, which is the
-    // navigation bar's measure, not the design's 40px strip. The link goes back to its content
-    // height; the menu keeps a fixed one, at the design's 40px, because that is how core's
-    // more-menu decides what to collapse: autoCollapse() in lib/amd/src/moremenu.js compares the
-    // list's own height with `menu.parentNode.offsetHeight + 1`, so a nav that grows with its
-    // list can never be taller than itself and nothing is ever moved into "More" - the tabs wrap
-    // onto several lines instead. For the same reason the list keeps Bootstrap's flex-wrap:
-    // wrapping is the signal the collapse reads, not a layout accident.
-    // The strip is a stacking context of its own above the filter line (.dim-toolbar, 30) that follows
-    // the hero in the document: its "More" menu overflows the strip downwards and would otherwise open
-    // under the line. It must not be a scroll container either (overflow-x other than visible
-    // computes overflow-y to auto), which would clip the menu to the strip's own height; core's
-    // more-menu already collapses what does not fit, so the rail has nothing to scroll.
-    .dim-hero__tabs {
+    // ---- The category navigation (nav-pill.md) ------------------------------------------------
+    // The fleet Design System's nav pills in the filter bar's capsule, straddling the band's lower
+    // edge at every width and with the hero folded. Every colour, radius and elevation is a family
+    // token (post.scss declares each in both modes, so the family's dark half is the row's dark mode)
+    // read with Bootstrap's own as the fallback; the --dim-* aliases of the listing are declared on its
+    // roots only, which the hero is not. Without a script the capsule wraps and every group is a native
+    // disclosure; the client keeps it on one line and moves what does not fit into "More".
+    //
+    // The wrapper rises by half the capsule over the band, which pays that half as padding: the two
+    // halves read the same token. It stacks over the filter line (.dim-toolbar, 30) that follows the
+    // hero, so a menu opening downwards is not drawn under the line, and it is no scroll container: a
+    // menu overflows it.
+    .dim-hero__nav {
         position: relative;
         z-index: 31;
-        padding: 0 $dim-bleed;
-        background: var(--dim-hero-strip);
+        margin-top: calc(var(--dim-navpills-height) / -2);
+        padding-inline: $dim-bleed;
+    }
 
-        .moremenu {
-            height: 40px;
-            max-width: $dim-track;
-            margin: 0 auto;
-            padding-inline: $dim-main-pad;
+    // The band's track, so the capsule starts where the title does.
+    .dim-hero__navtrack {
+        max-width: $dim-track;
+        margin-inline: auto;
+        padding-inline: $dim-main-pad;
+    }
+
+    // The capsule: as wide as its pills and never stretched, the page's surface and ink inside the
+    // hero's white ink, the bar's 3px padding (the space scale's one named exception).
+    .dim-navpills {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .125rem;
+        max-width: 100%;
+        padding: .1875rem;
+        border: 1px solid var(--dimensions-line, var(--bs-border-color, #dee2e6));
+        border-radius: var(--dimensions-radius-lg, 12px);
+        background: var(--dimensions-surface, var(--bs-body-bg, #fff));
+        color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
+        box-shadow: var(--dimensions-elevation-sm, 0 1px 2px rgba(7, 0, 147, .08), 0 1px 3px rgba(7, 0, 147, .06));
+    }
+
+    // A pill: a link, or a group's summary. Muted with no ground at rest; its width follows its label.
+    .dim-navpills .dim-navpill {
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        gap: .375rem;
+        height: 2rem;
+        padding: 0 .75rem;
+        border: 0;
+        border-radius: var(--dimensions-radius-md, 8px);
+        background: transparent;
+        color: var(--dimensions-ink-muted, var(--bs-secondary-color, #6a737b));
+        font-size: .875rem;
+        font-weight: 500;
+        line-height: 1.25;
+        text-decoration: none;
+        white-space: nowrap;
+        cursor: pointer;
+        list-style: none;
+        transition:
+            background-color var(--dimensions-motion-fast, 150ms) var(--dimensions-motion-ease, ease),
+            color var(--dimensions-motion-fast, 150ms) var(--dimensions-motion-ease, ease);
+
+        &::-webkit-details-marker {
+            display: none;
         }
 
-        // Boost paints the more menu's list white; on the strip that hid every white tab but the active one.
-        .nav-tabs {
-            border-bottom: 0;
-            gap: 2px;
-            min-height: 0;
-            background: transparent;
+        &:hover {
+            background: var(--dimensions-surface-alt, var(--bs-tertiary-bg, #f8f9fa));
+            color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
+            text-decoration: none;
         }
 
-        // The 40px above is this link's own height plus the slack the collapse needs, and
-        // both halves are stated so an edit to either is visibly coupled: 9 + 9 of padding
-        // and a line box of .875rem x 1.45 = 20.3px make 38.3px, which clears the 40px menu
-        // by 1.7px. The line-height is declared rather than inherited because Boost's 1.5
-        // would put the link at 39px and leave the collapse under a pixel of slack.
-        .nav-link {
-            height: auto;
-            border: 0;
-            border-radius: var(--dim-hero-radius) var(--dim-hero-radius) 0 0;
-            background: rgba(255, 255, 255, .1);
-            color: rgba(255, 255, 255, .84);
-            padding: 9px 16px;
-            font-size: .875rem;
-            line-height: 1.45;
+        &:active {
+            background: var(--dimensions-surface-inset, var(--bs-secondary-bg, #e9ecef));
+        }
+
+        // The hero paints its ink as the ring (.dim-hero :focus-visible), white by default: invisible on
+        // the capsule's surface. The row's own controls take the family's ring back, with a selector that
+        // outranks the hero's.
+        &:focus-visible {
+            outline: var(--dimensions-focus-width, 3px) solid var(--dimensions-focus-ring, var(--bs-emphasis-color, #000));
+            outline-offset: 2px;
+        }
+    }
+
+    // Selected: the current page, or the group that holds it (D79, D82).
+    .dim-navpills .dim-navpill[aria-current="page"],
+    .dim-navpills .dim-navpill.is-selected {
+        background: var(--dimensions-surface-inset, var(--bs-secondary-bg, #e9ecef));
+        color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
+        font-weight: 600;
+    }
+
+    // Open: the brand tone, as the bar's open controls (D12).
+    .dim-navpills .dim-navpill-group[open] > .dim-navpill {
+        background: var(--dimensions-brand-tint, var(--bs-primary-bg-subtle, #cfe2f2));
+        color: var(--dimensions-brand-ink, var(--bs-primary-text-emphasis, #052c65));
+    }
+
+    // The dot of the current page: before a pill's label, at the end of a menu's item.
+    .dim-navpills .dim-navpill__dot {
+        flex: none;
+        width: .25rem;
+        height: .25rem;
+        border-radius: 50%;
+        background: var(--dimensions-brand-fill, var(--bs-primary, #0f6cbf));
+    }
+
+    // A plain pill's icon is for a menu, where every item has one: not drawn on the row.
+    .dim-navpills .dim-navpill__icon {
+        display: none;
+    }
+
+    // The 12px chevron of a pill that opens a menu; core's icon box would otherwise pay its own margin.
+    .dim-navpills .dim-navpill__chevron .icon {
+        width: auto;
+        height: auto;
+        margin: 0;
+        font-size: .75rem;
+    }
+
+    // A group: the pill and its menu, which hangs under it, start-aligned ("More" end-aligned).
+    .dim-navpills .dim-navpill-group {
+        position: relative;
+        flex: none;
+    }
+
+    // A menu (menu.md): 4px around its items, the hairline, the menu's 8px corners, the middle elevation.
+    .dim-navpills .dim-navpill-menu {
+        position: absolute;
+        top: calc(100% + .375rem);
+        inset-inline-start: 0;
+        z-index: 20;
+        min-width: 13.75rem;
+        padding: .25rem;
+        border: 1px solid var(--dimensions-line, var(--bs-border-color, #dee2e6));
+        border-radius: var(--dimensions-radius-md, 8px);
+        background: var(--dimensions-surface, var(--bs-body-bg, #fff));
+        color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
+        box-shadow: var(--dimensions-elevation-md, 0 4px 12px rgba(7, 0, 147, .10));
+    }
+
+    // "More" is the row's last pill: its menu opens towards the row's start, and it scrolls past 22rem.
+    .dim-navpills .dim-navpill-group--more .dim-navpill-menu {
+        inset-inline: auto 0;
+        max-height: 22rem;
+        overflow-y: auto;
+    }
+
+    // An item: its icon, its word and, for the current page, the dot at its end; no border and no
+    // outline at rest or hovered (D50), the ring by the keyboard's focus alone, drawn inside the item
+    // because "More" scrolls and would clip a ring drawn outside.
+    .dim-navpills .dim-navpill-menu__item {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        width: 100%;
+        min-height: 2rem;
+        padding: .25rem .5rem;
+        border-radius: var(--dimensions-radius-xs, 4px);
+        color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
+        font-size: .875rem;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: background-color var(--dimensions-motion-fast, 150ms) var(--dimensions-motion-ease, ease);
+
+        &:hover {
+            background: var(--dimensions-surface-alt, var(--bs-tertiary-bg, #f8f9fa));
+            color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
+            text-decoration: none;
+        }
+
+        &[aria-current="page"] {
             font-weight: 600;
         }
 
-        .nav-link:hover,
-        .nav-link:focus-visible {
-            border: 0;
-            background: rgba(255, 255, 255, .18);
-            color: var(--dim-hero-ink);
+        &:focus-visible {
+            outline: var(--dimensions-focus-width, 3px) solid var(--dimensions-focus-ring, var(--bs-emphasis-color, #000));
+            outline-offset: -2px;
         }
 
-        // The active tab is the page colour, so its ink is the brand ink the hero resolves for the
-        // page's colour mode (the tab list may carry a colour mode of its own; see
-        // --dim-hero-page-primary-ink on .dim-hero).
-        .nav-link.active {
-            border: 0;
-            background: var(--dim-hero-page);
-            color: var(--dim-hero-page-primary-ink);
+        .icon {
+            flex: none;
+            width: 1rem;
+            height: auto;
+            margin: 0;
+            color: var(--dimensions-ink-muted, var(--bs-secondary-color, #6a737b));
+            font-size: 1rem;
+            text-align: center;
         }
 
-        .dropdown-menu {
-            color: var(--dim-hero-page-ink);
+        .dim-navpill__dot {
+            margin-inline-start: auto;
         }
     }
 
-    // With tabs the strip closes the navy block, so the cut travels to it.
-    .dim-hero__tabs::after {
-        @include dim-chamfer;
+    .dim-navpills .dim-navpill-menu__label {
+        flex: 0 1 auto;
     }
 
-    // Narrow screens: the band shrinks, the counts and the fold go, the tabs become a rail below it.
+    // Armed (js/esm/src/navpills/row.ts), the capsule keeps one line: what does not fit moves into "More".
+    .dim-navpills.dim-navpills--live {
+        flex-wrap: nowrap;
+    }
+
+    // A group's menu the client found crossing the viewport's end opens end-aligned to its pill.
+    .dim-navpills .dim-navpill-menu.dim-navpill-menu--end {
+        inset-inline: auto 0;
+    }
+
+    // More's sections, written by the client (menu.md): a moved group's own name heads its items, a
+    // hairline between sections.
+    .dim-navpills .dim-navpill-menu__head {
+        padding: .375rem .5rem .125rem;
+        color: var(--dimensions-ink-muted, var(--bs-secondary-color, #6a737b));
+        font-size: .75rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    // A border, not a ground, so forced colours keep it.
+    .dim-navpills .dim-navpill-menu__sep {
+        margin: .25rem 0;
+        border-block-start: 1px solid var(--dimensions-line, var(--bs-border-color, #dee2e6));
+    }
+
+    // A plain pill moved into More is an item: the icon it carries hidden on the row is shown, and the
+    // dot of the current page goes to the item's end, as on every item.
+    .dim-navpills .dim-navpill-menu__item .dim-navpill__icon {
+        display: contents;
+    }
+
+    .dim-navpills .dim-navpill-menu__item .dim-navpill__dot {
+        order: 1;
+    }
+
+    // A coarse pointer takes the bar's 36px step (the 44px capsule), whatever the width.
+    @media (pointer: coarse) {
+        .dim-hero {
+            --dim-navpills-height: 2.75rem;
+        }
+
+        .dim-navpills .dim-navpill {
+            height: 2.25rem;
+        }
+    }
+
+    // Forced colours replace every ground: the selected and open pills keep a frame (the ring's while
+    // focused), and the dot keeps its fill.
+    @media (forced-colors: active) {
+        .dim-navpills .dim-navpill[aria-current="page"]:not(:focus-visible),
+        .dim-navpills .dim-navpill.is-selected:not(:focus-visible),
+        .dim-navpills .dim-navpill-group[open] > .dim-navpill:not(:focus-visible) {
+            outline: 1px solid Highlight;
+        }
+
+        .dim-navpills .dim-navpill__dot {
+            background: Highlight;
+            forced-color-adjust: none;
+        }
+    }
+
+    // Narrow screens: the band shrinks and the counts and the fold go; the navigation keeps its place on the edge.
     @media (max-width: 767.98px) {
         .dim-hero__band {
-            padding: 20px 16px 0;
+            padding: 20px 16px calc(var(--dim-navpills-height) / 2);
         }
 
         // Below md the band already reaches the viewport edges and the body's own inset is
         // 16px, so the hero's content takes the band's padding and nothing else.
         .dim-hero__inner,
         .dim-hero__foot,
-        .dim-hero__tabs .moremenu {
+        .dim-hero__navtrack {
             max-width: none;
             padding-inline: 0;
+        }
+
+        .dim-hero__nav {
+            padding-inline: 16px;
         }
 
         .dim-hero__title {
@@ -570,33 +758,6 @@ body.dim-category {
         // The fold is a preference, not a device: a hero folded on a wide screen unfolds here too.
         .dim-hero--folded .dim-hero__fold {
             display: block;
-        }
-
-        // The rail leaves the navy block here, so the cut goes back on the band and off the strip.
-        .dim-hero__band::after {
-            @include dim-chamfer;
-        }
-
-        .dim-hero__tabs::after {
-            display: none;
-        }
-
-        .dim-hero__tabs {
-            padding: 10px 16px 0;
-            background: transparent;
-
-            .nav-link {
-                padding: 7px 14px;
-                border-radius: var(--dim-ds-radius-pill, 50rem);
-                background: var(--dim-hero-page-strong);
-                color: var(--dim-hero-page-muted);
-                white-space: nowrap;
-            }
-
-            .nav-link.active {
-                background: var(--dim-hero-primary);
-                color: var(--dim-hero-primary-ink);
-            }
         }
     }
 
@@ -6265,7 +6426,9 @@ body.dim-category {
         .dim-card__title a,
         .dim-pill,
         .dim-card__star,
-        .dim-menu__item {
+        .dim-menu__item,
+        .dim-navpills .dim-navpill,
+        .dim-navpills .dim-navpill-menu__item {
             transition: none;
         }
 
@@ -6397,13 +6560,12 @@ body.dim-category {
 // ---- The brand ink of a dark surface ------------------------------------------------------
 // Bootstrap's own --bs-primary-text-emphasis is a 40% tint of $primary in the dark mode; for a dark
 // brand colour such as the design's navy that is #6a66be, 3.28:1 on the dark surface - under the
-// 4.5:1 floor for the type it paints (the active tab, the pressed view toggle, a hovered card title).
+// 4.5:1 floor for the type it paints (the pressed view toggle, a hovered card title).
 // --dim-ds-blue-200, the design system's lighter stop of that hue, reads 8.0:1 on the dark surface.
-// Light mode keeps the emphasis token.
-:root[data-bs-theme="dark"] body.dim-category .dim-hero,
+// Light mode keeps the emphasis token. The hero's navigation reads the family's brand ink, which
+// post.scss turns the same way.
 :root[data-bs-theme="dark"] body.dim-category .dim-vitrine,
 :root[data-bs-theme="dark"] body.dim-category .dim-cmodal {
-    --dim-hero-page-primary-ink: var(--dim-ds-blue-200, #adb2f0);
     --dim-primary-ink: var(--dim-ds-blue-200, #adb2f0);
     // The ring meets a grey ground as well as the card - --dim-surface-strong (#343a40), a
     // control's hover - where #4456ff reads 2.20:1, under WCAG 1.4.11's 3:1. The design
@@ -6445,6 +6607,15 @@ body.dim-category {
     #region-main .dim-panel__title a[href]:not(.btn):hover,
     #region-main .dim-panel__title a[href]:not(.btn):focus-visible {
         text-decoration: underline;
+    }
+}
+
+// The category navigation's pills and menu items are links in the page header, where core's dark mode underlines every
+// link but its own controls (theme/boost/scss/moodle/dark.scss, at (1,6,1)). Their capsule and their menu already tell
+// them apart, so they keep the light mode's none; the weight here is (1,6,2) (category_scss_test).
+:root[data-bs-theme="dark"] body.dim-category {
+    #page-header .dim-navpills a[href]:not(.btn) {
+        text-decoration: none;
     }
 }
 

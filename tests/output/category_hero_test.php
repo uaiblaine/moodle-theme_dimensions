@@ -39,9 +39,9 @@ require_once(__DIR__ . '/../local/category/fixture.php');
 /**
  * Tests of the category hero's export: what it says about the category, the viewer and the request.
  *
- * The tabs are core's secondary navigation and are asserted on the rendered page in
- * core_renderer_test; export() tells the page it has none, and the two tests about tabs
- * set up a category page of their own.
+ * The navigation is core's secondary navigation, regrouped into a row of nav pills
+ * (category_navpills_test) and asserted on the rendered page in core_renderer_test; export()
+ * tells the page it has none, and the tests about the row set up a category page of their own.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -448,30 +448,83 @@ final class category_hero_test extends \advanced_testcase {
     }
 
     /**
-     * The tabs are the page's secondary navigation: on the category page a learner gets the category tab.
+     * Set the global page up as the category's page in the logged-in shell, for the current user.
+     *
+     * The secondary navigation is built once per page, for whoever is logged in when it is first
+     * read, so every viewer gets a page of their own.
+     *
+     * @param int $categoryid The category.
+     * @return \moodle_page The page, also the global one.
      */
-    public function test_the_tabs_come_from_the_secondary_navigation(): void {
+    private function category_page(int $categoryid): \moodle_page {
         global $PAGE;
+        $PAGE = new \moodle_page();
+        $PAGE->set_category_by_id($categoryid);
+        $PAGE->set_url('/course/index.php', ['categoryid' => $categoryid]);
+        $PAGE->set_pagetype('course-index-category');
+        return $PAGE;
+    }
+
+    /**
+     * A learner gets no row while the category is the only destination; a manager gets one, Category first.
+     *
+     * Core offers a learner no secondary navigation at all in a category with competencies off, and the category
+     * with the competency frameworks with them on (every authenticated user holds moodle/competency:competencyview
+     * in a category by default): that second case is a row, and the control. Category alone is what is left of it
+     * once the frameworks' node is taken away, and that is the one-destination rule's refusal, with a navigation
+     * that still has a child.
+     */
+    public function test_a_learner_gets_no_row_and_a_manager_gets_the_row(): void {
         $this->resetAfterTest();
         $generator = self::getDataGenerator();
         $categoryid = (int) $generator->create_category()->id;
         $generator->create_course(['category' => $categoryid]);
-        $this->become($generator->create_user());
-        $hero = $this->hero($categoryid);
+        $this->setAdminUser();
+        $criteria = new criteria($categoryid);
+        $result = population::resolve($criteria);
+        $category = core_course_category::get($categoryid, MUST_EXIST, true);
+        set_config('enabled', 0, 'core_competency');
 
-        $PAGE->set_category_by_id($categoryid);
-        $PAGE->set_url('/course/index.php', ['categoryid' => $categoryid]);
-        $PAGE->set_pagetype('course-index-category');
-        $context = $hero->export_for_template($PAGE->get_renderer('core'));
+        $learner = $generator->create_user();
+        $this->become($learner);
+        $page = $this->category_page($categoryid);
+        $this->assertSame([], \theme_dimensions\local\category\navgroups::rows($page->secondarynav));
+        $context = (new category_hero($category, $result, $criteria, false, '', true, $page))
+            ->export_for_template($page->get_renderer('core'));
+        $this->assertFalse($context->hasnavpills, 'No navigation is no row.');
+        $this->assertStringContainsString('dim-hero--notabs', $context->classes);
 
-        $this->assertTrue($context->hastabs);
+        // The control: with competencies on, the same learner reads the frameworks, and Category is not alone.
+        set_config('enabled', 1, 'core_competency');
+        $page = $this->category_page($categoryid);
+        $context = (new category_hero($category, $result, $criteria, false, '', true, $page))
+            ->export_for_template($page->get_renderer('core'));
+        $this->assertTrue($context->hasnavpills);
+        $this->assertSame(['categorymain', 'competencyframeworks'], array_column($context->navpills['units'], 'key'));
+
+        // Category alone: the same navigation without the frameworks' node still has a child, and draws no row.
+        $page = $this->category_page($categoryid);
+        $page->secondarynav->children->remove('competencyframeworks');
+        $units = \theme_dimensions\local\category\navgroups::rows($page->secondarynav);
+        $this->assertSame(['categorymain'], array_column($units, 'key'), 'Precondition: Category is the only destination.');
+        $this->assertTrue($page->has_secondary_navigation(), 'Precondition: the page still has a secondary navigation.');
+        $context = (new category_hero($category, $result, $criteria, false, '', true, $page))
+            ->export_for_template($page->get_renderer('core'));
+        $this->assertFalse($context->hasnavpills, 'Category alone is no row.');
+        $this->assertNull($context->navpills);
+        $this->assertStringContainsString('dim-hero--notabs', $context->classes);
+
+        $this->setAdminUser();
+        $page = $this->category_page($categoryid);
+        $context = (new category_hero($category, $result, $criteria, false, '', true, $page))
+            ->export_for_template($page->get_renderer('core'));
+        $this->assertTrue($context->hasnavpills);
         $this->assertStringNotContainsString('dim-hero--notabs', $context->classes);
-        $texts = [];
-        foreach ($context->tabs['nodecollection']->children as $node) {
-            $texts[] = (string) $node->text;
-        }
-        $this->assertContains(get_string('category'), $texts);
-        $this->assertNotContains(get_string('settings'), $texts, 'A learner has no settings tab.');
+        $first = $context->navpills['units'][0];
+        $this->assertSame(['categorymain', false], [$first['key'], $first['isgroup']], 'Category is the first, plain pill.');
+        $groups = array_column(array_filter($context->navpills['units'], fn(array $unit): bool => $unit['isgroup']), 'key');
+        $this->assertContains('settings', $groups, 'The manager holds the Settings group.');
+        $this->assertTrue($context->navpills['hasgroups']);
     }
 
     /**
@@ -682,36 +735,33 @@ final class category_hero_test extends \advanced_testcase {
     }
 
     /**
-     * The anonymous shell draws no tab strip, and the withtabs flag is what drops it.
+     * The anonymous shell draws no row, and the withtabs flag is what drops it.
      *
-     * The page really does carry a secondary navigation here - the hero built with the flag on
-     * exports its tabs - so the empty half cannot be an artefact of a page that has none.
+     * The page really does carry a row for this viewer - the hero built with the flag on exports
+     * it - so the empty half cannot be an artefact of a page that has none, nor of a viewer whose
+     * only destination is the category.
      *
      * @return void
      */
-    public function test_the_anonymous_hero_draws_no_tab_strip(): void {
-        global $PAGE;
+    public function test_the_anonymous_hero_draws_no_row(): void {
         $this->resetAfterTest();
         $generator = self::getDataGenerator();
         $categoryid = (int) $generator->create_category()->id;
         $generator->create_course(['category' => $categoryid]);
-        $this->become($generator->create_user());
+        $this->setAdminUser();
         $criteria = new criteria($categoryid);
         $result = population::resolve($criteria);
         $category = core_course_category::get($categoryid, MUST_EXIST, true);
+        $page = $this->category_page($categoryid);
+        $renderer = $page->get_renderer('core');
 
-        $PAGE->set_category_by_id($categoryid);
-        $PAGE->set_url('/course/index.php', ['categoryid' => $categoryid]);
-        $PAGE->set_pagetype('course-index-category');
-        $renderer = $PAGE->get_renderer('core');
-
-        $withtabs = (new category_hero($category, $result, $criteria))->export_for_template($renderer);
-        $this->assertTrue($withtabs->hastabs, 'Control: the page really has a secondary navigation.');
+        $withtabs = (new category_hero($category, $result, $criteria, false, '', true, $page))->export_for_template($renderer);
+        $this->assertTrue($withtabs->hasnavpills, 'Control: the page really has a row for this viewer.');
         $this->assertStringNotContainsString('dim-hero--notabs', $withtabs->classes);
 
-        $notabs = (new category_hero($category, $result, $criteria, false, '', false))->export_for_template($renderer);
-        $this->assertFalse($notabs->hastabs);
-        $this->assertNull($notabs->tabs);
+        $notabs = (new category_hero($category, $result, $criteria, false, '', false, $page))->export_for_template($renderer);
+        $this->assertFalse($notabs->hasnavpills);
+        $this->assertNull($notabs->navpills);
         $this->assertStringContainsString('dim-hero--notabs', $notabs->classes);
     }
 
@@ -920,7 +970,7 @@ final class category_hero_test extends \advanced_testcase {
     /**
      * Under a photograph the three stops turn translucent at the chosen overlay, and the strip does not.
      *
-     * White tabs on a see-through strip vanish into the picture, so the strip keeps the opaque
+     * White ink on a see-through strip vanishes into the picture, so the strip keeps the opaque
      * colour while the three gradient stops carry the overlay's alpha.
      */
     public function test_the_image_layout_paints_translucent_stops_over_an_opaque_strip(): void {
@@ -988,8 +1038,8 @@ final class category_hero_test extends \advanced_testcase {
      * At the transparent overlay the three stops are fully transparent and the strip is not.
      *
      * The gradient's three stops go to alpha 0, so the browser paints nothing over the picture,
-     * while --dim-hero-strip keeps the opaque mid colour, because the tab strip is drawn from it
-     * and white tabs on a bare photograph would be unreadable. The alpha is printed as "0", never
+     * while --dim-hero-strip keeps the opaque mid colour, because the strip colour is drawn from it
+     * and white ink on a bare photograph would be unreadable. The alpha is printed as "0", never
      * as "0.": a trailing point is invalid CSS and the browser drops the whole declaration.
      */
     public function test_the_transparent_overlay_paints_nothing_over_the_photograph(): void {
@@ -1017,7 +1067,7 @@ final class category_hero_test extends \advanced_testcase {
         $this->assertStringContainsString(
             '--dim-hero-strip: #070093;',
             $style,
-            'The tab strip stays opaque, or the tabs vanish on a bare photograph.'
+            'The strip stays opaque, or white ink vanishes on a bare photograph.'
         );
 
         // The control: at the default overlay the same three stops are NOT transparent.

@@ -182,7 +182,7 @@ final class request {
         // The pages strip, as the logged-in shell builds it: local_page answers what a visitor may read.
         $listing = new category_listing($category, $criteria, $result, $view, '', category_pages::export($categoryid), true);
 
-        /* The hero is drawn by the core renderer's full_header(), which runs after this; no tabs,
+        /* The hero is drawn by the core renderer's full_header(), which runs after this; no row,
            because a visitor has no secondary navigation, and the pencil suppresses itself - user 0
            holds no capability. */
         category_hero::reset();

@@ -168,6 +168,9 @@ final class category_scss_test extends \basic_testcase {
            the film the band's playing class and the Font Awesome glyph each toggle swaps to. */
         $files[] = $root . '/amd/src/covervideo.js';
         $files[] = $root . '/amd/src/local/coverfilm.js';
+        /* Nor does the client of the hero's row of nav pills, which writes the live class, the
+           sections, headings and separators of More and the selected look. */
+        $files[] = $root . '/js/esm/src/navpills/row.ts';
         /* The refusal page, what a reader gets instead of a listing, does not match the globs
            either. The page scripts (category.php, categoryhero.php) and the editor's form
            (classes/form/categoryhero.php) write no class name: the form builds moodleform
@@ -210,6 +213,9 @@ final class category_scss_test extends \basic_testcase {
             'category_panel.mustache',
             'category_directory_card.mustache',
             'category_panel.php',
+            'category_navpills.mustache',
+            'category_navpills.php',
+            'row.ts',
             'categoryhero.js',
             'DateRange.tsx',
             'covervideo.js',
@@ -1162,9 +1168,10 @@ final class category_scss_test extends \basic_testcase {
         );
         $this->assertMatchesRegularExpression(
             '~position:\s*relative;\s*z-index:\s*31;~',
-            $this->rule_body($scss, '.dim-hero__tabs'),
-            'The tab rail stacks above the filter line (30), so its More menu is not hidden behind it.'
+            $this->rule_body($scss, '.dim-hero__nav'),
+            'The category navigation stacks above the filter line (30), so a menu it opens is not hidden behind it.'
         );
+        $this->assertMatchesRegularExpression('~position:\s*relative;\s*z-index:\s*30;~', $this->rule_body($scss, '.dim-toolbar'));
         $icon = $this->rule_body($scss, '.dim-line__iconbtn');
         $this->assertMatchesRegularExpression('~&:focus-visible \{\s*outline:\s*3px solid var\(--dim-ring\);~', $icon);
 
@@ -1652,7 +1659,7 @@ final class category_scss_test extends \basic_testcase {
             'The open summary\'s ink is the brand ink that follows the mode, not the navy the dark card swallows.'
         );
         $this->assertMatchesRegularExpression(
-            '~:root\[data-bs-theme="dark"\] body\.dim-category \.dim-hero,\s*' . $dark . '--dim-primary-ink:\s*'
+            '~' . $dark . '--dim-primary-ink:\s*'
                 . 'var\(--dim-ds-blue-200, #adb2f0\);~',
             $scss
         );
@@ -1899,6 +1906,160 @@ final class category_scss_test extends \basic_testcase {
                 . '\.dim-hero--compact \.dim-hero__badge img \{\s*width:\s*26px;\s*height:\s*29px;~',
             $scss
         );
+    }
+
+    /**
+     * The category navigation is the nav pill's capsule on the hero's lower edge, on the family's tokens.
+     *
+     * The wrapper rises by half the capsule and the band pays the same half as padding, both from one
+     * token, so the foot's controls never sit under the capsule; with no row the band pays nothing. The
+     * capsule and its pills carry the component's measures (nav-pill.md), the menus menu.md's. The hero
+     * paints its own ink as the focus ring, white by default and invisible on the capsule's surface, so
+     * the row's controls take the family's ring back with a selector that outweighs the hero's. Nothing of
+     * the tab strip the row replaced is left.
+     *
+     * @return void
+     */
+    public function test_the_category_navigation_is_a_capsule_on_the_heros_edge(): void {
+        $scss = $this->stylesheet('category.scss');
+        $half = 'calc\(var\(--dim-navpills-height\) / ';
+
+        $this->assertMatchesRegularExpression('~--dim-navpills-height:\s*2\.5rem;~', $this->rule_body($scss, '.dim-hero'));
+        // Core's dark mode underlines the page header's links at (1,6,1); the row's own rule outweighs it.
+        $this->assertMatchesRegularExpression(
+            '~:root\[data-bs-theme="dark"\] body\.dim-category \{\s*#page-header \.dim-navpills '
+                . 'a\[href\]:not\(\.btn\) \{\s*text-decoration:\s*none;~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '~@media \(pointer: coarse\) \{\s*\.dim-hero \{\s*--dim-navpills-height:\s*2\.75rem;\s*\}\s*'
+                . '\.dim-navpills \.dim-navpill \{\s*height:\s*2\.25rem;~',
+            $scss,
+            'A coarse pointer takes the 36px pill and the 44px capsule together.'
+        );
+        $nav = $this->rule_body($scss, '.dim-hero__nav');
+        $this->assertMatchesRegularExpression('~margin-top:\s*' . $half . '-2\);~', $nav, 'The row rises by half the capsule.');
+        $this->assertDoesNotMatchRegularExpression('~overflow~', $nav, 'No scroll container: a menu overflows the row.');
+        $this->assertMatchesRegularExpression(
+            '~padding:\s*26px \$dim-bleed ' . $half . '2\);~',
+            $this->rule_body($scss, '.dim-hero__band'),
+            'The band pays the same half.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~padding:\s*20px 16px ' . $half . '2\);~',
+            $scss,
+            'And on a narrow screen too.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~padding-bottom:\s*0;~',
+            $this->rule_body($scss, '.dim-hero--notabs .dim-hero__band'),
+            'Without a row the band pays nothing.'
+        );
+        $this->assertStringContainsString(
+            '@include dim-chamfer;',
+            $this->rule_body($scss, '.dim-hero__band::after'),
+            'The band carries the chamfer whether or not a row straddles it.'
+        );
+
+        $capsule = $this->rule_body($scss, '.dim-navpills');
+        $this->assertMatchesRegularExpression(
+            '~display:\s*inline-flex;\s*flex-wrap:\s*wrap;\s*align-items:\s*center;\s*gap:\s*\.125rem;\s*'
+                . 'max-width:\s*100%;\s*padding:\s*\.1875rem;\s*border:\s*1px solid var\(--dimensions-line,~',
+            $capsule,
+            'The capsule: as wide as its pills, wrapping without a script, 2px between pills, the bar\'s 3px.'
+        );
+        $this->assertMatchesRegularExpression('~border-radius:\s*var\(--dimensions-radius-lg, 12px\);~', $capsule);
+        $this->assertMatchesRegularExpression('~background:\s*var\(--dimensions-surface,~', $capsule);
+        $this->assertMatchesRegularExpression('~color:\s*var\(--dimensions-ink,~', $capsule, 'Not the hero\'s white ink.');
+        $this->assertMatchesRegularExpression('~box-shadow:\s*var\(--dimensions-elevation-sm,~', $capsule);
+
+        $pill = $this->rule_body($scss, '.dim-navpills .dim-navpill');
+        $this->assertMatchesRegularExpression(
+            '~gap:\s*\.375rem;\s*height:\s*2rem;\s*padding:\s*0 \.75rem;\s*border:\s*0;\s*'
+                . 'border-radius:\s*var\(--dimensions-radius-md, 8px\);\s*background:\s*transparent;\s*'
+                . 'color:\s*var\(--dimensions-ink-muted,[^;]*;\s*font-size:\s*\.875rem;\s*font-weight:\s*500;~',
+            $pill,
+            'The pill: 32px, 12px in, 6px between its parts, 8px corners, muted, .875rem at 500.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~&:focus-visible \{\s*outline:\s*var\(--dimensions-focus-width, 3px\) solid var\(--dimensions-focus-ring,~',
+            $pill,
+            'The pill takes the family\'s ring.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~outline-color:\s*var\(--dim-hero-ring\);~',
+            $this->rule_body($scss, '.dim-hero :focus-visible'),
+            'Precondition: the hero paints its ink as the ring.'
+        );
+        $heros = self::specificity('body.dim-category .dim-hero :focus-visible');
+        foreach (['.dim-navpills .dim-navpill:focus-visible', '.dim-navpills .dim-navpill-menu__item:focus-visible'] as $own) {
+            $weight = self::specificity('body.dim-category ' . $own);
+            $this->assertGreaterThan(0, $weight <=> $heros, $own . ' must outweigh the hero\'s ring: ' . implode(',', $weight));
+        }
+        $selected = ".dim-navpills .dim-navpill[aria-current=\"page\"],\n    .dim-navpills .dim-navpill.is-selected";
+        $this->assertMatchesRegularExpression(
+            '~font-weight:\s*600;~',
+            $this->rule_body($scss, $selected),
+            'The current page and the group that holds it are the selected pill.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~background:\s*var\(--dimensions-brand-tint,~',
+            $this->rule_body($scss, '.dim-navpills .dim-navpill-group[open] > .dim-navpill'),
+            'An open group is the brand tone.'
+        );
+
+        $menu = $this->rule_body($scss, '.dim-navpills .dim-navpill-menu');
+        $this->assertMatchesRegularExpression(
+            '~top:\s*calc\(100% \+ \.375rem\);\s*inset-inline-start:\s*0;\s*z-index:\s*20;\s*min-width:\s*13\.75rem;\s*'
+                . 'padding:\s*\.25rem;~',
+            $menu,
+            'A group\'s menu hangs 6px under its pill, start-aligned, 220px at least, 4px around its items.'
+        );
+        $this->assertMatchesRegularExpression('~box-shadow:\s*var\(--dimensions-elevation-md,~', $menu);
+        $this->assertMatchesRegularExpression(
+            '~inset-inline:\s*auto 0;\s*max-height:\s*22rem;\s*overflow-y:\s*auto;~',
+            $this->rule_body($scss, '.dim-navpills .dim-navpill-group--more .dim-navpill-menu'),
+            'More opens towards the row\'s start and scrolls.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~min-height:\s*2rem;\s*padding:\s*\.25rem \.5rem;\s*border-radius:\s*var\(--dimensions-radius-xs, 4px\);~',
+            $this->rule_body($scss, '.dim-navpills .dim-navpill-menu__item'),
+            'An item: 32px, 4px 8px, radius xs.'
+        );
+        // What the client writes (js/esm/src/navpills/row.ts): the capsule on one line once armed, a menu flipped to
+        // its pill's end, More's headed sections and their hairline, and a plain pill moved into More shown as an item.
+        $this->assertMatchesRegularExpression(
+            '~flex-wrap:\s*nowrap;~',
+            $this->rule_body($scss, '.dim-navpills.dim-navpills--live'),
+            'Armed, the capsule keeps one line: what does not fit moves into More.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~inset-inline:\s*auto 0;~',
+            $this->rule_body($scss, '.dim-navpills .dim-navpill-menu.dim-navpill-menu--end'),
+            'A menu that would cross the viewport\'s end opens end-aligned.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~padding:\s*\.375rem \.5rem \.125rem;[^}]*font-size:\s*\.75rem;\s*font-weight:\s*600;~',
+            $this->rule_body($scss, '.dim-navpills .dim-navpill-menu__head'),
+            'More\'s headings are menu.md\'s: 6px 8px 2px, .75rem at 600.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~margin:\s*\.25rem 0;\s*border-block-start:\s*1px solid var\(--dimensions-line,~',
+            $this->rule_body($scss, '.dim-navpills .dim-navpill-menu__sep'),
+            'The separator is a hairline border, which forced colours keep.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~display:\s*contents;~',
+            $this->rule_body($scss, '.dim-navpills .dim-navpill-menu__item .dim-navpill__icon'),
+            'A plain pill moved into More shows the icon it carries hidden on the row.'
+        );
+
+        foreach (['dim-hero__tabs', 'moremenu', 'nav-tabs', 'nav-link', '--dim-hero-page-primary-ink'] as $gone) {
+            $this->assertStringNotContainsString($gone, $scss, $gone . ' belonged to the tab strip the row replaced.');
+        }
+        foreach (['.dim-navpills', '.dim-hero__nav', '.dim-hero__navtrack'] as $selector) {
+            $this->assertStringNotContainsString('--dim-surface', $this->rule_body($scss, $selector), 'The hero reads no alias.');
+        }
     }
 
     /**
@@ -2155,7 +2316,7 @@ final class category_scss_test extends \basic_testcase {
     /**
      * The bar's tooltip is the stylesheet's, drawn from data-dim-tip after 100ms of rest, and out of the way when it must be.
      *
-     * tooltip.md's balloon, drawn below the control (the category hero's tab row stacks over the toolbar): the body
+     * tooltip.md's balloon, drawn below the control (the category hero's navigation row stacks over the toolbar): the body
      * ink as its ground and the surface as its text (so the dark mode turns it), radius sm, .75rem, at most 16.25rem
      * wide, 8px below, with its 5px arrow pointing up. It shows on hover and on keyboard focus after D51's 100ms,
      * never under a pointer that cannot hover, never while its control's layer
@@ -2203,7 +2364,7 @@ final class category_scss_test extends \basic_testcase {
         $this->assertStringNotContainsString(
             'bottom: calc(100% + .5rem)',
             $balloon,
-            'Above the control the tab row of the hero covers the balloon.'
+            'Above the control the navigation row of the hero covers the balloon.'
         );
         // The far end of the line opens towards the line, with the arrow on the control's centre.
         $end = $this->rule_body(
