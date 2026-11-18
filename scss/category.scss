@@ -2336,6 +2336,7 @@ body.dim-category {
         --dim-card-close-bg: var(--dimensions-card-close-bg, rgba(0, 0, 0, .5));
         --dim-card-close-bg-hover: var(--dimensions-card-close-bg-hover, rgba(0, 0, 0, .7));
         --dim-card-close-edge: var(--dimensions-card-close-edge, rgba(255, 255, 255, .4));
+        --dim-card-watermark: var(--dimensions-card-watermark, rgba(255, 255, 255, .16));
         --dim-card-transition: var(--dimensions-card-transition, 150ms);
         // The crests' size on a card at every width (80 x 88 is the hero's and the dialogue's), and the soft
         // shadow that makes them read on a photograph as well as on a flat colour.

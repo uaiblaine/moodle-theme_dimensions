@@ -151,7 +151,7 @@ moves them and they never equal the surface.
 | `--dimensions-hover` | The ground of a hovered row, menu item or quiet control. |
 | `--dimensions-pressed` | The same ground, pressed. |
 
-## Card tokens (30)
+## Card tokens (31)
 
 The course card's tokens, read by every plugin that draws a course card (`block_compass` and `local_dimensions`
 besides the theme's own cards), each through its own name: `--dim-card-*`, `--block_compass-card-*`,
@@ -190,6 +190,7 @@ these names in its card round, on the same roots and in the same light and dark 
 | `--dimensions-card-close-bg` | The ground of the trail popover's close disc. |
 | `--dimensions-card-close-bg-hover` | Its ground on hover. |
 | `--dimensions-card-close-edge` | Its edge. |
+| `--dimensions-card-watermark` | The kind's icon on a cover with no image (the contract's slot 1). |
 | `--dimensions-card-transition` | The duration of the card's hover. |
 
 ## Not part of the contract

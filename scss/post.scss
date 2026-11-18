@@ -348,6 +348,7 @@ body,
     --dimensions-card-close-bg: rgba(var(--bs-black-rgb), .5);
     --dimensions-card-close-bg-hover: rgba(var(--bs-black-rgb), .7);
     --dimensions-card-close-edge: rgba(var(--bs-white-rgb), .4);
+    --dimensions-card-watermark: rgba(var(--bs-white-rgb), .16);
     --dimensions-card-transition: var(--dim-ds-motion-fast);
 }
 
@@ -465,6 +466,7 @@ body,
     --dimensions-card-close-bg: rgba(var(--bs-black-rgb), .5);
     --dimensions-card-close-bg-hover: rgba(var(--bs-black-rgb), .7);
     --dimensions-card-close-edge: rgba(var(--bs-white-rgb), .4);
+    --dimensions-card-watermark: rgba(var(--bs-white-rgb), .16);
     --dimensions-card-transition: var(--dim-ds-motion-fast);
 }
 
