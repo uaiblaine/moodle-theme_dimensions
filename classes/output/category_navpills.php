@@ -59,6 +59,9 @@ final class category_navpills implements renderable, templatable {
     /** @var string The prefix of the row's own id, which every menu's id starts with. */
     private const ID_PREFIX = 'dim-navpills-';
 
+    /** @var \WeakMap|null The navigations built() made, per page, by context id; gone with the page. */
+    private static ?\WeakMap $built = null;
+
     /** @var string The id of this row on its page. */
     private readonly string $uniqid;
 
@@ -106,9 +109,7 @@ final class category_navpills implements renderable, templatable {
             }
             $units = navgroups::rows($page->secondarynav);
         } else {
-            $nav = new secondary($page);
-            $nav->initialise();
-            $units = navgroups::rows($nav);
+            $units = navgroups::rows(self::built($page));
             if (!in_array(true, array_column($units, 'current'), true)) {
                 return null;
             }
@@ -117,6 +118,29 @@ final class category_navpills implements renderable, templatable {
             return null;
         }
         return new self($units);
+    }
+
+    /**
+     * The category navigation the builder makes for a page that turned its own off, built once per page and context.
+     *
+     * Building it moves nodes of the page's settings navigation, so a second build over the same page finds them
+     * moved and core reports each as added twice. The context is in the key because a page may be given another
+     * (a test's global page is).
+     *
+     * @param \moodle_page $page The page.
+     * @return secondary The initialised navigation.
+     */
+    private static function built(\moodle_page $page): secondary {
+        self::$built ??= new \WeakMap();
+        $contextid = $page->context->id;
+        $navs = self::$built[$page] ?? [];
+        if (!isset($navs[$contextid])) {
+            $nav = new secondary($page);
+            $nav->initialise();
+            $navs[$contextid] = $nav;
+            self::$built[$page] = $navs;
+        }
+        return $navs[$contextid];
     }
 
     /**
