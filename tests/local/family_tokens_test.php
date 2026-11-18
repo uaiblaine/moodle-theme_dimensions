@@ -59,14 +59,14 @@ final class family_tokens_test extends \basic_testcase {
         'radius', 'border-width', 'border', 'surface', 'ink', 'ink-muted', 'title-hover', 'cover-height',
         'cover-fallback', 'cover-overlay', 'chip-bg', 'chip-ink', 'extra-bg', 'extra-icon', 'track', 'fill',
         'track-height', 'done', 'done-bg', 'done-ink', 'done-edge', 'shadow', 'shadow-hover', 'focus-ring',
-        'focus-width', 'locked-opacity', 'close-bg', 'close-bg-hover', 'close-edge', 'transition',
+        'focus-width', 'locked-opacity', 'close-bg', 'close-bg-hover', 'close-edge', 'transition', 'watermark',
     ];
 
     /** @var string[] The card suffixes whose value is a colour: a token, or a token's channels at an alpha. */
     private const CARD_COLOURS = [
         'border', 'surface', 'ink', 'ink-muted', 'title-hover', 'cover-fallback', 'chip-bg', 'chip-ink', 'extra-bg',
         'extra-icon', 'track', 'fill', 'done', 'done-bg', 'done-ink', 'focus-ring', 'close-bg', 'close-bg-hover',
-        'close-edge',
+        'close-edge', 'watermark',
     ];
 
     /** @var string[] The motion suffixes local_dimensions alone reads; its state suffixes come from STATES. */
@@ -383,20 +383,20 @@ final class family_tokens_test extends \basic_testcase {
     }
 
     /**
-     * The list holds 33 shared names, 21 local-only ones, the Design System's 10 and 2 grounds, and the card's 30, none
+     * The list holds 33 shared names, 21 local-only ones, the Design System's 10 and 2 grounds, and the card's 31, none
      * twice.
      *
      * Every other test reads the stylesheet and the document against these constants, so a typo
      * here would be copied into both and pass.
      */
-    public function test_the_contract_is_thirty_three_shared_twenty_one_local_and_thirty_card_names(): void {
+    public function test_the_contract_is_thirty_three_shared_twenty_one_local_and_thirty_one_card_names(): void {
         $this->assertCount(33, self::SHARED);
         $this->assertCount(21, self::local_only());
-        $this->assertCount(30, array_unique(self::card()));
+        $this->assertCount(31, array_unique(self::card()));
         $this->assertSame([], array_values(array_diff(self::CARD_COLOURS, self::CARD)), 'Every colour is a card suffix.');
         $this->assertCount(10, self::SYSTEM);
         $this->assertCount(2, self::GROUNDS);
-        $this->assertCount(96, array_unique(self::names()));
+        $this->assertCount(97, array_unique(self::names()));
     }
 
     /**
@@ -569,7 +569,7 @@ final class family_tokens_test extends \basic_testcase {
                     }
                 }
             }
-            $this->assertSame(30, $checked, "Control: the {$mode} block's 30 card values were read.");
+            $this->assertSame(31, $checked, "Control: the {$mode} block's 31 card values were read.");
             $this->assertSame('var(--dimensions-focus-ring)', $values['--dimensions-card-focus-ring'], "The {$mode} ring.");
         }
     }
@@ -832,6 +832,6 @@ final class family_tokens_test extends \basic_testcase {
         }
         $this->assertCount(21, $sections['Local-only tokens']['names'], 'Control: the local-only names are the 21.');
         $this->assertCount(12, $sections['Design system tokens']['names'], 'Control: the Design System names are the 12.');
-        $this->assertCount(30, $sections['Card tokens']['names'], 'Control: the card names are the 30.');
+        $this->assertCount(31, $sections['Card tokens']['names'], 'Control: the card names are the 31.');
     }
 }

@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The Compass block draws this theme's kind icons and an event's dates** (2026100634). The theme's answer to
+  block_compass's course kinds now gives each kind the glyph the theme's own cards draw (a graduation cap for a course,
+  a calendar for an event, a route for a trail) and says an event is dated, so the block's cards show the icon in the
+  kind's pill, as the cover's watermark where the course has no image, and the event's dates under its name, as the
+  Vitrine's cards do. It needs block_compass 2026100550 or later; with an older block the kinds still show, without
+  icons or dates.
+- **A new card token, `--dimensions-card-watermark`** (2026100634), the colour of the kind's icon drawn on a cover with
+  no image (the course card contract's slot 1), white at 16 % in both colour modes. The theme declares it for every
+  plugin's cards; its own Vitrine cards do not draw the watermark yet.
 - **The user menu's layer, the phone's side menu and the category's menus answer the pointer in one way**
   (2026100633). A row, a menu item, a small icon button and the profile layer's two buttons take a pale ground of the
   brand's colour and its ink when hovered, a deeper one when pressed, and a row's or an item's leading icon (and a

@@ -83,23 +83,36 @@ final class course_kinds_test extends \advanced_testcase {
 
         $this->assertSame(0, $DB->perf_get_reads() - $before, 'the block asks on every response');
         $this->assertSame(landingfields::SHORTNAME_MODEL, $hook->get_field());
-        $this->assertSame([
+        $expected = [
             landingfields::MODEL_COURSE => [
                 'key' => 'course',
                 'one' => get_string('compass_kind_course', 'theme_dimensions'),
                 'many' => get_string('compass_kind_courses', 'theme_dimensions'),
+                'icon' => 'fa-graduation-cap',
+                'dated' => false,
             ],
             landingfields::MODEL_EVENT => [
                 'key' => 'event',
                 'one' => get_string('compass_kind_event', 'theme_dimensions'),
                 'many' => get_string('compass_kind_events', 'theme_dimensions'),
+                'icon' => 'fa-calendar-day',
+                'dated' => true,
             ],
             landingfields::MODEL_TRAIL => [
                 'key' => 'trail',
                 'one' => get_string('compass_kind_trail', 'theme_dimensions'),
                 'many' => get_string('compass_kind_trails', 'theme_dimensions'),
+                'icon' => 'fa-route',
+                'dated' => false,
             ],
-        ], $hook->get_kinds());
+        ];
+        // A block older than its ADR-029 keeps the nouns alone, and the answer is the same for it.
+        if (!self::block_takes_icons()) {
+            foreach ($expected as $value => $kind) {
+                unset($expected[$value]['icon'], $expected[$value]['dated']);
+            }
+        }
+        $this->assertSame($expected, $hook->get_kinds());
         $this->assertSame([1, 2, 3], array_keys($hook->get_kinds()), 'the block keeps this order, course first');
         $this->assertSame(['trail', 'trails'], [
             get_string('compass_kind_trail', 'theme_dimensions'),
@@ -107,6 +120,40 @@ final class course_kinds_test extends \advanced_testcase {
         ]);
         $this->assertArrayNotHasKey(0, $hook->get_kinds(), 'a course with no model stays unnamed');
         $this->assertArrayNotHasKey(4, $hook->get_kinds(), 'a value beyond the options stays unnamed');
+    }
+
+    /**
+     * Whether the installed block's hook takes a kind's icon and dated flag (block_compass ADR-029).
+     *
+     * @return bool
+     */
+    private static function block_takes_icons(): bool {
+        return (new \ReflectionMethod(compass_hook::class, 'add_kind'))->getNumberOfParameters() >= 6;
+    }
+
+    /**
+     * The icons are the glyphs this theme's own cards draw for each model, so the block's cards and the Vitrine name
+     * a kind with one drawing (block_compass ADR-029).
+     *
+     * Control: the card's match is read from its source, the one place the theme maps a model to its glyph.
+     *
+     * @return void
+     */
+    public function test_the_icons_are_the_glyphs_of_this_themes_cards(): void {
+        if (!self::block_takes_icons()) {
+            $this->markTestSkipped('The installed block_compass predates kind icons (its ADR-029).');
+        }
+        $hook = new compass_hook();
+        \core\di::get(manager::class)->dispatch($hook);
+        $source = file_get_contents(dirname(__DIR__, 4) . '/classes/output/category_card.php');
+        foreach (['MODEL_COURSE', 'MODEL_EVENT', 'MODEL_TRAIL'] as $model) {
+            $icon = $hook->get_kinds()[constant(landingfields::class . '::' . $model)]['icon'];
+            $this->assertMatchesRegularExpression(
+                '/landingfields::' . $model . " => '" . preg_quote($icon, '/') . "',/",
+                $source,
+                "{$model}'s glyph differs from the card's"
+            );
+        }
     }
 
     /**
