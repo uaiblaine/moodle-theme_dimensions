@@ -407,7 +407,7 @@ final class profilelayer_render_test extends \advanced_testcase {
             $html,
             'The sub-view title.'
         );
-        $this->assertStringContainsString('>Return to Ana &amp; &lt;b&gt;Ribeiro&lt;/b&gt;</a>', $html, 'The notice.');
+        $this->assertStringContainsString('<span>Return to Ana &amp; &lt;b&gt;Ribeiro&lt;/b&gt;</span></a>', $html, 'The notice.');
         $this->assertStringNotContainsString('&amp;amp;', $html);
         $this->assertStringNotContainsString('&amp;lt;', $html);
         $this->assertStringNotContainsString('<b>', $html);

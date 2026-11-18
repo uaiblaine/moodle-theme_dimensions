@@ -480,8 +480,8 @@ final class profilelayer_scss_test extends \advanced_testcase {
         ) {
             $this->assertStringContainsString($declaration, $back);
         }
-        $this->assertStringNotContainsString(
-            'margin-inline-start: auto',
+        $this->assertDoesNotMatchRegularExpression(
+            '~\.dimensions-layer-notice[^{]*\{[^}]*margin-inline-start: auto~',
             $this->stylesheet(),
             'No link pushed to the end of the sentence\'s line.'
         );

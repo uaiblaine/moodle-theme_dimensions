@@ -114,7 +114,8 @@ final class drawer_scss_test extends \basic_testcase {
 
         $this->assertDoesNotMatchRegularExpression('~#[0-9a-fA-F]{3,8}\b~', $scss);
         $this->assertDoesNotMatchRegularExpression('~\b(rgba?|hsla?)\(~', $scss);
-        $this->assertDoesNotMatchRegularExpression('~\b(white|black)\b~', $scss);
+        // The colour names alone: white-space is a property.
+        $this->assertDoesNotMatchRegularExpression('~(?<![-\w])(white|black)(?![-\w])~', $scss);
         $this->assertStringContainsString('var(--dimensions-surface, var(--bs-body-bg))', $scss, 'Control: tokens are read.');
     }
 
@@ -217,7 +218,8 @@ final class drawer_scss_test extends \basic_testcase {
                 . '\s*color: var\(--dim-drawer-current-ink\);~',
             $scss
         );
-        $this->assertStringNotContainsString('box-shadow', $scss, 'No inset mark, in either colour mode.');
+        // The mark was an inset shadow on the row; the resume card's hover has an elevation of its own.
+        $this->assertStringNotContainsString('box-shadow', $current, 'No inset mark, in either colour mode.');
         $this->assertStringNotContainsString('--dim-drawer-mark', $scss);
     }
 
@@ -410,7 +412,7 @@ final class drawer_scss_test extends \basic_testcase {
         $scss = $this->stylesheet();
         $card = $this->block($scss, '.dimensions-drawer-resume-link');
         $this->assertMatchesRegularExpression(
-            '~background: linear-gradient\(\s*135deg,\s*var\(--dim-drawer-ground-warm\) 0%,\s*var\(--dim-drawer-surface\) 60%,'
+            '~background:\s*linear-gradient\(\s*135deg,\s*var\(--dim-drawer-ground-warm\) 0%,\s*var\(--dim-drawer-surface\) 60%,'
                 . '\s*var\(--dim-drawer-tint\) 100%\s*\);~',
             $card
         );
@@ -439,7 +441,10 @@ final class drawer_scss_test extends \basic_testcase {
             '~font-size: 1rem;\s*font-weight: 600;~',
             $this->rule($scss, '.dimensions-drawer-resume-title')
         );
-        $this->assertStringContainsString('color: var(--dim-drawer-muted);', $this->rule($scss, '.dimensions-drawer-resume-sub'));
+        $this->assertMatchesRegularExpression(
+            '~\n    \.dimensions-drawer-resume-sub \{\s*color: var\(--dim-drawer-muted\);~',
+            $scss
+        );
         $this->assertStringContainsString('color: var(--dim-drawer-glyph);', $this->rule($scss, '.dimensions-drawer-resume-go'));
         $rail = $this->rule($scss, '.dimensions-drawer-resume-rail');
         $this->assertStringContainsString('height: .25rem;', $rail);

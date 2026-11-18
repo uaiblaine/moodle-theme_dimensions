@@ -158,12 +158,13 @@
         position: relative;
         overflow: hidden;
         border-bottom: 1px solid var(--dim-layer-line);
-        background: linear-gradient(
-            135deg,
-            var(--dim-layer-ground-warm) 0%,
-            var(--dim-layer-surface) 60%,
-            var(--dim-layer-brand-tint) 100%
-        );
+        background:
+            linear-gradient(
+                135deg,
+                var(--dim-layer-ground-warm) 0%,
+                var(--dim-layer-surface) 60%,
+                var(--dim-layer-brand-tint) 100%
+            );
 
         > :not(.dimensions-layer-spark) {
             position: relative;

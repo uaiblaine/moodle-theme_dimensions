@@ -168,12 +168,13 @@
         padding: var(--dim-ds-space-sm);
         border: 1px solid var(--dim-drawer-tint);
         border-radius: var(--dimensions-radius-lg, var(--dim-ds-radius-lg));
-        background: linear-gradient(
-            135deg,
-            var(--dim-drawer-ground-warm) 0%,
-            var(--dim-drawer-surface) 60%,
-            var(--dim-drawer-tint) 100%
-        );
+        background:
+            linear-gradient(
+                135deg,
+                var(--dim-drawer-ground-warm) 0%,
+                var(--dim-drawer-surface) 60%,
+                var(--dim-drawer-tint) 100%
+            );
         color: var(--dim-drawer-ink);
         text-decoration: none;
 
