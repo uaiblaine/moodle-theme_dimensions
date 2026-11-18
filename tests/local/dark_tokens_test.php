@@ -359,6 +359,133 @@ final class dark_tokens_test extends \basic_testcase {
     }
 
     /**
+     * The Sass expression a family colour of post.scss compiles from, in one mode, under core's default preset.
+     *
+     * A family colour reads a Bootstrap property, whose value is one of Bootstrap's Sass variables in each mode, or a
+     * palette primitive of post.scss, which is the same in both.
+     *
+     * @param string $block The family block of the mode.
+     * @param string $name The family name after its prefix, e.g. 'surface'.
+     * @param string $mode 'light' or 'dark'.
+     * @return string The Sass expression.
+     */
+    private function family_sass(string $block, string $name, string $mode): string {
+        $bootstrap = [
+            'light' => [
+                '--bs-body-bg' => '$body-bg',
+                '--bs-body-color' => '$body-color',
+                '--bs-primary-bg-subtle' => '$primary-bg-subtle',
+                '--bs-primary-text-emphasis' => '$primary-text-emphasis',
+            ],
+            'dark' => [
+                '--bs-body-bg' => '$body-bg-dark',
+                '--bs-body-color' => '$body-color-dark',
+                '--bs-primary-bg-subtle' => '$primary-bg-subtle-dark',
+            ],
+        ];
+        $this->assertSame(
+            1,
+            preg_match('/^\s*--dimensions-' . preg_quote($name, '/') . ': var\((--[a-z0-9-]+)\);$/m', $block, $read),
+            "Precondition: the {$mode} {$name} reads one token."
+        );
+        if (str_starts_with($read[1], '--dim-ds-')) {
+            return '$' . substr($read[1], 2);
+        }
+        $this->assertArrayHasKey(
+            $read[1],
+            $bootstrap[$mode],
+            "The {$mode} {$name} reads {$read[1]}, which this test cannot place."
+        );
+        return $bootstrap[$mode][$read[1]];
+    }
+
+    /**
+     * Both inks a hovered row wears read on the hover and on the pressed ground, on the light and on the dark page.
+     *
+     * A ground is color-mix() of two family colours in sRGB, which is Sass's mix() at the same share, so each is compiled
+     * here from the colours core's default preset gives the two: Bootstrap's body and primary tones from core's blue on
+     * the light page, Bootstrap's dark body and the family's own dark brand ink on the dark one. The shares are read from
+     * post.scss, so a deeper mix that loses an ink fails here (hover.md: 4.5:1 for the ink and the brand's ink).
+     *
+     * @return void
+     */
+    public function test_the_hover_grounds_keep_both_inks_readable(): void {
+        global $CFG;
+        $scss = $this->scss();
+        $blocks = [
+            'light' => $this->body($scss, "\n:root,\nbody,\n.modal {", '--dimensions-hover'),
+            'dark' => $this->body($scss, self::DARK_RULE, '--dimensions-hover'),
+        ];
+        $probe = [];
+        foreach ($blocks as $mode => $block) {
+            foreach (['ink', 'brand-ink', 'surface'] as $name) {
+                $probe[] = "--{$mode}-{$name}: #{" . $this->family_sass($block, $name, $mode) . '};';
+            }
+            foreach (['hover', 'pressed'] as $ground) {
+                $this->assertSame(
+                    1,
+                    preg_match(
+                        '/^\s*--dimensions-' . $ground . ': color-mix\(in srgb, var\(--dimensions-([a-z-]+)\) (\d+)%, '
+                            . 'var\(--dimensions-([a-z-]+)\)\);$/m',
+                        $block,
+                        $mix
+                    ),
+                    "Precondition: the {$mode} {$ground} is a mix of two family colours."
+                );
+                $probe[] = "--{$mode}-{$ground}: #{mix(" . $this->family_sass($block, $mix[1], $mode) . ', '
+                    . $this->family_sass($block, $mix[3], $mode) . ", {$mix[2]}%)};";
+            }
+        }
+        preg_match_all('/^\$dim-ds-[a-z]+(?:-\d+)?: #[0-9a-f]{3,6};$/m', $scss, $primitives);
+        $bootstrap = $CFG->root . '/lib/bundles/bootstrap/scss/';
+        $compiler = new \core_scss();
+        $compiler->setImportPaths([$CFG->dirroot . '/theme/boost/scss']);
+        $compiler->append_raw_scss(
+            '@import "design-system-tokens"; @import "' . $bootstrap . 'functions";'
+            . "\n\$white: \$mds-color-gray-white;\n\$gray-100: \$mds-color-gray-100;\n\$gray-300: \$mds-color-gray-300;\n"
+            . "\$gray-900: \$mds-color-gray-900;\n\$black: \$mds-color-gray-black;\n\$primary: \$mds-color-blue-500;\n"
+            . "\$body-bg: \$gray-100;\n@import \"{$bootstrap}variables\"; @import \"{$bootstrap}variables-dark\";\n"
+            . implode("\n", $primitives[0])
+            . "\n.probe {\n" . implode("\n", $probe) . "\n}"
+        );
+        preg_match_all(
+            '/--((?:light|dark)-[a-z-]+):\s*#([0-9a-f]{6}|[0-9a-f]{3});/',
+            $compiler->to_css(),
+            $found,
+            PREG_SET_ORDER
+        );
+        $colours = [];
+        foreach ($found as [, $name, $digits]) {
+            if (strlen($digits) === 3) {
+                $digits = $digits[0] . $digits[0] . $digits[1] . $digits[1] . $digits[2] . $digits[2];
+            }
+            $colours[$name] = '#' . $digits;
+        }
+        $this->assertCount(10, $colours, 'Precondition: every probe compiled to a colour.');
+
+        $measured = 0;
+        foreach (['light', 'dark'] as $mode) {
+            foreach (['hover', 'pressed'] as $ground) {
+                $this->assertNotSame(
+                    $colours["{$mode}-surface"],
+                    $colours["{$mode}-{$ground}"],
+                    "The {$mode} {$ground} is no surface."
+                );
+                foreach (['ink', 'brand-ink'] as $ink) {
+                    $ratio = branding::contrast($colours["{$mode}-{$ground}"], $colours["{$mode}-{$ink}"]);
+                    $this->assertGreaterThanOrEqual(
+                        4.5,
+                        $ratio,
+                        sprintf('The %s %s on the %s ground reads %.2f:1.', $mode, $ink, $ground, $ratio)
+                    );
+                    $measured++;
+                }
+            }
+        }
+        $this->assertSame(8, $measured, 'Control: two inks on two grounds in two modes.');
+    }
+
+    /**
      * The greys the compile above declares are the ones core's default preset declares.
      *
      * The dark surfaces derive from them, so a preset that took them from somewhere else would leave this test

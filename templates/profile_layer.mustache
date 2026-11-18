@@ -33,7 +33,9 @@
     role="menu" of menuitemradio links, a Boost Union smart menu's sub-view one of menuitem links. The colour mode
     control carries core's hooks (data-region="colourmode-menu", data-action="set-colourmode"), so
     theme_boost/colourmode applies and stores the mode. The identity values are plain text, masked on the server,
-    and escaped here once; the avatar is core's user_picture() HTML.
+    and escaped here once; the avatar is core's user_picture() HTML. The identity header is the sparkle ground: its
+    three sparkles are decoration, hidden from assistive technology and never focused. Under "log in as" the notice
+    is in two parts, the sentence and then the way back to the real account as a button of its own.
 
     Context variables required for this template:
     * avatar - core's picture of the session's user, HTML
@@ -151,6 +153,9 @@
 <div class="dimensions-layer dimensions-layer--end" id="{{uniqid}}-profile" role="dialog" aria-modal="true" aria-labelledby="{{uniqid}}-title" data-region="dimensions-profile" hidden>
     <div class="dimensions-layer-view" data-view="main">
         <div class="dimensions-layer-top">
+            <svg class="dimensions-layer-spark dimensions-layer-spark--a" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2c.6 5.2 4.8 9.4 10 10-5.2.6-9.4 4.8-10 10-.6-5.2-4.8-9.4-10-10 5.2-.6 9.4-4.8 10-10z"/></svg>
+            <svg class="dimensions-layer-spark dimensions-layer-spark--b" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2c.6 5.2 4.8 9.4 10 10-5.2.6-9.4 4.8-10 10-.6-5.2-4.8-9.4-10-10 5.2-.6 9.4-4.8 10-10z"/></svg>
+            <svg class="dimensions-layer-spark dimensions-layer-spark--c" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2c.6 5.2 4.8 9.4 10 10-5.2.6-9.4 4.8-10 10-.6-5.2-4.8-9.4-10-10 5.2-.6 9.4-4.8 10-10z"/></svg>
             <div class="dimensions-layer-id">
                 <span class="dimensions-layer-avatar">{{{avatar}}}</span>
                 <div class="dimensions-layer-who">
@@ -169,8 +174,11 @@
             </div>
         </div>
         {{#loggedinas}}
-        <div class="dimensions-layer-notice" data-region="dimensions-layer-loggedinas">{{#pix}} i/permissions, core {{/pix}}<span>{{text}}</span>
-            {{#returnurl}}<a href="{{returnurl}}">{{returnlabel}}</a>{{/returnurl}}
+        <div class="dimensions-layer-notice" data-region="dimensions-layer-loggedinas">
+            <p class="dimensions-layer-notice-text">{{#pix}} i/permissions, core {{/pix}}<span>{{text}}</span></p>
+            {{#returnurl}}
+            <a class="btn btn-outline-secondary btn-sm dimensions-layer-notice-back" href="{{returnurl}}">{{#pix}} e/undo, core {{/pix}}<span>{{returnlabel}}</span></a>
+            {{/returnurl}}
         </div>
         {{/loggedinas}}
         <div class="dimensions-layer-scroll">

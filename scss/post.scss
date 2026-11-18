@@ -220,8 +220,9 @@ $dim-dark-info-fg: #7fd8e4; // 8.8:1.
    edge is Sass's mix() of its own pair. The only colour literals are the dark pills' own colours, which the
    showcase's badges already measured (scss/category.scss, at its foot) and the palette has no token for. A card
    token may also be a length, a duration, an opacity, or a shadow or a gradient drawn from a token's channels,
-   and a dark elevation is such a shadow. tests/local/family_tokens_test.php holds the list, the roots and the
-   values.
+   and a dark elevation is such a shadow. The hover and pressed grounds are color-mix() of two family tokens, in a
+   custom property, whose value stylelint's validator does not read (it refuses color-mix() in a property).
+   tests/local/family_tokens_test.php holds the list, the roots and the values.
 
    Three roots, because a token derived from a --bs-* property is computed where it is declared:
    :root for the page, body for anything a theme puts the colour mode on, and .modal for the
@@ -234,6 +235,11 @@ body,
     --dimensions-surface: var(--bs-body-bg);
     --dimensions-surface-alt: var(--bs-tertiary-bg);
     --dimensions-surface-inset: var(--bs-secondary-bg);
+    /* The ground of a hovered and of a pressed row, item or quiet control (the fleet Design System's hover.md, D103):
+       the brand's tint thinned over the surface, never the surface itself, so a site whose tertiary ground equals its
+       body ground still shows a hover. */
+    --dimensions-hover: color-mix(in srgb, var(--dimensions-brand-tint) 55%, var(--dimensions-surface));
+    --dimensions-pressed: color-mix(in srgb, var(--dimensions-brand-tint) 85%, var(--dimensions-surface));
     --dimensions-line: var(--bs-border-color);
     --dimensions-ink: var(--bs-body-color);
     --dimensions-ink-strong: var(--bs-emphasis-color);
@@ -351,13 +357,16 @@ body,
    the light chain: the brand ink, which Bootstrap's dark emphasis leaves at 3.28:1 on a dark card (the design
    system's lighter stop of the hue, as the showcase reads it); the ring, which the next stop up
    keeps over 3:1 on every dark surface; and a shadow, which a navy tint at a tenth cannot draw on a
-   dark page, so the shadow colour and the three elevations are black. */
+   dark page, so the shadow colour and the three elevations are black. The hover and pressed grounds
+   thin the brand's ink over the surface here, where its dark tint would barely leave the page. */
 :root[data-bs-theme="dark"],
 :root[data-bs-theme="dark"] body,
 :root[data-bs-theme="dark"] .modal {
     --dimensions-surface: var(--bs-body-bg);
     --dimensions-surface-alt: var(--bs-tertiary-bg);
     --dimensions-surface-inset: var(--bs-secondary-bg);
+    --dimensions-hover: color-mix(in srgb, var(--dimensions-brand-ink) 14%, var(--dimensions-surface));
+    --dimensions-pressed: color-mix(in srgb, var(--dimensions-brand-ink) 22%, var(--dimensions-surface));
     --dimensions-line: var(--bs-border-color);
     --dimensions-ink: var(--bs-body-color);
     --dimensions-ink-strong: var(--bs-emphasis-color);
@@ -462,6 +471,27 @@ body,
 /* A dark page needs a heavier veil than a light one for the same separation. */
 :root[data-bs-theme="dark"] {
     --dimensions-backdrop: rgba(var(--bs-black-rgb, 0, 0, 0), .7);
+}
+
+/* The sparkle ground's colours (the fleet Design System's sparkle-ground.md, D104), the theme's own and outside the
+   contract: the gradient's warm stop and the middle sparkle's sand are decoration the family has no name for, the
+   only literals a sheet may paint them with; the other two sparkles are the brand's fill on the light page and its
+   ink on the dark one. Read by the profile layer's identity header and the drawer's resume card. On the family's
+   three roots, because the sparkle's colour is derived from a family token. */
+:root,
+body,
+.modal {
+    --dimensions-ground-warm: #fdfbf7;
+    --dimensions-ground-sand: #8a6420;
+    --dimensions-ground-spark: var(--dimensions-brand-fill);
+}
+
+:root[data-bs-theme="dark"],
+:root[data-bs-theme="dark"] body,
+:root[data-bs-theme="dark"] .modal {
+    --dimensions-ground-warm: #24211d;
+    --dimensions-ground-sand: #e8c67a;
+    --dimensions-ground-spark: var(--dimensions-brand-ink);
 }
 
 /* ---- Focus: WCAG 2.2 AA, the same ring on white and on navy -------------- */

@@ -89,6 +89,16 @@ final class family_tokens_test extends \basic_testcase {
         'elevation-lg' => '--dim-ds-shadow-lg',
     ];
 
+    /**
+     * @var array The family's two interaction grounds (hover.md, D103), suffix => [the tone it thins, its share, the
+     *      ground it thins over] on the light page and on the dark one: the brand's tint on the light page, its ink on the
+     *      dark one, where the dark tint would barely leave the page.
+     */
+    private const GROUNDS = [
+        'hover' => ['light' => ['brand-tint', 55, 'surface'], 'dark' => ['brand-ink', 14, 'surface']],
+        'pressed' => ['light' => ['brand-tint', 85, 'surface'], 'dark' => ['brand-ink', 22, 'surface']],
+    ];
+
     /** @var int[] The radius scale in pixels, xs to xl: Moodle Design System 5.3.0's steps. */
     private const RADIUS_SCALE = [4, 6, 8, 12, 16];
 
@@ -108,7 +118,8 @@ final class family_tokens_test extends \basic_testcase {
     /**
      * @var string[] The theme's own names under the same prefix, outside the contract: the navbar's band and pills, the
      *      logo variants for dark surfaces (their sources, which the extra SCSS callback overrides, and what a surface reads),
-     *      and the reading bar's band progress and navbar offset (scss/readingbar.scss).
+     *      the reading bar's band progress and navbar offset (scss/readingbar.scss), and the sparkle ground's warm stop,
+     *      sand and sparkle (sparkle-ground.md, D104).
      */
     private const OWN = [
         '--dimensions-navbar-band',
@@ -126,6 +137,9 @@ final class family_tokens_test extends \basic_testcase {
         '--dimensions-logo-compact-shift',
         '--dimensions-band-progress',
         '--dimensions-navbar-offset',
+        '--dimensions-ground-warm',
+        '--dimensions-ground-sand',
+        '--dimensions-ground-spark',
     ];
 
     /** @var string[] The three roots of the light block, in order. */
@@ -172,6 +186,15 @@ final class family_tokens_test extends \basic_testcase {
     }
 
     /**
+     * The interaction grounds' names, with their prefix.
+     *
+     * @return string[]
+     */
+    private static function grounds(): array {
+        return array_map(static fn(string $suffix): string => '--dimensions-' . $suffix, array_keys(self::GROUNDS));
+    }
+
+    /**
      * Every name of the contract, shared first, the card's last.
      *
      * @return string[] The custom property names, with their prefix.
@@ -183,6 +206,7 @@ final class family_tokens_test extends \basic_testcase {
                 array_merge(self::SHARED, self::local_only())
             ),
             self::system(),
+            self::grounds(),
             self::card()
         );
     }
@@ -359,7 +383,8 @@ final class family_tokens_test extends \basic_testcase {
     }
 
     /**
-     * The list holds 33 shared names, 21 local-only ones, the Design System's 10 and the card's 30, none twice.
+     * The list holds 33 shared names, 21 local-only ones, the Design System's 10 and 2 grounds, and the card's 30, none
+     * twice.
      *
      * Every other test reads the stylesheet and the document against these constants, so a typo
      * here would be copied into both and pass.
@@ -370,7 +395,8 @@ final class family_tokens_test extends \basic_testcase {
         $this->assertCount(30, array_unique(self::card()));
         $this->assertSame([], array_values(array_diff(self::CARD_COLOURS, self::CARD)), 'Every colour is a card suffix.');
         $this->assertCount(10, self::SYSTEM);
-        $this->assertCount(94, array_unique(self::names()));
+        $this->assertCount(2, self::GROUNDS);
+        $this->assertCount(96, array_unique(self::names()));
     }
 
     /**
@@ -441,8 +467,10 @@ final class family_tokens_test extends \basic_testcase {
             $declarations = $this->family_declarations($blocks[$mode][0]['body']);
             $names = array_column($declarations, 0);
             foreach ($declarations as [$name, $value]) {
-                if (in_array($name, self::card(), true) || in_array($name, self::system(), true)) {
-                    // The card's and the scales' lengths, shadows and gradients have tests of their own.
+                $own = array_merge(self::card(), self::system(), self::grounds());
+                if (in_array($name, $own, true)) {
+                    // The card's and the scales' lengths, shadows and gradients, and the grounds' mixes, have tests of
+                    // their own.
                     continue;
                 }
                 if (str_ends_with($name, '-edge') && str_starts_with($name, '--dimensions-state-')) {
@@ -702,6 +730,38 @@ final class family_tokens_test extends \basic_testcase {
     }
 
     /**
+     * The hover and pressed grounds thin a brand tone over the surface, in sRGB, the pressed one more than the hover.
+     *
+     * A ground written as a colour of its own, or as the surface, is a hover a flavour's brand colour does not move or a
+     * hover that shows nothing where the tertiary ground equals the body's (hover.md). Each is color-mix() of two family
+     * names its own block declares; the light page thins the brand's tint, the dark one its ink.
+     *
+     * @return void
+     */
+    public function test_the_hover_grounds_thin_the_brand_over_the_surface(): void {
+        $blocks = $this->blocks();
+        $checked = 0;
+        foreach (['light', 'dark'] as $mode) {
+            $values = array_column($this->family_declarations($blocks[$mode][0]['body']), 1, 0);
+            $shares = [];
+            foreach (self::GROUNDS as $suffix => $modes) {
+                [$tone, $share, $ground] = $modes[$mode];
+                $this->assertSame(
+                    "color-mix(in srgb, var(--dimensions-{$tone}) {$share}%, var(--dimensions-{$ground}))",
+                    $values["--dimensions-{$suffix}"] ?? '',
+                    "--dimensions-{$suffix} on the {$mode} page."
+                );
+                $this->assertArrayHasKey("--dimensions-{$tone}", $values, "Precondition: the {$mode} block declares {$tone}.");
+                $this->assertArrayHasKey("--dimensions-{$ground}", $values, "Precondition: the {$mode} block declares {$ground}.");
+                $shares[$suffix] = $share;
+                $checked++;
+            }
+            $this->assertGreaterThan($shares['hover'], $shares['pressed'], "The {$mode} pressed ground is the deeper one.");
+        }
+        $this->assertSame(4, $checked, 'Control: two grounds in each mode.');
+    }
+
+    /**
      * Bootstrap's radius variables sit on the Design System's scale, and a control's is the 8 px step.
      *
      * Bootstrap carries three steps and a dropdown's, compiled before the tokens exist, so they are literals in
@@ -760,8 +820,8 @@ final class family_tokens_test extends \basic_testcase {
         $shared = array_map(static fn(string $suffix): string => '--dimensions-' . $suffix, self::SHARED);
         $expected = [
             'Shared tokens' => $shared,
-            'Local-only tokens' => array_values(array_diff($declared, $shared, self::system(), self::card())),
-            'Design system tokens' => array_values(array_intersect($declared, self::system())),
+            'Local-only tokens' => array_values(array_diff($declared, $shared, self::system(), self::grounds(), self::card())),
+            'Design system tokens' => array_values(array_intersect($declared, array_merge(self::system(), self::grounds()))),
             'Card tokens' => array_values(array_intersect($declared, self::card())),
         ];
         foreach ($expected as $title => $names) {
@@ -771,7 +831,7 @@ final class family_tokens_test extends \basic_testcase {
             $this->assertSame(count($names), $sections[$title]['count'], "{$title}: the heading's count.");
         }
         $this->assertCount(21, $sections['Local-only tokens']['names'], 'Control: the local-only names are the 21.');
-        $this->assertCount(10, $sections['Design system tokens']['names'], 'Control: the Design System names are the 10.');
+        $this->assertCount(12, $sections['Design system tokens']['names'], 'Control: the Design System names are the 12.');
         $this->assertCount(30, $sections['Card tokens']['names'], 'Control: the card names are the 30.');
     }
 }

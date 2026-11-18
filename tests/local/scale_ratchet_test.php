@@ -152,9 +152,6 @@ final class scale_ratchet_test extends \basic_testcase {
             '0.9375rem' => 1,
             '0.9rem' => 1,
         ],
-        'drawer.scss' => [
-            '0.9375rem' => 1,
-        ],
         'landing.scss' => [
             '0.7rem' => 1,
             '0.9375rem' => 3,

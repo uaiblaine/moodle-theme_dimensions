@@ -537,6 +537,7 @@ $string['coursenotice_unlistedlead'] = 'Unlisted:';
 $string['coursenotice_unlistedtext'] = 'only staff and people who are enrolled in the course, have an application awaiting a decision or could enrol right now learn that it exists. Anybody else who opens the landing page address, logged in or not, is told it is not available.';
 $string['drawer_back'] = 'Back to {$a}';
 $string['drawer_browse'] = 'Browse';
+$string['drawer_nav'] = 'Site navigation';
 $string['drawer_openparent'] = 'Go to {$a}';
 $string['drawer_progress'] = '{$a->completed} of {$a->total} completed';
 $string['drawer_resume'] = 'Continue where you left off';

@@ -254,6 +254,11 @@ final class drawer_render_test extends \advanced_testcase {
 
         $html = $OUTPUT->render_from_template('theme_dimensions/drawer_nav', $context);
 
+        // A navigation landmark, named.
+        $this->assertStringContainsString(
+            '<nav class="dimensions-drawer" id="dimensions-drawer" data-region="dimensions-drawer" aria-label="Site navigation">',
+            $html
+        );
         // The panels: the root first, then each sub-panel naming its parent.
         $this->assertStringContainsString('id="dimensions-drawer-panel-root" data-region="dimensions-drawer-panel"', $html);
         $this->assertMatchesRegularExpression(

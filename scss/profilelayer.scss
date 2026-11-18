@@ -23,9 +23,13 @@
 // The layer's tokens are declared on its root and read the theme's family tokens, each with Bootstrap's own as the
 // fallback, so the colour mode and a flavour's brand colour move them: the family's dark half (post.scss) is the
 // layer's dark mode, and no literal colour is written here. Below sm the layer is a bottom sheet, the theme's sheet
-// step (scss/sheets.scss). Every motion runs only under prefers-reduced-motion: no-preference: a row's hover, and the
-// opening, in the theme's base motion token: the backdrop fades in and the layer slides in from its side, the sheet
-// rises from the bottom. amd/src/profilelayer.js holds Behat until the opening ends. Closing is at once.
+// step (scss/sheets.scss). Every transition and animation runs only under prefers-reduced-motion: no-preference: the
+// hover of the family (moodle-dev/docs/design-system/components/hover.md, D103) on every row, icon button and profile
+// button, and the opening, in the theme's base motion token: the backdrop fades in and the layer slides in from its
+// side, the sheet rises from the bottom. amd/src/profilelayer.js holds Behat until the opening ends. Closing is at
+// once. A hovered row's icon moves a step towards the row's end, which a right-to-left page mirrors; under
+// prefers-reduced-motion: reduce nothing moves. The identity header is the sparkle ground (sparkle-ground.md, D104):
+// its three sparkles are inline SVG in the template, and the sheet carries none.
 //
 // A view is display: flex and hidden at once: Bootstrap's reboot keeps [hidden] at display: none !important, so the
 // attribute wins over every rule below and a hidden view or a closed layer is never drawn.
@@ -45,12 +49,19 @@
 
 .dimensions-layer {
     --dim-layer-surface: var(--dimensions-surface, var(--bs-body-bg));
-    --dim-layer-surface-alt: var(--dimensions-surface-alt, var(--bs-tertiary-bg));
     --dim-layer-surface-inset: var(--dimensions-surface-inset, var(--bs-secondary-bg));
+    --dim-layer-hover: var(--dimensions-hover, var(--bs-tertiary-bg));
+    --dim-layer-pressed: var(--dimensions-pressed, var(--bs-secondary-bg));
     --dim-layer-line: var(--dimensions-line, var(--bs-border-color));
     --dim-layer-ink: var(--dimensions-ink, var(--bs-body-color));
     --dim-layer-ink-muted: var(--dimensions-ink-muted, var(--bs-secondary-color));
     --dim-layer-brand-ink: var(--dimensions-brand-ink, var(--bs-primary-text-emphasis));
+    --dim-layer-brand-fill: var(--dimensions-brand-fill, var(--bs-primary));
+    --dim-layer-brand-tint: var(--dimensions-brand-tint, var(--bs-primary-bg-subtle));
+    // The sparkle ground's warm stop, its middle sparkle's sand and the other sparkles' colour (post.scss).
+    --dim-layer-ground-warm: var(--dimensions-ground-warm, var(--bs-body-bg));
+    --dim-layer-ground-sand: var(--dimensions-ground-sand, var(--bs-secondary-color));
+    --dim-layer-spark: var(--dimensions-ground-spark, var(--bs-primary));
     --dim-layer-danger-ink: var(--dimensions-danger-ink, var(--bs-danger-text-emphasis));
     --dim-layer-danger-tint: var(--dimensions-danger-tint, var(--bs-danger-bg-subtle));
     --dim-layer-info-ink: var(--dimensions-info-ink, var(--bs-info-text-emphasis));
@@ -68,6 +79,10 @@
     --dim-layer-motion-base: var(--dimensions-motion-base, 250ms);
     // Where the opening starts: off the end side, the start side in a right-to-left page, the bottom on a phone.
     --dim-layer-from: translateX(100%);
+    // How far a hovered row moves its leading icon and its chevron towards the row's end: translateX() does not
+    // follow the direction, so a right-to-left page turns both round.
+    --dim-layer-nudge-icon: .125rem;
+    --dim-layer-nudge-arrow: .1875rem;
     // The unread count of a phone entry keeps the navbar's own pair (scss/phonenav.scss): a counter inside a row is
     // not decided (moodle-dev/docs/design-system/components/counter.md, "Open").
     --dim-layer-count-fill: var(--dim-ds-accent-highlight);
@@ -85,6 +100,8 @@
 
     &:dir(rtl) {
         --dim-layer-from: translateX(-100%);
+        --dim-layer-nudge-icon: -.125rem;
+        --dim-layer-nudge-arrow: -.1875rem;
     }
 
     @media (prefers-reduced-motion: no-preference) {
@@ -134,10 +151,55 @@
         border-top: 1px solid var(--dim-layer-line);
     }
 
-    // ---- The identity header --------------------------------------------------------------------------
+    // ---- The identity header, on the sparkle ground ---------------------------------------------------
+    // A gradient from the warm stop through the surface to the brand's tint, and three static sparkles under the
+    // content: the content is positioned, so it paints above them.
     .dimensions-layer-top {
+        position: relative;
+        overflow: hidden;
         border-bottom: 1px solid var(--dim-layer-line);
-        background: var(--dim-layer-surface-alt);
+        background:
+            linear-gradient(
+                135deg,
+                var(--dim-layer-ground-warm) 0%,
+                var(--dim-layer-surface) 60%,
+                var(--dim-layer-brand-tint) 100%
+            );
+
+        > :not(.dimensions-layer-spark) {
+            position: relative;
+        }
+    }
+
+    // Decoration: no text, no focus, no pointer, under the content at a third of its colour.
+    .dimensions-layer-spark {
+        position: absolute;
+        opacity: .35;
+        fill: currentcolor;
+        color: var(--dim-layer-spark);
+        pointer-events: none;
+    }
+
+    .dimensions-layer-spark--a {
+        top: .75rem;
+        inset-inline-start: .75rem;
+        width: .75rem;
+        height: .75rem;
+    }
+
+    .dimensions-layer-spark--b {
+        top: 1rem;
+        inset-inline-end: 3.5rem;
+        width: .5rem;
+        height: .5rem;
+        color: var(--dim-layer-ground-sand);
+    }
+
+    .dimensions-layer-spark--c {
+        inset-inline-end: 1rem;
+        bottom: .75rem;
+        width: .625rem;
+        height: .625rem;
     }
 
     .dimensions-layer-id {
@@ -147,13 +209,15 @@
         padding: 1rem 1rem .75rem;
     }
 
-    // Core's picture is an image or, for a person without one, the initials in a span: both at 48px, round.
+    // Core's picture is an image or, for a person without one, the initials in a span: both at 48px, round, ringed
+    // with 2px of the surface and then 1px of the brand's tint, so it stands off the gradient.
     .dimensions-layer-avatar img,
     .dimensions-layer-avatar .userinitials {
         width: 3rem;
         height: 3rem;
         margin: 0;
         border-radius: 50%;
+        box-shadow: 0 0 0 2px var(--dim-layer-surface), 0 0 0 3px var(--dim-layer-brand-tint);
     }
 
     .dimensions-layer-who {
@@ -186,7 +250,9 @@
         color: var(--dim-layer-ink-muted);
     }
 
-    // Core's small outline buttons, held at 2rem, side by side; one alone spans both columns.
+    // Core's small outline buttons, held at 2rem, side by side; one alone spans both columns. On the surface, so they
+    // do not take the gradient; hovered, the family's hover with the brand's fill as the edge. Core's button reads its
+    // states from these properties, so the states are set there and core's own rules draw them.
     .dimensions-layer-actions {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -194,11 +260,29 @@
         padding: 0 1rem 1rem;
 
         > .btn {
+            --bs-btn-bg: var(--dim-layer-surface);
+            --bs-btn-hover-bg: var(--dim-layer-hover);
+            --bs-btn-hover-color: var(--dim-layer-brand-ink);
+            --bs-btn-hover-border-color: var(--dim-layer-brand-fill);
+            --bs-btn-active-bg: var(--dim-layer-pressed);
+            --bs-btn-active-color: var(--dim-layer-brand-ink);
+            --bs-btn-active-border-color: var(--dim-layer-brand-fill);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: .375rem;
             min-height: 2rem;
+
+            @media (prefers-reduced-motion: no-preference) {
+                transition:
+                    background-color var(--dim-layer-motion-base) var(--dim-layer-motion-ease),
+                    border-color var(--dim-layer-motion-base) var(--dim-layer-motion-ease),
+                    color var(--dim-layer-motion-base) var(--dim-layer-motion-ease);
+
+                &:hover {
+                    transition-duration: var(--dim-layer-motion-fast);
+                }
+            }
         }
 
         > .btn:only-child {
@@ -223,9 +307,24 @@
         background: transparent;
         color: var(--dim-layer-ink-muted);
 
+        @media (prefers-reduced-motion: no-preference) {
+            transition:
+                background-color var(--dim-layer-motion-base) var(--dim-layer-motion-ease),
+                color var(--dim-layer-motion-base) var(--dim-layer-motion-ease);
+        }
+
+        // The family's hover; the glyph does not move, it names the button rather than pointing along a row.
         &:hover {
-            background: var(--dim-layer-surface-inset);
-            color: var(--dim-layer-ink);
+            background-color: var(--dim-layer-hover);
+            color: var(--dim-layer-brand-ink);
+
+            @media (prefers-reduced-motion: no-preference) {
+                transition-duration: var(--dim-layer-motion-fast);
+            }
+        }
+
+        &:active {
+            background-color: var(--dim-layer-pressed);
         }
 
         > .icon {
@@ -233,28 +332,64 @@
         }
     }
 
-    // ---- The "logged in as" notice ----------------------------------------------------------------------
+    // ---- The "logged in as" notice, in two parts (D105) ------------------------------------------------
+    // The sentence first, its icon before it, wrapping on as many lines as it needs; under it the way back to the real
+    // account, core's small outline button the notice's whole width, on the surface in the notice's own tone.
     .dimensions-layer-notice {
-        display: flex;
-        align-items: center;
-        gap: .5rem;
         margin: .5rem .5rem 0;
-        padding: .5rem .75rem;
+        padding: .5rem .75rem .75rem;
         border: 1px solid var(--dim-layer-info-edge);
         border-radius: var(--dim-layer-radius-md);
         background: var(--dim-layer-info-tint);
         font-size: .8125rem;
         color: var(--dim-layer-info-ink);
+    }
+
+    .dimensions-layer-notice-text {
+        display: flex;
+        align-items: flex-start;
+        gap: .5rem;
+        margin: 0 0 .5rem;
 
         > .icon {
+            flex: none;
+            margin: .125rem 0 0;
+        }
+    }
+
+    .dimensions-layer-notice-back {
+        --bs-btn-bg: var(--dim-layer-surface);
+        --bs-btn-color: var(--dim-layer-info-ink);
+        --bs-btn-border-color: var(--dim-layer-info-edge);
+        --bs-btn-hover-bg: var(--dim-layer-hover);
+        --bs-btn-hover-color: var(--dim-layer-info-ink);
+        --bs-btn-hover-border-color: var(--dim-layer-info-ink);
+        --bs-btn-active-bg: var(--dim-layer-pressed);
+        --bs-btn-active-color: var(--dim-layer-info-ink);
+        --bs-btn-active-border-color: var(--dim-layer-info-ink);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: .375rem;
+        width: 100%;
+        min-height: 2rem;
+        font-weight: 600;
+        white-space: normal;
+
+        > .icon {
+            flex: none;
             margin: 0;
         }
 
-        a {
-            margin-inline-start: auto;
-            font-weight: 600;
-            white-space: nowrap;
-            color: inherit;
+        @media (prefers-reduced-motion: no-preference) {
+            transition:
+                background-color var(--dim-layer-motion-base) var(--dim-layer-motion-ease),
+                border-color var(--dim-layer-motion-base) var(--dim-layer-motion-ease),
+                color var(--dim-layer-motion-base) var(--dim-layer-motion-ease);
+
+            &:hover {
+                transition-duration: var(--dim-layer-motion-fast);
+            }
         }
     }
 
@@ -298,13 +433,52 @@
             min-height: 2.75rem;
         }
 
+        // The family's hover (hover.md): the slower step is written at rest and the faster one on :hover, since a
+        // transition takes the duration of the state it enters, so the hover arrives fast and leaves slowly.
         @media (prefers-reduced-motion: no-preference) {
-            transition: background-color var(--dim-layer-motion-fast) var(--dim-layer-motion-ease);
+            transition:
+                background-color var(--dim-layer-motion-base) var(--dim-layer-motion-ease),
+                color var(--dim-layer-motion-base) var(--dim-layer-motion-ease);
+        }
+
+        > .icon:first-child,
+        > .dimensions-layer-value > .icon {
+            @media (prefers-reduced-motion: no-preference) {
+                transition:
+                    color var(--dim-layer-motion-base) var(--dim-layer-motion-ease),
+                    transform var(--dim-layer-motion-base) var(--dim-layer-motion-ease);
+            }
         }
 
         &:hover {
-            background: var(--dim-layer-surface-alt);
-            color: var(--dim-layer-ink);
+            background-color: var(--dim-layer-hover);
+            color: var(--dim-layer-brand-ink);
+
+            @media (prefers-reduced-motion: no-preference) {
+                transition-duration: var(--dim-layer-motion-fast);
+            }
+        }
+
+        // The leading icon takes the ink and moves 2px towards the end, the chevron of a sub-view's row 3px; the tick
+        // of a chosen option is the option's last child, not inside a value, and stays where it is.
+        &:hover > .icon:first-child {
+            color: var(--dim-layer-brand-ink);
+            transform: translateX(var(--dim-layer-nudge-icon));
+        }
+
+        &:hover > .dimensions-layer-value > .icon {
+            transform: translateX(var(--dim-layer-nudge-arrow));
+        }
+
+        &:hover > .icon:first-child,
+        &:hover > .dimensions-layer-value > .icon {
+            @media (prefers-reduced-motion: no-preference) {
+                transition-duration: var(--dim-layer-motion-fast);
+            }
+        }
+
+        &:active {
+            background-color: var(--dim-layer-pressed);
         }
 
         > .icon:first-child {
@@ -379,8 +553,14 @@
         color: var(--dim-layer-danger-ink);
     }
 
-    .dimensions-layer-row--danger:hover {
-        background: var(--dim-layer-danger-tint);
+    // Log out keeps its red when hovered or pressed, its icon too; the icon still moves.
+    .dimensions-layer-row--danger:hover,
+    .dimensions-layer-row--danger:active {
+        background-color: var(--dim-layer-danger-tint);
+        color: var(--dim-layer-danger-ink);
+    }
+
+    .dimensions-layer-row--danger:hover > .icon:first-child {
         color: var(--dim-layer-danger-ink);
     }
 
@@ -449,6 +629,24 @@
     :focus-visible {
         outline: var(--dim-layer-ring-width) solid var(--dim-layer-ring);
         outline-offset: -2px;
+    }
+
+    // ---- Reduced motion: the colours change at once and nothing moves --------------------------------------
+    @media (prefers-reduced-motion: reduce) {
+        .dimensions-layer-row,
+        .dimensions-layer-row > .icon,
+        .dimensions-layer-value > .icon,
+        .dimensions-layer-iconbtn,
+        .dimensions-layer-actions > .btn,
+        .dimensions-layer-notice-back {
+            transition: none;
+        }
+
+        // As heavy as the rules that move them, and after them.
+        .dimensions-layer-row:hover > .icon:first-child,
+        .dimensions-layer-row:hover > .dimensions-layer-value > .icon {
+            transform: none;
+        }
     }
 }
 

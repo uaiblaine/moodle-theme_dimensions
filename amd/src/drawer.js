@@ -232,6 +232,8 @@ const paintResume = (card, resume) => {
     card.querySelector(SELECTORS.RESUMELINK).href = resume.url;
     card.querySelector(SELECTORS.RESUMETITLE).textContent = resume.name;
     card.querySelector(SELECTORS.RESUMESUB).textContent = resume.detail;
+    // The tile draws the glyph of this kind; the stylesheet knows the kinds, the module only passes the word on.
+    card.dataset.kind = resume.kind;
     const bar = card.querySelector(SELECTORS.RESUMEBAR);
     if (resume.hascompletion) {
         bar.style.width = `${resume.percent}%`;

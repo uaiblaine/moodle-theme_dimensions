@@ -537,6 +537,10 @@ body.dim-category {
         --dim-elevation-sm: var(--dimensions-elevation-sm, 0 1px 2px rgba(7, 0, 147, .08), 0 1px 3px rgba(7, 0, 147, .06));
         --dim-elevation-md: var(--dimensions-elevation-md, 0 4px 12px rgba(7, 0, 147, .10));
         --dim-elevation-lg: var(--dimensions-elevation-lg, 0 12px 32px rgba(7, 0, 147, .14));
+        // A menu item's hover and pressed grounds (hover.md), and the slower motion step its hover leaves at.
+        --dim-hover: var(--dimensions-hover, var(--dim-surface-subtle));
+        --dim-pressed: var(--dimensions-pressed, var(--dim-surface-strong));
+        --dim-motion-base: var(--dimensions-motion-base, 250ms);
         // The brand face, which the design names on its controls and its titles; its running text is
         // the reading face. Declared on the roots so the toolbar reads it as well as the areas: the
         // theme's body face is the brand one, and the toolbar has both.
@@ -1116,10 +1120,32 @@ body.dim-category {
         font-size: .875rem;
         text-align: start;
         cursor: pointer;
-        transition: background var(--dim-motion) var(--dim-ease);
+        // The family's hover (hover.md): it arrives at the fast step and leaves at the base one; the leading icon
+        // moves 2px towards the end, the tick of the chosen item stays where it is.
+        transition:
+            background-color var(--dim-motion-base) var(--dim-ease),
+            color var(--dim-motion-base) var(--dim-ease);
+
+        .dim-menu__icon {
+            transition:
+                color var(--dim-motion-base) var(--dim-ease),
+                transform var(--dim-motion-base) var(--dim-ease);
+        }
 
         &:hover {
-            background: var(--dim-surface-subtle);
+            background: var(--dim-hover);
+            color: var(--dim-primary-ink);
+            transition-duration: var(--dim-motion);
+        }
+
+        &:hover .dim-menu__icon {
+            color: var(--dim-primary-ink);
+            transform: translateX(.125rem);
+            transition-duration: var(--dim-motion);
+        }
+
+        &:active {
+            background: var(--dim-pressed);
         }
 
         &[aria-checked="true"] {
@@ -1131,6 +1157,11 @@ body.dim-category {
             outline: 3px solid var(--dim-ring);
             outline-offset: -2px;
         }
+    }
+
+    // A translation does not follow the direction: towards the end is towards the left here.
+    &.dir-rtl .dim-menu__item:hover .dim-menu__icon {
+        transform: translateX(-.125rem);
     }
 
     .dim-menu__icon {
@@ -6165,8 +6196,15 @@ body.dim-category {
         .dim-card__title a,
         .dim-pill,
         .dim-card__star,
-        .dim-menu__item {
+        .dim-menu__item,
+        .dim-menu__item .dim-menu__icon {
             transition: none;
+        }
+
+        // A menu item's icon stays where it is, in either direction.
+        .dim-menu__item:hover .dim-menu__icon,
+        &.dir-rtl .dim-menu__item:hover .dim-menu__icon {
+            transform: none;
         }
 
         .dim-vitrine__item {
@@ -6363,12 +6401,27 @@ body.dim-category {
     font-size: .875rem;
     text-decoration: none;
     white-space: nowrap;
-    transition: background-color var(--dimensions-motion-fast, 150ms) var(--dimensions-motion-ease, ease);
+    // The family's hover (hover.md): it arrives at the fast step and leaves at the base one, and the leading icon moves
+    // 2px towards the end. The pill on its row keeps its own hover.
+    transition:
+        background-color var(--dimensions-motion-base, 250ms) var(--dimensions-motion-ease, ease),
+        color var(--dimensions-motion-base, 250ms) var(--dimensions-motion-ease, ease);
 
     &:hover {
-        background: var(--dimensions-surface-alt, var(--bs-tertiary-bg, #f8f9fa));
-        color: var(--dimensions-ink, var(--bs-body-color, #1f1f1f));
+        background: var(--dimensions-hover, var(--bs-tertiary-bg, #f8f9fa));
+        color: var(--dimensions-brand-ink, var(--bs-primary-text-emphasis, #052c65));
         text-decoration: none;
+        transition-duration: var(--dimensions-motion-fast, 150ms);
+    }
+
+    &:hover .icon {
+        color: var(--dimensions-brand-ink, var(--bs-primary-text-emphasis, #052c65));
+        transform: translateX(.125rem);
+        transition-duration: var(--dimensions-motion-fast, 150ms);
+    }
+
+    &:active {
+        background: var(--dimensions-pressed, var(--bs-secondary-bg, #e9ecef));
     }
 
     &[aria-current="page"] {
@@ -6388,11 +6441,19 @@ body.dim-category {
         color: var(--dimensions-ink-muted, var(--bs-secondary-color, #6a737b));
         font-size: 1rem;
         text-align: center;
+        transition:
+            color var(--dimensions-motion-base, 250ms) var(--dimensions-motion-ease, ease),
+            transform var(--dimensions-motion-base, 250ms) var(--dimensions-motion-ease, ease);
     }
 
     .dim-navpill__dot {
         margin-inline-start: auto;
     }
+}
+
+// A translation does not follow the direction: towards the end is towards the left here.
+.dir-rtl .dim-navpills .dim-navpill-menu__item:hover .icon {
+    transform: translateX(-.125rem);
 }
 
 .dim-navpills .dim-navpill-menu__label {
@@ -6465,8 +6526,15 @@ body.dim-category {
 
 @media (prefers-reduced-motion: reduce) {
     .dim-navpills .dim-navpill,
-    .dim-navpills .dim-navpill-menu__item {
+    .dim-navpills .dim-navpill-menu__item,
+    .dim-navpills .dim-navpill-menu__item .icon {
         transition: none;
+    }
+
+    // A menu item's icon stays where it is, in either direction.
+    .dim-navpills .dim-navpill-menu__item:hover .icon,
+    .dir-rtl .dim-navpills .dim-navpill-menu__item:hover .icon {
+        transform: none;
     }
 }
 

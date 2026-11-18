@@ -128,11 +128,13 @@ The state pills are the theme's own category showcase's: the same colour pairs, 
 page and lighter on the dark one, mixed from the pill's own ink and ground (the solid "enrolled" fill
 takes the palette's next stop instead).
 
-## Design system tokens (10)
+## Design system tokens (12)
 
-The scales of the fleet Design System, read by every plugin of the family. The radius steps and the
-ring's width are the same in both modes; the elevations are navy-tinted on the light page and black
-on the dark one.
+The scales of the fleet Design System, read by every plugin of the family, and its two interaction
+grounds. The radius steps and the ring's width are the same in both modes; the elevations are
+navy-tinted on the light page and black on the dark one. The grounds thin the brand's tint over the
+surface on the light page and the brand's ink over it on the dark one, so a flavour's brand colour
+moves them and they never equal the surface.
 
 | Token | Meaning |
 |---|---|
@@ -146,6 +148,8 @@ on the dark one.
 | `--dimensions-elevation-sm` | The shadow of a resting card, the capsule, a chosen segment. |
 | `--dimensions-elevation-md` | The shadow of a popover or a menu. |
 | `--dimensions-elevation-lg` | The shadow of a dialogue or a sheet. |
+| `--dimensions-hover` | The ground of a hovered row, menu item or quiet control. |
+| `--dimensions-pressed` | The same ground, pressed. |
 
 ## Card tokens (30)
 
@@ -191,6 +195,8 @@ these names in its card round, on the same roots and in the same light and dark 
 ## Not part of the contract
 
 `--dimensions-navbar-band` (the 3px rule under the navbar, which a Boost Union flavour sets),
-`--dimensions-pill-border` and `--dimensions-pill-hover` (the navbar's focus mode pill), and every
+`--dimensions-pill-border` and `--dimensions-pill-hover` (the navbar's focus mode pill),
+`--dimensions-ground-warm`, `--dimensions-ground-sand` and `--dimensions-ground-spark` (the sparkle
+ground of the profile layer's header and the drawer's resume card), and every
 `--dim-ds-*` and `--dim-*` name are the theme's own and may change or go at any release. A plugin
 reads only the names listed above.

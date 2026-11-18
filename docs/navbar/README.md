@@ -131,6 +131,20 @@ Mechanism:
 - The stylesheet is `scss/drawer.scss`, every rule nested under `.dimensions-drawer`, colours from the family tokens
   with Bootstrap's as the fallback. The rows are the side layer's: 40px, 44px under a coarse pointer, at 0.875rem; the
   current row in the brand's tint and ink, with no mark on its edge; every control carries the theme's 3px ring.
+  A row, the back control and the parent's link answer the pointer with the family's hover (the Design System's
+  `hover.md`, D103): `--dimensions-hover` and `--dimensions-pressed`, the brand's ink, the leading icon 2px and a
+  chevron 3px towards the end (mirrored under `.dir-rtl`), 150ms in and 250ms out, no motion under
+  `prefers-reduced-motion: reduce`; the current row stays as it is.
+- **The card is the sparkle ground** (`sparkle-ground.md`, D104, D106): a gradient from `--dimensions-ground-warm`
+  through the surface to the brand's tint inside a 1px tint edge at radius lg, three inline-SVG sparkles hidden from
+  assistive technology, a 36px brand tile with the glyph of the course's kind
+  (course, event or trail: the summary's `kind`, shown through the card's `data-kind`), the kicker in the brand's ink, the title at 1rem / 600,
+  the detail muted, an arrow at its end, and a 4px rail on the inset ground under the brand's fill; hovered, its edge
+  takes the brand's fill and elevation sm, and its arrow moves 3px. Every `data-region` `drawer.js` fills and the
+  `--norail` and `--ready` classes are unchanged, so the module did not change. The count stays in the detail line
+  ("X of Y completed"), which the service already composes.
+- **The drawer is a `nav` landmark named "Site navigation"** (`drawer_nav`), keeping `id="dimensions-drawer"` and
+  `data-region="dimensions-drawer"`, which Behat and the module find it by.
 - **The drawer's width is the theme's `$dimensions-drawer-width`** (20rem, 320px, at most 85vw), set in
   `scss/post.scss` on `#theme_boost-drawers-primary.drawer-primary.drawer-left` below md and read by the compact
   navbar's copy of the geometry (`scss/compactnav.scss`, phase 4). Core's `$drawer-left-width` (285px) is never

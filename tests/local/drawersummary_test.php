@@ -25,7 +25,9 @@
 
 namespace theme_dimensions\local;
 
+use core_course\customfield\course_handler;
 use PHPUnit\Framework\Attributes\CoversClass;
+use theme_dimensions\local\landingfields;
 
 /**
  * Tests for the drawer's deferred summary: the card's three steps, its completion count, the course count.
@@ -244,5 +246,41 @@ final class drawersummary_test extends \advanced_testcase {
 
         $this->assertSame(['resume'], array_keys($summary));
         $this->assertTrue($summary['resume']['hasitem'], 'Control: the card was built.');
+    }
+    /**
+     * The card says which kind of course it leads into, for the glyph on its tile: the course's page model, read
+     * from its landing fields, and a course for one that chose none. Both cards carry it, the activity's and the
+     * course's, and the empty card carries none.
+     *
+     * @return void
+     */
+    public function test_the_card_names_the_kind_of_its_course(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        [$course, $student, $pages] = $this->course_with_pages();
+        $courseid = (int) $course->id;
+        $model = 'customfield_' . landingfields::SHORTNAME_MODEL;
+
+        $this->assertSame('', drawersummary::empty_resume()['kind']);
+        $this->assertSame('course', drawersummary::kind($courseid), 'No model chosen: a course.');
+        course_handler::create()->instance_form_save((object) ['id' => $courseid, $model => landingfields::MODEL_EVENT]);
+        $this->assertSame('event', drawersummary::kind($courseid));
+        course_handler::create()->instance_form_save((object) ['id' => $courseid, $model => landingfields::MODEL_TRAIL]);
+        $this->assertSame('trail', drawersummary::kind($courseid));
+
+        $this->setUser($student);
+        $DB->insert_record('user_lastaccess', ['userid' => $student->id, 'courseid' => $courseid, 'timeaccess' => time()]);
+        $card = drawersummary::resume();
+        $this->assertSame((new \moodle_url('/course/view.php', ['id' => $courseid]))->out(false), $card['url'], 'Control.');
+        $this->assertSame('trail', $card['kind'], 'The course card.');
+
+        $this->view($course, $pages[0]);
+        $card = drawersummary::resume();
+        $this->assertStringContainsString('/mod/page/view.php', $card['url'], 'Control: the activity card.');
+        $this->assertSame('trail', $card['kind'], 'The activity card names its course\'s kind.');
     }
 }

@@ -366,7 +366,11 @@ the edit mode switch) are its first group. Where it carries the colour mode (Moo
 person may choose one), the navbar's own colour mode menu is hidden at every width. Boost Union's user menu stays on
 the page as the fallback: if the layer's script does not run, the user button opens Boost Union's menu as before.
 Visitors, the guest account and the Moodle app never get it; switched off, the user menu is Boost Union's alone. It
-stores nothing: the colour mode, the look and the language keep Moodle's and the theme's existing preferences.
+stores nothing: the colour mode, the look and the language keep Moodle's and the theme's existing preferences. Its
+header is drawn on a quiet gradient (a warm white through the page to the brand's tint, with three small decorative
+sparkles); under "log in as" the notice is the sentence, then the way back as a button of its own. Every row, icon
+button and choice answers the pointer with a pale ground of the brand's colour, the brand's ink and a small move of
+its icon towards the end of the line, and stands still when the reader asks for reduced motion.
 
 ### Side menu
 
@@ -379,7 +383,10 @@ sub-menus slide in with a back button beside their title. It is 320px wide, at m
 inside a sub-menu goes back one level, and at the root closes the menu, giving the focus back to the menu button.
 Visitors and the guest account keep Boost Union's menu with the "New here?" card; the Moodle app never gets it;
 switched off, the menu is Boost Union's. The card reads Moodle's own records (block_recentlyaccesseditems, the
-courses entered last, completion) and stores nothing.
+courses entered last, completion) and stores nothing. The menu is a navigation landmark named "Site navigation"; its
+card is drawn on the profile layer's gradient with a tile showing the kind of course it leads into (course, event
+or trail) and an arrow, and its rows answer the pointer as the
+profile layer's do.
 
 
 ### Boost Union flavours compiled ahead of time

@@ -489,7 +489,11 @@ section 7, the tokens; section 9, the dialog variant). `tests/local/course_card_
 The fleet Design System's scales (`moodle-dev/docs/design-system/tokens.md`) are ten more family tokens,
 `--dimensions-control-line`, `-focus-width`, `-radius-{xs,sm,md,lg,xl}` and `-elevation-{sm,md,lg}`, each reading
 the `--dim-ds-*` step of the same name (the control line reads Bootstrap's gray-500); the dark elevations are
-black, with the light steps' offsets and blurs. A state's `-edge` is never its own ground: a tint's is
+black, with the light steps' offsets and blurs. Two more, `--dimensions-hover` and `--dimensions-pressed` (D103), are
+`color-mix()` in a custom property (stylelint refuses it in a property, not in a custom property's value): the brand's
+tint at 55 % and 85 % over the surface on the light page, its ink at 14 % and 22 % on the dark one; `docs/tokens.md`
+lists them with the scales, and `dark_tokens_test` measures the ink and the brand's ink on both, in both modes. A
+state's `-edge` is never its own ground: a tint's is
 `mix(ink, ground, 30%)` in both modes, the solid enrolled fill takes blue-800 (light) and blue-300 (dark), and
 `family_tokens_test` measures each against its ground (`EDGE_FLOOR`, 1.25). Bootstrap's `$border-radius` is the
 scale's md, 8px, Boost's own (`scss/pre.scss`); a new radius variable there must sit on 4/6/8/12/16.
@@ -885,6 +889,22 @@ it, `scss/profilelayer.scss` styles it and `amd/src/profilelayer.js` opens it. T
   `--dim-layer-*` token declared on `.dimensions-layer` over a family token (`profilelayer_scss_test`); the family's
   dark half is the layer's dark mode. A view is `display: flex` and `hidden` at once: Bootstrap's reboot keeps
   `[hidden]` at `display: none !important`, which is what keeps it closed.
+- **The hover is the family's (`hover.md`, D103), and it is the same in the layer, the drawer and the showcase's two
+  menus.** Ground `--dimensions-hover` (never `surface-alt`, which a site may set to its surface), `:active`
+  `--dimensions-pressed`, the brand's ink, the leading icon 2px and a chevron 3px towards the end through a nudge token
+  the direction flips (`:dir(rtl)` in the layer, beside the opening's own flip; `.dir-rtl` in the drawer and the
+  showcase); the base step is written at rest and the fast one on `:hover`, inside `prefers-reduced-motion:
+  no-preference`, and a `reduce` block repeats the moving selectors with `transform: none` at their weight, after them.
+  A tick (the option's last child) never moves; an icon button's glyph does not move either. The profile buttons and
+  the notice's way back take their states through core's `--bs-btn-*` properties, not their own rules. Gates in the
+  `hover.md` block at the end of `mutations/gates.conf`.
+- **The identity header and the drawer's card are the sparkle ground (`sparkle-ground.md`, D104).** The gradient reads
+  `--dimensions-ground-warm` and the middle sparkle `--dimensions-ground-sand`, the two decoration literals, declared
+  with their dark values in `post.scss` beside the backdrop and outside the contract (`family_tokens_test::OWN`); the
+  other sparkles read `--dimensions-ground-spark` (the brand's fill, its ink in the dark). The sparkles are inline SVG
+  in the templates, `aria-hidden="true" focusable="false"`; a sheet carries no SVG.
+- **The "logged in as" notice is two parts (D105)**: the sentence in `.dimensions-layer-notice-text`, then the way back
+  as core's small outline button (`.dimensions-layer-notice-back`) across the notice; `data-region` unchanged.
 
 ## The navigation drawer
 
@@ -909,6 +929,10 @@ keep Boost Union's list with the "New here?" card. The design record is `docs/na
   `#theme_boost-drawers-primary.drawer-primary.drawer-left` (`max-width: 85vw`), and read by the compact navbar's copy
   of the geometry (`compactnav.scss`): change both together (gates `drawer_width_theme`, `compactnav_drawer_width`;
   `post_scss_test::test_the_navigation_drawer_is_the_side_layers_width`).
+- **The drawer is a `nav` named by `drawer_nav` ("Site navigation")**, and the card is the sparkle ground with a play
+  tile (D106; `direction_icon_test::PLAYERS` names the template as the play triangle's second user). The card's
+  `data-region`s and its `--norail` / `--ready` classes are what `drawer.js` fills; keep them when its markup moves, or
+  the module has to change with a rebuilt `amd/build`. The count is the detail line's ("X of Y completed").
 - **Escape inside a sub-panel goes back one level and is stopped there; Escape at the root closes the drawer through
   Boost's own instance** (`Drawers.getDrawerInstanceForNode(drawer).closeDrawer()`, `drawer.js` `closeOnEscape()`,
   listening on Boost's primary drawer so the header's close button is covered; gates `js_drawer_escape_*`): its

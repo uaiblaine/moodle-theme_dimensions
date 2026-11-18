@@ -91,6 +91,7 @@ class get_drawer_summary extends external_api {
                 'name' => new external_value(PARAM_TEXT, 'The activity or the course, plain.'),
                 'url' => new external_value(PARAM_URL, 'Where the card leads, empty without one.'),
                 'detail' => new external_value(PARAM_TEXT, 'The line under the name, plain, composed by the server.'),
+                'kind' => new external_value(PARAM_ALPHA, 'The course\'s kind (course, event or trail), empty without a card.'),
                 'hascompletion' => new external_value(PARAM_BOOL, 'Whether the course has a completion count for the user.'),
                 'completed' => new external_value(PARAM_INT, 'Activities completed, 0 without a count.'),
                 'total' => new external_value(PARAM_INT, 'Activities to complete, 0 without a count.'),

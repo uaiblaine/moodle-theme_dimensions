@@ -5,6 +5,24 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The user menu's layer, the phone's side menu and the category's menus answer the pointer in one way**
+  (2026100633). A row, a menu item, a small icon button and the profile layer's two buttons take a pale ground of the
+  brand's colour and its ink when hovered, a deeper one when pressed, and a row's or an item's leading icon (and a
+  row's arrow) moves a step towards the end of the line, the left in a right-to-left language; the change arrives
+  quickly and leaves slowly, and with reduced motion asked for the colours change at once and nothing moves. It covers
+  every row, icon button and choice of the profile layer, the phone side menu's rows, back button and "Go to" link,
+  the filter bar's menus and the menus of the category's row of pills (a pill on the row keeps its own hover). Log out
+  stays red, and the page you are on stays as it is. The profile layer's header and the side menu's "Continue where
+  you left off" card are drawn on a quiet gradient from a warm white through the page to the brand's tint, with three
+  small decorative sparkles; the picture is ringed, the two profile buttons sit on the page's colour, and the card
+  shows a tile in the brand's colour with the icon of the kind of course it leads into (course, event or trail), its
+  title at 1rem, an arrow at its end and a thinner progress rail in the
+  brand's colour. Under "log in as" the notice is now the sentence on its own lines, then the way back as a button the
+  notice's width. The phone's side menu is a navigation landmark named "Site navigation" (new string `drawer_nav`).
+  Web service: `theme_dimensions_get_drawer_summary` returns one more value in `resume`, `kind` (course, event or
+  trail, from the course's page model; empty without a card), which the card shows as its tile's icon.
+  Two family colours are added for the sibling plugins, `--dimensions-hover` and `--dimensions-pressed`, and the
+  theme's own `--dimensions-ground-warm`, `--dimensions-ground-sand` and `--dimensions-ground-spark`.
 - **The category's destination pages draw the same row of pills** (2026100632). The pages the row leads to (the
   category's settings, permissions, cohorts, competency frameworks and the rest) and the category page with the
   showcase off show the row after their page header, where Moodle's tabs were, start-aligned on the page's ground,
