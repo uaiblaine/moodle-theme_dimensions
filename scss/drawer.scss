@@ -25,18 +25,22 @@
 // is the drawer's dark mode); no literal colour is written here. Every painted background states the ink
 // it pairs with. The rows, the current row and a sub-panel's head are the side layer's
 // (moodle-dev/docs/design-system/components/side-layer.md, D69, D72); the drawer's width is post.scss's,
-// on Boost's primary drawer that holds it.
+// on Boost's primary drawer that holds it. A row, the back control and the parent's link answer the pointer
+// with the family's hover (hover.md, D103); the "Continue where you left off" card is the sparkle ground as a
+// card (sparkle-ground.md, D104, D106), whose sparkles are inline SVG in the template.
 //
 // Without amd/src/drawer.js the panels are sections one under the other; the module adds
 // dimensions-drawer-js and they become layers in one viewport. Only the current one is visible: the
-// others are inert, moved off to the side, and hidden once their slide has ended. The motion exists only
-// under prefers-reduced-motion: no-preference; otherwise the panels swap at once.
+// others are inert, moved off to the side, and hidden once their slide has ended. Every transition and
+// animation exists only under prefers-reduced-motion: no-preference; otherwise the panels swap at once, and
+// under prefers-reduced-motion: reduce a hovered row's icon does not move either.
 
 .dimensions-drawer {
     --dim-drawer-surface: var(--dimensions-surface, var(--bs-body-bg));
     --dim-drawer-ink: var(--dimensions-ink, var(--bs-body-color));
     --dim-drawer-muted: var(--dimensions-ink-muted, var(--bs-secondary-color));
-    --dim-drawer-tint: var(--dimensions-surface-alt, var(--bs-tertiary-bg));
+    --dim-drawer-hover: var(--dimensions-hover, var(--bs-tertiary-bg));
+    --dim-drawer-pressed: var(--dimensions-pressed, var(--bs-secondary-bg));
     --dim-drawer-inset: var(--dimensions-surface-inset, var(--bs-secondary-bg));
     --dim-drawer-line: var(--dimensions-line, var(--bs-border-color));
     --dim-drawer-current: var(--dimensions-brand-tint, var(--bs-primary-bg-subtle));
@@ -44,15 +48,31 @@
     --dim-drawer-glyph: var(--dimensions-brand-ink, var(--bs-primary-text-emphasis));
     --dim-drawer-brand: var(--dimensions-brand-fill, var(--bs-primary));
     --dim-drawer-on-brand: var(--dimensions-on-brand-fill, var(--dim-ds-text-inverse));
-    --dim-drawer-rail: var(--dim-ds-border-inverse);
-    --dim-drawer-bar: var(--dim-ds-accent-highlight);
+    --dim-drawer-tint: var(--dimensions-brand-tint, var(--bs-primary-bg-subtle));
+    --dim-drawer-ground-warm: var(--dimensions-ground-warm, var(--bs-body-bg));
+    --dim-drawer-ground-sand: var(--dimensions-ground-sand, var(--bs-secondary-color));
+    --dim-drawer-spark: var(--dimensions-ground-spark, var(--bs-primary));
+    --dim-drawer-elevation-sm: var(--dimensions-elevation-sm, var(--dim-ds-shadow-sm));
     --dim-drawer-ring: var(--dim-ds-focus-ring);
+    --dim-drawer-motion-fast: var(--dimensions-motion-fast, var(--dim-ds-motion-fast));
+    --dim-drawer-motion-base: var(--dimensions-motion-base, var(--dim-ds-motion-base));
+    --dim-drawer-motion-ease: var(--dimensions-motion-ease, var(--dim-ds-motion-ease));
+    // How far a hovered row moves its icon and its chevron, and the card its arrow, towards the end: translateX()
+    // does not follow the direction, so a right-to-left page turns both round.
+    --dim-drawer-nudge-icon: .125rem;
+    --dim-drawer-nudge-arrow: .1875rem;
     // A flex item of Boost's .drawercontent column: grown to its height, or a sub-panel shorter than the
     // drawer ends in a band of the drawer's own grey under it.
     flex: 1 0 auto;
     background-color: var(--dim-drawer-surface);
     color: var(--dim-drawer-ink);
     font-size: .875rem;
+
+    // Core marks a right-to-left page on the body.
+    .dir-rtl & {
+        --dim-drawer-nudge-icon: -.125rem;
+        --dim-drawer-nudge-arrow: -.1875rem;
+    }
 
     @keyframes dimensions-drawer-pulse {
         0%,
@@ -130,58 +150,166 @@
         }
     }
 
-    // ---- "Continue where you left off" -----------------------------------------------------------
+    // ---- "Continue where you left off" (D106) ---------------------------------------------------------
     .dimensions-drawer-resume {
         display: none;
     }
 
+    // The sparkle ground as a card: the brand's tile, then the kicker, the title and the detail, the arrow at the
+    // end, and the course's progress under them all. A link: its edge and its elevation answer the pointer, and its
+    // arrow moves; the ground never changes.
     .dimensions-drawer-resume-link {
-        display: flex;
-        flex-direction: column;
-        gap: var(--dim-ds-space-xxs);
-        padding: var(--dim-ds-space-sm) var(--dim-ds-space-md);
-        border-radius: var(--dim-ds-radius-lg);
-        background-color: var(--dim-drawer-brand);
-        color: var(--dim-drawer-on-brand);
+        position: relative;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: var(--dim-ds-space-xxs) var(--dim-ds-space-sm);
+        align-items: center;
+        overflow: hidden;
+        padding: var(--dim-ds-space-sm);
+        border: 1px solid var(--dim-drawer-tint);
+        border-radius: var(--dimensions-radius-lg, var(--dim-ds-radius-lg));
+        background: linear-gradient(
+            135deg,
+            var(--dim-drawer-ground-warm) 0%,
+            var(--dim-drawer-surface) 60%,
+            var(--dim-drawer-tint) 100%
+        );
+        color: var(--dim-drawer-ink);
         text-decoration: none;
+
+        > :not(.dimensions-drawer-spark) {
+            position: relative;
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            transition:
+                border-color var(--dim-drawer-motion-base) var(--dim-drawer-motion-ease),
+                box-shadow var(--dim-drawer-motion-base) var(--dim-drawer-motion-ease);
+
+            .dimensions-drawer-resume-go {
+                transition: transform var(--dim-drawer-motion-base) var(--dim-drawer-motion-ease);
+            }
+
+            &:hover,
+            &:hover .dimensions-drawer-resume-go {
+                transition-duration: var(--dim-drawer-motion-fast);
+            }
+        }
 
         &:hover,
         &:focus {
-            background-color: var(--dim-drawer-brand);
-            color: var(--dim-drawer-on-brand);
+            color: var(--dim-drawer-ink);
             text-decoration: none;
+        }
+
+        &:hover {
+            border-color: var(--dim-drawer-brand);
+            box-shadow: var(--dim-drawer-elevation-sm);
+        }
+
+        &:hover .dimensions-drawer-resume-go {
+            transform: translateX(var(--dim-drawer-nudge-arrow));
         }
     }
 
+    // Decoration: no text, no focus, no pointer, under the content at a third of its colour.
+    .dimensions-drawer-spark {
+        position: absolute;
+        opacity: .35;
+        fill: currentcolor;
+        color: var(--dim-drawer-spark);
+        pointer-events: none;
+    }
+
+    .dimensions-drawer-spark--a {
+        top: .75rem;
+        inset-inline-start: .75rem;
+        width: .75rem;
+        height: .75rem;
+    }
+
+    .dimensions-drawer-spark--b {
+        top: 1rem;
+        inset-inline-end: 3.5rem;
+        width: .5rem;
+        height: .5rem;
+        color: var(--dim-drawer-ground-sand);
+    }
+
+    .dimensions-drawer-spark--c {
+        inset-inline-end: 1rem;
+        bottom: .75rem;
+        width: .625rem;
+        height: .625rem;
+    }
+
+    // A 36px tile of the brand's fill, the play glyph in its ink, beside the three lines of text.
+    .dimensions-drawer-resume-tile {
+        display: flex;
+        grid-row: 1 / span 3;
+        align-items: center;
+        align-self: start;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: var(--dimensions-radius-md, var(--dim-ds-radius-md));
+        background-color: var(--dim-drawer-brand);
+        color: var(--dim-drawer-on-brand);
+
+        .icon {
+            margin: 0;
+        }
+    }
+
+    .dimensions-drawer-resume-kicker,
+    .dimensions-drawer-resume-title,
+    .dimensions-drawer-resume-sub {
+        grid-column: 2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     .dimensions-drawer-resume-kicker {
+        color: var(--dim-drawer-glyph);
         font-size: .75rem;
         font-weight: 600;
     }
 
     .dimensions-drawer-resume-title {
-        font-size: .9375rem;
-        font-weight: 700;
-        overflow-wrap: anywhere;
+        font-size: 1rem;
+        font-weight: 600;
     }
 
     .dimensions-drawer-resume-sub {
+        color: var(--dim-drawer-muted);
         font-size: .8125rem;
     }
 
+    .dimensions-drawer-resume-go {
+        grid-row: 1 / span 3;
+        grid-column: 3;
+        margin: 0;
+        color: var(--dim-drawer-glyph);
+    }
+
+    // The course's progress across the card: a 4px rail of the inset ground and the brand's fill.
     .dimensions-drawer-resume-rail {
         display: block;
-        height: 5px;
+        grid-column: 1 / -1;
+        height: .25rem;
         margin-top: var(--dim-ds-space-xxs);
         overflow: hidden;
-        border-radius: var(--dim-ds-radius-xs);
-        background-color: var(--dim-drawer-rail);
+        border-radius: var(--dimensions-radius-xs, var(--dim-ds-radius-xs));
+        background-color: var(--dim-drawer-inset);
     }
 
     .dimensions-drawer-resume-bar {
         display: block;
         width: 0;
         height: 100%;
-        background-color: var(--dim-drawer-bar);
+        border-radius: inherit;
+        background-color: var(--dim-drawer-brand);
     }
 
     .dimensions-drawer-resume--norail .dimensions-drawer-resume-rail {
@@ -194,7 +322,7 @@
             display: block;
             height: .875rem;
             border-radius: var(--dim-ds-radius-xs);
-            background-color: var(--dim-drawer-rail);
+            background-color: var(--dim-drawer-inset);
         }
 
         .dimensions-drawer-resume-title {
@@ -248,14 +376,51 @@
             min-height: 2.75rem;
         }
 
+        // The family's hover (hover.md): the slower step is written at rest and the faster one on :hover, since a
+        // transition takes the duration of the state it enters, so the hover arrives fast and leaves slowly.
+        @media (prefers-reduced-motion: no-preference) {
+            transition:
+                background-color var(--dim-drawer-motion-base) var(--dim-drawer-motion-ease),
+                color var(--dim-drawer-motion-base) var(--dim-drawer-motion-ease);
+
+            .dimensions-drawer-icon,
+            .dimensions-drawer-chevron {
+                transition:
+                    color var(--dim-drawer-motion-base) var(--dim-drawer-motion-ease),
+                    transform var(--dim-drawer-motion-base) var(--dim-drawer-motion-ease);
+            }
+
+            &:hover,
+            &:hover .dimensions-drawer-icon,
+            &:hover .dimensions-drawer-chevron {
+                transition-duration: var(--dim-drawer-motion-fast);
+            }
+        }
+
+        // Hovered: the hover ground and the brand's ink, the leading icon 2px and a sub-panel's chevron 3px towards
+        // the end.
         &:hover {
-            background-color: var(--dim-drawer-tint);
-            color: var(--dim-drawer-ink);
+            background-color: var(--dim-drawer-hover);
+            color: var(--dim-drawer-current-ink);
             text-decoration: none;
+        }
+
+        &:hover .dimensions-drawer-icon {
+            color: var(--dim-drawer-current-ink);
+            transform: translateX(var(--dim-drawer-nudge-icon));
+        }
+
+        &:hover .dimensions-drawer-chevron {
+            transform: translateX(var(--dim-drawer-nudge-arrow));
+        }
+
+        &:active {
+            background-color: var(--dim-drawer-pressed);
         }
     }
 
-    // The current page: the brand's tint and ink, its glyph in the ink too; no mark on the edge (D72).
+    // The current page: the brand's tint and ink, its glyph in the ink too; no mark on the edge (D72). Hovered or
+    // pressed, it stays as it is: the place the reader already is does not answer as a destination.
     .dimensions-drawer-item.is-current {
         background-color: var(--dim-drawer-current);
         color: var(--dim-drawer-current-ink);
@@ -264,6 +429,15 @@
         .dimensions-drawer-icon,
         .dimensions-drawer-text .icon {
             color: var(--dim-drawer-current-ink);
+        }
+
+        &:hover,
+        &:active {
+            background-color: var(--dim-drawer-current);
+        }
+
+        &:hover .dimensions-drawer-icon {
+            transform: none;
         }
     }
 
@@ -320,9 +494,24 @@
             margin: 0;
         }
 
+        @media (prefers-reduced-motion: no-preference) {
+            transition:
+                background-color var(--dim-drawer-motion-base) var(--dim-drawer-motion-ease),
+                color var(--dim-drawer-motion-base) var(--dim-drawer-motion-ease);
+
+            &:hover {
+                transition-duration: var(--dim-drawer-motion-fast);
+            }
+        }
+
+        // The family's hover; the chevron does not move, it names the button rather than pointing along a row.
         &:hover {
-            background-color: var(--dim-drawer-inset);
-            color: var(--dim-drawer-ink);
+            background-color: var(--dim-drawer-hover);
+            color: var(--dim-drawer-current-ink);
+        }
+
+        &:active {
+            background-color: var(--dim-drawer-pressed);
         }
     }
 
@@ -348,9 +537,22 @@
         font-weight: 700;
         text-decoration: none;
 
+        @media (prefers-reduced-motion: no-preference) {
+            transition: background-color var(--dim-drawer-motion-base) var(--dim-drawer-motion-ease);
+
+            &:hover {
+                transition-duration: var(--dim-drawer-motion-fast);
+            }
+        }
+
         &:hover {
-            background-color: var(--dim-drawer-tint);
+            background-color: var(--dim-drawer-hover);
             color: var(--dim-drawer-glyph);
+            text-decoration: none;
+        }
+
+        &:active {
+            background-color: var(--dim-drawer-pressed);
         }
     }
 
@@ -362,6 +564,26 @@
         &:focus-visible {
             outline: var(--dim-ds-focus-ring-width) solid var(--dim-drawer-ring);
             outline-offset: 2px;
+        }
+    }
+
+    // ---- Reduced motion: the colours change at once and nothing moves --------------------------------------
+    @media (prefers-reduced-motion: reduce) {
+        .dimensions-drawer-item,
+        .dimensions-drawer-icon,
+        .dimensions-drawer-chevron,
+        .dimensions-drawer-back,
+        .dimensions-drawer-openparent,
+        .dimensions-drawer-resume-link,
+        .dimensions-drawer-resume-go {
+            transition: none;
+        }
+
+        // As heavy as the rules that move them, and after them.
+        .dimensions-drawer-item:hover .dimensions-drawer-icon,
+        .dimensions-drawer-item:hover .dimensions-drawer-chevron,
+        .dimensions-drawer-resume-link:hover .dimensions-drawer-resume-go {
+            transform: none;
         }
     }
 }

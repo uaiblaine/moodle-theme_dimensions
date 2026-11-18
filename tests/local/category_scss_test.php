@@ -1011,7 +1011,7 @@ final class category_scss_test extends \basic_testcase {
             $item,
             'An item: 32px, 4px corners, no border (D50).'
         );
-        $this->assertMatchesRegularExpression('~&:hover \{\s*background:\s*var\(--dim-surface-subtle\);\s*\}~', $item);
+        $this->assertMatchesRegularExpression('~&:hover \{\s*background:\s*var\(--dim-hover\);~', $item, 'The family\'s hover.');
         $this->assertMatchesRegularExpression('~&\[aria-checked="true"\] \{\s*font-weight:\s*600;\s*\}~', $item, 'Chosen at 600.');
         $this->assertDoesNotMatchRegularExpression('~outline~', explode('&:focus-visible', $item)[0], 'No outline but the ring.');
         $this->assertMatchesRegularExpression(
@@ -3077,5 +3077,119 @@ final class category_scss_test extends \basic_testcase {
         $this->assertStringContainsString('bottom: 0;', $base);
         $this->assertStringContainsString('height: var(--dim-card-done-edge);', $base);
         $this->assertStringContainsString('background: var(--dim-card-done);', $base);
+    }
+
+    /**
+     * The filter bar's menu items and the nav pill's group menu items answer with the family's hover (hover.md, D103):
+     * the hover ground and the brand's ink, the leading icon 2px towards the end (the left in a right-to-left page), the
+     * pressed ground on :active; the transitions name background-color, color and transform, never all, leave at the
+     * base step and arrive at the fast one; and under reduced motion nothing moves. A nav pill on its row keeps its own.
+     *
+     * @return void
+     */
+    public function test_the_menu_items_answer_with_the_familys_hover(): void {
+        $scss = $this->stylesheet('category.scss');
+
+        // The filter bar's menus, through the showcase's aliases.
+        $item = $this->rule_body($scss, '.dim-menu__item');
+        $this->assertMatchesRegularExpression(
+            '~^\s*transition:\s*background-color var\(--dim-motion-base\) var\(--dim-ease\),\s*'
+                . 'color var\(--dim-motion-base\) var\(--dim-ease\);~m',
+            $item
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-menu__icon \{\s*transition:\s*color var\(--dim-motion-base\) var\(--dim-ease\),\s*'
+                . 'transform var\(--dim-motion-base\) var\(--dim-ease\);~',
+            $item
+        );
+        $this->assertMatchesRegularExpression(
+            '~&:hover \{\s*background:\s*var\(--dim-hover\);\s*color:\s*var\(--dim-primary-ink\);\s*'
+                . 'transition-duration:\s*var\(--dim-motion\);~',
+            $item
+        );
+        $this->assertMatchesRegularExpression(
+            '~&:hover \.dim-menu__icon \{\s*color:\s*var\(--dim-primary-ink\);\s*transform:\s*translateX\(\.125rem\);\s*'
+                . 'transition-duration:\s*var\(--dim-motion\);~',
+            $item
+        );
+        $this->assertMatchesRegularExpression('~&:active \{\s*background:\s*var\(--dim-pressed\);~', $item);
+        $this->assertDoesNotMatchRegularExpression('~\.dim-menu__tick[^{]*\{[^}]*transform~', $scss, 'The tick never moves.');
+        $this->assertMatchesRegularExpression(
+            '~transform:\s*translateX\(-\.125rem\);~',
+            $this->rule_body($scss, '&.dir-rtl .dim-menu__item:hover .dim-menu__icon')
+        );
+        $this->assertMatchesRegularExpression('~--dim-hover:\s*var\(--dimensions-hover, ~', $scss);
+        $this->assertMatchesRegularExpression('~--dim-pressed:\s*var\(--dimensions-pressed, ~', $scss);
+        $this->assertMatchesRegularExpression('~--dim-motion-base:\s*var\(--dimensions-motion-base, 250ms\);~', $scss);
+
+        // The nav pill's group menu, through the family's names.
+        $menuitem = $this->rule_body($scss, '.dim-navpills .dim-navpill-menu__item');
+        $base = 'var\(--dimensions-motion-base, 250ms\) var\(--dimensions-motion-ease, ease\)';
+        $this->assertMatchesRegularExpression(
+            '~^    transition:\s*background-color ' . $base . ',\s*color ' . $base . ';~m',
+            $menuitem
+        );
+        $this->assertMatchesRegularExpression(
+            '~&:hover \{\s*background:\s*var\(--dimensions-hover,[^;]*;\s*color:\s*var\(--dimensions-brand-ink,[^;]*;\s*'
+                . 'text-decoration:\s*none;\s*transition-duration:\s*var\(--dimensions-motion-fast, 150ms\);~',
+            $menuitem
+        );
+        $this->assertMatchesRegularExpression(
+            '~&:hover \.icon \{\s*color:\s*var\(--dimensions-brand-ink,[^;]*;\s*transform:\s*translateX\(\.125rem\);\s*'
+                . 'transition-duration:\s*var\(--dimensions-motion-fast, 150ms\);~',
+            $menuitem
+        );
+        $this->assertMatchesRegularExpression('~&:active \{\s*background:\s*var\(--dimensions-pressed,~', $menuitem);
+        $this->assertMatchesRegularExpression(
+            '~\.icon \{[^}]*transition:\s*color ' . $base . ',\s*transform ' . $base . ';~',
+            $menuitem
+        );
+        $this->assertMatchesRegularExpression(
+            '~transform:\s*translateX\(-\.125rem\);~',
+            $this->rule_body($scss, '.dir-rtl .dim-navpills .dim-navpill-menu__item:hover .icon')
+        );
+        // The pill on its row keeps its own hover.
+        $this->assertStringNotContainsString('--dimensions-hover', $this->rule_body($scss, '.dim-navpills .dim-navpill'));
+
+        // Never all.
+        preg_match_all('~transition:\s*([^;]+);~', $item . $menuitem, $transitions);
+        $this->assertCount(4, $transitions[1], 'Precondition: the two items and their icons.');
+        foreach ($transitions[1] as $transition) {
+            $this->assertDoesNotMatchRegularExpression('~\ball\b~', $transition);
+        }
+
+        // Reduced motion: no transition and no move, at the weight of the moves and after them.
+        $this->assertSame(
+            1,
+            preg_match('~\n    @media \(prefers-reduced-motion: reduce\) \{(.*?)\n    \}~s', $scss, $showcase, PREG_OFFSET_CAPTURE)
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-menu__item,\s*\.dim-menu__item \.dim-menu__icon \{\s*transition:\s*none;~',
+            $showcase[1][0]
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-menu__item:hover \.dim-menu__icon,\s*&\.dir-rtl \.dim-menu__item:hover \.dim-menu__icon \{'
+                . '\s*transform:\s*none;~',
+            $showcase[1][0]
+        );
+        $this->assertGreaterThan(strpos($scss, '&.dir-rtl .dim-menu__item:hover .dim-menu__icon {'), $showcase[1][1]);
+        $this->assertSame(
+            1,
+            preg_match(
+                '~\n@media \(prefers-reduced-motion: reduce\) \{\s*\.dim-navpills \.dim-navpill,\s*'
+                    . '\.dim-navpills \.dim-navpill-menu__item,\s*'
+                    . '\.dim-navpills \.dim-navpill-menu__item \.icon \{\s*transition:\s*none;\s*\}\s*'
+                    . '\.dim-navpills \.dim-navpill-menu__item:hover \.icon,\s*'
+                    . '\.dir-rtl \.dim-navpills \.dim-navpill-menu__item:hover \.icon \{\s*transform:\s*none;~',
+                $scss,
+                $navpills,
+                PREG_OFFSET_CAPTURE
+            ),
+            'The row\'s reduced-motion block.'
+        );
+        $this->assertGreaterThan(
+            strpos($scss, '.dir-rtl .dim-navpills .dim-navpill-menu__item:hover .icon {'),
+            $navpills[0][1]
+        );
     }
 }

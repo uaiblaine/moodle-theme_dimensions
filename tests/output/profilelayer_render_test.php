@@ -463,8 +463,17 @@ final class profilelayer_render_test extends \advanced_testcase {
             $html,
             'An address is escaped once.'
         );
-        $this->assertStringContainsString('data-region="dimensions-layer-loggedinas"', $html);
-        $this->assertStringContainsString('Return to Admin User</a>', $html);
+        // The notice in two parts (D105): the sentence in a paragraph of its own, then the way back as core's small
+        // outline button, which the stylesheet spreads across the notice.
+        $this->assertMatchesRegularExpression(
+            '~<div class="dimensions-layer-notice" data-region="dimensions-layer-loggedinas">\s*'
+                . '<p class="dimensions-layer-notice-text"><i [^>]*></i><span>You are logged in as this user</span></p>\s*'
+                . '<a class="btn btn-outline-secondary btn-sm dimensions-layer-notice-back"'
+                . ' href="https://example\.com/course/loginas\.php\?id=1&amp;sesskey=abc"><i [^>]*></i>'
+                . '<span>Return to Admin User</span></a>\s*</div>~',
+            $html,
+            'The sentence, then the way back under it.'
+        );
         $this->assertStringContainsString('class="dimensions-layer-row dimensions-layer-row--danger"', $html);
         $this->assertMatchesRegularExpression(
             '~<div class="dimensions-layer-scroll">\s*<div class="dimensions-layer-phone" data-region="dimensions-layer-phone"'

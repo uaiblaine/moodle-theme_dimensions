@@ -32,6 +32,9 @@
     The drawer holds nothing about the person: the identity, the colour mode, the Look and the language are
     the profile layer's (theme_dimensions/profile_layer). A sub-panel's head is the side layer's sub-view
     header, a back control and the title; Boost's drawer band above it already carries the close button.
+    The drawer is a navigation landmark named for the site's navigation. The card is the sparkle ground: its
+    tile, its three sparkles and its arrow are decoration, hidden from assistive technology, so the link is
+    named by its kicker, its title and its detail.
 
     Context variables required for this template (described without braces, because a Mustache comment
     closes at the first pair of closing braces it meets):
@@ -113,16 +116,21 @@
         ]
     }
 }}
-<div class="dimensions-drawer" id="dimensions-drawer" data-region="dimensions-drawer">
+<nav class="dimensions-drawer" id="dimensions-drawer" data-region="dimensions-drawer" aria-label="{{#str}} drawer_nav, theme_dimensions {{/str}}">
     <div class="dimensions-drawer-viewport">
         <div class="dimensions-drawer-panel" id="{{rootid}}" data-region="dimensions-drawer-panel" data-level="0">
             <div class="dimensions-drawer-resume" data-region="dimensions-drawer-resume" aria-busy="true">
                 <a class="dimensions-drawer-resume-link" data-region="dimensions-drawer-resume-link">
+                    <svg class="dimensions-drawer-spark dimensions-drawer-spark--a" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2c.6 5.2 4.8 9.4 10 10-5.2.6-9.4 4.8-10 10-.6-5.2-4.8-9.4-10-10 5.2-.6 9.4-4.8 10-10z"/></svg>
+                    <svg class="dimensions-drawer-spark dimensions-drawer-spark--b" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2c.6 5.2 4.8 9.4 10 10-5.2.6-9.4 4.8-10 10-.6-5.2-4.8-9.4-10-10 5.2-.6 9.4-4.8 10-10z"/></svg>
+                    <svg class="dimensions-drawer-spark dimensions-drawer-spark--c" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2c.6 5.2 4.8 9.4 10 10-5.2.6-9.4 4.8-10 10-.6-5.2-4.8-9.4-10-10 5.2-.6 9.4-4.8 10-10z"/></svg>
+                    <span class="dimensions-drawer-resume-tile" aria-hidden="true"><i class="icon fa fa-play fa-fw" aria-hidden="true"></i></span>
                     <span class="dimensions-drawer-resume-kicker">{{#str}} drawer_resume, theme_dimensions {{/str}}</span>
                     <span class="dimensions-drawer-resume-title" data-region="dimensions-drawer-resume-title">
                         <span class="visually-hidden">{{#str}} loading, core {{/str}}</span>
                     </span>
                     <span class="dimensions-drawer-resume-sub" data-region="dimensions-drawer-resume-sub"></span>
+                    <i class="icon fa fa-arrow-right fa-fw dimensions-drawer-resume-go" aria-hidden="true"></i>
                     <span class="dimensions-drawer-resume-rail" aria-hidden="true">
                         <span class="dimensions-drawer-resume-bar" data-region="dimensions-drawer-resume-bar"></span>
                     </span>
@@ -154,7 +162,7 @@
         </div>
         {{/panels}}
     </div>
-</div>
+</nav>
 {{#js}}
 require(['theme_dimensions/drawer'], function(Drawer) {
     Drawer.init('dimensions-drawer');

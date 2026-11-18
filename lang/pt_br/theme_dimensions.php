@@ -537,6 +537,7 @@ $string['coursenotice_unlistedlead'] = 'Não listado:';
 $string['coursenotice_unlistedtext'] = 'só a equipe e quem está inscrito no curso, tem uma candidatura aguardando decisão ou pode se inscrever agora ficam sabendo que ele existe. Qualquer outra pessoa que abrir o endereço da página de apresentação, com login ou sem, é informada de que ela não está disponível.';
 $string['drawer_back'] = 'Voltar para {$a}';
 $string['drawer_browse'] = 'Navegar';
+$string['drawer_nav'] = 'Navegação do site';
 $string['drawer_openparent'] = 'Ir para {$a}';
 $string['drawer_progress'] = '{$a->completed} de {$a->total} concluídas';
 $string['drawer_resume'] = 'Continuar de onde parou';
