@@ -5,6 +5,10 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The calendar feed compares its token as a string.** The theme's copy of core's iCal export checked the
+  `authtoken` with `==`, as core does, so a request token `0` matched any account whose token happens to be `0e`
+  followed by 38 digits (about one token in 1.5e10). It now compares with `hash_equals()`; every real address keeps
+  working.
 - **The Compass block draws this theme's kind icons and an event's dates** (2026100634). The theme's answer to
   block_compass's course kinds now gives each kind the glyph the theme's own cards draw (a graduation cap for a course,
   a calendar for an event, a route for a trail) and says an event is dated, so the block's cards show the icon in the

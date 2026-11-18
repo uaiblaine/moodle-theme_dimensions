@@ -36,10 +36,11 @@ use theme_dimensions\local\calendar\source\core_events;
  * The theme's after_config callback answers the script's address with {@see serve()} while {@see coreview::enabled()}
  * holds.
  *
- * The copy keeps core's parameters, its token check ({@see authenticated()}, line for line, the loose comparisons
- * included), its periods and its output byte for byte, split into three methods so each part has a test. What it
- * changes:
+ * The copy keeps core's parameters, its token check ({@see authenticated()}, line for line but for the comparison), its
+ * periods and its output byte for byte, split into three methods so each part has a test. What it changes:
  *
+ * - the token is compared with hash_equals() ({@see token_matches()}), not with core's `==`, which accepts `0` for a
+ *   token that happens to read as zero in scientific notation;
  * - the events go through {@see admitted()} before they are serialised: an event of a category the range withholds,
  *   or of a category that no longer exists, is left out. Course events are kept as the range keeps them: the range
  *   reads the viewer's own calendar courses and withholds none of them, and the feed reads the viewer's enrolled
@@ -171,7 +172,7 @@ final class ical {
      * The account a request's credentials name, when its token is the one core issued; core's two checks, verbatim.
      *
      * The user id and core's token, or (the fallback of old addresses, MDL-27542) the username and the hash of the
-     * password with the export salt. The comparisons are core's own loose ones.
+     * password with the export salt. The lookups are core's; the comparisons are not ({@see token_matches()}).
      *
      * @param int $userid The userid parameter.
      * @param string $username The username parameter.
@@ -193,13 +194,30 @@ final class ical {
         }
 
         // Check authentication token.
-        $authuserid = !empty($userid) && $authtoken == calendar_get_export_token($user);
+        $authuserid = !empty($userid) && self::token_matches(calendar_get_export_token($user), $authtoken);
         // Allowing for fallback check of old url - MDL-27542.
-        $authusername = !empty($username) && $authtoken == sha1($username . $user->password . $CFG->calendar_exportsalt);
+        $authusername = !empty($username)
+            && self::token_matches(sha1($username . $user->password . $CFG->calendar_exportsalt), $authtoken);
         if (!$authuserid && !$authusername) {
             return null;
         }
         return $user;
+    }
+
+    /**
+     * Whether a request's token is the one issued, compared as strings in constant time.
+     *
+     * Core's script compares with `==`, which PHP 8 still reads numerically when both sides are numeric strings: a
+     * SHA-1 spelled `0e` and 38 decimal digits (about one token in 1.5e10) equals the request token `0`, so a client
+     * sending `authtoken=0` for every user id would read the feed of any account whose token happens to have that
+     * shape. hash_equals() compares the bytes and takes the same time wherever the first difference is.
+     *
+     * @param string $expected The token issued: core's export token, or the old address's hash.
+     * @param string $given The authtoken parameter.
+     * @return bool True only when the two are the same string.
+     */
+    public static function token_matches(string $expected, string $given): bool {
+        return hash_equals($expected, $given);
     }
 
     /**
