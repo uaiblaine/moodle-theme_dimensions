@@ -384,7 +384,8 @@ inside a sub-menu goes back one level, and at the root closes the menu, giving t
 Visitors and the guest account keep Boost Union's menu with the "New here?" card; the Moodle app never gets it;
 switched off, the menu is Boost Union's. The card reads Moodle's own records (block_recentlyaccesseditems, the
 courses entered last, completion) and stores nothing. The menu is a navigation landmark named "Site navigation"; its
-card is drawn on the profile layer's gradient with a play tile and an arrow, and its rows answer the pointer as the
+card is drawn on the profile layer's gradient with a tile showing the kind of course it leads into (course, event
+or trail) and an arrow, and its rows answer the pointer as the
 profile layer's do.
 
 

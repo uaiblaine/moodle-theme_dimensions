@@ -243,7 +243,7 @@
         height: .625rem;
     }
 
-    // A 36px tile of the brand's fill, the play glyph in its ink, beside the three lines of text.
+    // A 36px tile of the brand's fill, the glyph of the course's kind in its ink, beside the three lines of text.
     .dimensions-drawer-resume-tile {
         display: flex;
         grid-row: 1 / span 3;
@@ -259,6 +259,23 @@
         .icon {
             margin: 0;
         }
+    }
+
+    // One glyph per kind is printed; the card's data-kind, written by the module, shows its own. Until the summary
+    // answers, and for a kind this sheet does not know, the course's glyph stands.
+    .dimensions-drawer-resume-kind--event,
+    .dimensions-drawer-resume-kind--trail {
+        display: none;
+    }
+
+    .dimensions-drawer-resume[data-kind="event"] .dimensions-drawer-resume-kind--course,
+    .dimensions-drawer-resume[data-kind="trail"] .dimensions-drawer-resume-kind--course {
+        display: none;
+    }
+
+    .dimensions-drawer-resume[data-kind="event"] .dimensions-drawer-resume-kind--event,
+    .dimensions-drawer-resume[data-kind="trail"] .dimensions-drawer-resume-kind--trail {
+        display: inline-block;
     }
 
     .dimensions-drawer-resume-kicker,

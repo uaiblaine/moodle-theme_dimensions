@@ -400,7 +400,8 @@ final class drawer_scss_test extends \basic_testcase {
     /**
      * "Continue where you left off" is the sparkle ground as a card (D104, D106): the gradient from the warm stop
      * through the surface to the brand's tint inside a 1px edge of the tint at the lg radius, a 36px tile of the brand's
-     * fill, the kicker in the brand's ink, the title at 1rem / 600, the detail muted, an arrow at the end, and the rail
+     * fill holding the glyph of the course's kind, the kicker in the brand's ink, the title at 1rem / 600, the detail
+     * muted, an arrow at the end, and the rail
      * on the inset ground under the brand's fill; hovered, its edge and its elevation answer and its arrow moves.
      *
      * @return void
@@ -466,8 +467,7 @@ final class drawer_scss_test extends \basic_testcase {
         }
         $this->assertMatchesRegularExpression(
             '~<a class="dimensions-drawer-resume-link" data-region="dimensions-drawer-resume-link">\s*'
-                . '(<svg [^>]*><path [^>]*/></svg>\s*){3}<span class="dimensions-drawer-resume-tile" aria-hidden="true">'
-                . '<i class="icon fa fa-play fa-fw" aria-hidden="true"></i></span>~',
+                . '(<svg [^>]*><path [^>]*/></svg>\s*){3}<span class="dimensions-drawer-resume-tile" aria-hidden="true">~',
             $template
         );
         $this->assertStringContainsString(
@@ -497,5 +497,45 @@ final class drawer_scss_test extends \basic_testcase {
             "\$string['drawer_nav'] = 'Site navigation';",
             (string) file_get_contents(dirname(__DIR__, 2) . '/lang/en/theme_dimensions.php')
         );
+    }
+    /**
+     * The card's tile draws the glyph of the course's kind (the card's D57 glyphs): one glyph per kind is printed,
+     * each hidden from assistive technology, and the card's data-kind shows its own; with no kind, or one the sheet
+     * does not know, the course's glyph stands. The module passes the service's word on and names no kind.
+     */
+    public function test_the_resume_tile_draws_the_kinds_glyph(): void {
+        $root = dirname(__DIR__, 2);
+        $template = (string) file_get_contents($root . '/templates/drawer_nav.mustache');
+        $glyphs = ['course' => 'fa-graduation-cap', 'event' => 'fa-calendar-day', 'trail' => 'fa-route'];
+        $this->assertSame(array_values(\theme_dimensions\local\drawersummary::KINDS), array_keys($glyphs), 'Control.');
+        foreach ($glyphs as $kind => $glyph) {
+            $this->assertStringContainsString(
+                '<i class="icon fa ' . $glyph . ' fa-fw dimensions-drawer-resume-kind dimensions-drawer-resume-kind--'
+                    . $kind . '" aria-hidden="true"></i>',
+                $template
+            );
+        }
+        $this->assertSame(3, substr_count($template, 'dimensions-drawer-resume-kind '), 'One glyph per kind.');
+
+        $scss = (string) file_get_contents($root . '/scss/drawer.scss');
+        $this->assertMatchesRegularExpression(
+            '~\.dimensions-drawer-resume-kind--event,\s*\.dimensions-drawer-resume-kind--trail \{\s*display: none;~',
+            $scss,
+            'At rest the course\'s glyph stands alone.'
+        );
+        foreach (['event', 'trail'] as $kind) {
+            $this->assertStringContainsString(
+                '.dimensions-drawer-resume[data-kind="' . $kind . '"] .dimensions-drawer-resume-kind--course',
+                $scss
+            );
+            $this->assertStringContainsString(
+                '.dimensions-drawer-resume[data-kind="' . $kind . '"] .dimensions-drawer-resume-kind--' . $kind,
+                $scss
+            );
+        }
+
+        $module = (string) file_get_contents($root . '/amd/src/drawer.js');
+        $this->assertStringContainsString('card.dataset.kind = resume.kind;', $module);
+        $this->assertDoesNotMatchRegularExpression('~fa-graduation-cap|fa-calendar-day|fa-route~', $module);
     }
 }

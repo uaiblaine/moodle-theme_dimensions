@@ -15,9 +15,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   stays red, and the page you are on stays as it is. The profile layer's header and the side menu's "Continue where
   you left off" card are drawn on a quiet gradient from a warm white through the page to the brand's tint, with three
   small decorative sparkles; the picture is ringed, the two profile buttons sit on the page's colour, and the card
-  shows a play tile in the brand's colour, its title at 1rem, an arrow at its end and a thinner progress rail in the
+  shows a tile in the brand's colour with the icon of the kind of course it leads into (course, event or trail), its
+  title at 1rem, an arrow at its end and a thinner progress rail in the
   brand's colour. Under "log in as" the notice is now the sentence on its own lines, then the way back as a button the
   notice's width. The phone's side menu is a navigation landmark named "Site navigation" (new string `drawer_nav`).
+  Web service: `theme_dimensions_get_drawer_summary` returns one more value in `resume`, `kind` (course, event or
+  trail, from the course's page model; empty without a card), which the card shows as its tile's icon.
   Two family colours are added for the sibling plugins, `--dimensions-hover` and `--dimensions-pressed`, and the
   theme's own `--dimensions-ground-warm`, `--dimensions-ground-sand` and `--dimensions-ground-spark`.
 - **The category's destination pages draw the same row of pills** (2026100632). The pages the row leads to (the

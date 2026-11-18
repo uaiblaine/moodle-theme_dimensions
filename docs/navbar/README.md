@@ -137,7 +137,8 @@ Mechanism:
   `prefers-reduced-motion: reduce`; the current row stays as it is.
 - **The card is the sparkle ground** (`sparkle-ground.md`, D104, D106): a gradient from `--dimensions-ground-warm`
   through the surface to the brand's tint inside a 1px tint edge at radius lg, three inline-SVG sparkles hidden from
-  assistive technology, a 36px brand tile with the play glyph, the kicker in the brand's ink, the title at 1rem / 600,
+  assistive technology, a 36px brand tile with the glyph of the course's kind
+  (course, event or trail: the summary's `kind`, shown through the card's `data-kind`), the kicker in the brand's ink, the title at 1rem / 600,
   the detail muted, an arrow at its end, and a 4px rail on the inset ground under the brand's fill; hovered, its edge
   takes the brand's fill and elevation sm, and its arrow moves 3px. Every `data-region` `drawer.js` fills and the
   `--norail` and `--ready` classes are unchanged, so the module did not change. The count stays in the detail line

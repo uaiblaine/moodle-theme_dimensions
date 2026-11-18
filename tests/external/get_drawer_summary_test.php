@@ -99,7 +99,7 @@ final class get_drawer_summary_test extends \advanced_testcase {
 
         $this->assertSame(['resume'], array_keys($returns->keys));
         $this->assertSame(
-            ['hasitem', 'name', 'url', 'detail', 'hascompletion', 'completed', 'total', 'percent'],
+            ['hasitem', 'name', 'url', 'detail', 'kind', 'hascompletion', 'completed', 'total', 'percent'],
             array_keys($returns->keys['resume']->keys)
         );
     }

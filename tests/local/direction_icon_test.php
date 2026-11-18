@@ -30,25 +30,16 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 /**
  * A direction is an arrow or a chevron, never a caret (moodle-dev/docs/design-system/DECISIONS.md, D61).
  *
- * A filled triangle reads as "play" or as a sort mark, so it is kept for what plays or resumes something: the cover
- * film's button, and the tile of the drawer's card that resumes the last activity (D106). Everything else that points
- * somewhere draws Font Awesome's arrow or chevron.
+ * A filled triangle reads as "play" or as a sort mark, so it is kept for the one control that plays something: the
+ * cover film's button. Everything else that points somewhere draws Font Awesome's arrow or chevron.
  */
 #[CoversNothing]
 final class direction_icon_test extends \advanced_testcase {
     /** @var array The directories whose sources name an icon, relative to the theme. */
     private const SOURCES = ['classes', 'templates', 'amd/src', 'js/esm/src'];
 
-    /**
-     * @var array The files that draw the play triangle, path relative to the theme: the cover film, whose button plays a
-     *      video, and the drawer's "Continue where you left off" card, whose tile resumes the activity last opened
-     *      (the Design System's D106).
-     */
-    private const PLAYERS = [
-        'templates/category_directory_card.mustache',
-        'amd/src/local/coverfilm.js',
-        'templates/drawer_nav.mustache',
-    ];
+    /** @var array The files of the cover film, whose button plays a video: path relative to the theme. */
+    private const PLAYERS = ['templates/category_directory_card.mustache', 'amd/src/local/coverfilm.js'];
 
     /**
      * Every source file of the theme that can name an icon: relative path => contents.
@@ -81,9 +72,9 @@ final class direction_icon_test extends \advanced_testcase {
     }
 
     /**
-     * The play triangle is drawn by the cover film and the drawer's resume card alone, and both do draw it.
+     * The play triangle is drawn by the cover film alone, and the film does draw it.
      */
-    public function test_only_the_players_draw_the_play_triangle(): void {
+    public function test_only_the_cover_film_draws_the_play_triangle(): void {
         $drawn = [];
         foreach (self::sources() as $path => $text) {
             if (preg_match('/\bfa-play\b/', $text)) {

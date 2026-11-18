@@ -47,6 +47,9 @@ namespace theme_dimensions\local;
  * course and this person is tracked in it - the counts core's own progress percentage is computed from
  * ({@see \core_completion\progress::get_course_progress_percentage()}).
  *
+ * The card also says which kind of course it leads into (course, event or trail: the page model the course's
+ * landing fields store), so the drawer draws that kind's glyph on the card's tile.
+ *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -60,6 +63,16 @@ final class drawersummary {
 
     /** @var int How many of the helper's items the card looks through for one it may link. */
     public const RECENT_LIMIT = 5;
+
+    /** @var array The card's kind for each page model; a course with no model reads as a course. */
+    public const KINDS = [
+        landingfields::MODEL_COURSE => 'course',
+        landingfields::MODEL_EVENT => 'event',
+        landingfields::MODEL_TRAIL => 'trail',
+    ];
+
+    /** @var string The kind of a course whose page model is unset or unknown. */
+    public const KIND_DEFAULT = 'course';
 
     /**
      * The whole summary of the current user.
@@ -93,7 +106,7 @@ final class drawersummary {
     /**
      * The answer with no card.
      *
-     * @return array hasitem (false), name, url, detail, hascompletion, completed, total, percent.
+     * @return array hasitem (false), name, url, detail, kind, hascompletion, completed, total, percent.
      */
     public static function empty_resume(): array {
         return [
@@ -101,6 +114,7 @@ final class drawersummary {
             'name' => '',
             'url' => '',
             'detail' => '',
+            'kind' => '',
             'hascompletion' => false,
             'completed' => 0,
             'total' => 0,
@@ -156,7 +170,8 @@ final class drawersummary {
                 format_string($cm->name, true, ['context' => $cm->context, 'escape' => false]),
                 $cm->url->out(false),
                 [$coursename],
-                $completion
+                $completion,
+                self::kind((int) $course->id)
             );
         }
 
@@ -184,7 +199,8 @@ final class drawersummary {
             self::course_name($course),
             (new \moodle_url('/course/view.php', ['id' => $course->id]))->out(false),
             [],
-            $completion
+            $completion,
+            self::kind((int) $course->id)
         );
     }
 
@@ -219,6 +235,16 @@ final class drawersummary {
     }
 
     /**
+     * The kind of a course, for the glyph on the card's tile: one of {@see self::KINDS}' values.
+     *
+     * @param int $courseid The course.
+     * @return string course, event or trail.
+     */
+    public static function kind(int $courseid): string {
+        return self::KINDS[landingfields::model($courseid)] ?? self::KIND_DEFAULT;
+    }
+
+    /**
      * A course's name as the card prints it, in the plain spelling.
      *
      * @param \stdClass $course The course record.
@@ -242,11 +268,13 @@ final class drawersummary {
      * @param string $url The address, plain.
      * @param string[] $parts What the line under the title starts with.
      * @param array|null $completion completed and total, or null.
+     * @param string $kind The course's kind ({@see self::kind()}).
      * @return array See {@see self::empty_resume()}.
      */
-    private static function card(string $name, string $url, array $parts, ?array $completion): array {
+    private static function card(string $name, string $url, array $parts, ?array $completion, string $kind): array {
         $card = self::empty_resume();
         $card['hasitem'] = true;
+        $card['kind'] = $kind;
         $card['name'] = $name;
         $card['url'] = $url;
         if ($completion !== null) {
