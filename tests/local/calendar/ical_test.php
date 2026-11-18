@@ -277,4 +277,47 @@ final class ical_test extends \advanced_testcase {
         $this->assertSame((int) $user->id, (int) ical::authenticated(0, $record->username, $old)?->id, 'The old address.');
         $this->assertNull(ical::authenticated(0, $record->username, $token), 'The username takes its own hash.');
     }
+
+    /**
+     * A token that reads as zero in scientific notation is not every token that reads as zero.
+     *
+     * No account can be made to hold such a token (its SHA-1 would have to be found by search), so the comparison is
+     * driven directly: core's `==` holds for every pair below and the theme's comparison for none of them.
+     *
+     * @return void
+     */
+    public function test_a_token_is_compared_as_a_string_never_as_a_number(): void {
+        $issued = '0e' . str_repeat('1', 38);
+
+        foreach (['0', '00', '0e0', '0e' . str_repeat('2', 38)] as $given) {
+            $this->assertTrue($given == $issued, 'The control: PHP reads the pair as two zeros.');
+            $this->assertFalse(ical::token_matches($issued, $given), $given);
+        }
+        $this->assertTrue(ical::token_matches($issued, $issued), 'The issued token itself.');
+    }
+
+    /**
+     * Both of authenticated()'s checks go through token_matches(), and neither compares the token itself.
+     *
+     * The comparison's behaviour is the test above; this one reads the source, because no account can be given a token
+     * that tells the two comparisons apart, so a call site put back to core's `==` would pass every request test.
+     *
+     * @return void
+     */
+    public function test_both_token_checks_go_through_the_strict_comparison(): void {
+        $method = new \ReflectionMethod(ical::class, 'authenticated');
+        $lines = file((string) $method->getFileName());
+        $body = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        $this->assertSame(2, substr_count($body, 'self::token_matches('), 'The user id check and the username check.');
+        $this->assertStringContainsString(
+            'self::token_matches(calendar_get_export_token($user), $authtoken)',
+            $body
+        );
+        $this->assertStringContainsString(
+            'self::token_matches(sha1($username . $user->password . $CFG->calendar_exportsalt), $authtoken)',
+            $body
+        );
+        $this->assertDoesNotMatchRegularExpression('/\$authtoken\s*!?==?|!?==?\s*\$authtoken/', $body);
+    }
 }
