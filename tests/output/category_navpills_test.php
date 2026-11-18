@@ -328,6 +328,23 @@ final class category_navpills_test extends \advanced_testcase {
     }
 
     /**
+     * A page that turned the navigation off is asked twice (a hero exported twice): the navigation is built once.
+     *
+     * Built twice, core reports the nodes the first build moved as added again.
+     */
+    public function test_a_page_without_the_navigation_builds_it_once(): void {
+        $this->resetAfterTest();
+        $categoryid = (int) self::getDataGenerator()->create_category()->id;
+        $this->setAdminUser();
+
+        $page = $this->page_at($categoryid, self::permissions($categoryid));
+        $page->set_secondary_navigation(false);
+        $this->assertNotNull(category_navpills::for_page($page));
+        $this->assertNotNull(category_navpills::for_page($page), 'The second answer is the first one.');
+        $this->assertDebuggingNotCalled();
+    }
+
+    /**
      * The row is a category's: a page in another context gets none, whatever its secondary navigation holds.
      */
     public function test_the_row_needs_a_category_context(): void {
