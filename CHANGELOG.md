@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Fewer statements on four busy pages** (the performance audit of 2026-11-20). A visitor's landing page reads the
+  course's enrolment methods once instead of three times; the course notice's enrolment hints share one read; the
+  calendar feed builds each course's activity information once instead of once per event, which matters to a
+  subscriber with more than ten courses; and the course index in "count" mode asks which courses a viewer may
+  discover once for all the categories it lists, instead of once per category. Nothing a page shows changes.
+- **Course cards without an image no longer read their course's category on every request** (2026100636). The cover
+  of such a card (My courses, the Dashboard) is painted from the course's category, which is now kept in a new shared
+  cache, `coursecategory`; creating, restoring, updating (moving included) or deleting a course drops its entry.
 - **The profile rule has a batch form for pages of people.** `\theme_dimensions\local\profileaccess::control_view_profile_many()`
   answers what the profile callback answers for a list of users and one course, in three statements instead of about
   three per person, so a plugin listing many people (enrol_apply's approval queue) can ask it once per page. Nothing

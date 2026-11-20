@@ -937,4 +937,46 @@ final class builder_test extends \advanced_testcase {
         role_switch(0, \core\context\course::instance($course->id));
         $this->assertNull($this->build($this->page($course)), 'Not switched, no hint.');
     }
+
+    /**
+     * The enrolment hints share one read of the course's instances: a second hint costs no statement.
+     *
+     * Measured for an editor on the course home of a visible course with a guest instance and a self instance,
+     * each notice built twice first so the settings and the access data are warm. The guest enrolment hint alone
+     * pays the read (the control: it costs more than a notice with no enrolment hint); the self enrolment hint
+     * beside it adds nothing, and both still say what they said.
+     *
+     * @return void
+     */
+    public function test_the_enrolment_hints_read_the_instances_once(): void {
+        global $DB;
+        $course = $this->course();
+        $this->enable_guest($course);
+        $DB->set_field('enrol', 'status', ENROL_INSTANCE_ENABLED, ['courseid' => $course->id, 'enrol' => 'self']);
+        $DB->set_field('enrol', 'customint6', 1, ['courseid' => $course->id, 'enrol' => 'self']);
+        // Named, or enrol_self names it after its role with statements of its own (get_instance_name()).
+        $DB->set_field('enrol', 'name', 'Open door', ['courseid' => $course->id, 'enrol' => 'self']);
+        $this->setUser($this->member($course, 'editingteacher'));
+
+        $reads = function () use ($DB, $course): array {
+            // Twice: the first notice of the test also pays a cold statement of its own.
+            $this->build($this->page($course));
+            $this->build($this->page($course));
+            $before = (int) $DB->perf_get_reads();
+            $notice = $this->build($this->page($course));
+            return [(int) $DB->perf_get_reads() - $before, $notice];
+        };
+
+        [$none] = $reads();
+        set_config('showhintcourseguestenrol', THEME_BOOST_UNION_SETTING_GUESTACCESSHINT_WITHOUTPASSWORD, builder::BU);
+        [$guest, $notice] = $reads();
+        $this->assertArrayHasKey(builder::KEY_GUESTENROL, $notice->notes);
+        $this->assertGreaterThan($none, $guest, 'Control: the guest enrolment hint reads the instances.');
+
+        set_config('showhintcourseselfenrol', THEME_BOOST_UNION_SETTING_SELECT_YES, builder::BU);
+        [$both, $notice] = $reads();
+        $this->assertArrayHasKey(builder::KEY_GUESTENROL, $notice->notes);
+        $this->assertArrayHasKey(builder::KEY_SELFENROL, $notice->notes);
+        $this->assertSame($guest, $both, 'The self enrolment hint reads the instances the guest one read.');
+    }
 }

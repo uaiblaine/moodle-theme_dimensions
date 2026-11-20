@@ -29,6 +29,7 @@ use theme_dimensions\local\card\boost_union;
 use theme_dimensions\local\card\cover;
 use theme_dimensions\local\calendar\coreview;
 use theme_dimensions\local\compactnav;
+use theme_dimensions\local\coursecategory;
 use theme_dimensions\local\coursenotice\builder as coursenotice_builder;
 use theme_dimensions\local\darklogo;
 use theme_dimensions\local\drawernav;
@@ -897,8 +898,8 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * (the parent's); otherwise an SVG of the course category's cover ({@see cover}), and for an id that names no
      * course, or the site course, the parent's pattern.
      *
-     * One call costs a statement for the course's category (none for the page's own course, or for a course this
-     * renderer was already asked about) plus, cold, the branding cache's miss for that category. A grid asks
+     * One call costs, cold, a statement for the course's category (none for the page's own course, and none once the
+     * shared cache {@see coursecategory} holds the course) plus the branding cache's miss for that category. A grid asks
      * {@see course_covers()} instead, with the categories its rows hold.
      *
      * @param int $id The course id.
@@ -1001,19 +1002,17 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
-     * The category of a course, read once per renderer: none for the page's own course, a statement for another.
+     * The category of a course, once per renderer: the page's own course from the page, another from {@see coursecategory}.
      *
      * @param int $courseid The course.
      * @return int The category id, 0 for a course that does not exist or for the site course.
      */
     protected function course_category(int $courseid): int {
-        global $DB;
-
         if (!array_key_exists($courseid, $this->coursecategories)) {
             $pagecourse = $this->page->course;
             $category = (int) $pagecourse->id === $courseid
                 ? $pagecourse->category
-                : $DB->get_field('course', 'category', ['id' => $courseid]);
+                : coursecategory::of($courseid);
             $this->coursecategories[$courseid] = $courseid === SITEID ? 0 : (int) $category;
         }
         return $this->coursecategories[$courseid];

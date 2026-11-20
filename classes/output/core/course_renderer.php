@@ -297,6 +297,8 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
      *   nodisplay.
      * - $pagingbar and $morelink start as '' and are tested against '' where core leaves them
      *   undefined and tests empty(); the two agree in every case.
+     * - Before the nodes render, {@see prime_discoverable_counts()} asks local_unlistedcourses about
+     *   every listed node's direct courses at once, so each node's count is a memo hit.
      *
      * Every surface that lists categories reaches the children through it: the category page
      * tree, coursecat_tree() and both front page category methods.
@@ -381,6 +383,7 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
             $content .= $pagingbar;
         }
 
+        $this->prime_discoverable_counts($chelper, $subcategories, $depth + 1);
         foreach ($subcategories as $subcategory) {
             $content .= $this->coursecat_category($chelper, $subcategory, $depth + 1);
         }
@@ -463,6 +466,35 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
             $html,
             1
         );
+    }
+
+    /**
+     * Ask once, for every sibling node about to render, which of their direct courses this user may discover.
+     *
+     * {@see coursecat_category()} counts each node's discoverable courses where its two branches need the count:
+     * COUNT mode, and a not-loaded node at COURSECAT_SHOW_COURSES_COLLAPSED or above. Each count asks
+     * access::are_courses_discoverable(), which memoises per viewer and course and reads the states of what it
+     * does not know in one statement; asked here with every sibling's ids, the per-node calls are memo hits, so a
+     * listing of N categories pays one statement instead of N. Where neither branch counts, nothing is read.
+     *
+     * @param coursecat_helper $chelper Display options.
+     * @param core_course_category[] $subcategories The nodes about to render.
+     * @param int $depth Their nesting depth in the current tree.
+     * @return void
+     */
+    private function prime_discoverable_counts(coursecat_helper $chelper, array $subcategories, int $depth): void {
+        $show = $chelper->get_show_courses();
+        $notloaded = $chelper->get_subcat_depth() > 0 && $depth >= $chelper->get_subcat_depth();
+        if ($show != self::COURSECAT_SHOW_COURSES_COUNT && !($notloaded && $show >= self::COURSECAT_SHOW_COURSES_COLLAPSED)) {
+            return;
+        }
+        $ids = [];
+        foreach ($subcategories as $subcategory) {
+            $ids = array_merge($ids, array_values($subcategory->get_courses(['idonly' => true])));
+        }
+        if ($ids) {
+            access::are_courses_discoverable($ids);
+        }
     }
 
     /**

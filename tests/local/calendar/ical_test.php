@@ -320,4 +320,91 @@ final class ical_test extends \advanced_testcase {
         );
         $this->assertDoesNotMatchRegularExpression('/\$authtoken\s*!?==?|!?==?\s*\$authtoken/', $body);
     }
+
+    /**
+     * The feed builds each course's modinfo once, however the events of more courses than modinfo caches interleave.
+     *
+     * Twelve courses (modinfo's static cache holds {@see \course_modinfo::MAX_CACHE_SIZE}), each with a page and two
+     * events of it. The same feed is read with its events ordered by course and then interleaved across the courses
+     * (course 1, 2, ... 12, 1, 2, ...), which in core's per-event shape evicts each course before its second event and
+     * builds its modinfo again. Core's retrieval asks modinfo per event too, in date order, before the feed's loop and
+     * outside the theme's reach (core_events::prime() says why), so the loop's cost is the feed's minus that
+     * retrieval's, each from a cleared modinfo cache: the same in both orders. The control: the feed carries every event
+     * but the hidden page's two, in both orders.
+     *
+     * @return void
+     */
+    public function test_the_feed_builds_each_courses_modinfo_once(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $generator = self::getDataGenerator();
+        $student = $generator->create_user();
+        $count = \course_modinfo::MAX_CACHE_SIZE + 2;
+        $events = [];
+        for ($i = 0; $i < $count; $i++) {
+            $course = $generator->create_course();
+            $generator->enrol_user($student->id, $course->id, 'student');
+            $page = $generator->create_module('page', ['course' => $course->id]);
+            foreach ([0, 1] as $round) {
+                $events[$round][$i] = (int) $generator->create_event([
+                    'name' => "Reading {$i}.{$round}",
+                    'eventtype' => 'course',
+                    'courseid' => $course->id,
+                    'modulename' => 'page',
+                    'instance' => $page->id,
+                    'timestart' => time() + DAYSECS,
+                ])->id;
+            }
+            if ($i === 0) {
+                // Hidden in modinfo alone: set_coursemodule_visible() would hide the events too, and core's read drops those.
+                $DB->set_field('course_modules', 'visible', 0, ['id' => $page->cmid]);
+                rebuild_course_cache($course->id, true);
+            }
+        }
+        $hidden = [$events[0][0], $events[1][0]];
+        $expected = array_values(array_diff(array_merge($events[0], $events[1]), $hidden));
+        sort($expected);
+        $this->as_viewer($student);
+        $courseids = array_merge(array_keys(enrol_get_users_courses($student->id, true, 'id')), [SITEID]);
+
+        $read = function (callable $when) use ($DB, $student, $events, $courseids): array {
+            foreach ($events as $round => $ids) {
+                foreach ($ids as $i => $id) {
+                    // Core's retrieval orders by timesort, then id: move both, or the order is the creation's.
+                    $at = time() + DAYSECS + $when($round, $i) * MINSECS;
+                    $DB->update_record('event', (object) ['id' => $id, 'timestart' => $at, 'timesort' => $at]);
+                }
+            }
+            \course_modinfo::clear_instance_cache();
+            $before = (int) $DB->perf_get_reads();
+            calendar_get_legacy_events(
+                time() - DAYSECS,
+                time() + 5 * DAYSECS,
+                $student->id,
+                false,
+                $courseids,
+                false,
+                true,
+                true,
+                0
+            );
+            $retrieval = (int) $DB->perf_get_reads() - $before;
+            \course_modinfo::clear_instance_cache();
+            $before = (int) $DB->perf_get_reads();
+            $feed = (string) ical::feed($student, (int) $student->id, 'all', 'recentupcoming', 0);
+            $reads = (int) $DB->perf_get_reads() - $before;
+            $ids = self::feed_ids($feed);
+            sort($ids);
+            return [$reads - $retrieval, $ids];
+        };
+        $read(fn(int $round, int $i): int => $round * $count + $i);
+
+        [$grouped, $groupedids] = $read(fn(int $round, int $i): int => $i * 2 + $round);
+        [$interleaved, $interleavedids] = $read(fn(int $round, int $i): int => $round * $count + $i);
+
+        $this->assertSame($expected, $groupedids, 'Control: the hidden page\'s events are left out, the rest are in.');
+        $this->assertSame($expected, $interleavedids);
+        $this->assertSame($grouped, $interleaved, 'Interleaving the courses builds no modinfo twice in the feed\'s loop.');
+    }
 }

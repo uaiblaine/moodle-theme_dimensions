@@ -478,6 +478,60 @@ final class course_renderer_test extends \advanced_testcase {
     }
 
     /**
+     * In COUNT mode the sibling nodes' courses are asked about once, whatever the number of nodes.
+     *
+     * Each node counts its discoverable courses through access::are_courses_discoverable(), whose memo is per viewer
+     * and course; the listing asks about every sibling's courses before the nodes render. The cost of that question
+     * is the difference between a render with the plugin's memo emptied and one with it full, everything else warm:
+     * the same for three nodes and for nine (it was one statement per node). The control: it is not zero, and the
+     * numbers stay the filtered ones (the first node holds an unlisted course and reads 1, the others 2).
+     *
+     * @return void
+     */
+    public function test_the_counts_of_sibling_nodes_ask_about_their_courses_once(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $outsider = $generator->create_user();
+        $renderer = $this->renderer();
+        $chelper = new coursecat_helper();
+        $chelper->set_show_courses(course_renderer::COURSECAT_SHOW_COURSES_COUNT);
+        $pattern = '~<span[^>]*class="numberofcourse[^"]*"[^>]*>\D*(\d+)\D*</span>~';
+
+        $question = [];
+        foreach ([3, 9] as $nodes) {
+            $this->setAdminUser();
+            $parent = $generator->create_category();
+            for ($i = 0; $i < $nodes; $i++) {
+                $child = $generator->create_category(['parent' => $parent->id]);
+                $generator->create_course(['category' => $child->id]);
+                $second = $generator->create_course(['category' => $child->id]);
+                if ($i === 0) {
+                    discoverability::set_state((int) $second->id, discoverability::STATE_UNLISTED);
+                }
+            }
+            $this->setUser($outsider);
+            access::reset_caches();
+            category_access::reset_caches();
+            $parentobject = core_course_category::get((int) $parent->id);
+            $html = $this->invoke_category_content($renderer, $chelper, $parentobject, 0);
+
+            $before = (int) $DB->perf_get_reads();
+            $this->invoke_category_content($renderer, $chelper, $parentobject, 0);
+            $memoised = (int) $DB->perf_get_reads() - $before;
+            access::reset_caches();
+            $before = (int) $DB->perf_get_reads();
+            $this->invoke_category_content($renderer, $chelper, $parentobject, 0);
+            $question[$nodes] = (int) $DB->perf_get_reads() - $before - $memoised;
+
+            preg_match_all($pattern, $html, $matches);
+            $this->assertSame(array_merge(['1'], array_fill(0, $nodes - 1, '2')), $matches[1], "The filtered numbers ($nodes).");
+        }
+        $this->assertGreaterThan(0, $question[3], 'Control: the nodes\' courses are asked about.');
+        $this->assertSame($question[3], $question[9], 'Nine nodes ask about their courses as three do: once.');
+    }
+
+    /**
      * A tree whose every child is unlisted offers an outsider no expand-all control.
      *
      * The companion of the test above, one level up: core decides the "Expand all" link from the
