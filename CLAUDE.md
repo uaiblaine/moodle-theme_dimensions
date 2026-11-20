@@ -1026,6 +1026,13 @@ keep Boost Union's list with the "New here?" card. The design record is `docs/na
   profile several calls after an unrelated student had been refused the same one, and it was
   found by a throwaway probe script, not by the suite; `test_the_memo_distinguishes_the_viewer`
   exists so it cannot come back.
+- **`control_view_profile_many()` is the rule for a list, and it must stay clause for clause with
+  `decide()`.** Core's callback contract is one user at a time, so a caller judging a page of people
+  (enrol_apply's queue, through `is_callable()`) asks the batch instead: three statements for the page,
+  never the memo. `profileaccess_many_test` compares it with the callback over a fixture holding every
+  branch and both answers, and the `profilemany_*` gates hold each step; a change to `decide()`,
+  `is_course_contact_of()` or `shares_a_course_with_viewer()` changes the batch in the same commit.
+  The one difference is an id with no user context: PREVENT here, an exception there.
 - **The staff escape comes first, and has its own test.** The previous piece of privacy work on
   this platform shipped a filter with no staff escape and hid a course from the people who
   administer it, the site admin included, with every unit test green. A site administrator

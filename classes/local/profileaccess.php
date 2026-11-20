@@ -224,4 +224,198 @@ class profileaccess {
 
         return false;
     }
+
+    /**
+     * The answer {@see control_view_profile()} gives the current user, for many users and one course at once.
+     *
+     * For a caller judging a page of people, such as enrol_apply's approval queue: core's callback
+     * contract is one user at a time, and through it this rule costs about three statements per
+     * person. Here it is three statements for the whole list: the user contexts, the course contact
+     * roles (only with a course and $CFG->coursecontact set) and every subject's courses with their
+     * contexts. The capability checks read the viewer's access data, which the request already holds.
+     *
+     * It takes the decision's steps in its order and must stay clause for clause with them
+     * ({@see decide()}, {@see is_course_contact_of()}, {@see shares_a_course_with_viewer()});
+     * profileaccess_many_test compares the two answers over a fixture that holds both of them.
+     * It neither reads nor fills the per-request memo, so a wrong answer here cannot reach the callback.
+     *
+     * One deliberate difference: an id no account has (so no user context; delete_user() keeps
+     * the context of a deleted account) is answered PREVENT, where the callback throws on
+     * context_user::instance().
+     *
+     * Meant for a page of people, not a population: get_in_or_equal() never chunks, and the
+     * context cache holds a few thousand entries.
+     *
+     * @param array $userids The ids of the users whose profiles are asked for (integers or numeric strings).
+     * @param stdClass|null $course The course whose page the request came from, if any; only id is read.
+     * @return array User id => one of the core_user::VIEWPROFILE_* constants, for every id given.
+     */
+    public static function control_view_profile_many(array $userids, ?stdClass $course = null): array {
+        global $DB, $USER;
+
+        $answers = [];
+        $pending = [];
+        foreach ($userids as $id) {
+            $id = (int) $id;
+            $answers[$id] = core_user::VIEWPROFILE_DO_NOT_PREVENT;
+            if (!empty($id)) {
+                $pending[$id] = $id;
+            }
+        }
+
+        // The callback's first two returns: no session to decide about, and the own profile.
+        if (!isloggedin() || isguestuser()) {
+            return $answers;
+        }
+        unset($pending[(int) $USER->id]);
+        if (!$pending) {
+            return $answers;
+        }
+
+        // Statement one: the subjects' user contexts, preloaded so context_user::instance() reads none.
+        [$insql, $params] = $DB->get_in_or_equal(array_values($pending), SQL_PARAMS_NAMED, 'pau');
+        $ctxselect = context_helper::get_preload_record_columns_sql('ctx');
+        $records = $DB->get_records_sql(
+            "SELECT ctx.instanceid AS subjectid, $ctxselect
+               FROM {context} ctx
+              WHERE ctx.contextlevel = :userlevel AND ctx.instanceid $insql",
+            $params + ['userlevel' => CONTEXT_USER]
+        );
+        $withcontext = [];
+        foreach ($records as $record) {
+            $withcontext[(int) $record->subjectid] = true;
+            context_helper::preload_from_record($record);
+        }
+
+        // The staff escape, decide()'s first step.
+        foreach ($pending as $id) {
+            if (empty($withcontext[$id])) {
+                $answers[$id] = core_user::VIEWPROFILE_PREVENT;
+                unset($pending[$id]);
+                continue;
+            }
+            $subjectcontext = context_user::instance($id);
+            if (
+                has_capability('moodle/user:viewdetails', $subjectcontext)
+                || has_capability('moodle/user:viewalldetails', $subjectcontext)
+            ) {
+                unset($pending[$id]);
+            }
+        }
+
+        // Statement two: the course contacts of the course asked about, is_course_contact_of() for the list.
+        if ($pending && $course !== null) {
+            foreach (self::course_contacts_among($pending, $course) as $id) {
+                unset($pending[$id]);
+            }
+        }
+
+        // Statement three: shares_a_course_with_viewer() for the list.
+        if ($pending) {
+            foreach (self::sharing_a_course_with_viewer($pending) as $id) {
+                unset($pending[$id]);
+            }
+        }
+
+        foreach ($pending as $id) {
+            $answers[$id] = core_user::VIEWPROFILE_PREVENT;
+        }
+
+        return $answers;
+    }
+
+    /**
+     * Which of these users hold a course contact role in this course: {@see is_course_contact_of()} for a list.
+     *
+     * Reads what get_user_roles($coursecontext, $userid, true) reads for each of them, the course
+     * context and its parents, joined on {role} as it joins.
+     *
+     * @param array $userids User ids, as keys and values.
+     * @param stdClass $course The course the request came from.
+     * @return array The ids among them who are a course contact there.
+     */
+    private static function course_contacts_among(array $userids, stdClass $course): array {
+        global $CFG, $DB;
+
+        if (empty($CFG->coursecontact) || empty($course->id)) {
+            return [];
+        }
+        $contactroles = array_filter(array_map('intval', explode(',', $CFG->coursecontact)));
+        if (empty($contactroles)) {
+            return [];
+        }
+        $coursecontext = context_course::instance($course->id, IGNORE_MISSING);
+        if (!$coursecontext) {
+            return [];
+        }
+
+        $contextids = $coursecontext->get_parent_context_ids();
+        $contextids[] = $coursecontext->id;
+        [$usersql, $params] = $DB->get_in_or_equal(array_values($userids), SQL_PARAMS_NAMED, 'pcu');
+        [$ctxsql, $ctxparams] = $DB->get_in_or_equal($contextids, SQL_PARAMS_NAMED, 'pcc');
+        [$rolesql, $roleparams] = $DB->get_in_or_equal(array_values($contactroles), SQL_PARAMS_NAMED, 'pcr');
+
+        return array_map('intval', $DB->get_fieldset_sql(
+            "SELECT DISTINCT ra.userid
+               FROM {role_assignments} ra
+               JOIN {role} r ON r.id = ra.roleid
+              WHERE ra.userid $usersql AND ra.contextid $ctxsql AND ra.roleid $rolesql",
+            $params + $ctxparams + $roleparams
+        ));
+    }
+
+    /**
+     * Which of these users share a course with the viewer where the viewer may see the participants.
+     *
+     * {@see shares_a_course_with_viewer()} for a list: the courses are enrol_get_all_users_courses()'s
+     * for each of them (any enrolment, any status, any method, the site course left out, nothing for
+     * the guest account), read in one statement with their contexts, and the capability is asked once
+     * per distinct course.
+     *
+     * @param array $userids User ids, as keys and values.
+     * @return array The ids among them who share such a course with the viewer.
+     */
+    private static function sharing_a_course_with_viewer(array $userids): array {
+        global $CFG, $DB;
+
+        // The guest account: enrol_get_all_users_courses() answers it no course.
+        unset($userids[(int) ($CFG->siteguest ?? 0)]);
+        if (!$userids) {
+            return [];
+        }
+
+        [$usersql, $params] = $DB->get_in_or_equal(array_values($userids), SQL_PARAMS_NAMED, 'psu');
+        $ctxselect = context_helper::get_preload_record_columns_sql('ctx');
+        $rs = $DB->get_recordset_sql(
+            "SELECT DISTINCT en.userid AS subjectid, c.id AS courseid, $ctxselect
+               FROM {course} c
+               JOIN (SELECT DISTINCT ue.userid, e.courseid
+                       FROM {enrol} e
+                       JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                      WHERE ue.userid $usersql
+                    ) en ON en.courseid = c.id
+          LEFT JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = :courselevel
+              WHERE c.id <> :siteid",
+            $params + ['courselevel' => CONTEXT_COURSE, 'siteid' => SITEID]
+        );
+
+        $viewable = [];
+        $sharing = [];
+        foreach ($rs as $record) {
+            $courseid = (int) $record->courseid;
+            $subjectid = (int) $record->subjectid;
+            if (!array_key_exists($courseid, $viewable)) {
+                context_helper::preload_from_record($record);
+                $coursecontext = context_course::instance($courseid, IGNORE_MISSING);
+                $viewable[$courseid] = $coursecontext
+                    && has_capability('moodle/course:viewparticipants', $coursecontext);
+            }
+            if ($viewable[$courseid]) {
+                $sharing[$subjectid] = $subjectid;
+            }
+        }
+        $rs->close();
+
+        return array_values($sharing);
+    }
 }

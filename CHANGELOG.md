@@ -5,6 +5,10 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The profile rule has a batch form for pages of people.** `\theme_dimensions\local\profileaccess::control_view_profile_many()`
+  answers what the profile callback answers for a list of users and one course, in three statements instead of about
+  three per person, so a plugin listing many people (enrol_apply's approval queue) can ask it once per page. Nothing
+  changes for anybody: the callback and its answers are as before.
 - **A visitor is no longer told about an enrol_apply method whose card is hidden.** A method that restricts to a cohort
   and has "Hide this card from people outside the cohort" on no longer shows its seats and deadline above the login
   button to a visitor, and no longer makes that button appear on its own. The theme asks `hides_card_from()` of
