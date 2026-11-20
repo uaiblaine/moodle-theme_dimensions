@@ -367,7 +367,8 @@ final class resolver {
     /**
      * Whether an instance of one of {@see offer::DEADLINE_PLUGINS} is open to anybody who logs in.
      *
-     * Its window is open, it takes new enrolments and its cap is not reached; who logs in may still
+     * Its window is open, it takes new enrolments, its cap is not reached and, for an apply method,
+     * its card is not hidden from visitors ({@see apply_hides_card_from_visitors()}); who logs in may still
      * be refused (a cohort, an application already sent), which a visitor cannot be told. Shared by
      * {@see visitor_offers()} and {@see login_way_in()} so the two cannot drift.
      *
@@ -397,7 +398,31 @@ final class resolver {
                 return false;
             }
         }
+        if ($type === 'apply' && self::apply_hides_card_from_visitors($instance, $plugin)) {
+            return false;
+        }
         return !($type === 'apply' && self::apply_is_full($instance, $plugin));
+    }
+
+    /**
+     * Whether an enrol_apply method keeps its card from a visitor who is not logged in.
+     *
+     * The method's "Hide this card from people outside the cohort" option, on a cohort-restricted
+     * method, makes the card invisible to a visitor, who is a member of no cohort: advertising its
+     * seats and deadline above the login button would announce what the method hides. The logged-in
+     * path needs no such check, as allow_apply() and the category classifier already agree on it.
+     * is_callable() on the object is the guard, as for allow_apply() and is_full(): an enrol_apply
+     * build predating hides_card_from() keeps advertising the method.
+     *
+     * @param \stdClass $instance The {enrol} record of an apply method.
+     * @param \enrol_plugin $plugin The enabled enrol_apply plugin.
+     * @return bool Whether the card is hidden from a visitor.
+     */
+    private static function apply_hides_card_from_visitors(\stdClass $instance, \enrol_plugin $plugin): bool {
+        if (!is_callable([$plugin, 'hides_card_from'])) {
+            return false;
+        }
+        return (bool) $plugin->hides_card_from($instance, null);
     }
 
     /**

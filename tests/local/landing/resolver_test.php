@@ -881,4 +881,56 @@ final class resolver_test extends \advanced_testcase {
         $this->setUser($student);
         $this->assertSame([], resolver::resolve($course)->offers);
     }
+
+    /**
+     * A visitor is not offered an apply method whose card is hidden from people outside its cohort.
+     *
+     * The login way-in agrees, as both read one predicate. The controls: the same method with the option off is offered,
+     * and a self method restricted to a cohort is unaffected.
+     */
+    public function test_a_visitor_is_not_offered_an_apply_method_with_a_hidden_card(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->require_enrol_apply();
+        if (!method_exists(enrol_get_plugin('apply'), 'hides_card_from')) {
+            $this->markTestSkipped('The installed enrol_apply has no hides_card_from() yet.');
+        }
+        $this->enable_enrol('apply');
+        $this->enable_enrol('self');
+        $cohort = self::getDataGenerator()->create_cohort();
+        $this->setUser(null);
+
+        // The method with the option on: nothing to offer and no login way in.
+        $hidden = self::getDataGenerator()->create_course();
+        $hiddeninstance = $this->add_apply_instance($hidden, ['customint5' => $cohort->id, 'enrolenddate' => time() + WEEKSECS]);
+        \enrol_apply\local\instanceoptions::set((int) $hiddeninstance->id, ['hidecard' => 1]);
+        $resolution = resolver::resolve($hidden);
+        $this->assertSame(resolution::STATE_VISITOR, $resolution->state);
+        $this->assertSame([], $resolution->offers);
+        $this->assertFalse($resolution->loginwayin);
+
+        // Control: the same method with the option off is offered, and the login button leads somewhere.
+        $shown = self::getDataGenerator()->create_course();
+        $shownparams = ['customint5' => $cohort->id, 'enrolenddate' => time() + WEEKSECS];
+        $showninstance = $this->add_apply_instance($shown, $shownparams);
+        \enrol_apply\local\instanceoptions::set((int) $showninstance->id, ['hidecard' => 0]);
+        $resolution = resolver::resolve($shown);
+        $this->assertSame([(int) $showninstance->id], array_map(fn($i) => (int) $i->id, $resolution->offers));
+        $this->assertTrue($resolution->loginwayin);
+
+        // Control: another enrol type restricted to a cohort is unaffected.
+        $other = self::getDataGenerator()->create_course();
+        $studentrole = $DB->get_record('role', ['shortname' => 'student'], '*', MUST_EXIST);
+        $selfid = (int) enrol_get_plugin('self')->add_instance($other, [
+            'status' => ENROL_INSTANCE_ENABLED,
+            'customint3' => 40,
+            'customint5' => $cohort->id,
+            'customint6' => 1,
+            'enrolenddate' => time() + WEEKSECS,
+            'roleid' => $studentrole->id,
+        ]);
+        $resolution = resolver::resolve($other);
+        $this->assertSame([$selfid], array_map(fn($i) => (int) $i->id, $resolution->offers));
+        $this->assertTrue($resolution->loginwayin);
+    }
 }
