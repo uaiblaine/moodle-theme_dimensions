@@ -5,6 +5,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A visitor is no longer told about an enrol_apply method whose card is hidden.** A method that restricts to a cohort
+  and has "Hide this card from people outside the cohort" on no longer shows its seats and deadline above the login
+  button to a visitor, and no longer makes that button appear on its own. The theme asks `hides_card_from()` of
+  enrol_apply (when the installed build has it); logged-in users and the category showcase already agreed.
+
 - **The calendar feed compares its token as a string.** The theme's copy of core's iCal export checked the
   `authtoken` with `==`, as core does, so a request token `0` matched any account whose token happens to be `0e`
   followed by 38 digits (about one token in 1.5e10). It now compares with `hash_equals()`; every real address keeps
