@@ -46,7 +46,11 @@ use theme_dimensions\local\calendar\source\core_events;
  *   reads the viewer's own calendar courses and withholds none of them, and the feed reads the viewer's enrolled
  *   courses (and, from a course calendar, a course the viewer can access), so nothing more is withheld there;
  * - an empty `preset_what` or `preset_time`, on which core's script ends in a TypeError (its period and its sets are
- *   never assigned), is sent to the export page, as an unknown one is.
+ *   never assigned), is sent to the export page, as an unknown one is;
+ * - an activity's event is checked against modinfo built once per course before the loop ({@see hidden_activity_events()}),
+ *   where core's script asks get_fast_modinfo() per event: the events come in date order across the courses and
+ *   modinfo's static cache holds {@see \course_modinfo::MAX_CACHE_SIZE} courses, so past that core rebuilds a course's
+ *   modinfo over and over. The same events are left out.
  *
  * The snapshot beside this file (ical.php.export_execute.upstream, {@see \theme_dimensions\local\upstream::FILES}) is
  * core's file as this copy was last read against it: upstream_test reddens the moment core changes it.
@@ -335,12 +339,10 @@ final class ical {
         $ical = new \iCalendar();
         $ical->add_property('method', 'PUBLISH');
         $ical->add_property('prodid', '-//Moodle Pty Ltd//NONSGML Moodle Version ' . $CFG->version . '//EN');
-        foreach ($events as $event) {
-            if (!empty($event->modulename)) {
-                $instances = get_fast_modinfo($event->courseid, $userid)->get_instances_of($event->modulename);
-                if (empty($instances[$event->instance]->uservisible)) {
-                    continue;
-                }
+        $hidden = self::hidden_activity_events($events, $userid);
+        foreach ($events as $key => $event) {
+            if (isset($hidden[$key])) {
+                continue;
             }
             $hostaddress = str_replace('http://', '', $CFG->wwwroot);
             $hostaddress = str_replace('https://', '', $hostaddress);
@@ -391,6 +393,37 @@ final class ical {
         }
 
         return $ical->serialize();
+    }
+
+    /**
+     * The keys of the activity events whose activity the user cannot see, asking modinfo once per course.
+     *
+     * Core's script asks, per event, whether the activity's instance is uservisible in get_fast_modinfo($courseid,
+     * $userid). The same question is asked here, grouped by course, so each course's modinfo is built once however
+     * the events of several courses interleave.
+     *
+     * @param \stdClass[] $events The legacy events, keyed as the feed walks them.
+     * @param int $userid The userid parameter, as core's script hands it to get_fast_modinfo() (0 for an old address).
+     * @return array The keys of the events to leave out, as keys (values true).
+     */
+    public static function hidden_activity_events(array $events, int $userid): array {
+        $bycourse = [];
+        foreach ($events as $key => $event) {
+            if (!empty($event->modulename)) {
+                $bycourse[(int) $event->courseid][$key] = $event;
+            }
+        }
+        $hidden = [];
+        foreach ($bycourse as $courseid => $courseevents) {
+            $modinfo = get_fast_modinfo($courseid, $userid);
+            foreach ($courseevents as $key => $event) {
+                $instances = $modinfo->get_instances_of($event->modulename);
+                if (empty($instances[$event->instance]->uservisible)) {
+                    $hidden[$key] = true;
+                }
+            }
+        }
+        return $hidden;
     }
 
     /**

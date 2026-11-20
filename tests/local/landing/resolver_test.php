@@ -933,4 +933,42 @@ final class resolver_test extends \advanced_testcase {
         $this->assertSame([$selfid], array_map(fn($i) => (int) $i->id, $resolution->offers));
         $this->assertTrue($resolution->loginwayin);
     }
+
+    /**
+     * A visitor's resolution reads the course's enrolment instances once, for its three questions.
+     *
+     * The guest method, the seats and deadline and the login way in each walked the instances; on the anonymous
+     * landing page they now share one read. The cost is measured against one enrol_get_instances() call, which
+     * the control shows is a real statement (nothing caches it), and the resolution is the one the three
+     * separate reads gave: guest access offered, an open self method as the way in, and its seats told.
+     */
+    public function test_a_visitor_reads_the_instances_once(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->enable_enrol('self');
+        $this->enable_enrol('guest');
+        $course = self::getDataGenerator()->create_course();
+        $this->enabled_instance($course->id, 'guest');
+        $self = $this->enabled_instance($course->id, 'self');
+        $DB->set_field('enrol', 'customint3', 0, ['id' => $self->id]);
+        $DB->set_field('enrol', 'enrolenddate', time() + WEEKSECS, ['id' => $self->id]);
+
+        $this->setUser(null);
+        resolver::resolve($course);
+
+        $before = (int) $DB->perf_get_reads();
+        enrol_get_instances($course->id, true);
+        $one = (int) $DB->perf_get_reads() - $before;
+        $this->assertGreaterThan(0, $one, 'Control: reading the instances is a statement.');
+
+        $before = (int) $DB->perf_get_reads();
+        $resolution = resolver::resolve($course);
+        $reads = (int) $DB->perf_get_reads() - $before;
+
+        $this->assertSame(resolution::STATE_VISITOR, $resolution->state);
+        $this->assertSame([method::TYPE_GUEST], array_map(fn($m) => $m->type, $resolution->methods));
+        $this->assertSame([(int) $self->id], array_map(fn($i) => (int) $i->id, $resolution->offers));
+        $this->assertTrue($resolution->loginwayin);
+        $this->assertSame($one, $reads, 'The visitor\'s three questions share one read of the instances.');
+    }
 }

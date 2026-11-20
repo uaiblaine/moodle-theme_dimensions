@@ -330,4 +330,44 @@ final class core_renderer_cover_test extends \advanced_testcase {
         $renderer->course_covers([(int) $two->id => (int) $category->id]);
         $this->assertSame(0, $DB->perf_get_reads() - $reads, 'Remembered, and a grid hands the category in.');
     }
+
+    /**
+     * A page of cards without images costs no statement for their categories once the shared cache holds them.
+     *
+     * Core asks the renderer once per card, with the course id alone, and a new request builds a new renderer: its
+     * memo starts empty. Three courses and nine, each asked of a fresh renderer after an earlier renderer asked: no
+     * statement either way. The control: with the cache purged the same nine cost a statement each, and the covers
+     * are the same.
+     */
+    public function test_the_cards_of_a_new_request_read_no_category_once_cached(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $category = self::getDataGenerator()->create_category();
+        self::pair((int) $category->id, '#b3261e');
+        branding::for_category((int) $category->id);
+        $ids = [];
+        for ($i = 0; $i < 9; $i++) {
+            $ids[] = (int) self::getDataGenerator()->create_course(['category' => $category->id])->id;
+        }
+
+        $cards = function (array $courseids) use ($DB): array {
+            $renderer = self::renderer();
+            $renderer->get_generated_image_for_id(SITEID);
+            $before = (int) $DB->perf_get_reads();
+            $covers = array_map(fn(int $id): string => $this->band($renderer->get_generated_image_for_id($id)), $courseids);
+            return [(int) $DB->perf_get_reads() - $before, $covers];
+        };
+        $cards($ids);
+
+        [$three] = $cards(array_slice($ids, 0, 3));
+        [$nine, $covers] = $cards($ids);
+        $this->assertSame(0, $three, 'Three cards of a new request.');
+        $this->assertSame(0, $nine, 'Nine cards of a new request.');
+        $this->assertSame(array_fill(0, 9, '#b3261e'), $covers);
+
+        \cache::make('theme_dimensions', \theme_dimensions\local\coursecategory::CACHE)->purge();
+        [$cold, $coldcovers] = $cards($ids);
+        $this->assertSame(9, $cold, 'Control: a cold cache reads each course\'s category.');
+        $this->assertSame($covers, $coldcovers);
+    }
 }

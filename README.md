@@ -604,7 +604,9 @@ is deleted (an event observer removes it) or the theme is uninstalled. The categ
 cover film and badges are files of the theme in the category's context, and the site-wide
 fallback hero image a file in the system context; core deletes them with the category's context
 or with the theme. The branding is cached per category (cache `categorybranding`), with
-nothing a viewer's rights decide in it.
+nothing a viewer's rights decide in it. The category of each course is cached too (cache `coursecategory`), to draw
+the cover of a course card without an image; a course's entry is dropped whenever the course is created, restored,
+updated (a move included) or deleted.
 
 The theme also stores seven user preferences: the focus mode reading width, the category view
 (cards or list), how a person left each of their most recent category pages (organisation, view

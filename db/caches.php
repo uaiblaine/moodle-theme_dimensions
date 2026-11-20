@@ -43,6 +43,14 @@ $definitions = [
     // record (local\flavourchoice). A session cache because Boost Union's is one: the two are
     // purged together, and Boost Union's invalidation events are listed here so that a flavour
     // edited, re-sorted or deleted is read again by every session, not only by the editor's.
+    // The category of a course, for the cover of a card without an image; db/events.php deletes an entry.
+    'coursecategory' => [
+        'mode' => \core_cache\store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => true,
+        'staticacceleration' => true,
+        'staticaccelerationsize' => 30,
+    ],
     'flavourchoice' => [
         'mode' => \core_cache\store::MODE_SESSION,
         'simplekeys' => true,

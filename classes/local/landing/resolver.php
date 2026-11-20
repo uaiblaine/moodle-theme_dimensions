@@ -77,11 +77,14 @@ final class resolver {
         global $USER;
 
         if (!isloggedin() || isguestuser()) {
+            // One read of the instances for the three questions; this is the anonymous public page, the busiest path.
+            $instances = enrol_get_instances($course->id, true);
+            $plugins = enrol_get_plugins(true);
             return new resolution(
                 resolution::STATE_VISITOR,
-                self::visitor_methods($course),
-                offers: self::visitor_offers($course),
-                loginwayin: self::login_way_in($course)
+                self::visitor_methods($instances, $plugins),
+                offers: self::visitor_offers($instances, $plugins),
+                loginwayin: self::login_way_in($instances, $plugins)
             );
         }
 
@@ -280,13 +283,13 @@ final class resolver {
      * the login CTA, where a login could lead somewhere ({@see login_way_in()}) -
      * plus guest access, which needs no identity.
      *
-     * @param \stdClass $course The course record.
+     * @param \stdClass[] $instances The course's enabled instances of enabled plugins, enrol_get_instances($id, true).
+     * @param \enrol_plugin[] $plugins The enabled plugins, enrol_get_plugins(true).
      * @return method[] The methods.
      */
-    private static function visitor_methods(\stdClass $course): array {
+    private static function visitor_methods(array $instances, array $plugins): array {
         $methods = [];
-        $plugins = enrol_get_plugins(true);
-        foreach (enrol_get_instances($course->id, true) as $instance) {
+        foreach ($instances as $instance) {
             if ($instance->enrol === 'guest' && isset($plugins['guest'])) {
                 $methods[] = method::for_guest($instance, (string) $instance->password !== '');
             }
@@ -304,14 +307,14 @@ final class resolver {
      * leaving it out would take the information off every restricted public course. An instance
      * with nothing to say ({@see offer::export()}) is not listed.
      *
-     * @param \stdClass $course The course record.
+     * @param \stdClass[] $instances The course's enabled instances of enabled plugins, enrol_get_instances($id, true).
+     * @param \enrol_plugin[] $plugins The enabled plugins, enrol_get_plugins(true).
      * @return \stdClass[] The {enrol} records, in instance sortorder.
      */
-    private static function visitor_offers(\stdClass $course): array {
-        $plugins = enrol_get_plugins(true);
+    private static function visitor_offers(array $instances, array $plugins): array {
         $now = time();
         $offers = [];
-        foreach (enrol_get_instances($course->id, true) as $instance) {
+        foreach ($instances as $instance) {
             $type = $instance->enrol;
             if (!isset($plugins[$type]) || !in_array($type, offer::DEADLINE_PLUGINS, true)) {
                 continue;
@@ -340,13 +343,13 @@ final class resolver {
      * Never guest access, which needs no login and is offered beside the button anyway, and never a
      * plugin inheriting the base hook (manual, cohort, meta, ...): nothing a learner can press.
      *
-     * @param \stdClass $course The course record.
+     * @param \stdClass[] $instances The course's enabled instances of enabled plugins, enrol_get_instances($id, true).
+     * @param \enrol_plugin[] $plugins The enabled plugins, enrol_get_plugins(true).
      * @return bool Whether a login could lead somewhere.
      */
-    private static function login_way_in(\stdClass $course): bool {
-        $plugins = enrol_get_plugins(true);
+    private static function login_way_in(array $instances, array $plugins): bool {
         $now = time();
-        foreach (enrol_get_instances($course->id, true) as $instance) {
+        foreach ($instances as $instance) {
             $type = $instance->enrol;
             if (!isset($plugins[$type]) || $type === 'guest') {
                 continue;

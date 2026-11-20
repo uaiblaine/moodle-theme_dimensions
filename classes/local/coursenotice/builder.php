@@ -169,9 +169,11 @@ final class builder {
 
         self::add_promotion($notice, $course, $context);
         self::add_hidden_hint($notice, $page, $course, $context);
-        self::add_guest_access_hint($notice, $course, $context);
-        self::add_guest_enrol_hint($notice, $course, $context);
-        self::add_self_enrol_hint($notice, $course, $context, $output);
+        // The course's enrolment instances, read by the first hint that gets past its own gates and shared with the others.
+        $instances = null;
+        self::add_guest_access_hint($notice, $course, $context, $instances);
+        self::add_guest_enrol_hint($notice, $course, $context, $instances);
+        self::add_self_enrol_hint($notice, $course, $context, $output, $instances);
         self::add_switched_role_hint($notice, $page, $course);
 
         return $notice->is_empty() ? null : $notice;
@@ -616,9 +618,15 @@ final class builder {
      * @param notice $notice The notice being built.
      * @param \stdClass $course The course.
      * @param \core\context\course $context The course context.
+     * @param \stdClass[]|null $instances The course's enabled instances, null until a hint reads them (filled here then).
      * @return void
      */
-    private static function add_guest_access_hint(notice $notice, \stdClass $course, \core\context\course $context): void {
+    private static function add_guest_access_hint(
+        notice $notice,
+        \stdClass $course,
+        \core\context\course $context,
+        ?array &$instances
+    ): void {
         global $USER;
 
         if (get_config(self::BU, 'showhintcourseguestaccess') != THEME_BOOST_UNION_SETTING_SELECT_YES) {
@@ -633,7 +641,8 @@ final class builder {
 
         $showselfenrollink = false;
         $plugins = enrol_get_plugins(true);
-        foreach (enrol_get_instances($course->id, true) as $instance) {
+        $instances ??= enrol_get_instances($course->id, true);
+        foreach ($instances as $instance) {
             if (!isset($plugins[$instance->enrol])) {
                 continue;
             }
@@ -662,9 +671,15 @@ final class builder {
      * @param notice $notice The notice being built.
      * @param \stdClass $course The course.
      * @param \core\context\course $context The course context.
+     * @param \stdClass[]|null $instances The course's enabled instances, null until a hint reads them (filled here then).
      * @return void
      */
-    private static function add_guest_enrol_hint(notice $notice, \stdClass $course, \core\context\course $context): void {
+    private static function add_guest_enrol_hint(
+        notice $notice,
+        \stdClass $course,
+        \core\context\course $context,
+        ?array &$instances
+    ): void {
         global $CFG;
 
         $setting = get_config(self::BU, 'showhintcourseguestenrol');
@@ -681,7 +696,8 @@ final class builder {
             return;
         }
 
-        foreach (enrol_get_instances($course->id, true) as $instance) {
+        $instances ??= enrol_get_instances($course->id, true);
+        foreach ($instances as $instance) {
             if ($instance->enrol != 'guest') {
                 continue;
             }
@@ -726,13 +742,15 @@ final class builder {
      * @param \stdClass $course The course.
      * @param \core\context\course $context The course context.
      * @param \core\output\core_renderer $output The renderer.
+     * @param \stdClass[]|null $instances The course's enabled instances, null until a hint reads them (filled here then).
      * @return void
      */
     private static function add_self_enrol_hint(
         notice $notice,
         \stdClass $course,
         \core\context\course $context,
-        \core\output\core_renderer $output
+        \core\output\core_renderer $output,
+        ?array &$instances
     ): void {
         if (get_config(self::BU, 'showhintcourseselfenrol') != THEME_BOOST_UNION_SETTING_SELECT_YES) {
             return;
@@ -753,7 +771,8 @@ final class builder {
         $canconfig = has_capability('enrol/self:config', $context);
         $current = false;
         $lines = [];
-        foreach (enrol_get_instances($course->id, true) as $instance) {
+        $instances ??= enrol_get_instances($course->id, true);
+        foreach ($instances as $instance) {
             if (
                 $instance->enrol != 'self' || !empty($instance->password) || $instance->customint6 != 1
                 || (!empty($instance->enrolenddate) && $instance->enrolenddate <= $now)

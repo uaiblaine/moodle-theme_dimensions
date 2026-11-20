@@ -41,6 +41,24 @@ $observers = [
         'eventname' => '\core\event\course_category_updated',
         'callback' => '\theme_dimensions\local\category\branding::category_updated',
     ],
+    // The shared cache of each course's category (the cover of a card without an image) forgets a course on every
+    // event that can change its category or end it: a move fires course_updated.
+    [
+        'eventname' => '\\core\\event\\course_created',
+        'callback' => '\\theme_dimensions\\local\\coursecategory::course_changed',
+    ],
+    [
+        'eventname' => '\\core\\event\\course_updated',
+        'callback' => '\\theme_dimensions\\local\\coursecategory::course_changed',
+    ],
+    [
+        'eventname' => '\\core\\event\\course_deleted',
+        'callback' => '\\theme_dimensions\\local\\coursecategory::course_changed',
+    ],
+    [
+        'eventname' => '\\core\\event\\course_restored',
+        'callback' => '\\theme_dimensions\\local\\coursecategory::course_changed',
+    ],
     // Boost Union's own observer of this event (priority 0) strips the deleted cohort from every smart
     // menu rule, and a rule left with no cohort shows its menu to everyone. Running first, the theme
     // hides the menus and items a deleted look cohort restricted while their rules still name it.

@@ -26,6 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 
 $string['brandheading'] = 'Brand';
 $string['cachedef_categorybranding'] = 'The appearance of a course category on the category showcase: its layout, colours, tagline and the name of its hero image.';
+$string['cachedef_coursecategory'] = 'The category of each course, to draw the cover of a course card without an image.';
 $string['cachedef_flavourchoice'] = 'Which Boost Union flavour the session last applied as the person\'s chosen look, with that flavour\'s settings.';
 $string['cachedef_flavourmenu'] = 'The look a person may pick in the user menu: the offered Boost Union flavours, their titles and their marks.';
 $string['cachedef_identityfields'] = 'The custom profile fields the identity settings offer: their short names, types, order and visibility.';
