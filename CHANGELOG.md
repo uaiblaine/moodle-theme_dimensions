@@ -5,6 +5,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The dashboard's month block no longer fetches the month's events twice.** core's block_calendar_month builds the
+  month before the theme draws it; the theme now counts the month's core events from that work, applying its own rules
+  to it (withheld categories, keys switched off), and fetches only the days of the neighbouring months the grid shows.
+  A saved calendar state narrowed to a category or a course filter keeps the theme's own fetch. The calendar feed
+  (iCal) reads the subscriber's groups and its courses once each instead of once per course. Nothing shown changes.
 - **Fewer statements on four busy pages** (the performance audit of 2026-11-20). A visitor's landing page reads the
   course's enrolment methods once instead of three times; the course notice's enrolment hints share one read; the
   calendar feed builds each course's activity information once instead of once per event, which matters to a

@@ -407,4 +407,133 @@ final class ical_test extends \advanced_testcase {
         $this->assertSame($expected, $interleavedids);
         $this->assertSame($grouped, $interleaved, 'Interleaving the courses builds no modinfo twice in the feed\'s loop.');
     }
+
+    /**
+     * The feed's groups are the ones core's per-course loop keeps, for a learner and for a teacher who sees hidden groups.
+     *
+     * Three courses, each with a group of every visibility the user belongs to. Core's script merges
+     * groups_get_all_groups($courseid, $userid) over the enrolled courses: a learner loses the group whose visibility
+     * is none, a teacher (moodle/course:viewhiddengroups) keeps it. A group of a course the user is not enrolled in
+     * is left out by both. The batch must answer exactly that set.
+     *
+     * @return void
+     */
+    public function test_the_users_groups_are_the_ones_core_keeps(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $generator = self::getDataGenerator();
+        $learner = $generator->create_user();
+        $teacher = $generator->create_user();
+        $courses = [];
+        foreach ([1, 2, 3] as $i) {
+            $course = $generator->create_course();
+            $courses[(int) $course->id] = $course;
+            $generator->enrol_user($learner->id, $course->id, 'student');
+            $generator->enrol_user($teacher->id, $course->id, 'editingteacher');
+            foreach ([GROUPS_VISIBILITY_ALL, GROUPS_VISIBILITY_MEMBERS, GROUPS_VISIBILITY_OWN, GROUPS_VISIBILITY_NONE] as $v) {
+                $group = $generator->create_group(['courseid' => $course->id, 'visibility' => $v]);
+                $generator->create_group_member(['groupid' => $group->id, 'userid' => $learner->id]);
+                $generator->create_group_member(['groupid' => $group->id, 'userid' => $teacher->id]);
+            }
+        }
+        $elsewhere = $generator->create_course();
+        $foreign = $generator->create_group(['courseid' => $elsewhere->id]);
+        $generator->create_group_member(['groupid' => $foreign->id, 'userid' => $learner->id]);
+
+        foreach (['learner' => [$learner, 9], 'teacher' => [$teacher, 12]] as $who => [$user, $count]) {
+            $this->as_viewer($user);
+            $core = [];
+            foreach ($courses as $course) {
+                $core = array_merge($core, array_keys(groups_get_all_groups($course->id, $user->id)));
+            }
+            $core = array_map('intval', $core);
+            sort($core);
+            $this->assertCount($count, $core, "Precondition ($who): core's count.");
+            $this->assertSame($core, ical::user_group_ids((int) $user->id, array_keys($courses)), $who);
+        }
+    }
+
+    /**
+     * The feed reads the user's groups once, however many courses the user is enrolled in.
+     *
+     * A learner in three courses and in nine, a group in each, no event: the feed costs the same statements. Core's
+     * loop asked one statement a course. The control: the learner's group event is in the feed.
+     *
+     * @return void
+     */
+    public function test_the_feed_reads_the_users_groups_once(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $generator = self::getDataGenerator();
+        $reads = [];
+        foreach ([3, 9] as $n) {
+            $this->setAdminUser();
+            $user = $generator->create_user();
+            for ($i = 0; $i < $n; $i++) {
+                $course = $generator->create_course();
+                $generator->enrol_user($user->id, $course->id, 'student');
+                $group = $generator->create_group(['courseid' => $course->id]);
+                $generator->create_group_member(['groupid' => $group->id, 'userid' => $user->id]);
+            }
+            $event = (int) $generator->create_event([
+                'name' => 'Group meeting',
+                'eventtype' => 'group',
+                'courseid' => $course->id,
+                'groupid' => $group->id,
+                'timestart' => time() + DAYSECS,
+            ])->id;
+            $this->as_viewer($user);
+            $feed = (string) ical::feed($user, (int) $user->id, 'all', 'recentupcoming', 0);
+            $this->assertContains($event, self::feed_ids($feed), "Control ($n courses): the group's event is in the feed.");
+            $before = (int) $DB->perf_get_reads();
+            ical::feed($user, (int) $user->id, 'all', 'recentupcoming', 0);
+            $reads[$n] = (int) $DB->perf_get_reads() - $before;
+        }
+        $this->assertSame($reads[3], $reads[9], 'Nine courses read the groups as three do.');
+    }
+
+    /**
+     * The activity check reads the course rows in one statement, however many courses hold an activity event.
+     *
+     * Three courses and nine, each with a page and an event of it, modinfo's static cache cleared (its shared cache
+     * warm): the same statements. With a bare id, get_fast_modinfo() read each course row. The control: no event of
+     * a visible page is left out.
+     *
+     * @return void
+     */
+    public function test_the_activity_check_reads_the_course_rows_once(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $generator = self::getDataGenerator();
+        $user = $generator->create_user();
+        $events = [];
+        for ($i = 0; $i < 9; $i++) {
+            $course = $generator->create_course();
+            $generator->enrol_user($user->id, $course->id, 'student');
+            $page = $generator->create_module('page', ['course' => $course->id]);
+            $events[100 + $i] = (object) [
+                'id' => 100 + $i,
+                'courseid' => (int) $course->id,
+                'modulename' => 'page',
+                'instance' => (int) $page->id,
+            ];
+        }
+        $this->as_viewer($user);
+        // Twice: the first pass also loads contexts the access checks read once per request.
+        ical::hidden_activity_events($events, (int) $user->id);
+        \course_modinfo::clear_instance_cache();
+        ical::hidden_activity_events($events, (int) $user->id);
+
+        $reads = [];
+        foreach ([3, 9] as $n) {
+            \course_modinfo::clear_instance_cache();
+            $before = (int) $DB->perf_get_reads();
+            $hidden = ical::hidden_activity_events(array_slice($events, 0, $n, true), (int) $user->id);
+            $reads[$n] = (int) $DB->perf_get_reads() - $before;
+            $this->assertSame([], $hidden, "Control ($n courses): every page is visible.");
+        }
+        $this->assertSame($reads[3], $reads[9], 'Nine courses read their rows as three do.');
+    }
 }

@@ -48,9 +48,12 @@ use theme_dimensions\local\calendar\source\core_events;
  * - an empty `preset_what` or `preset_time`, on which core's script ends in a TypeError (its period and its sets are
  *   never assigned), is sent to the export page, as an unknown one is;
  * - an activity's event is checked against modinfo built once per course before the loop ({@see hidden_activity_events()}),
- *   where core's script asks get_fast_modinfo() per event: the events come in date order across the courses and
- *   modinfo's static cache holds {@see \course_modinfo::MAX_CACHE_SIZE} courses, so past that core rebuilds a course's
- *   modinfo over and over. The same events are left out.
+ *   from course rows read in one statement, where core's script asks get_fast_modinfo() with a bare id per event: the
+ *   events come in date order across the courses and modinfo's static cache holds
+ *   {@see \course_modinfo::MAX_CACHE_SIZE} courses, so past that core rebuilds a course's modinfo over and over, a
+ *   course row read each time. The same events are left out;
+ * - the user's groups are read in one statement for every course ({@see user_group_ids()}), where core's script asks
+ *   groups_get_all_groups() once per enrolled course. The same groups are kept.
  *
  * The snapshot beside this file (ical.php.export_execute.upstream, {@see \theme_dimensions\local\upstream::FILES}) is
  * core's file as this copy was last read against it: upstream_test reddens the moment core changes it.
@@ -256,11 +259,7 @@ final class ical {
         // is initially set to the list of the user's courses.
         $paramcourses = $courses;
         if ($what == 'all' || $what == 'groups') {
-            $groups = [];
-            foreach ($courses as $course) {
-                $coursegroups = groups_get_all_groups($course->id, $user->id);
-                $groups = array_merge($groups, array_keys($coursegroups));
-            }
+            $groups = self::user_group_ids((int) $user->id, array_keys($courses));
             if (empty($groups)) {
                 $groups = false;
             }
@@ -407,6 +406,8 @@ final class ical {
      * @return array The keys of the events to leave out, as keys (values true).
      */
     public static function hidden_activity_events(array $events, int $userid): array {
+        global $DB;
+
         $bycourse = [];
         foreach ($events as $key => $event) {
             if (!empty($event->modulename)) {
@@ -414,8 +415,10 @@ final class ical {
             }
         }
         $hidden = [];
+        // Full rows, one statement: a bare id makes get_fast_modinfo() read the course row itself, course by course.
+        $records = $bycourse ? $DB->get_records_list('course', 'id', array_keys($bycourse)) : [];
         foreach ($bycourse as $courseid => $courseevents) {
-            $modinfo = get_fast_modinfo($courseid, $userid);
+            $modinfo = get_fast_modinfo($records[$courseid] ?? $courseid, $userid);
             foreach ($courseevents as $key => $event) {
                 $instances = $modinfo->get_instances_of($event->modulename);
                 if (empty($instances[$event->instance]->uservisible)) {
@@ -424,6 +427,52 @@ final class ical {
             }
         }
         return $hidden;
+    }
+
+    /**
+     * The ids of the groups a user belongs to in the given courses, as core's per-course groups_get_all_groups() keeps them.
+     *
+     * Core's script asks groups_get_all_groups($courseid, $userid) for each enrolled course. With a user id that
+     * query joins the user's memberships, so its visibility clause comes down to one rule: a group whose visibility
+     * is GROUPS_VISIBILITY_NONE is dropped unless the current user holds moodle/course:viewhiddengroups in its course.
+     * Here every membership is read in one statement and that rule is applied per row; the capability is asked only
+     * for such a group, once per course. {@see groups_get_all_groups()} is the rule to stay in step with.
+     *
+     * @param int $userid The feed's user.
+     * @param int[] $courseids The courses whose groups count.
+     * @return int[] The group ids, in id order.
+     */
+    public static function user_group_ids(int $userid, array $courseids): array {
+        global $DB;
+
+        $courseids = array_flip(array_map('intval', $courseids));
+        $rows = $DB->get_records_sql(
+            "SELECT g.id, g.courseid, g.visibility
+               FROM {groups} g
+               JOIN {groups_members} gm ON gm.groupid = g.id
+              WHERE gm.userid = :userid
+           ORDER BY g.id",
+            ['userid' => $userid]
+        );
+        $viewhidden = [];
+        $ids = [];
+        foreach ($rows as $row) {
+            $courseid = (int) $row->courseid;
+            if (!isset($courseids[$courseid])) {
+                continue;
+            }
+            if ((int) $row->visibility === GROUPS_VISIBILITY_NONE) {
+                $viewhidden[$courseid] ??= has_capability(
+                    'moodle/course:viewhiddengroups',
+                    \core\context\course::instance($courseid)
+                );
+                if (!$viewhidden[$courseid]) {
+                    continue;
+                }
+            }
+            $ids[] = (int) $row->id;
+        }
+        return $ids;
     }
 
     /**

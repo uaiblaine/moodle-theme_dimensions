@@ -24,6 +24,10 @@
 
 namespace theme_dimensions\local\calendar;
 
+use theme_dimensions\local\calendar\source\core_events;
+use theme_dimensions\local\calendar\source\event_courses;
+use theme_dimensions\local\category\classifier;
+
 /**
  * Which of core's calendar block calls the theme answers, and what it answers them with.
  *
@@ -39,9 +43,13 @@ namespace theme_dimensions\local\calendar;
  * 4. the viewer is a visitor or the guest ({@see coreview::account()});
  * 5. the calendar type is not the Gregorian, which the range refuses ({@see coreview::gregorian()}).
  *
- * What the theme answers is the range's alone ({@see range::answer()}), over the state the page reads for a bare
- * address ({@see state::saved()}, its category through {@see page::scope_for()}): nothing of core's data reaches the
- * theme's markup, so the blocks never show what the range drops.
+ * What the theme answers is the range's ({@see range::answer()}), over the state the page reads for a bare address
+ * ({@see state::saved()}, its category through {@see page::scope_for()}), so the blocks never show what the range
+ * drops. One exception, a measured one: the month block counts the month's core events from the events core already
+ * put in its context ({@see month_from_core()}), because block_calendar_month calls calendar_get_view() before the
+ * renderer is reached and the range would fetch the same events again, core's module callbacks included (the
+ * performance audit of 2026-11-20: the dashboard spent 54 % of its time in core's half and 27 % in the theme's). It
+ * applies the range's own rules to them, and only where core and the range ask the same question.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -230,10 +238,14 @@ final class blocks {
     /**
      * The month block's data: the month of now in the viewer's timezone, its grid and the range's answer for it.
      *
+     * With core's month context ({@see month_from_core()}) the answer holds the grid's days alone, which is all the
+     * block draws ({@see \theme_dimensions\output\calendar_block_month::body()}).
+     *
      * @param int $now The current time.
+     * @param mixed $corecontext The context block_calendar_month handed the renderer, or null.
      * @return array ['month', 'today', 'firstday', 'state', 'answer']
      */
-    public static function month(int $now): array {
+    public static function month(int $now, $corecontext = null): array {
         global $CFG;
         require_once($CFG->dirroot . '/calendar/lib.php');
         $firstday = (int) calendar_get_starting_weekday();
@@ -241,13 +253,128 @@ final class blocks {
         $month = substr($today, 0, 7);
         [$from, $to] = page::grid($month, $firstday);
         [$scope, $state] = self::scope();
+        $window = window::from_iso($from, $to);
+        $answer = null;
+        if ($corecontext !== null && self::reuses_core($state)) {
+            $answer = self::month_from_core($corecontext, $month, $window, $scope, $state->on());
+        }
         return [
             'month' => $month,
             'today' => $today,
             'firstday' => $firstday,
             'state' => $state,
-            'answer' => range::answer(window::from_iso($from, $to), $scope, $state->on(), $state->filters(), false),
+            'answer' => $answer ?? range::answer($window, $scope, $state->on(), $state->filters(), false),
         ];
+    }
+
+    /**
+     * Whether the block's state asks the question core's month block asked: no category, no course filter.
+     *
+     * Core's block lists the viewer's whole calendar (it never narrows, {@see scope()}); a state narrowed to a
+     * category, or filtering by a course fact or by action, asks for less, which core's events cannot answer. Keys
+     * switched off are fine: an event of such a key is dropped after it is classified.
+     *
+     * @param state $state The block's state.
+     * @return bool
+     */
+    public static function reuses_core(state $state): bool {
+        $plain = $state->to_array();
+        return (int) $plain['categoryid'] === 0 && !$plain['model'] && !$plain['modality']
+            && (string) $plain['city'] === '' && !$plain['actiononly'];
+    }
+
+    /**
+     * The grid's day counts, the month's core events taken from core's month context instead of fetched again.
+     *
+     * calendar_get_view() fetched them with the arguments and visibility closure {@see core_events::events()} uses
+     * (core_events_test compares the two), for the days of the month. So here: the context's events, once each by
+     * id, classified by {@see keys::classify_exported()}, those of a key that is off dropped and those of a category
+     * the range withholds dropped ({@see core_events::admitted_categories()}); the grid's days outside the month
+     * fetched by the range's own source; the course and open keys from {@see event_courses}, as range::answer()
+     * takes them; then counted by {@see range::days()}. Null when the context is not this month's days, one by one:
+     * the caller then asks the range.
+     *
+     * @param mixed $corecontext The context block_calendar_month handed the renderer.
+     * @param string $month The month, YYYY-MM.
+     * @param window $window The grid.
+     * @param scope $scope The viewer's calendar sets.
+     * @param string[] $on The keys that are on.
+     * @return array|null ['from', 'to', 'days' => range::days()'s answer], or null.
+     */
+    public static function month_from_core($corecontext, string $month, window $window, scope $scope, array $on): ?array {
+        $data = json_decode(json_encode($corecontext), true);
+        if (!is_array($data) || empty($data['weeks']) || !is_array($data['weeks'])) {
+            return null;
+        }
+        $timezone = \core_date::get_user_timezone_object();
+        $dates = [];
+        $events = [];
+        foreach ($data['weeks'] as $week) {
+            foreach ($week['days'] ?? [] as $day) {
+                $dates[] = (new \DateTimeImmutable('@' . (int) ($day['timestamp'] ?? 0)))->setTimezone($timezone)->format('Y-m-d');
+                foreach ($day['events'] ?? [] as $event) {
+                    $events[(int) $event['id']] = $event;
+                }
+            }
+        }
+        $first = $month . '-01';
+        $last = \DateTimeImmutable::createFromFormat('!Y-m-d', $first, $timezone)->format('Y-m-t');
+        $expected = [];
+        for ($day = $first; $day <= $last; $day = (new \DateTimeImmutable($day))->modify('+1 day')->format('Y-m-d')) {
+            $expected[] = $day;
+        }
+        if ($dates !== $expected || $window->from > $first || $window->to < $last) {
+            return null;
+        }
+
+        $items = [];
+        $categoryids = [];
+        foreach ($events as $id => $event) {
+            $key = keys::classify_exported($event);
+            if (!in_array($key, $on, true)) {
+                continue;
+            }
+            $categoryid = (int) ($event['categoryid'] ?? 0);
+            $items[core_events::SOURCE . ':' . $id] = [
+                'key' => $key,
+                'timestart' => (int) $event['timestart'],
+                'timeduration' => (int) $event['timeduration'],
+                'categoryid' => $categoryid,
+            ];
+            if ($categoryid) {
+                $categoryids[$categoryid] = true;
+            }
+        }
+        if ($categoryids) {
+            $listed = core_events::admitted_categories(\core_course_category::get_many(array_keys($categoryids)));
+            $items = array_filter(
+                $items,
+                static fn(array $item): bool => !$item['categoryid'] || isset($listed[$item['categoryid']])
+            );
+        }
+
+        $edges = [];
+        if ($window->from < $first) {
+            $edges[] = window::from_iso($window->from, (new \DateTimeImmutable($first))->modify('-1 day')->format('Y-m-d'));
+        }
+        if ($window->to > $last) {
+            $edges[] = window::from_iso((new \DateTimeImmutable($last))->modify('+1 day')->format('Y-m-d'), $window->to);
+        }
+        if (array_intersect(keys::CORE, $on)) {
+            foreach ($edges as $edge) {
+                foreach ((new core_events(false))->items($edge, $scope, $on) as $item) {
+                    $items[core_events::SOURCE . ':' . $item['id']] = $item;
+                }
+            }
+        }
+        if (array_intersect([keys::COURSE, keys::OPEN], $on)) {
+            $eventcourses = new event_courses(classifier::enrolments($scope->viewerid));
+            // Appended as range::answer() appends them: one course may give a course item and an open one.
+            foreach ($eventcourses->items($window, $scope, $on) as $item) {
+                $items[] = $item;
+            }
+        }
+        return ['from' => $window->from, 'to' => $window->to, 'days' => range::days($window, array_values($items))];
     }
 
     /**

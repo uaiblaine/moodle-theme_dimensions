@@ -131,6 +131,33 @@ final class keys {
     }
 
     /**
+     * The key of one of core's events as core's calendar_event_exporter exported it: {@see classify()} on its fields.
+     *
+     * Keep the two in step. An exported event names its module when it has a course module (modulename and
+     * instance), its component, its type and its course (the site's for a site event).
+     *
+     * @param array $event An exported event: modulename, instance, component, eventtype, course['id'].
+     * @return string One of the CORE keys.
+     */
+    public static function classify_exported(array $event): string {
+        if ((string) ($event['modulename'] ?? '') !== '' && (int) ($event['instance'] ?? 0) > 0) {
+            return self::ACTIVITY;
+        }
+        if ((string) ($event['component'] ?? '') !== '') {
+            return self::OTHER;
+        }
+        $type = (string) ($event['eventtype'] ?? '');
+        $courseid = (int) ($event['course']['id'] ?? 0);
+        if ($type === 'site' || ($courseid === (int) SITEID && $type === 'course')) {
+            return self::SITE;
+        }
+        if (in_array($type, [self::USER, self::GROUP, self::COURSE, self::CATEGORY], true)) {
+            return $type;
+        }
+        return self::OTHER;
+    }
+
+    /**
      * The key of one of core's events.
      *
      * @param event_interface $event The event, as api::get_events() returns it.
