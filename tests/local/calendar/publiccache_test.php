@@ -146,6 +146,8 @@ final class publiccache_test extends \advanced_testcase {
      * @return void
      */
     public function test_each_change_renews_the_halves_it_can_change(): void {
+        // The observers run after a commit; the rollback transaction PostgreSQL wraps a test in would hold them.
+        $this->preventResetByRollback();
         $this->seed();
         $generator = self::getDataGenerator();
         $adminid = (int) get_admin()->id;
@@ -186,6 +188,31 @@ final class publiccache_test extends \advanced_testcase {
             set_config(visitor::SETTING, '0', 'theme_dimensions');
             theme_dimensions_public_calendar_changed();
         }), 'A switch the visitor\'s answer goes through.');
+
+        $doomed = $generator->create_course();
+        $this->assertSame($courses, self::renewed_by(static fn() => delete_course($doomed, false)), 'A course deleted.');
+        $gone = \core_course_category::get((int) $generator->create_category()->id);
+        $this->assertSame($both, self::renewed_by(static fn() => $gone->delete_full(false)), 'A category deleted.');
+    }
+
+    /**
+     * A change written inside a transaction renews its half only once the transaction commits.
+     *
+     * A token minted before the commit would be read by a visitor who still sees the old rows, and that visitor's
+     * answer would be kept under the new token until the next renewal.
+     */
+    public function test_a_change_inside_a_transaction_renews_its_half_only_on_commit(): void {
+        global $DB;
+        $this->preventResetByRollback();
+        $this->seed();
+        $before = publiccache::token(publiccache::COURSES);
+
+        $transaction = $DB->start_delegated_transaction();
+        update_course((object) ['id' => $this->ids['course'], 'fullname' => 'Congresso Transacional']);
+        $this->assertSame($before, publiccache::token(publiccache::COURSES), 'Not while the change is uncommitted.');
+        $transaction->allow_commit();
+
+        $this->assertNotSame($before, publiccache::token(publiccache::COURSES), 'The commit renews it.');
     }
 
     /**

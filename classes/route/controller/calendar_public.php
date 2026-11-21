@@ -143,7 +143,9 @@ class calendar_public {
             force_current_language($previous);
         }
 
-        $response->getBody()->write(json_encode($answer, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        // Substituting bad UTF-8 keeps json_encode() from returning false, which would be an empty 200 kept as public.
+        $flags = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE;
+        $response->getBody()->write(json_encode($answer, $flags));
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
         // Core's setup sends `Vary: Accept-Language` on a site with several languages (setup_vary_headers(), a raw
         // header() call no PSR response can take back). This answer is the address's language whatever the browser

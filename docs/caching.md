@@ -142,12 +142,16 @@ and `/r.php/theme_dimensions/calendar/public/...` while Moodle's router is not c
 - A 200 is sent `Cache-Control: public, max-age=<browser>, s-maxage=<half's lifetime>`, where the browser
   lifetime is 60 seconds or the half's lifetime if shorter.
 - The **events** half (category events of public categories) lives for *Public calendar: how long a shared
-  cache may keep the events* (`theme_dimensions/calendarpubliceventslifetime`), one day by default.
+  cache may keep the events* (`theme_dimensions/calendarpubliceventslifetime`), one day by default. That
+  lifetime is also how long a category taken private, hidden or unlisted can still show its events from a copy
+  the edge holds under the old address (a new page asks the new one at once). Shorten the setting where a
+  category's privacy must reach the edge sooner.
 - The **courses** half (public event courses) lives for *... the courses*
   (`theme_dimensions/calendarpubliccourseslifetime`), five minutes by default. It is short on purpose: a
   course published by mistake and taken back must disappear from the internet quickly.
 - The token is the half's revision. It changes whenever an event, a course or a category that half shows
-  changes (and every hour for courses, every day for events, for writes that no event announces). The page
+  changes (and every hour for courses, every day for events, for writes that no event announces, and for a
+  category event whose type is changed to another kind: core reports that change under the new kind only). The page
   reads the current token on every load, so **a page loaded after a change never asks for an old answer**,
   and no CDN purge is needed. Only a tab opened before the change, or the edge's copy under the old address,
   can still show the old answer, for at most the half's lifetime.

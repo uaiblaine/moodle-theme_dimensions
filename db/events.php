@@ -96,48 +96,61 @@ $observers = [
     // The public calendar's halves are kept under a revision token each (local\calendar\publiccache): every change a
     // half can show mints a new token. A category event is the events' half; a course or its discoverability state
     // the courses' half; a category (its name, visibility, place, state or deletion) both, which both name categories.
+    // Each runs after the write commits (internal false): run inside an open transaction, a new token would be minted
+    // before the change is visible, and a visitor asking in between would keep the old answer under the new token.
     [
         'eventname' => '\\core\\event\\calendar_event_created',
         'callback' => '\\theme_dimensions\\local\\calendar\\publiccache::calendar_event_changed',
+        'internal' => false,
     ],
     [
         'eventname' => '\\core\\event\\calendar_event_updated',
         'callback' => '\\theme_dimensions\\local\\calendar\\publiccache::calendar_event_changed',
+        'internal' => false,
     ],
     [
         'eventname' => '\\core\\event\\calendar_event_deleted',
         'callback' => '\\theme_dimensions\\local\\calendar\\publiccache::calendar_event_changed',
+        'internal' => false,
     ],
     [
         'eventname' => '\\core\\event\\course_created',
         'callback' => '\\theme_dimensions\\local\\calendar\\publiccache::course_changed',
+        'internal' => false,
     ],
     [
         'eventname' => '\\core\\event\\course_updated',
         'callback' => '\\theme_dimensions\\local\\calendar\\publiccache::course_changed',
+        'internal' => false,
     ],
     [
         'eventname' => '\\core\\event\\course_deleted',
         'callback' => '\\theme_dimensions\\local\\calendar\\publiccache::course_changed',
+        'internal' => false,
     ],
     [
         'eventname' => '\\core\\event\\course_restored',
         'callback' => '\\theme_dimensions\\local\\calendar\\publiccache::course_changed',
+        'internal' => false,
     ],
     [
         'eventname' => '\\local_unlistedcourses\\event\\course_state_updated',
         'callback' => '\\theme_dimensions\\local\\calendar\\publiccache::course_changed',
+        'internal' => false,
     ],
     [
         'eventname' => '\\core\\event\\course_category_updated',
         'callback' => '\\theme_dimensions\\local\\calendar\\publiccache::category_changed',
+        'internal' => false,
     ],
     [
         'eventname' => '\\core\\event\\course_category_deleted',
         'callback' => '\\theme_dimensions\\local\\calendar\\publiccache::category_changed',
+        'internal' => false,
     ],
     [
         'eventname' => '\\local_unlistedcourses\\event\\category_state_updated',
         'callback' => '\\theme_dimensions\\local\\calendar\\publiccache::category_changed',
+        'internal' => false,
     ],
 ];
