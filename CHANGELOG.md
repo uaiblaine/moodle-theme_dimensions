@@ -5,6 +5,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The public calendar can be served from a CDN** (2026100637). A visitor's calendar now reads each half of what it
+  shows (the public categories' events, the public event courses) from its own address,
+  `/theme_dimensions/calendar/public/{events|courses}/{token}/{lang}/{from}/{to}`: a GET that reads no session, sets no
+  cookie and answers `Cache-Control: public` with an `s-maxage` per half, a day for the events and five minutes for the
+  courses by default (two new settings on the Calendar tab). Each half is kept in the new shared cache
+  `publiccalendar`, so a miss at the CDN costs one cache read instead of about thirteen statements. The token in the
+  address is renewed whenever an event, a course, a category or a discoverability state the half shows changes (and
+  every hour for courses, every day for events, for writes no event announces), so a page loaded after a change never
+  asks for an old answer and no CDN needs purging. **Removed:** the web service
+  `theme_dimensions_get_public_calendar_range`, which this address replaces. See `docs/caching.md` for CDN rules.
 - **The dashboard's month block no longer fetches the month's events twice.** core's block_calendar_month builds the
   month before the theme draws it; the theme now counts the month's core events from that work, applying its own rules
   to it (withheld categories, keys switched off), and fetches only the days of the neighbouring months the grid shows.

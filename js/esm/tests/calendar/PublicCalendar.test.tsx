@@ -16,20 +16,17 @@
 /**
  * Tests for the public calendar's client, the visitor's shell.
  *
- * Rendered inside a page like calendar_page.mustache's visitor mode; the visitor's service is core/ajax's fetchOne,
- * mocked. What is read: the first paint, the two event types, the one service asked without a login and with the page's
- * language, the latest answer winning, a failure loading the address, and the popover's text and way in.
+ * Rendered inside a page like calendar_page.mustache's visitor mode; the visitor's two halves are plain GETs, the global
+ * fetch mocked. What is read: the first paint, the two event types, only the halves whose key is on asked without a
+ * cookie, the latest answer winning, a failure loading the address, and the popover's text and way in.
  *
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 import {act, fireEvent, render, waitFor} from '@testing-library/react';
-import {fetchOne} from '@moodle/lms/core/ajax';
-import Config from '@moodle/lms/core/config';
 import {redirect} from '@moodle/lms/core/location';
 import PublicCalendar, {
-    METHOD,
     publicAddress,
     readPublicAddress,
 } from '../../src/calendar/PublicCalendar';
@@ -37,14 +34,41 @@ import type {PublicAnswer, PublicProps} from '../../src/calendar/PublicCalendar'
 import type {Course, Item} from '../../src/calendar/model';
 import {STRINGS, answer, at, item} from './fixture';
 
-jest.mock('@moodle/lms/core/ajax', () => ({fetchOne: jest.fn()}));
 jest.mock('@moodle/lms/core/location', () => ({redirect: jest.fn()}));
 
-const fetched = fetchOne as jest.Mock;
+const fetched = jest.fn();
 const redirected = redirect as jest.Mock;
 
 /** The page's address without a query. */
 const PAGE = 'http://localhost/r.php/theme_dimensions/calendar';
+
+/** The halves' address prefixes, as calendar_page::props() hands them. */
+const EVENTS = 'http://localhost/r.php/theme_dimensions/calendar/public/events/t1/pt_br';
+const COURSES = 'http://localhost/r.php/theme_dimensions/calendar/public/courses/t2/pt_br';
+
+/**
+ * A response of the public route.
+ *
+ * @param {object} body The half.
+ * @param {number} status The status.
+ * @returns {object} What fetch resolves with.
+ */
+const respond = (body: unknown, status = 200): Response => ({
+    ok: status >= 200 && status < 300,
+    status: status,
+    json: () => Promise.resolve(body),
+} as unknown as Response);
+
+/**
+ * The window an address asks for: its last two segments.
+ *
+ * @param {string} url The address.
+ * @returns {object} {from, to}.
+ */
+const windowOf = (url: string): {from: string, to: string} => {
+    const parts = url.split('/');
+    return {from: parts[parts.length - 2], to: parts[parts.length - 1]};
+};
 
 /**
  * An answer of the visitor's shape.
@@ -101,7 +125,7 @@ const props = (given: PublicAnswer = publicAnswer(), more: Partial<PublicProps> 
     answer: given,
     keys: ['category', 'open'],
     modalities: [],
-    urls: {page: PAGE, home: 'http://localhost/'},
+    urls: {page: PAGE, home: 'http://localhost/', events: EVENTS, courses: COURSES},
     ...more,
 });
 
@@ -129,10 +153,16 @@ const mount = async(given: PublicProps): Promise<HTMLElement> => {
 /**
  * The requests made, with their options.
  *
- * @returns {Array} [request, options] pairs.
+ * @returns {Array} [address, options] pairs.
  */
-const calls = (): Array<[{methodname: string, args: Record<string, unknown>}, Record<string, unknown> | undefined]> =>
-    fetched.mock.calls as Array<[{methodname: string, args: Record<string, unknown>}, Record<string, unknown> | undefined]>;
+const calls = (): Array<[string, RequestInit]> => fetched.mock.calls as Array<[string, RequestInit]>;
+
+/**
+ * The addresses asked, in order.
+ *
+ * @returns {Array} The addresses.
+ */
+const urls = (): string[] => calls().map(([url]) => url);
 
 /**
  * An item of the grid by its source and id.
@@ -159,17 +189,20 @@ const fair = (): Item => item({id: 5, key: 'category', eventtype: 'category', ca
 
 beforeEach(() => {
     document.documentElement.lang = 'en';
-    Config.language = 'pt_br';
     Object.entries(STRINGS).forEach(([key, value]) => mockString(key, 'theme_dimensions', value));
     fetched.mockReset();
-    fetched.mockImplementation(({args}: {args: {from: string, to: string}}) =>
-        Promise.resolve({...answer([], args.from, args.to), descriptions: []}));
+    fetched.mockImplementation((url: string) => {
+        const {from, to} = windowOf(url);
+        return Promise.resolve(respond({...answer([], from, to), descriptions: []}));
+    });
+    (global as unknown as {fetch: unknown}).fetch = fetched;
     window.history.replaceState({}, '', '/r.php/theme_dimensions/calendar');
     redirected.mockReset();
 });
 
 afterEach(() => {
     document.body.replaceChildren();
+    delete (global as unknown as {fetch?: unknown}).fetch;
 });
 
 describe('the first paint', () => {
@@ -202,8 +235,8 @@ describe('the first paint', () => {
     });
 });
 
-describe('the service', () => {
-    it('a chip off asks the visitor\'s service without a login, with the page\'s language, and replaces the address', async() => {
+describe('the halves', () => {
+    it('a chip off asks the other half alone, a plain GET with no cookie, and replaces the address', async() => {
         const replace = jest.spyOn(window.history, 'replaceState');
         await mount(props());
         await act(async() => {
@@ -211,22 +244,68 @@ describe('the service', () => {
         });
         expect(document.querySelector('[data-action="dim-cal-types"]')?.textContent).toBe('Event types1 of 2');
         expect(calls()).toHaveLength(1);
-        const [request, options] = calls()[0];
-        expect(request.methodname).toBe(METHOD);
-        expect(request.args).toEqual({from: '2026-11-01', to: '2026-12-05', keys: ['open'], lang: 'pt_br'});
-        expect(options).toEqual({loginrequired: false});
-        expect(replace.mock.calls.some(([, , url]) => String(url).includes('keys%5B%5D=open'))).toBe(true);
+        const [url, options] = calls()[0];
+        expect(url).toBe(`${COURSES}/2026-11-01/2026-12-05`);
+        expect(options).toEqual({credentials: 'omit', headers: {Accept: 'application/json'}});
+        expect(replace.mock.calls.some(([, , address]) => String(address).includes('keys%5B%5D=open'))).toBe(true);
         replace.mockRestore();
     });
 
-    it('"Clear filters" turns both keys back on in one request, and is gone', async() => {
+    it('both keys on ask both halves at once, and show their merge once both have answered', async() => {
+        const congress = item({id: 12, source: 'course', key: 'open', courseid: 12, name: 'Congress 12', eventtype: '',
+            url: course(12).landingurl, timestart: at('2026-12-01'), timeduration: 86400});
+        const fairdec = item({id: 5, key: 'category', eventtype: 'category', categoryid: 3, name: 'Fair',
+            timestart: at('2026-12-10', 9)});
+        let release: () => void = () => undefined;
+        const gate = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        fetched.mockImplementation(async(url: string) => {
+            const {from, to} = windowOf(url);
+            await gate;
+            return url.startsWith(EVENTS)
+                ? respond({...answer([fairdec], from, to), descriptions: [{id: 5, text: 'Bring a pen'}]})
+                : respond({...answer([congress], from, to), courses: [course(12)], descriptions: []});
+        });
+        await mount(props());
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-action="dim-cal-next"]') as HTMLElement);
+        });
+        // Both asked before either answered.
+        expect(urls()).toEqual([`${EVENTS}/2026-11-29/2027-01-02`, `${COURSES}/2026-11-29/2027-01-02`]);
+        await act(async() => {
+            release();
+        });
+        await waitFor(() => expect(gridItem(5)).not.toBeNull());
+        expect(gridItem(12, 'course')).not.toBeNull();
+        await act(async() => {
+            fireEvent.click(gridItem(5));
+        });
+        expect(popover()?.querySelector('[data-region="dim-cal-description"]')?.textContent).toBe('Bring a pen');
+    });
+
+    it('one half refused fails the whole request: the address is loaded, nothing half drawn', async() => {
+        fetched.mockImplementation((url: string) => {
+            const {from, to} = windowOf(url);
+            return Promise.resolve(url.startsWith(COURSES)
+                ? respond({}, 500)
+                : respond({...answer([], from, to), descriptions: []}));
+        });
+        await mount(props());
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-action="dim-cal-next"]') as HTMLElement);
+        });
+        await waitFor(() => expect(redirected).toHaveBeenCalledTimes(1));
+        expect(String(redirected.mock.calls[0][0])).toBe(`${PAGE}?month=2026-12`);
+    });
+
+    it('"Clear filters" turns both keys back on, asking both halves, and is gone', async() => {
         await mount(props(publicAnswer(), {keys: ['open']}));
         const clear = document.querySelector<HTMLElement>('[data-action="dim-cal-clear"]') as HTMLElement;
         await act(async() => {
             fireEvent.click(clear);
         });
-        expect(calls()).toHaveLength(1);
-        expect(calls()[0][0].args.keys).toEqual(['category', 'open']);
+        expect(urls()).toEqual([`${EVENTS}/2026-11-01/2026-12-05`, `${COURSES}/2026-11-01/2026-12-05`]);
         expect(document.querySelector('[data-action="dim-cal-clear"]')).toBeNull();
         expect(document.activeElement).toBe(document.querySelector('[data-action="dim-cal-types"]'));
     });
@@ -244,8 +323,7 @@ describe('the service', () => {
         await act(async() => {
             fireEvent.click(document.querySelector('[data-action="dim-cal-next"]') as HTMLElement);
         });
-        expect(calls().map(([request]) => request.args.keys)).toEqual([['category'], ['category']]);
-        expect(calls()[1][0].args.from).toBe('2026-11-29');
+        expect(urls()).toEqual([`${EVENTS}/2026-11-01/2026-12-05`, `${EVENTS}/2026-11-29/2027-01-02`]);
         expect(push.mock.calls.some(([, , url]) => String(url).includes('month=2026-12'))).toBe(true);
         push.mockRestore();
     });
@@ -253,7 +331,7 @@ describe('the service', () => {
     it('the latest request wins', async() => {
         let release: (value: PublicAnswer) => void = () => undefined;
         fetched.mockImplementationOnce(() => new Promise((resolve) => {
-            release = resolve;
+            release = (value) => resolve(respond(value));
         }));
         await mount(props());
         await act(async() => {
@@ -267,6 +345,17 @@ describe('the service', () => {
             release(publicAnswer([item({id: 9, name: 'Stale', key: 'category', timestart: at('2026-12-10', 9)})]));
         });
         expect(document.body.textContent).not.toContain('Stale');
+    });
+
+    it('a refusal of the route loads the address of what was asked for, which the server draws', async() => {
+        fetched.mockImplementationOnce(() => Promise.resolve(respond({error: 'Refused'}, 404)));
+        await mount(props());
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-action="dim-cal-next"]') as HTMLElement);
+        });
+        await waitFor(() => expect(redirected).toHaveBeenCalledTimes(1));
+        expect(String(redirected.mock.calls[0][0])).toBe(`${PAGE}?month=2026-12`);
+        expect(document.body.textContent).not.toContain('Refused');
     });
 
     it('a failure loads the address of what was asked for, which the server draws', async() => {
@@ -352,7 +441,7 @@ describe('the visitor edits nothing (C5)', () => {
     it('draws no "New event", no Edit or Delete and no drag, whatever an answer would list', async() => {
         const events = [item({id: 4, name: 'Fair', key: 'category', timestart: at('2026-11-17', 9)})];
         const editing = [{id: 4, edit: true, delete: true, drag: true, count: 1, minday: '', maxday: '', minerror: '', maxerror: ''}];
-        fetched.mockImplementation(() => Promise.resolve(publicAnswer()));
+        fetched.mockImplementation(() => Promise.resolve(respond(publicAnswer())));
         const page = await mount(props(publicAnswer(events, {editing: editing}), {day: '2026-11-17'}));
         const element = page.querySelector<HTMLElement>('[data-region="dim-cal-grid"] [data-cal-pop][data-id="4"]') as HTMLElement;
         expect(element).not.toBeNull();
@@ -420,17 +509,19 @@ describe('the Day view, a phone\'s (R1d)', () => {
         });
     };
 
-    it('offers Day on a phone, asks the visitor\'s service for that day alone and draws it', async() => {
+    it('offers Day on a phone, asks the visitor\'s halves for that day alone and draws it', async() => {
         await mount(props(publicAnswer([fair()])));
         await measure(900);
         expect(document.querySelector('[data-action="dim-cal-view-day"]')).toBeNull();
         await measure(400);
-        fetched.mockImplementation(({args}: {args: {from: string, to: string}}) =>
-            Promise.resolve({...answer([fair()], args.from, args.to), descriptions: []}));
+        fetched.mockImplementation((url: string) => {
+            const {from, to} = windowOf(url);
+            return Promise.resolve(respond({...answer(url.startsWith(EVENTS) ? [fair()] : [], from, to), descriptions: []}));
+        });
         await act(async() => {
             fireEvent.click(document.querySelector('[data-action="dim-cal-view-day"]') as HTMLElement);
         });
-        expect(calls().map(([request]) => [request.args.from, request.args.to])).toEqual([['2026-11-17', '2026-11-17']]);
+        expect(urls()).toEqual([`${EVENTS}/2026-11-17/2026-11-17`, `${COURSES}/2026-11-17/2026-11-17`]);
         expect(window.location.search).toBe('?view=day&day=2026-11-17');
         await act(async() => {
             fireEvent.click(document.querySelector('[data-action="dim-cal-prev"]') as HTMLElement);
@@ -447,7 +538,7 @@ describe('the Day view, a phone\'s (R1d)', () => {
         expect(document.querySelector('[data-region="dim-cal-dayview"]')).toBeNull();
         const drawer = document.querySelector('[data-region="dim-cal-day"]') as HTMLElement;
         expect([drawer.dataset.day, drawer.classList.contains('dim-cal__drawer--drawer')]).toEqual(['2026-11-10', true]);
-        expect(calls().map(([request]) => [request.args.from, request.args.to])).toEqual([['2026-11-01', '2026-12-05']]);
+        expect(urls()).toEqual([`${EVENTS}/2026-11-01/2026-12-05`, `${COURSES}/2026-11-01/2026-12-05`]);
         expect(window.location.search).toBe('?month=2026-11&day=2026-11-10');
     });
 });
@@ -553,7 +644,7 @@ describe('the first paint, guessed by a media query (R1d)', () => {
      *
      * @returns {Array} Their [from, to].
      */
-    const asks = (): string[][] => calls().map(([request]) => [request.args.from, request.args.to]);
+    const asks = (): string[][] => urls().map((url) => [windowOf(url).from, windowOf(url).to]);
 
     it('draws the phone layout and offers Day before any observer entry when the query matches', async() => {
         media(true);

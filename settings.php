@@ -584,6 +584,7 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $title = get_string('categorypageenabled', 'theme_dimensions', null, true);
         $description = get_string('categorypageenabled_desc', 'theme_dimensions', null, true);
         $setting = new admin_setting_configselect($name, $title, $description, yesno::YES, $yesnooption);
+        $setting->set_updatedcallback('theme_dimensions_public_calendar_changed');
         $tab->add($setting);
 
         // Setting: The anonymous shell. Default-on; only a stored 0 switches it off, and
@@ -593,6 +594,7 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $title = get_string('categorypublicenabled', 'theme_dimensions', null, true);
         $description = get_string('categorypublicenabled_desc', 'theme_dimensions', null, true);
         $setting = new admin_setting_configselect($name, $title, $description, yesno::YES, $yesnooption);
+        $setting->set_updatedcallback('theme_dimensions_public_calendar_changed');
         $tab->add($setting);
 
         /* Setting: the root of the course index on the internet. Read the opposite way round from
@@ -752,7 +754,22 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $title = get_string('calendarpublic', 'theme_dimensions', null, true);
         $description = get_string('calendarpublic_desc', 'theme_dimensions', null, true);
         $setting = new admin_setting_configcheckbox($name, $title, $description, 0);
+        $setting->set_updatedcallback('theme_dimensions_public_calendar_changed');
         $tab->add($setting);
+
+        // Settings: How long a CDN or a proxy may keep each half of the public calendar (s-maxage), a day for the
+        // events and five minutes for the courses by default ({@see publiccache::lifetime()}). Only the headers read
+        // them, so a change needs no callback: the next answer carries the new value.
+        $name = 'theme_dimensions/' . \theme_dimensions\local\calendar\publiccache::SETTING_LIFETIME['events'];
+        $title = get_string('calendarpubliceventslifetime', 'theme_dimensions', null, true);
+        $description = get_string('calendarpubliceventslifetime_desc', 'theme_dimensions', null, true);
+        $default = \theme_dimensions\local\calendar\publiccache::DEFAULT_LIFETIME['events'];
+        $tab->add(new admin_setting_configduration($name, $title, $description, $default, MINSECS));
+        $name = 'theme_dimensions/' . \theme_dimensions\local\calendar\publiccache::SETTING_LIFETIME['courses'];
+        $title = get_string('calendarpubliccourseslifetime', 'theme_dimensions', null, true);
+        $description = get_string('calendarpubliccourseslifetime_desc', 'theme_dimensions', null, true);
+        $default = \theme_dimensions\local\calendar\publiccache::DEFAULT_LIFETIME['courses'];
+        $tab->add(new admin_setting_configduration($name, $title, $description, $default, MINSECS));
 
         // Setting: The event types' colours, one hexadecimal picker per key,
         // each defaulting to its key's own edge, so an untouched site keeps the stylesheet's colours: keycolours hands

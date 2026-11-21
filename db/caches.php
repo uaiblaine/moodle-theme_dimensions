@@ -89,4 +89,19 @@ $definitions = [
         'staticacceleration' => true,
         'staticaccelerationsize' => 1,
     ],
+    // The public calendar's two halves (local\calendar\publiccache::half()): what a visitor is shown, the same for
+    // everybody, keyed by the half, its token, the language and the window. A bump of a token makes the entries under
+    // the old one unreachable and purges them.
+    'publiccalendar' => [
+        'mode' => \core_cache\store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => false,
+    ],
+    // The public calendar's revision tokens, one per half (local\calendar\publiccache::token()): shared by every node,
+    // so a change observed on one is the token every node hands its next page.
+    'publiccalendarrev' => [
+        'mode' => \core_cache\store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => false,
+    ],
 ];

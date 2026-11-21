@@ -29,6 +29,7 @@ use core\router\route_loader_interface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Psr\Http\Message\ResponseInterface;
 use theme_dimensions\local\calendar\page;
+use theme_dimensions\local\calendar\publiccache;
 use theme_dimensions\local\calendar\state;
 use theme_dimensions\output\calendar_page;
 
@@ -171,6 +172,13 @@ final class calendar_test extends \core\tests\router\route_testcase {
         $this->assertSame(['open'], $props['keys']);
         $this->assertSame('2026-11', $props['month']);
         $this->assertFalse(isloggedin());
+        // Each half's address under its current token, which the client completes with the window.
+        foreach (publiccache::HALVES as $half) {
+            $this->assertSame(
+                calendar_public::prefix($half, publiccache::token($half), current_language()),
+                $props['urls'][$half]
+            );
+        }
     }
 
     /**

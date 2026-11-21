@@ -22,13 +22,16 @@
  * Mounted by core's react_autoinit on the node calendar_page.mustache draws in its visitor mode; the props carry the
  * first answer, so the first paint asks for nothing.
  *
- * - One service, {@see METHOD}, answered without a session: one call site ({@see ask()}), posted with login not
- *   required and no cachekey (a cachekey would turn it into a GET answered with ninety days of public caching), with
- *   the page's language.
+ * - Two public addresses, one per half of the answer (calendar/publichalves.ts): the events' (the key "category") and
+ *   the courses' (the key "open"), each a plain GET of the prefix the props carry completed with the span's first and
+ *   last day ({@see askHalves()}, the one call site). Only the halves whose key is on are asked, both at once; none
+ *   on asks nothing. No cookie is sent (`credentials: 'omit'`): the route reads none, the answer is the same for
+ *   everybody, and a request carrying one is one a CDN may refuse to keep. The language is in the prefix.
+ * - Two halves are merged as the server merges them.
  * - The latest request wins: a ticket is taken per request and checked after the await. A Pending token
  *   (theme_dimensions/calendar:range) spans the request to the painted grid.
- * - The month view and the week view as on the logged-in page: what is shown is a span with its answer, one call of
- *   the service either way (calendar/weeks.ts); on a phone the Day view too (DayView.tsx), a day span on a desktop
+ * - The month view and the week view as on the logged-in page: what is shown is a span with its answer, one GET per
+ *   half on either way (calendar/weeks.ts); on a phone the Day view too (DayView.tsx), a day span on a desktop
  *   asked for and drawn as its month with the day's drawer open, as on the logged-in page.
  * - The address has one writer (calendar/history.ts): a month or a week moved and a view switched push an entry, a
  *   key toggled and the open day replace it; Back and Forward read the address again.
@@ -46,8 +49,6 @@
 
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import type {KeyboardEvent, MouseEvent, ReactNode} from 'react';
-import {fetchOne} from '@moodle/lms/core/ajax';
-import Config from '@moodle/lms/core/config';
 import {redirect} from '@moodle/lms/core/location';
 import Pending from '@moodle/lms/core/pending';
 import {parse} from '../daterange/calendar';
@@ -60,9 +61,11 @@ import {writeAddress} from './history';
 import {dayDots, place} from './layout';
 import type {Look} from './look';
 import {DAY_PARAM, emptyAnswer, isMonth, withDay} from './model';
-import type {Answer, Key, Option} from './model';
+import type {Key, Option} from './model';
 import MonthGrid, {PHONE, guessPhone} from './MonthGrid';
 import {itemKey, overlapsOf} from './overlap';
+import {halfUrl, halvesOn, merge} from './publichalves';
+import type {Half, PublicAnswer} from './publichalves';
 import {load as loadStrings} from './strings';
 import type {Strings} from './strings';
 import ViewSwitch from './ViewSwitch';
@@ -85,9 +88,6 @@ import {
 } from './weeks';
 import type {Span, View} from './weeks';
 
-/** The one web service the visitor's calendar calls, answered without a session. */
-export const METHOD = 'theme_dimensions_get_public_calendar_range';
-
 /** The keys a visitor's calendar carries, in the order the event types' dropdown lists them (local\calendar\visitor::KEYS). */
 export const VISITOR_KEYS: readonly Key[] = ['category', 'open'];
 
@@ -97,8 +97,7 @@ const KEYS_PARAM = 'keys[]';
 /** The id of the month's caption, which labels the grid. */
 const CAPTION = 'dim-cal-caption';
 
-/** The visitor's answer: the logged-in answer's shape, and the category events' descriptions as text. */
-export type PublicAnswer = Answer & {descriptions: Array<{id: number, text: string}>};
+export type {PublicAnswer} from './publichalves';
 
 /** The page's props, as calendar_page::props() builds them in its visitor mode. */
 export type PublicProps = {
@@ -114,7 +113,7 @@ export type PublicProps = {
     keys: Key[],
     modalities: Option[],
     models?: Option[],
-    urls: {page: string, home: string},
+    urls: {page: string, home: string, events: string, courses: string},
 };
 
 /** What the page shows: a month, a week or a day and its answer, always together. */
@@ -174,33 +173,35 @@ export const readPublicAddress = (href: string): {month: string | null, on: Key[
 };
 
 /**
- * The service's arguments for a window and the keys on; called only with a key on (the service reads none as both).
+ * Fetch one half: a plain GET with no cookie. Anything but a 2xx is a failure.
  *
- * @param {string} from The first day.
- * @param {string} to The last day.
- * @param {Array} on The keys on.
- * @returns {object} The arguments, with the page's language.
+ * @param {string} url The half's address for the span.
+ * @returns {Promise} The half.
  */
-export const publicArgs = (from: string, to: string, on: readonly Key[]): Record<string, unknown> => ({
-    from: from,
-    to: to,
-    keys: visitorKeys(on),
-    lang: Config.language,
-});
+const fetchHalf = async(url: string): Promise<PublicAnswer> => {
+    const response = await fetch(url, {credentials: 'omit', headers: {Accept: 'application/json'}});
+    if (!response.ok) {
+        throw new Error(`${response.status}`);
+    }
+    return await response.json() as PublicAnswer;
+};
 
 /**
- * Ask the visitor's web service one question: the one call site of this shell. Login not required, which posts to
- * service-nologin.php; no cachekey.
+ * Ask the halves of the keys on for a window, in parallel, and merge them: the one call site of this shell. Called
+ * only with a key on.
  *
- * @param {object} args The service's arguments.
- * @returns {Promise} The answer.
+ * @param {object} urls The halves' address prefixes (the props' urls.events and urls.courses).
+ * @param {Array} halves The halves to ask (publichalves.ts halvesOn()).
+ * @param {string} from The first day.
+ * @param {string} to The last day.
+ * @returns {Promise} The merged answer.
  */
-export const ask = (args: Record<string, unknown>): Promise<PublicAnswer> => {
-    return fetchOne<PublicAnswer>({
-        methodname: METHOD,
-        args: args,
-    }, {loginrequired: false});
-};
+export const askHalves = async(
+    urls: Record<Half, string>,
+    halves: readonly Half[],
+    from: string,
+    to: string
+): Promise<PublicAnswer> => merge(await Promise.all(halves.map((half) => fetchHalf(halfUrl(urls[half], from, to)))));
 
 /**
  * The answer with every key off: no item, every day at zero, no description. Nothing is asked of the server.
@@ -369,9 +370,10 @@ const PublicCalendar = (props: PublicProps) => {
             writeAddress(target, write === 'push');
         }
         const pending = new Pending('theme_dimensions/calendar:range');
+        const halves = halvesOn(keys);
         try {
-            const answer = keys.length
-                ? await ask(publicArgs(days[0], days[days.length - 1], keys))
+            const answer = halves.length
+                ? await askHalves(props.urls, halves, days[0], days[days.length - 1])
                 : emptyPublicAnswer(days);
             if (seq !== ticket.current) {
                 pending.resolve();

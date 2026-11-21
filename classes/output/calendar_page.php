@@ -33,6 +33,7 @@ use theme_dimensions\local\calendar\source\event_courses;
 use theme_dimensions\local\calendar\keys;
 use theme_dimensions\local\calendar\page;
 use theme_dimensions\local\calendar\range;
+use theme_dimensions\local\calendar\publiccache;
 use theme_dimensions\local\calendar\state;
 use theme_dimensions\local\calendar\visitor;
 use theme_dimensions\local\calendar\window;
@@ -40,6 +41,7 @@ use theme_dimensions\local\card\boost_union;
 use theme_dimensions\local\landingfields;
 use theme_dimensions\local\trail\progress;
 use theme_dimensions\local\trail\trail;
+use theme_dimensions\route\controller\calendar_public;
 
 /**
  * The calendar page as theme_dimensions/calendar_page draws it.
@@ -425,6 +427,17 @@ class calendar_page implements renderable, templatable {
                 'urls' => [
                     'page' => page::url()->out(false),
                     'home' => (new \core\url('/'))->out(false),
+                    // Each half's address under its current token, completed by the client with /{from}/{to}.
+                    'events' => calendar_public::prefix(
+                        publiccache::EVENTS,
+                        publiccache::token(publiccache::EVENTS),
+                        current_language()
+                    ),
+                    'courses' => calendar_public::prefix(
+                        publiccache::COURSES,
+                        publiccache::token(publiccache::COURSES),
+                        current_language()
+                    ),
                 ],
             ];
         }

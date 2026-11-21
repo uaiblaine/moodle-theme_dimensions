@@ -129,8 +129,8 @@ final class categorypublic_source_test extends \basic_testcase {
     /** @var string The public calendar's entry: the component its page mounts for a visitor. */
     private const CALENDAR = self::ESM . 'calendar/PublicCalendar';
 
-    /** @var string The one service the public calendar may call. */
-    private const CALENDAR_METHOD = 'theme_dimensions_get_public_calendar_range';
+    /** @var string The public calendar's halves: the halves asked for the keys on, their addresses and their merge. */
+    private const CALENDAR_HALVES = self::ESM . 'calendar/publichalves';
 
     /** @var string[] The logged-in calendar's modules, which nothing the public calendar loads may load. */
     private const CALENDAR_FORBIDDEN_MODULES = [
@@ -1350,32 +1350,75 @@ final class categorypublic_source_test extends \basic_testcase {
     }
 
     /**
-     * The public calendar calls its own service and no other, posted with login not required and no cachekey.
+     * The public calendar asks its two public addresses and nothing else: a plain GET per half whose key is on, with no
+     * cookie, and no web service anywhere in its graph.
      *
-     * Changes that must make it fail: the service named otherwise; login required; a cachekey passed; a second
-     * call site.
+     * Changes that must make it fail: a cookie sent (the route reads none, and a CDN may refuse to keep a request that
+     * carries one); a half asked whose key is off; a non-2xx answer taken as a half; the prefix completed otherwise
+     * than with the span's first and last day; core/ajax or any service named again by a module of the graph; a
+     * second call site.
      */
-    public function test_the_public_calendar_calls_only_its_service_and_never_with_a_cachekey(): void {
+    public function test_the_public_calendar_asks_its_two_halves_with_no_cookie(): void {
         $source = $this->source(self::CALENDAR);
         $this->assertSame(
             '@moodle/lms/theme_dimensions/calendar/PublicCalendar',
             \theme_dimensions\output\calendar_page::COMPONENT_PUBLIC
         );
         $this->assertStringContainsString('export default PublicCalendar;', $source);
-        $this->assertMatchesRegularExpression("~^export const METHOD = '" . self::CALENDAR_METHOD . "';$~m", $source);
-        $this->assertSame(1, substr_count($source, 'methodname:'), 'One call site.');
-        $this->assertSame(1, substr_count($source, 'fetchOne<'), 'One call of the service.');
-        preg_match_all("~'((?:theme_dimensions|core)_[a-z_]+)'~", $source, $services);
-        $this->assertSame([self::CALENDAR_METHOD], array_values(array_unique($services[1])), 'No other service is named.');
-        $this->assertMatchesRegularExpression(
-            '~return fetchOne<PublicAnswer>\(\{\s*methodname: METHOD,\s*args: args,\s*\}, \{loginrequired: false\}\);~',
-            $source
+        $this->assertStringContainsString('urls: {page: string, home: string, events: string, courses: string},', $source);
+
+        $code = $this->code(self::CALENDAR);
+        $this->assertSame(1, substr_count($code, 'fetch('), 'One call site.');
+        $this->assertStringContainsString(
+            "const response = await fetch(url, {credentials: 'omit', headers: {Accept: 'application/json'}});",
+            $code
         );
-        $this->assertStringNotContainsString('cachekey', $this->code(self::CALENDAR));
-        $this->assertStringContainsString('lang: Config.language,', $source, 'The page\'s language is sent.');
-        foreach ($this->graph(self::CALENDAR) as $module) {
+        $this->assertMatchesRegularExpression(
+            '~if \(!response\.ok\) \{\s*throw new Error\(~',
+            $code,
+            'A refusal of the route is a failure, never a half.'
+        );
+        $this->assertStringContainsString(
+            '=> merge(await Promise.all(halves.map((half) => fetchHalf(halfUrl(urls[half], from, to)))));',
+            $code
+        );
+        $this->assertStringContainsString('const halves = halvesOn(keys);', $code, 'Only the halves of the keys on.');
+        $this->assertMatchesRegularExpression(
+            '~const answer = halves\.length\s*\? await askHalves\(props\.urls, halves, days\[0\], '
+                . 'days\[days\.length - 1\]\)\s*: emptyPublicAnswer\(days\);~',
+            $code,
+            'No key on asks nothing; the span\'s first and last day.'
+        );
+        $this->assertStringNotContainsString('cachekey', $code);
+
+        $halves = $this->code(self::CALENDAR_HALVES);
+        $this->assertStringContainsString(
+            'export const halvesOn = (on: readonly Key[]): Half[] => HALVES.filter((half) => on.includes(KEY_OF[half]));',
+            $halves
+        );
+        $this->assertStringContainsString("export const HALVES: readonly Half[] = ['events', 'courses'];", $halves);
+        $this->assertStringContainsString(
+            "export const KEY_OF: Readonly<Record<Half, Key>> = {events: 'category', courses: 'open'};",
+            $halves
+        );
+        $this->assertStringContainsString(
+            'export const halfUrl = (prefix: string, from: string, to: string): string => ' . chr(96) . '${prefix}/${from}/${to}'
+                . chr(96) . ';',
+            $halves
+        );
+        $this->assertStringNotContainsString('fetch(', $halves, 'The halves module is pure.');
+
+        $graph = $this->graph(self::CALENDAR);
+        $this->assertContains(self::CALENDAR_HALVES, $graph, 'The control: the walk reaches the halves.');
+        foreach ($graph as $module) {
+            $text = $this->source($module) . "\n" . $this->build($module);
+            foreach (['fetchOne', 'core/ajax', 'methodname', 'theme_dimensions_get_public_calendar_range'] as $absent) {
+                $this->assertStringNotContainsString($absent, $text, "{$module} names {$absent}.");
+            }
+            preg_match_all("~'((?:theme_dimensions|core)_[a-z_]+)'~", $text, $services);
+            $this->assertSame([], $services[1], $module . ' names a service.');
             if ($module !== self::CALENDAR) {
-                $this->assertStringNotContainsString('fetchOne', $this->code($module), $module . ' calls a service.');
+                $this->assertStringNotContainsString('fetch(', $this->code($module), $module . ' fetches.');
             }
         }
     }
