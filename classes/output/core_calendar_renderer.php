@@ -36,8 +36,9 @@ require_once($CFG->dirroot . '/calendar/renderer.php');
  *
  * The class name is derived by the renderer factory for `$PAGE->get_renderer('core_calendar')`; neither Boost nor
  * Boost Union has one. Only render_from_template() is overridden: both blocks hand it their template and
- * calendar_get_view()'s data, which core has already computed and the theme discards (a renderer is called after
- * the data, so it cannot spare that cost). The decision is {@see blocks}'s; any refusal is core's own output, untouched.
+ * calendar_get_view()'s data, which core has already computed (a renderer is called after the data, so it cannot
+ * spare that cost). The month block's core events are counted from that data ({@see blocks::month_from_core()}); the
+ * rest is the theme's. The decision is {@see blocks}'s; any refusal is core's own output, untouched.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -67,7 +68,7 @@ class core_calendar_renderer extends \core_calendar_renderer {
             return parent::render_from_template(calendar_block_upcoming::TEMPLATE, $block->export_for_template($this));
         }
 
-        $month = blocks::month($now);
+        $month = blocks::month($now, $context);
         $block = new calendar_block_month($month['month'], $month['today'], $month['firstday'], $month['state'], $month['answer']);
         $this->page->requires->strings_for_js(blocks::STRINGS, 'theme_dimensions');
         $this->page->requires->js_call_amd('theme_dimensions/calendarblock', 'init');
