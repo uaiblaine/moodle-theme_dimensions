@@ -1179,7 +1179,7 @@ const drawFilters = /* @__PURE__ */ __name((model, ref, panel) => /* @__PURE__ *
     hidden: !model.filters.available,
     children: [
       /* @__PURE__ */ jsxDEV("summary", { className: "dim-toolbar__filterstoggle dim-line__iconbtn", "data-dim-tip": model.filters.label, children: [
-        /* @__PURE__ */ jsxDEV("i", { className: "fa fa-sliders", "aria-hidden": "true" }, void 0, false, {
+        /* @__PURE__ */ jsxDEV("i", { className: "fa fa-filter", "aria-hidden": "true" }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/filterline/FilterLine.tsx",
           lineNumber: 1513,
           columnNumber: 13

@@ -96,7 +96,7 @@
     number of favourites are the button's accessible name (dim-fav-count).
 
     The Filters disclosure is a native details element, closed on load: the
-    chips row says what narrows. Its summary is the sliders glyph, the word
+    chips row says what narrows. Its summary is the funnel glyph, the word
     (dim-line__label, visually hidden: the summary's accessible name) and the
     badge (dim-filtercount) on the control's corner, which counts what the panel
     holds and nothing the line shows; each of the badge's halves - the digit
@@ -368,7 +368,7 @@
                 <button type="submit" class="dim-toolbar__star dim-line__iconbtn" name="{{name}}" value="{{value}}" aria-pressed="{{#pressed}}true{{/pressed}}{{^pressed}}false{{/pressed}}" data-dim-tip="{{label}}" data-action="dim-fav" data-region="dim-line-star"><i class="{{#pressed}}fa-solid{{/pressed}}{{^pressed}}fa-regular{{/pressed}} fa-star" aria-hidden="true"></i><span class="visually-hidden">{{label}} <span data-region="dim-fav-count">{{count}}</span></span></button>
                 {{/favourites}}
                 <details class="dim-toolbar__filters dim-line__filters" data-region="dim-filters"{{^hasfiltergroups}} hidden{{/hasfiltergroups}}>
-                    <summary class="dim-toolbar__filterstoggle dim-line__iconbtn" data-dim-tip="{{filterslabel}}"><i class="fa fa-sliders" aria-hidden="true"></i> <span class="visually-hidden dim-line__label dim-toolbar__filterslabel">{{filterslabel}}</span> <span class="dim-toolbar__filtercount" data-region="dim-filtercount"{{^hasfiltercount}} hidden{{/hasfiltercount}}><span aria-hidden="true" data-region="dim-filtercount-number">{{filtercount}}</span><span class="visually-hidden" data-region="dim-filtercount-label">{{filtercountlabel}}</span></span></summary>
+                    <summary class="dim-toolbar__filterstoggle dim-line__iconbtn" data-dim-tip="{{filterslabel}}"><i class="fa fa-filter" aria-hidden="true"></i> <span class="visually-hidden dim-line__label dim-toolbar__filterslabel">{{filterslabel}}</span> <span class="dim-toolbar__filtercount" data-region="dim-filtercount"{{^hasfiltercount}} hidden{{/hasfiltercount}}><span aria-hidden="true" data-region="dim-filtercount-number">{{filtercount}}</span><span class="visually-hidden" data-region="dim-filtercount-label">{{filtercountlabel}}</span></span></summary>
                     <div class="dim-toolbar__panel" data-region="dim-filters-panel">
                         {{#more}}
                         <fieldset class="dim-toolbar__group" data-region="dim-vitrine-group" data-name="{{name}}" data-role="more"{{^hasoptions}} hidden{{/hasoptions}}>

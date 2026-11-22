@@ -1510,7 +1510,7 @@ const drawFilters = (
         hidden={!model.filters.available}
     >
         <summary className="dim-toolbar__filterstoggle dim-line__iconbtn" data-dim-tip={model.filters.label}>
-            <i className="fa fa-sliders" aria-hidden="true"></i>
+            <i className="fa fa-filter" aria-hidden="true"></i>
             {' '}
             <span className="visually-hidden dim-line__label dim-toolbar__filterslabel">{model.filters.label}</span>
             {' '}
