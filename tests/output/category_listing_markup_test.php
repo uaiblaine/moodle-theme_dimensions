@@ -515,13 +515,13 @@ final class category_listing_markup_test extends \advanced_testcase {
             'The aria-hidden duplicate of the legend is gone.'
         );
 
-        // Filters: the sliders, the word out of the picture, the badge; closed on load, whatever narrows the page.
+        // Filters: the funnel, the word out of the picture, the badge; closed on load, whatever narrows the page.
         $panel = $xpath->query('//div[@data-region="dim-line-capsule"]/details[@data-region="dim-filters"]');
         $this->assertSame(1, $panel->length);
         $this->assertFalse($panel->item(0)->hasAttribute('open'), 'Closed on load: the chips row says what narrows.');
         $summary = $xpath->query('./summary', $panel->item(0))->item(0);
         $this->assertTrue(self::has_token($summary->getAttribute('class'), 'dim-line__iconbtn'), 'An icon button.');
-        $this->assertSame(1, $xpath->query('./i[' . self::has_class('fa-sliders') . ']', $summary)->length);
+        $this->assertSame(1, $xpath->query('./i[' . self::has_class('fa-filter') . ']', $summary)->length);
         $word = $xpath->query('./span[' . self::has_class('dim-line__label') . ']', $summary)->item(0);
         $this->assertSame('Filters', $word->textContent, 'The word, in a span of its own: the summary\'s accessible name.');
         $this->assertTrue(self::has_token($word->getAttribute('class'), 'visually-hidden'), 'Out of the picture at every width.');

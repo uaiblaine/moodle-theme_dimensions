@@ -5,6 +5,9 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The Filters button draws the funnel** (2026100637). The filter bar's Filters button (category pages and the visitor
+  page) shows core's filter icon, `fa-filter`, in place of the sliders, as decision D107 of the fleet Design System
+  asks. Nothing else about the button changes.
 - **The dashboard's month block no longer fetches the month's events twice.** core's block_calendar_month builds the
   month before the theme draws it; the theme now counts the month's core events from that work, applying its own rules
   to it (withheld categories, keys switched off), and fetches only the days of the neighbouring months the grid shows.
