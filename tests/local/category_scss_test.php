@@ -572,6 +572,35 @@ final class category_scss_test extends \basic_testcase {
     }
 
     /**
+     * From lg up Boost pays its toggle reserve on each side of this limitedwidth page instead of the 3rem (MDL-90206):
+     * the column, the header, the band and the navigation row escape and pay that much, read from Boost's own variable,
+     * so the navy still reaches the viewport edges and the title stays on the content's edge.
+     *
+     * @return void
+     */
+    public function test_the_navy_follows_boosts_gutter_from_lg_up(): void {
+        $scss = (string) file_get_contents(dirname(__DIR__, 2) . '/scss/category.scss');
+        $this->assertStringContainsString("\n\$drawer-toggle-reserve: 3rem !default;\n", $scss, 'Boost\'s value wins.');
+        $this->assertStringContainsString(
+            "\n    \$dim-bleed-lg: calc(#{\$drawer-toggle-reserve} + #{\$dim-inner-pad});\n",
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '~@media \(min-width: 992px\) \{\s*#page\.drawers \.main-inner \{'
+                . '\s*margin-inline: calc\(-1 \* #\{\$drawer-toggle-reserve\}\);\s*padding-inline: \$dim-bleed-lg;\s*\}'
+                . '\s*#page-header \{\s*margin-inline: calc\(-1 \* #\{\$dim-bleed-lg\}\);~',
+            $scss
+        );
+        $override = '~@media \(min-width: 992px\) \{\s*\.dim-hero__band,\s*\.dim-hero__nav \{\s*padding-inline: \$dim-bleed-lg;~';
+        $this->assertSame(1, preg_match($override, $scss, $found, PREG_OFFSET_CAPTURE));
+        $this->assertGreaterThan(
+            strpos($scss, "    .dim-hero__nav {\n"),
+            $found[0][1],
+            'After the band\'s and the row\'s own padding, which the same specificity would otherwise win.'
+        );
+    }
+
+    /**
      * The sidebar follows the reader down the page, scrolls inside itself, and stops on a phone.
      *
      * A long tree would otherwise leave a reader deep in the listing with no way to change

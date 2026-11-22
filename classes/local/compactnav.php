@@ -27,7 +27,7 @@ namespace theme_dimensions\local;
 /**
  * Whether the navbar of the page being rendered may switch to the phone's pattern on a tablet.
  *
- * Between the md and xl breakpoints, when the primary navigation would send more than {@see MAXHIDDEN} items into
+ * Between the lg and xl breakpoints, when the primary navigation would send more than {@see MAXHIDDEN} items into
  * its "More" menu, the navbar shows core's hamburger, the brand and the right cluster, and the mobile drawer holds
  * the navigation. Whether it overflows is a measurement of the page in the browser (amd/src/compactnav.js reads
  * what core's React primary navigation decided); what the server decides here is where the mode may happen at all,

@@ -55,8 +55,17 @@ $dim-column: 1200px;
 // inside it: the box the column has, minus the padding that box pays.
 $dim-bleed: $dim-page-pad + $dim-inner-pad;
 $dim-track: $dim-column - 2 * $dim-inner-pad;
+// From lg up, on the standard layouts and on body.limitedwidth, #page.drawers pays Boost's reserve for the toggle of a
+// closed drawer instead of the 3rem (layout.scss, since 5.3.1+, MDL-90206): the screen-edge gap, the button and the
+// gap to the content, a calc() of Boost's own ($drawer-toggle-reserve, drawer.scss). Read from Boost so the navy keeps
+// reaching the viewport edge whatever those gaps become; the default is for a compile of this sheet alone.
+$drawer-toggle-reserve: 3rem !default;
 
 body.dim-category {
+    // The bleed on Boost's wider gutter from lg up ($drawer-toggle-reserve, above). Declared in the block: an
+    // interpolation at the top level reads as a selector to category_scss_test's scope check.
+    $dim-bleed-lg: calc(#{$drawer-toggle-reserve} + #{$dim-inner-pad});
+
     // The navy meets the navbar's 3px band on this page: the top padding and margin Boost's
     // .main-inner pays above the page header would be a gutter between two navy blocks. Boost's ground
     // (--bs-body-bg, on .main-inner and #region-main) stays, so the showcase covers a page background
@@ -100,6 +109,18 @@ body.dim-category {
             max-width: none;
             margin-inline: -$dim-bleed;
             padding-inline: 0;
+        }
+    }
+
+    // The same geometry on Boost's wider gutter from lg up ($drawer-toggle-reserve, above).
+    @media (min-width: 992px) {
+        #page.drawers .main-inner {
+            margin-inline: calc(-1 * #{$drawer-toggle-reserve});
+            padding-inline: $dim-bleed-lg;
+        }
+
+        #page-header {
+            margin-inline: calc(-1 * #{$dim-bleed-lg});
         }
     }
 
@@ -440,6 +461,14 @@ body.dim-category {
         z-index: 31;
         margin-top: calc(var(--dim-navpills-height) / -2);
         padding-inline: $dim-bleed;
+    }
+
+    // Boost's wider gutter from lg up ($drawer-toggle-reserve, above): the band and the row keep the content's edge.
+    @media (min-width: 992px) {
+        .dim-hero__band,
+        .dim-hero__nav {
+            padding-inline: $dim-bleed-lg;
+        }
     }
 
     // The band's track, so the capsule starts where the title does.

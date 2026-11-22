@@ -35,7 +35,7 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * Each assertion is scoped to the one function it is about: the module refuses to run without the server's armed
  * class (the setting off, the Moodle app, focus mode), it observes with a ResizeObserver and a MutationObserver and
  * never polls, the decision runs in an animation frame and reads before it writes, the count is the navigation's own,
- * the mode lives between md and xl as the stylesheet's range does, and the toggler loses only d-md-none.
+ * the mode lives between lg and xl as the stylesheet's range does, and the toggler loses only d-lg-none.
  *
  * @package    theme_dimensions
  * @category   test
@@ -200,21 +200,21 @@ final class compactnav_source_test extends \basic_testcase {
     }
 
     /**
-     * The range is the stylesheet's: media-breakpoint-between(md, xl) in scss/compactnav.scss.
+     * The range is the stylesheet's: media-breakpoint-between(lg, xl) in scss/compactnav.scss.
      *
      * @return void
      */
     public function test_the_range_is_the_stylesheets(): void {
         $this->assertStringContainsString(
-            "const RANGE = '(min-width: 768px) and (max-width: 1199.98px)';",
+            "const RANGE = '(min-width: 992px) and (max-width: 1199.98px)';",
             $this->source()
         );
         $scss = (string) file_get_contents(dirname(__DIR__, 2) . '/scss/compactnav.scss');
-        $this->assertStringContainsString('@include media-breakpoint-between(md, xl) {', $scss);
+        $this->assertStringContainsString('@include media-breakpoint-between(lg, xl) {', $scss);
     }
 
     /**
-     * The toggler loses d-md-none while compact and gets it back after; leaving the mode releases the drawer.
+     * The toggler loses d-lg-none while compact and gets it back after; leaving the mode releases the drawer.
      *
      * @return void
      */
@@ -223,7 +223,7 @@ final class compactnav_source_test extends \basic_testcase {
         $this->assertStringContainsString('document.body.classList.toggle(CLASSES.COMPACT, on);', $set);
         $this->assertStringContainsString('bar.toggler.classList.toggle(CLASSES.TOGGLERHIDDEN, !on);', $set);
         $this->assertMatchesRegularExpression('~if \(!on\) \{\s*bar\.heldwidth = 0;\s*release\(\);\s*\}~', $set);
-        $this->assertStringContainsString("TOGGLERHIDDEN: 'd-md-none',", $this->source());
+        $this->assertStringContainsString("TOGGLERHIDDEN: 'd-lg-none',", $this->source());
         $this->assertStringContainsString("COMPACT: 'dimensions-nav-compact',", $this->source());
 
         $release = $this->body('release');

@@ -1206,6 +1206,9 @@ $dim-landing-inner-pad: 8px;
 $dim-landing-main-pad: 15px;
 // What the header escapes to reach the page's edges from md up.
 $dim-landing-bleed: $dim-landing-page-pad + $dim-landing-inner-pad;
+// From lg up Boost's standard layout pays its toggle reserve instead (scss/category.scss says where it comes from).
+$drawer-toggle-reserve: 3rem !default;
+$dim-landing-bleed-lg: calc(#{$drawer-toggle-reserve} + #{$dim-landing-inner-pad});
 // Boost's cap of the standard layout's .main-inner, which Boost Union sets from its course content width setting.
 // Declared here only for a compile of this sheet alone (landing_scss_test); the theme's compile keeps Boost Union's.
 $course-content-maxwidth: 830px !default;
@@ -1247,6 +1250,17 @@ body.dim-landing-fullwidth {
         #page-header {
             max-width: none;
             margin-inline: -$dim-landing-bleed;
+        }
+    }
+
+    @include media-breakpoint-up(lg) {
+        #page.drawers .main-inner {
+            margin-inline: calc(-1 * #{$drawer-toggle-reserve});
+            padding-inline: $dim-landing-bleed-lg;
+        }
+
+        #page-header {
+            margin-inline: calc(-1 * #{$dim-landing-bleed-lg});
         }
     }
 
@@ -1331,6 +1345,12 @@ body.dim-landing-fullwidth {
     @include media-breakpoint-up(md) {
         .dimensions-landing__hero--fullwidth {
             padding-inline: $dim-landing-bleed;
+        }
+
+        @include media-breakpoint-up(lg) {
+            .dimensions-landing__hero--fullwidth {
+                padding-inline: $dim-landing-bleed-lg;
+            }
         }
 
         .dimensions-landing__hero--fullwidth .dimensions-landing__hero-content,

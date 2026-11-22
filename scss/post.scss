@@ -1119,9 +1119,9 @@ $dimensions-logo-height: calc(#{$navbar-height} - 2 * var(--dim-ds-space-xs));
     object-fit: contain;
 }
 
-/* The brand beside the hamburger on a phone (core_renderer::brand_on_phones()), 8px from it; a site with no logo shows
-   its name, cut short rather than pushing the user menu off the bar. */
-@include media-breakpoint-down(md) {
+/* The brand beside the hamburger below lg, where the navbar is collapsed (core_renderer::brand_on_phones()), 8px from
+   it; a site with no logo shows its name, cut short rather than pushing the user menu off the bar. */
+@include media-breakpoint-down(lg) {
     .navbar.fixed-top .navbar-brand {
         min-width: 0;
 
@@ -1139,7 +1139,7 @@ $dimensions-logo-height: calc(#{$navbar-height} - 2 * var(--dim-ds-space-xs));
 }
 
 /* ---- The primary drawer opens over the navbar ---------------------------- */
-/* The drawer of the collapsed navbar (below md, and the compact navbar of scss/compactnav.scss) covers the
+/* The drawer of the collapsed navbar (below lg, and the compact navbar of scss/compactnav.scss) covers the
    whole height of the screen, the navbar included, as the navbar canvas draws it. Moodle 5.3 puts every drawer
    BELOW the navbar instead (MDL-89076) and sizes its backdrop from the first drawer's z-index, once, so raising
    this drawer would raise the backdrop over the course index and the block drawer too. So the navbar steps down
@@ -1154,11 +1154,11 @@ $dimensions-logo-height: calc(#{$navbar-height} - 2 * var(--dim-ds-space-xs));
 
 /* The navigation drawer's width is the side layer's (D72), on Boost's primary drawer that holds it: 320px, at most 85%
    of a phone's width. The theme's own number, never core's $drawer-left-width, which also places the course index's
-   docked geometry from lg up. Below md only, where the hamburger opens this drawer; the compact navbar's copy of the
-   geometry (compactnav.scss) reads the same variable between md and xl. */
+   docked geometry from lg up. Below lg only, where the hamburger opens this drawer; the compact navbar's copy of the
+   geometry (compactnav.scss) reads the same variable between lg and xl. */
 $dimensions-drawer-width: 20rem;
 
-@include media-breakpoint-down(md) {
+@include media-breakpoint-down(lg) {
     #theme_boost-drawers-primary.drawer-primary.drawer-left {
         left: calc(-#{$dimensions-drawer-width} + -10px);
         width: $dimensions-drawer-width;

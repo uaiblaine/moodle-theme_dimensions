@@ -427,7 +427,7 @@ final class post_scss_test extends \basic_testcase {
 
     /**
      * The navigation drawer is the side layer's 320px (20rem), at most 85% of a phone's width, from the theme's own
-     * variable on Boost's primary drawer below md; the compact navbar's copy of the geometry reads the same variable,
+     * variable on Boost's primary drawer below lg; the compact navbar's copy of the geometry reads the same variable,
      * and neither redefines core's $drawer-left-width, which places the course index too.
      *
      * @return void
@@ -437,11 +437,11 @@ final class post_scss_test extends \basic_testcase {
         $scss = (string) file_get_contents($root . '/scss/post.scss');
         $this->assertStringContainsString("\n\$dimensions-drawer-width: 20rem;\n", $scss);
         $this->assertSame(1, preg_match(
-            '~@include media-breakpoint-down\(md\) \{\s*#theme_boost-drawers-primary\.drawer-primary\.drawer-left \{'
+            '~@include media-breakpoint-down\(lg\) \{\s*#theme_boost-drawers-primary\.drawer-primary\.drawer-left \{'
                 . '(.*?)&\.show \{([^}]*)\}~s',
             $scss,
             $found
-        ), 'The id and the two drawer classes, below md.');
+        ), 'The id and the two drawer classes, below lg.');
         [, $drawer, $shown] = $found;
         $this->assertStringContainsString('left: calc(-#{$dimensions-drawer-width} + -10px);', $drawer, 'Off screen, closed.');
         $this->assertStringContainsString('width: $dimensions-drawer-width;', $drawer);

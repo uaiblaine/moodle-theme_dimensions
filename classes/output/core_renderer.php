@@ -62,9 +62,9 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
 
     /**
      * @var string The brand's classes in Boost Union's navbar partial (BU/templates/theme_boost/navbar.mustache, included
-     *      by both layouts of {@see self::HINT_LAYOUTS}): hidden below md, where only the hamburger is drawn.
+     *      by both layouts of {@see self::HINT_LAYOUTS}): hidden below lg, where only the hamburger is drawn.
      */
-    public const BRAND_HIDDEN = 'class="navbar-brand d-none d-md-flex ';
+    public const BRAND_HIDDEN = 'class="navbar-brand d-none d-lg-flex ';
 
     /** @var string The same brand shown at every width, beside the hamburger on a phone. */
     public const BRAND_SHOWN = 'class="navbar-brand d-flex ';
@@ -259,7 +259,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     /**
      * Show the navbar's brand on a phone too, beside the hamburger.
      *
-     * Boost Union's navbar partial hides the logo below md with Bootstrap's d-none, which is display: none !important,
+     * Boost Union's navbar partial hides the logo below lg with Bootstrap's d-none, which is display: none !important,
      * so no rule of this theme's stylesheet can bring it back (stylelint forbids !important) and the partial is a piece of
      * the layout, never rendered through this method on its own. The layout's output is therefore edited in its one
      * place: the brand's first class list, replaced once. Should Boost Union change that list, the page simply keeps its
