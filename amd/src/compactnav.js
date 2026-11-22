@@ -25,9 +25,9 @@
  *   the navigation's own overflow count, read from its output and never recomputed from widths here.
  * - The navigation has settled once its mount point carries the props' measuredclass (core's primarynav-measured).
  *   Until then nothing is decided, and the stylesheet holds the navigation back (scss/compactnav.scss).
- * - Compact while more than maxhidden items are in "More" and the window is between md and xl (RANGE, the
- *   stylesheet's media-breakpoint-between(md, xl)). The body gets dimensions-nav-compact, and core's toggler loses
- *   d-md-none, whose display: none is !important and so cannot be outranked by the stylesheet.
+ * - Compact while more than maxhidden items are in "More" and the window is between lg and xl (RANGE, the
+ *   stylesheet's media-breakpoint-between(lg, xl)). The body gets dimensions-nav-compact, and core's toggler loses
+ *   d-lg-none, whose display: none is !important and so cannot be outranked by the stylesheet.
  * - Once compact, the bar stays compact at any width up to the widest it was decided at (heldwidth), whatever the
  *   navigation splits meanwhile. The two modes lay the bar out differently (the hamburger takes room; the colour
  *   mode menu leaves for the drawer, scss/post.scss), so a split made while compact says nothing of the full bar:
@@ -39,7 +39,7 @@
  * width the observers above report may be read before it has). Either only books one animation frame, where the
  * decision runs; nothing polls.
  *
- * The mobile drawer at tablet width: core gives it a backdrop and closes it on a press outside only below md. While
+ * The mobile drawer at tablet width: core gives it a backdrop and closes it on a press outside only below lg. While
  * the bar is compact a press outside it closes it (on the page the press is the scrim's and goes no further; on the
  * navbar it goes on, as core lets it on a phone), another drawer opening closes it, and the bar leaving the compact
  * mode closes it unless the focus is inside.
@@ -59,8 +59,8 @@ import {isSmall} from 'core/pagehelpers';
  */
 const NAVBAR = 'nav.navbar.fixed-top:not(.boost-union-menubar):not(.dimensions-focusbar)';
 
-/** The range the mode lives in: media-breakpoint-between(md, xl) of scss/compactnav.scss. */
-const RANGE = '(min-width: 768px) and (max-width: 1199.98px)';
+/** The range the mode lives in: media-breakpoint-between(lg, xl) of scss/compactnav.scss. */
+const RANGE = '(min-width: 992px) and (max-width: 1199.98px)';
 
 /** Core's default for the class its navigation writes on the mount point once its split has settled. */
 const MEASURED_DEFAULT = 'primarynav-measured';
@@ -79,7 +79,7 @@ const CLASSES = {
     ARMED: 'dimensions-navcompact-armed',
     MEASURED: 'dimensions-navcompact-measured',
     COMPACT: 'dimensions-nav-compact',
-    TOGGLERHIDDEN: 'd-md-none',
+    TOGGLERHIDDEN: 'd-lg-none',
     SHOW: 'show',
 };
 
@@ -153,7 +153,7 @@ const drawerOverPage = () => bar.compact && bar.drawer !== null && bar.drawer.cl
 /**
  * Close the mobile drawer when the bar leaves the compact mode at tablet width: its hamburger is about to go.
  *
- * Below md the hamburger stays (core's own), and a drawer holding the focus is left open: it has its own close
+ * Below lg the hamburger stays (core's own), and a drawer holding the focus is left open: it has its own close
  * control, as core leaves such a drawer open when the window is resized.
  */
 const release = () => {
@@ -224,7 +224,7 @@ const schedule = () => {
 };
 
 /**
- * A press outside the open mobile drawer at tablet width closes it, as core's backdrop does below md.
+ * A press outside the open mobile drawer at tablet width closes it, as core's backdrop does below lg.
  *
  * On the page the press is the scrim's and goes no further; on the navbar it goes on to its control.
  *

@@ -16,18 +16,18 @@
 /* The navbar's compact mode on tablets. Where the server armed it
    (classes/local/compactnav.php writes dimensions-navcompact-armed on the body) and while
    amd/src/compactnav.js has measured that core's primary navigation sends more than two items into its
-   "More" menu (it writes dimensions-nav-compact on the body), the navbar between md and xl takes the phone's
+   "More" menu (it writes dimensions-nav-compact on the body), the navbar between lg and xl takes the phone's
    pattern: core's hamburger, the brand, the right cluster, and the mobile drawer holds the navigation.
 
    Every rule is nested under the armed body class, because lib.php concatenates this file into the theme's
    main SCSS and it reaches every page of the site (tests/local/compactnav_scss_test.php), and every rule
-   sits inside media-breakpoint-between(md, xl), the range the module's RANGE spells.
+   sits inside media-breakpoint-between(lg, xl), the range the module's RANGE spells.
 
-   The hamburger is not shown here: core's toggler carries d-md-none, a Bootstrap utility compiled as
+   The hamburger is not shown here: core's toggler carries d-lg-none, a Bootstrap utility compiled as
    display: none !important, which no selector outranks without !important of its own. The module takes that
    one class off the toggler while the navbar is compact and puts it back after. */
 body.dimensions-navcompact-armed {
-    @include media-breakpoint-between(md, xl) {
+    @include media-breakpoint-between(lg, xl) {
         /* Held back until the module has measured, so the first paint never shows items that are about to go.
            Only under core's jsenabled, which core writes at the top of the body before the first paint: without
            JavaScript the navbar stays core's. Visibility and not display: a hidden box keeps its size, and core's

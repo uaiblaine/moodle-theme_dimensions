@@ -336,6 +336,29 @@ final class landing_scss_test extends \advanced_testcase {
     }
 
     /**
+     * From lg up Boost's standard layout pays its toggle reserve on each side of the page instead of the 3rem
+     * (MDL-90206), and the banner escapes that much: with the 3rem the band stops short of the viewport edges.
+     *
+     * The sheet compiled alone reads the default (3rem); the theme's compile reads Boost's $drawer-toggle-reserve.
+     */
+    public function test_the_full_width_banner_follows_boosts_gutter_from_lg_up(): void {
+        $scss = (string) file_get_contents(dirname(__DIR__, 2) . '/scss/landing.scss');
+        $this->assertStringContainsString("\n\$drawer-toggle-reserve: 3rem !default;\n", $scss, 'Boost\'s value wins.');
+
+        $css = $this->compile('#7a1f2b');
+        $this->assertMatchesRegularExpression(
+            '~@media \(min-width: 992px\)\s*\{[^@]*?body\.dim-landing-fullwidth #page\.drawers \.main-inner\s*\{'
+            . '\s*margin-inline: calc\(-1 \* 3rem\);\s*padding-inline: calc\(3rem \+ 8px\);~',
+            $css
+        );
+        $this->assertMatchesRegularExpression(
+            '~@media \(min-width: 992px\)\s*\{[^@]*?body\.dim-landing-fullwidth #page-header\s*\{'
+            . '\s*margin-inline: calc\(-1 \* calc\(3rem \+ 8px\)\);~',
+            $css
+        );
+    }
+
+    /**
      * The shortcode's block draws the band with the landing page's own rules, and declares the ground it reads.
      */
     public function test_the_shortcode_block_takes_the_landing_bands_rules(): void {

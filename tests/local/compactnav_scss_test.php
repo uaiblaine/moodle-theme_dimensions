@@ -120,11 +120,11 @@ final class compactnav_scss_test extends \basic_testcase {
      *
      * @return void
      */
-    public function test_every_rule_lives_between_md_and_xl(): void {
+    public function test_every_rule_lives_between_lg_and_xl(): void {
         $armed = $this->children($this->stylesheet())['body.' . compactnav::BODY_ARMED];
 
         $this->assertSame(
-            ['@include media-breakpoint-between(md, xl)', '@keyframes dimensions-navcompact-failopen'],
+            ['@include media-breakpoint-between(lg, xl)', '@keyframes dimensions-navcompact-failopen'],
             array_keys($this->children($armed))
         );
     }
@@ -137,7 +137,7 @@ final class compactnav_scss_test extends \basic_testcase {
      */
     public function test_the_navigation_is_hidden_in_place_and_fails_open(): void {
         $range = $this->children($this->children($this->stylesheet())['body.' . compactnav::BODY_ARMED]);
-        $rules = $this->children($range['@include media-breakpoint-between(md, xl)']);
+        $rules = $this->children($range['@include media-breakpoint-between(lg, xl)']);
 
         $hold = $rules['&.jsenabled:not(.dimensions-navcompact-measured) .primary-navigation'] ?? null;
         $this->assertNotNull($hold, 'The hold is scoped to core\'s jsenabled and lifted by the module\'s class.');
@@ -150,7 +150,7 @@ final class compactnav_scss_test extends \basic_testcase {
     }
 
     /**
-     * The toggler's d-md-none is !important, so the stylesheet never tries to show it: the module takes the class off.
+     * The toggler's d-lg-none is !important, so the stylesheet never tries to show it: the module takes the class off.
      *
      * @return void
      */
@@ -189,7 +189,7 @@ final class compactnav_scss_test extends \basic_testcase {
     /**
      * Core anchors every .drawer-left from lg up (zero width, an anchored right offset, clipped), and the primary drawer
      * is one: in compact mode it must be the plain overlay drawer again, under a selector the anchored ones cannot outrank,
-     * over the navbar and the full height of the screen as below md, and as wide as there: the theme's
+     * over the navbar and the full height of the screen as below lg, and as wide as there: the theme's
      * $dimensions-drawer-width (post_scss_test::test_the_navigation_drawer_is_the_side_layers_width).
      *
      * @return void
