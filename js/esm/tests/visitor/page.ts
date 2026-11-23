@@ -41,7 +41,7 @@ export const VISITOR_TOOLBAR = `<form class="dim-toolbar" id="dim-vitrine-form-8
                 <span class="dim-line__total" data-region="dim-line-total" aria-hidden="true">100</span>
                 <div class="dim-line__capsule" data-region="dim-line-capsule">
                     <details class="dim-toolbar__filters dim-line__filters" data-region="dim-filters">
-                        <summary class="dim-toolbar__filterstoggle dim-line__iconbtn" data-dim-tip="Filters"><i class="fa fa-sliders" aria-hidden="true"></i> <span class="visually-hidden dim-line__label dim-toolbar__filterslabel">Filters</span> <span class="dim-toolbar__filtercount" data-region="dim-filtercount" hidden><span aria-hidden="true" data-region="dim-filtercount-number">0</span><span class="visually-hidden" data-region="dim-filtercount-label">Filters applied: 0</span></span></summary>
+                        <summary class="dim-toolbar__filterstoggle dim-line__iconbtn" data-dim-tip="Filters"><i class="fa fa-filter" aria-hidden="true"></i> <span class="visually-hidden dim-line__label dim-toolbar__filterslabel">Filters</span> <span class="dim-toolbar__filtercount" data-region="dim-filtercount" hidden><span aria-hidden="true" data-region="dim-filtercount-number">0</span><span class="visually-hidden" data-region="dim-filtercount-label">Filters applied: 0</span></span></summary>
                         <div class="dim-toolbar__panel" data-region="dim-filters-panel">
                             <fieldset class="dim-toolbar__group" data-region="dim-vitrine-group" data-name="cf_48">
                                 <legend class="dim-toolbar__grouplabel">Enrolment page model</legend>

@@ -302,10 +302,17 @@ verified is at the end of this section).
 
 | Idea | What ships |
 |---|---|
-| B5 | Between md and xl, while core's primary navigation sends more than two items into its "More" menu, the navbar takes the phone's pattern: core's hamburger, the brand, the right cluster; the primary navigation is hidden and the mobile drawer (phase 2) holds the navigation. Setting `navbarcompact`, on by default. |
+| B5 | Between lg and xl (md and xl before core 5.3.1+, see the note under this table), while core's primary navigation sends more than two items into its "More" menu, the navbar takes the phone's pattern: core's hamburger, the brand, the right cluster; the primary navigation is hidden and the mobile drawer (phase 2) holds the navigation. Setting `navbarcompact`, on by default. |
 | D2 | Below sm, message_popup's notifications popover opens as a bottom sheet: fixed to the bottom edge, full width, rounded top corners, a grab handle, 70vh with the list scrolling inside, never over the navbar, and a scrim. CSS only. |
 | D3 | Below sm, Boost Union's user menu opens as the same kind of sheet, with the full name at the top and 44px rows. CSS only. |
 | D5 | A reader core lets edit the page (`$PAGE->user_allowed_editing()`) finds core's edit mode switch at the end of the context layer, which covers the navbar's own switch while it is shown. Students get nothing new. |
+
+**Core 5.3.1+ moved the collapse (MDL-90101, Boost Union v5.3-r3).** Core and Boost Union now hide the primary
+navigation and show the hamburger below lg (992px), not below md: the toggler is `d-lg-none` and the brand
+`d-none d-lg-flex`. From 768px to 991px the navbar is therefore core's own collapsed bar and the compact mode has
+nothing to decide there; it lives between lg and xl. The brand rules and the primary drawer's width in `post.scss`
+follow the collapse (below lg). The phone menu (`phonenav.scss`), the guest chip and the name in the user menu stay on
+md: they are about the room of the right cluster, not about the collapse.
 
 ### B5: what is measured, and how
 
@@ -334,17 +341,17 @@ verified is at the end of this section).
   any width up to the widest an overflow was seen at (`heldwidth`), and only a wider container or leaving the range
   ends the mode. Widening through the few pixels where only the compact layout fits tries the full bar once and comes
   back (one try at 1096px, measured from 1000 to 1160 in 8px steps); every other width is decided once.
-- **The hamburger is shown by the module, not by the stylesheet.** Core's toggler is `d-md-none`, which compiles to
+- **The hamburger is shown by the module, not by the stylesheet.** Core's toggler is `d-lg-none`, which compiles to
   `display: none !important` (measured in the compiled sheet of m503); no selector outranks an `!important` utility
-  without `!important` of its own, which the fleet forbids. So the module takes `d-md-none` off the toggler while
-  compact and puts it back after; the brand stays (`d-none d-md-flex`). The range check is in the module
-  (`RANGE`, `(min-width: 768px) and (max-width: 1199.98px)`, the stylesheet's `media-breakpoint-between(md, xl)`;
+  without `!important` of its own, which the fleet forbids. So the module takes `d-lg-none` off the toggler while
+  compact and puts it back after; the brand stays (`d-none d-lg-flex`). The range check is in the module
+  (`RANGE`, `(min-width: 992px) and (max-width: 1199.98px)`, the stylesheet's `media-breakpoint-between(lg, xl)`;
   `compactnav_source_test` holds the two together) and every rule of `scss/compactnav.scss` sits inside it.
 - **Before the first paint.** Decided on the server where it can be: a navigation with two candidates or fewer can
   never cross the line, so such a page gets nothing (no class, no module, no hold) - `compactnav::arms()`, reading the
   layout context's `primarymoremenu`. Where it can, the server splices `dimensions-navcompact-armed` into the layout's
   body attributes (Boost Union builds them before the one `render_from_template()` call that carries the primary
-  navigation, so the login page's splice is reused) and arms the module. Between md and xl the stylesheet holds the
+  navigation, so the login page's splice is reused) and arms the module. Between lg and xl the stylesheet holds the
   primary navigation back (`visibility: hidden`) under `body.jsenabled:not(.dimensions-navcompact-measured)` until
   the module has decided: core writes `jsenabled` at the top of the body, before the first paint, so without JavaScript
   the navbar is core's; and core itself already hides the navigation (`opacity: 0`) until its own measurement. So the

@@ -529,7 +529,7 @@ Requirements
 
 | Plugin | Version | Why |
 |---|---|---|
-| [theme_boost_union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union) | 2026100500 or later, its Moodle 5.3 version (`MOODLE_503_STABLE`, v5.3-r1 or later) | The parent theme. |
+| [theme_boost_union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union) | 2026100503 or later, its Moodle 5.3 version (`MOODLE_503_STABLE`, v5.3-r3 or later) | The parent theme. |
 | [local_unlistedcourses](https://github.com/uaiblaine/moodle-local_unlistedcourses) | 2026100506 or later | Decides which courses and categories are listed, unlisted or public; the category showcase, the public pages and the listings ask it. |
 
 ### Optional plugins

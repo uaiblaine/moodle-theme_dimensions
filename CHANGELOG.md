@@ -5,7 +5,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
-- **The public calendar can be served from a CDN** (2026100637). A visitor's calendar now reads each half of what it
+- **The public calendar can be served from a CDN** (2026100639). A visitor's calendar now reads each half of what it
   shows (the public categories' events, the public event courses) from its own address,
   `/theme_dimensions/calendar/public/{events|courses}/{token}/{lang}/{from}/{to}`: a GET that reads no session, sets no
   cookie and answers `Cache-Control: public` with an `s-maxage` per half, a day for the events and five minutes for the
@@ -15,6 +15,19 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   every hour for courses, every day for events, for writes no event announces), so a page loaded after a change never
   asks for an old answer and no CDN needs purging. **Removed:** the web service
   `theme_dimensions_get_public_calendar_range`, which this address replaces. See `docs/caching.md` for CDN rules.
+- **The navbar follows Moodle 5.3.1+ and Boost Union v5.3-r3** (2026100638). Core now collapses the primary navigation
+  into the drawer below 992px instead of below 768px (MDL-90101), and Boost Union's navbar follows. The theme's logo
+  beside the menu button, the width of the navigation drawer and the compact navbar ("Compact navbar on tablets", now
+  from 992px to 1199px) follow the same breakpoint; without this the logo was missing from 768px to 991px and the
+  compact navbar hid the navigation without showing the menu button. Needs Boost Union v5.3-r3
+  (2026100503), which is made for Moodle 5.3.1+ (2026100501.01, or 5.3.2 once released); on plain 5.3.1 the navigation
+  and the menu button show together from 768px to 991px, as Boost Union's own notes say.
+- **The category showcase and the full-width landing banner reach the window's edges again on Moodle 5.3.1+.** Core now
+  reserves a wider gutter beside the page from 992px up (MDL-90206), which left 9px of page on each side of the navy
+  band. The theme reads that gutter from Boost instead of repeating a number.
+- **The Filters button draws the funnel** (2026100637). The filter bar's Filters button (category pages and the visitor
+  page) shows core's filter icon, `fa-filter`, in place of the sliders, as decision D107 of the fleet Design System
+  asks. Nothing else about the button changes.
 - **The dashboard's month block no longer fetches the month's events twice.** core's block_calendar_month builds the
   month before the theme draws it; the theme now counts the month's core events from that work, applying its own rules
   to it (withheld categories, keys switched off), and fetches only the days of the neighbouring months the grid shows.

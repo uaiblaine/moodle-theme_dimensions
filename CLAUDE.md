@@ -556,7 +556,7 @@ already shaped decisions here:
   band is an element of the drawer template carrying `navbarcolorclasses` and the class `.navbar`, so every rule
   that paints the navbar paints it; its Bootstrap box properties are put back in `post.scss`.
 - **The brand on a phone is an edit of the rendered layout.** Boost Union's navbar partial writes
-  `navbar-brand d-none d-md-flex`, and `d-none` is `!important`, which this theme's stylesheet may not outrank;
+  `navbar-brand d-none d-lg-flex` (`d-md-flex` before core 5.3.1+, MDL-90101), and `d-none` is `!important`, which this theme's stylesheet may not outrank;
   `core_renderer::brand_on_phones()` replaces that class list once in the output of `HINT_LAYOUTS`
   (`BRAND_HIDDEN`/`BRAND_SHOWN`). Re-read Boost Union's `templates/theme_boost/navbar.mustache` on every update:
   `test_the_brand_shows_beside_the_hamburger_on_a_phone` reads it for the exact string.
@@ -925,7 +925,7 @@ keep Boost Union's list with the "New here?" card. The design record is `docs/na
   `drawer_ws_returns_card_alone`): the drawer counts nothing about the person (D77). `drawer.js` asks for it on the
   first `theme_boost/drawers:shown` of Boost's primary drawer, never with the page.
 - **Its width is the theme's `$dimensions-drawer-width` (20rem, `post.scss`), never core's `$drawer-left-width`**,
-  which also places the course index's docked geometry from lg up. Set below md on
+  which also places the course index's docked geometry from lg up. Set below lg on
   `#theme_boost-drawers-primary.drawer-primary.drawer-left` (`max-width: 85vw`), and read by the compact navbar's copy
   of the geometry (`compactnav.scss`): change both together (gates `drawer_width_theme`, `compactnav_drawer_width`;
   `post_scss_test::test_the_navigation_drawer_is_the_side_layers_width`).
@@ -1876,7 +1876,7 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   `require_login()`, mounting `calendar/PublicCalendar.tsx`. The visitor's answer is `publicrange::answer()` over
   `source\public_events` (one `{event}` statement over `category\publicaccess::public_ids()`) and
   `source\public_courses` (`landing\publicaccess::are_public()`).
-- **The public calendar is served as two cacheable halves** (2026100637; the web service
+- **The public calendar is served as two cacheable halves** (2026100639; the web service
   `get_public_calendar_range` is gone). `publicrange::events()` (key category) and `courses()` (key open) are each a
   whole answer; `merge()` is both, and `js/esm/src/calendar/publichalves.ts` must merge exactly as it does. The client
   GETs `route\controller\calendar_public` (`/calendar/public/{half}/{token}/{lang}/{from}/{to}`, `cookies: false`,
