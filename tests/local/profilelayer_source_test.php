@@ -313,6 +313,59 @@ final class profilelayer_source_test extends \basic_testcase {
     }
 
     /**
+     * Closing plays the stylesheet's motion before the layer is hidden: the class the sheet keys the motion on goes on
+     * the layer and its backdrop, the layer is inert meanwhile, and both are hidden when the layer's own animation
+     * ends, at once when there is none, and after a bound in any case, under a Pending token. An opening that meets a
+     * layer on its way out ends the closing first.
+     *
+     * @return void
+     */
+    public function test_the_closing_motion_ends_in_a_hidden_layer(): void {
+        $this->assertStringContainsString("CLOSING: 'dimensions-layer-closing',", $this->source());
+        $this->assertStringContainsString(
+            '&.dimensions-layer-closing',
+            (string) file_get_contents(dirname(__DIR__, 2) . '/scss/profilelayer.scss'),
+            'The class is the one the sheet plays the closing motion by.'
+        );
+
+        $dismiss = $this->body('dismiss');
+        $this->assertStringContainsString("const pending = new Pending('theme_dimensions/profilelayer:close');", $dismiss);
+        $this->assertStringContainsString('layer.inert = true;', $dismiss);
+        $this->assertStringContainsString('layer.classList.add(CLASSES.CLOSING);', $dismiss);
+        $this->assertStringContainsString('backdrop.classList.add(CLASSES.CLOSING);', $dismiss);
+        $this->assertMatchesRegularExpression(
+            "~if \(window\.getComputedStyle\(layer\)\.animationName === 'none'\) \{\s*finish\(\);\s*return;~",
+            $dismiss
+        );
+        $this->assertMatchesRegularExpression('~if \(event\.target === layer\) \{\s*finish\(\);~', $dismiss);
+        $this->assertStringContainsString("layer.addEventListener('animationend', ended);", $dismiss);
+        $this->assertStringContainsString('window.setTimeout(finish, SETTLE);', $dismiss);
+        foreach (
+            [
+                'layer.hidden = true;',
+                'backdrop.hidden = true;',
+                'layer.classList.remove(CLASSES.CLOSING);',
+                'backdrop.classList.remove(CLASSES.CLOSING);',
+                'layer.inert = false;',
+                'showView(layer.querySelector(SELECTORS.MAIN));',
+                'pending.resolve();',
+            ] as $step
+        ) {
+            $this->assertSame(1, substr_count($dismiss, $step), $step);
+        }
+        $this->assertMatchesRegularExpression('~if \(state\.closing !== finish\) \{\s*return;~', $dismiss, 'It ends once.');
+
+        $close = $this->body('close');
+        $this->assertStringContainsString('dismiss();', $close);
+        $this->assertStringNotContainsString('hidden = true', $close, 'The layer is hidden by the end of its motion.');
+        $this->assertGreaterThan(strpos($close, 'state.toggle.focus();'), strpos($close, 'dismiss();'), 'Focus first.');
+
+        $open = $this->body('open');
+        $this->assertMatchesRegularExpression('~if \(state\.closing\) \{\s*state\.closing\(\);\s*\}~', $open);
+        $this->assertGreaterThan(strpos($open, 'state.closing();'), strpos($open, 'state.layer.hidden = false;'));
+    }
+
+    /**
      * Core's colour mode module is initialised, and the navbar's menu hidden by the body class, only where the
      * layer carries the control; the class is the one scss/post.scss keys the rule on.
      *

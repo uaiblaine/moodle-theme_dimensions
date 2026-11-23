@@ -26,8 +26,9 @@
 // step (scss/sheets.scss). Every transition and animation runs only under prefers-reduced-motion: no-preference: the
 // hover of the family (moodle-dev/docs/design-system/components/hover.md, D103) on every row, icon button and profile
 // button, and the opening, in the theme's base motion token: the backdrop fades in and the layer slides in from its
-// side, the sheet rises from the bottom. amd/src/profilelayer.js holds Behat until the opening ends. Closing is at
-// once. A hovered row's icon moves a step towards the row's end, which a right-to-left page mirrors; under
+// side, the sheet rises from the bottom. Closing is the same motion backwards, while amd/src/profilelayer.js keeps the
+// class dimensions-layer-closing on both; the module hides them when it ends and holds Behat through each motion. Under
+// prefers-reduced-motion: reduce both are at once. A hovered row's icon moves a step towards the row's end, which a right-to-left page mirrors; under
 // prefers-reduced-motion: reduce nothing moves. The identity header is the sparkle ground (sparkle-ground.md, D104):
 // its three sparkles are inline SVG in the template, and the sheet carries none.
 //
@@ -40,9 +41,21 @@
     z-index: 1050;
     background: var(--dimensions-backdrop, rgba(var(--bs-black-rgb, 0, 0, 0), .5));
 
+    // On its way out the backdrop takes no press: the page under it answers already.
+    &.dimensions-layer-closing {
+        pointer-events: none;
+    }
+
     @media (prefers-reduced-motion: no-preference) {
         &:not([hidden]) {
             animation: dimensions-layer-fade var(--dimensions-motion-base, 250ms) var(--dimensions-motion-ease, ease);
+        }
+
+        // The end state is held until the module hides the backdrop, so it never flashes back.
+        &.dimensions-layer-closing:not([hidden]) {
+            animation:
+                dimensions-layer-fade-out var(--dimensions-motion-base, 250ms) var(--dimensions-motion-ease, ease)
+                forwards;
         }
     }
 }
@@ -77,7 +90,8 @@
     --dim-layer-motion-fast: var(--dimensions-motion-fast, 150ms);
     --dim-layer-motion-ease: var(--dimensions-motion-ease, cubic-bezier(.4, 0, .2, 1));
     --dim-layer-motion-base: var(--dimensions-motion-base, 250ms);
-    // Where the opening starts: off the end side, the start side in a right-to-left page, the bottom on a phone.
+    // Where the opening starts and the closing ends: off the end side, the start side in a right-to-left page, the
+    // bottom on a phone.
     --dim-layer-from: translateX(100%);
     // How far a hovered row moves its leading icon and its chevron towards the row's end: translateX() does not
     // follow the direction, so a right-to-left page turns both round.
@@ -104,9 +118,19 @@
         --dim-layer-nudge-arrow: -.1875rem;
     }
 
+    // On its way out the layer takes no press (the module makes it inert as well).
+    &.dimensions-layer-closing {
+        pointer-events: none;
+    }
+
     @media (prefers-reduced-motion: no-preference) {
         &:not([hidden]) {
             animation: dimensions-layer-in var(--dim-layer-motion-base) var(--dim-layer-motion-ease);
+        }
+
+        // The end state is held until the module hides the layer, so it never flashes back.
+        &.dimensions-layer-closing:not([hidden]) {
+            animation: dimensions-layer-out var(--dim-layer-motion-base) var(--dim-layer-motion-ease) forwards;
         }
     }
 
@@ -153,9 +177,11 @@
 
     // ---- The identity header, on the sparkle ground ---------------------------------------------------
     // A gradient from the warm stop through the surface to the brand's tint, and three static sparkles under the
-    // content: the content is positioned, so it paints above them.
+    // content: the content is positioned, so it paints above them. It never shrinks: it clips (for the sparkles), so
+    // its automatic minimum height is zero, and a layer lower than its content would cut the profile buttons.
     .dimensions-layer-top {
         position: relative;
+        flex: none;
         overflow: hidden;
         border-bottom: 1px solid var(--dim-layer-line);
         background:
@@ -660,6 +686,16 @@
     }
 }
 
+@keyframes dimensions-layer-out {
+    from {
+        transform: none;
+    }
+
+    to {
+        transform: var(--dim-layer-from);
+    }
+}
+
 @keyframes dimensions-layer-fade {
     from {
         opacity: 0;
@@ -667,5 +703,15 @@
 
     to {
         opacity: 1;
+    }
+}
+
+@keyframes dimensions-layer-fade-out {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
     }
 }
