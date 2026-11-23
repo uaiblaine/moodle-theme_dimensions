@@ -5,6 +5,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A long help text opens in a dialogue** (2026100642). Pressing a help icon, or Enter on it, whose text does not fit
+  the popover opens a dialogue instead, titled with the icon's name ("Help with ..."), with the same text, a close
+  button, Escape and a press outside to close it, and the focus given back to the icon. A text that fits stays the
+  popover, and so does any help inside a dialogue; moving the focus onto an icon with the keyboard still shows the
+  popover, and Enter then opens the dialogue. The dialogue's text has the popover's reading rhythm.
 - **Help popovers fit the screen and scroll** (2026100641). The popover behind core's help icon is up to 26rem wide and
   never wider than the window less a margin, its text scrolls inside it (at most 70% of the window's height, 45% on a
   phone, so it can open on the side of the icon that has room), and the bottom edge fades while there is more to read below. It wears the Design
