@@ -643,4 +643,65 @@ final class post_scss_test extends \basic_testcase {
             'The body clips the fade to the popover\'s inner radius.'
         );
     }
+
+    /**
+     * The dialogue a long help opens in reads like the popover: its body is in the selector list of the popover body's
+     * reading rhythm, and its root declares the two tokens that rhythm reads.
+     *
+     * The rhythm is shared by the list, never copied: the control is that the list's block holds every rule of the
+     * rhythm, and that the popover's own body rule keeps none of them, so they are not written twice.
+     *
+     * @return void
+     */
+    public function test_the_help_modal_body_shares_the_popover_reading_rhythm(): void {
+        $block = $this->help_popover_block();
+        $this->assertSame(
+            1,
+            preg_match(
+                '/\n\.help-popover \.popover-body,\s*\.dimensions-help-modal \.modal-body \{(.*?)\n\}/s',
+                $block,
+                $rhythm
+            ),
+            'The popover body and the dialogue body share one rule.'
+        );
+        foreach (
+            [
+                'line-height: 1.5;',
+                'margin: 0 0 var(--dim-help-gap);',
+                'padding-inline-start: var(--dim-help-indent);',
+                'margin-top: var(--dim-ds-space-xxs);',
+                '> :last-child {',
+            ] as $declaration
+        ) {
+            $this->assertStringContainsString($declaration, $rhythm[1]);
+        }
+        $this->assertMatchesRegularExpression(
+            '/\n\.help-popover,\s*\.dimensions-help-modal \{\s*--dim-help-gap: \.625rem;\s*--dim-help-indent: 1\.125rem;\s*\}/',
+            $block,
+            'The dialogue\'s root declares the tokens the rhythm reads.'
+        );
+        $this->assertSame(1, substr_count($block, 'var(--dim-help-gap)'), 'The rhythm is written once.');
+        $this->assertSame(1, substr_count($block, 'line-height: 1.5;'), 'The rhythm is written once.');
+    }
+
+    /**
+     * The class the module keeps a measured popover under hides it without taking it out of the layout.
+     *
+     * The module measures the body under that class, so it must keep its box: `display: none` would measure nothing
+     * and every text would read as fitting.
+     *
+     * @return void
+     */
+    public function test_a_pending_help_popover_is_laid_out_and_unseen(): void {
+        $block = $this->help_popover_block();
+        $this->assertSame(
+            1,
+            preg_match('/\n\.help-popover\.dimensions-help-pending \{([^}]*)\}/', $block, $pending),
+            'The pending rule exists.'
+        );
+        $this->assertSame('visibility: hidden;', trim($pending[1]));
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/amd/src/helpmodal.js');
+        $this->assertStringContainsString("const PENDING = 'dimensions-help-pending';", $source, 'The module writes it.');
+        $this->assertStringContainsString("const ROOT = 'dimensions-help-modal';", $source, 'The module writes the root.');
+    }
 }

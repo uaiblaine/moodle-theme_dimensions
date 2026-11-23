@@ -413,10 +413,14 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * always in the page and the stylesheet shows it only under the focus mode body class; the status
      * line beside it is not hidden with it, because it is what announces the switch in either direction.
      *
+     * Every layout prints this once, so it is also where the help dialogue's module (amd/src/helpmodal.js) is armed: any
+     * page can carry core's help icons, logged in or not, and the module only listens until one is used.
+     *
      * @return string HTML.
      */
     public function standard_top_of_body_html() {
         $output = parent::standard_top_of_body_html();
+        $this->page->requires->js_call_amd('theme_dimensions/helpmodal', 'init');
         if ($this->focusshell === null) {
             return $output;
         }

@@ -322,6 +322,8 @@ classes/local/phonenav.php     Which navbar controls become entries on a phone (
                                (moves them, marks the nav), scss/phonenav.scss (hides below md).
 scss/focusmode.scss            Focus mode styles, compiled only while the master switch is on; the two skins.
 amd/src/focusmode.js           The switch in place (class, header actions, focus, the web service) and the width.
+amd/src/helpmodal.js           A help popover too long for its cap opens as a core/modal when activated; armed on every page
+                               by standard_top_of_body_html(); shares post.scss's help rhythm; helpmodal_source_test.
 classes/external/set_focus_mode.php  Records a switch made in place, in the session.
 focus.php                      The no-JavaScript fallback of the switch: guards, a state change, a redirect.
 templates/core/user_menu_metadata.mustache  Adds the name beside the avatar, md and up.

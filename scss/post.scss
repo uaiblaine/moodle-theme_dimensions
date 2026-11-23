@@ -1516,11 +1516,19 @@ body:has(#theme_boost-drawers-primary.show) .navbar.fixed-top {
    template and behaviour are untouched.
 
    The width goes through a custom property because stylelint refuses min() in a length property and lets it pass in
-   a custom property's value, which var() then reads. */
-.help-popover {
-    --dim-help-width: min(26rem, calc(100vw - 1.5rem));
+   a custom property's value, which var() then reads.
+
+   A text that does not fit the cap opens, once activated, in a core/modal instead (amd/src/helpmodal.js): its root
+   carries `.dimensions-help-modal`, and its body shares the reading rhythm below, through the selector list, not a
+   copy. */
+.help-popover,
+.dimensions-help-modal {
     --dim-help-gap: .625rem;
     --dim-help-indent: 1.125rem;
+}
+
+.help-popover {
+    --dim-help-width: min(26rem, calc(100vw - 1.5rem));
     --dim-help-fade: 1.25rem;
     --bs-popover-max-width: var(--dim-help-width);
     --bs-popover-font-size: .875rem;
@@ -1541,7 +1549,6 @@ body:has(#theme_boost-drawers-primary.show) .navbar.fixed-top {
         overflow-y: auto;
         overscroll-behavior: contain;
         border-radius: var(--bs-popover-inner-border-radius);
-        line-height: 1.5;
         padding-bottom: 0;
         scrollbar-width: thin;
         scrollbar-color: var(--dimensions-ink-faint) transparent;
@@ -1563,24 +1570,35 @@ body:has(#theme_boost-drawers-primary.show) .navbar.fixed-top {
         @include media-breakpoint-down(md) {
             max-height: 45vh;
         }
+    }
+}
 
-        p,
-        ul,
-        ol {
-            margin: 0 0 var(--dim-help-gap);
-        }
+/* A popover the module is replacing with the dialogue: laid out, so its body can be measured, and never painted. */
+.help-popover.dimensions-help-pending {
+    visibility: hidden;
+}
 
-        ul,
-        ol {
-            padding-inline-start: var(--dim-help-indent);
-        }
+/* The reading rhythm of a help text, in the popover and in the dialogue a long one opens in. */
+.help-popover .popover-body,
+.dimensions-help-modal .modal-body {
+    line-height: 1.5;
 
-        li + li {
-            margin-top: var(--dim-ds-space-xxs);
-        }
+    p,
+    ul,
+    ol {
+        margin: 0 0 var(--dim-help-gap);
+    }
 
-        > :last-child {
-            margin-bottom: 0;
-        }
+    ul,
+    ol {
+        padding-inline-start: var(--dim-help-indent);
+    }
+
+    li + li {
+        margin-top: var(--dim-ds-space-xxs);
+    }
+
+    > :last-child {
+        margin-bottom: 0;
     }
 }
