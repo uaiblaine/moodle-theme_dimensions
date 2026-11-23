@@ -504,11 +504,17 @@ site forces login. A visitor sees two kinds of items and nothing else: the event
 categories local_unlistedcourses marks public (with every category above them visible and none
 unlisted), each leading to the category's public page, and the public event courses (courses of the
 event model whose landing page is public), each leading to its landing page. Descriptions are shown
-as text, without images. The page draws them from the web service
-`theme_dimensions_get_public_calendar_range`, which answers without a session
-(`lib/ajax/service-nologin.php`) and refuses any logged-in session. Nothing of a visitor is stored,
-nothing is cached between requests, and the page is marked `noindex` unless the site is open to
-search engines. The theme adds no link to it in a visitor's navigation: share its address. Off, a
+as text, without images. The page draws them from one address per half,
+`/theme_dimensions/calendar/public/{events|courses}/{token}/{lang}/{from}/{to}` (under `/r.php/` while
+Moodle's router is not configured), a GET that reads no session and sets no cookie. Each half is the
+same for every visitor, so it is kept in the shared cache `publiccalendar` and may be kept by a CDN
+or a proxy: the answer is sent `Cache-Control: public` with an `s-maxage` of its own, a day for the
+events and five minutes for the courses by default (*Public calendar: how long a shared cache may
+keep the events* and *... the courses*). The token in the address is renewed whenever an event, a
+course or a category the half shows changes, and every hour (courses) or day (events) anyway, so a
+page loaded after a change asks for an address no cache holds yet and no CDN is ever purged. See
+[docs/caching.md](docs/caching.md) for the rules a CDN needs. Nothing of a visitor is stored, and the
+page is marked `noindex` unless the site is open to search engines. The theme adds no link to it in a visitor's navigation: share its address. Off, a
 visitor who opens it is sent to the login page; the guest account keeps Moodle's own calendar.
 
 
@@ -606,7 +612,9 @@ fallback hero image a file in the system context; core deletes them with the cat
 or with the theme. The branding is cached per category (cache `categorybranding`), with
 nothing a viewer's rights decide in it. The category of each course is cached too (cache `coursecategory`), to draw
 the cover of a course card without an image; a course's entry is dropped whenever the course is created, restored,
-updated (a move included) or deleted.
+updated (a move included) or deleted. The public calendar keeps what it shows visitors in the cache `publiccalendar` (the
+public categories' events and the public event courses, per window and language, the same for everybody) under a
+revision token per half kept in the cache `publiccalendarrev`; nothing of a visitor is in either.
 
 The theme also stores seven user preferences: the focus mode reading width, the category view
 (cards or list), how a person left each of their most recent category pages (organisation, view

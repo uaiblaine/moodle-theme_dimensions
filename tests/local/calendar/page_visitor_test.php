@@ -168,7 +168,11 @@ final class page_visitor_test extends \advanced_testcase {
         $expected[] = 'models';
         $expected[] = 'urls';
         $this->assertSame($expected, array_keys($props));
-        $this->assertSame(['page', 'home'], array_keys($props['urls']), 'No address of core\'s calendar.');
+        $this->assertSame(['page', 'home', 'events', 'courses'], array_keys($props['urls']), 'No address of core\'s calendar.');
+        foreach (publiccache::HALVES as $half) {
+            $address = '/calendar/public/' . $half . '/' . publiccache::token($half) . '/';
+            $this->assertStringContainsString($address, $props['urls'][$half], 'Each half under its current token.');
+        }
         $this->assertSame(['Feira publica'], array_column($props['answer']['events'], 'name'));
         $this->assertArrayHasKey('descriptions', $props['answer']);
         $this->assertSame([], $props['answer']['editing'], 'A visitor edits nothing.');

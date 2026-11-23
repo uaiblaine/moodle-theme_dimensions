@@ -1740,7 +1740,9 @@ Server and data:
   `category_hero::current()`, and reset the static registries (`fixture::forget()`) in any test that renders the
   showcase [stages 4, 5].
 - **No cache of the public catalogue (D39)**; local_unlistedcourses forbids caching its answers across requests, and
-  any such cache needs the owner's sign-off in both repositories first (OD-5) [S1-S4].
+  any such cache needs the owner's sign-off in both repositories first (OD-5) [S1-S4]. The one exception is the public
+  calendar's two halves (`local\calendar\publiccache`, owner 2026-11-21): a public answer has no viewer and no cohort
+  term, which is what the plugin's rule is about; a viewer's answer stays uncached everywhere.
 
 Client and stylesheet:
 
@@ -1873,8 +1875,23 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   `'1'`, read beside `category\publicaccess`, never inside it); on, `page::visitor()` serves the same page without
   `require_login()`, mounting `calendar/PublicCalendar.tsx`. The visitor's answer is `publicrange::answer()` over
   `source\public_events` (one `{event}` statement over `category\publicaccess::public_ids()`) and
-  `source\public_courses` (`landing\publicaccess::are_public()`); its service `get_public_calendar_range` is
-  `get_public_category_rows`' twin in step order. The visitor's graph may name nothing of a session:
+  `source\public_courses` (`landing\publicaccess::are_public()`).
+- **The public calendar is served as two cacheable halves** (2026100639; the web service
+  `get_public_calendar_range` is gone). `publicrange::events()` (key category) and `courses()` (key open) are each a
+  whole answer; `merge()` is both, and `js/esm/src/calendar/publichalves.ts` must merge exactly as it does. The client
+  GETs `route\controller\calendar_public` (`/calendar/public/{half}/{token}/{lang}/{from}/{to}`, `cookies: false`,
+  `public, s-maxage` per half from two settings) from the prefixes the page puts in `urls.events`/`urls.courses`.
+  `local\calendar\publiccache` keeps each half in the MUC cache `publiccalendar` under a token per half
+  (`publiccalendarrev`), renewed by the observers in `db/events.php`, by `branding::forget_all()`, by the switches'
+  updated callback `theme_dimensions_public_calendar_changed()` and by age (`ROTATION`): a page loaded after a change
+  asks for addresses no cache holds, so no CDN is purged. The route answers only the current token (302 `no-store`
+  otherwise), only the windows the client asks for (`canonical()`: a day, a week, a month's grid), and keeps none
+  further than `REACH_MONTHS` from now (answered `no-store`). A cached half is as old as its token plus the CDN's
+  lifetime, so a clock-dependent field in it (`held`, which nothing on the visitor path reads today) can be that much
+  behind: a reader of one recomputes it. Every refusal is one empty 404 `no-store`. A new field in a half that changes without a
+  core, unlistedcourses or theme event needs an observer, or it waits for the rotation. `docs/caching.md` is the CDN
+  guide for every surface. In a `route_testcase` spell the route's path by hand: `calendar_public::prefix()` and
+  `url()` build a router (section "The public landing page"). The visitor's graph may name nothing of a session:
   `calendar/account.ts` holds the account's two services, `description.ts` core's, and `EventPopover` is handed
   `describe` (the account's sink feeder) or `plain` (the visitor's text); `categorypublic_source_test` walks it.
 - **C4: the week view** (PROPOSAL sections 21-22). `view=week` and `week=` (`page::PARAM_VIEW`, `PARAM_WEEK`; a day of

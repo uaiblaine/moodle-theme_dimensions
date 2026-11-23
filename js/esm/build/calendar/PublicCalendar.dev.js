@@ -10,13 +10,16 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  * Mounted by core's react_autoinit on the node calendar_page.mustache draws in its visitor mode; the props carry the
  * first answer, so the first paint asks for nothing.
  *
- * - One service, {@see METHOD}, answered without a session: one call site ({@see ask()}), posted with login not
- *   required and no cachekey (a cachekey would turn it into a GET answered with ninety days of public caching), with
- *   the page's language.
+ * - Two public addresses, one per half of the answer (calendar/publichalves.ts): the events' (the key "category") and
+ *   the courses' (the key "open"), each a plain GET of the prefix the props carry completed with the span's first and
+ *   last day ({@see askHalves()}, the one call site). Only the halves whose key is on are asked, both at once; none
+ *   on asks nothing. No cookie is sent (`credentials: 'omit'`): the route reads none, the answer is the same for
+ *   everybody, and a request carrying one is one a CDN may refuse to keep. The language is in the prefix.
+ * - Two halves are merged as the server merges them.
  * - The latest request wins: a ticket is taken per request and checked after the await. A Pending token
  *   (theme_dimensions/calendar:range) spans the request to the painted grid.
- * - The month view and the week view as on the logged-in page: what is shown is a span with its answer, one call of
- *   the service either way (calendar/weeks.ts); on a phone the Day view too (DayView.tsx), a day span on a desktop
+ * - The month view and the week view as on the logged-in page: what is shown is a span with its answer, one GET per
+ *   half on either way (calendar/weeks.ts); on a phone the Day view too (DayView.tsx), a day span on a desktop
  *   asked for and drawn as its month with the day's drawer open, as on the logged-in page.
  * - The address has one writer (calendar/history.ts): a month or a week moved and a view switched push an entry, a
  *   key toggled and the open day replace it; Back and Forward read the address again.
@@ -32,8 +35,6 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { fetchOne } from "@moodle/lms/core/ajax";
-import Config from "@moodle/lms/core/config";
 import { redirect } from "@moodle/lms/core/location";
 import Pending from "@moodle/lms/core/pending";
 import { parse } from "../daterange/calendar";
@@ -47,6 +48,7 @@ import { dayDots, place } from "./layout";
 import { DAY_PARAM, emptyAnswer, isMonth, withDay } from "./model";
 import MonthGrid, { PHONE, guessPhone } from "./MonthGrid";
 import { itemKey, overlapsOf } from "./overlap";
+import { halfUrl, halvesOn, merge } from "./publichalves";
 import { load as loadStrings } from "./strings";
 import ViewSwitch from "./ViewSwitch";
 import WeekGrid from "./WeekGrid";
@@ -66,7 +68,6 @@ import {
   spanOf,
   stepSpan
 } from "./weeks";
-const METHOD = "theme_dimensions_get_public_calendar_range";
 const VISITOR_KEYS = ["category", "open"];
 const KEYS_PARAM = "keys[]";
 const CAPTION = "dim-cal-caption";
@@ -92,18 +93,14 @@ const readPublicAddress = /* @__PURE__ */ __name((href) => {
     on: params.has(KEYS_PARAM) ? visitorKeys(params.getAll(KEYS_PARAM)) : [...VISITOR_KEYS]
   };
 }, "readPublicAddress");
-const publicArgs = /* @__PURE__ */ __name((from, to, on) => ({
-  from,
-  to,
-  keys: visitorKeys(on),
-  lang: Config.language
-}), "publicArgs");
-const ask = /* @__PURE__ */ __name((args) => {
-  return fetchOne({
-    methodname: METHOD,
-    args
-  }, { loginrequired: false });
-}, "ask");
+const fetchHalf = /* @__PURE__ */ __name(async (url) => {
+  const response = await fetch(url, { credentials: "omit", headers: { Accept: "application/json" } });
+  if (!response.ok) {
+    throw new Error(`${response.status}`);
+  }
+  return await response.json();
+}, "fetchHalf");
+const askHalves = /* @__PURE__ */ __name(async (urls, halves, from, to) => merge(await Promise.all(halves.map((half) => fetchHalf(halfUrl(urls[half], from, to))))), "askHalves");
 const emptyPublicAnswer = /* @__PURE__ */ __name((days) => ({ ...emptyAnswer(days), descriptions: [] }), "emptyPublicAnswer");
 const openingDay = /* @__PURE__ */ __name((month, today) => today.startsWith(month) ? today : `${month}-01`, "openingDay");
 const propsSpan = /* @__PURE__ */ __name((props) => {
@@ -212,8 +209,9 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
       writeAddress(target, write === "push");
     }
     const pending = new Pending("theme_dimensions/calendar:range");
+    const halves = halvesOn(keys);
     try {
-      const answer = keys.length ? await ask(publicArgs(days2[0], days2[days2.length - 1], keys)) : emptyPublicAnswer(days2);
+      const answer = halves.length ? await askHalves(props.urls, halves, days2[0], days2[days2.length - 1]) : emptyPublicAnswer(days2);
       if (seq !== ticket.current) {
         pending.resolve();
         return;
@@ -342,7 +340,7 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
     if (grid === "day") {
       return /* @__PURE__ */ jsxDEV(DayView, { look, iso: days[0], placed, captionid: CAPTION, onWidth }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-        lineNumber: 619,
+        lineNumber: 621,
         columnNumber: 17
       });
     }
@@ -370,7 +368,7 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
         false,
         {
           fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-          lineNumber: 624,
+          lineNumber: 626,
           columnNumber: 17
         }
       );
@@ -398,7 +396,7 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
       false,
       {
         fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-        lineNumber: 644,
+        lineNumber: 646,
         columnNumber: 13
       }
     );
@@ -415,12 +413,12 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
         /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__toolbar", children: [
           /* @__PURE__ */ jsxDEV("h1", { className: "dim-cal__title", children: strings.calendar_title }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-            lineNumber: 673,
+            lineNumber: 675,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV("button", { type: "button", className: "btn btn-secondary dim-cal__today", onClick: () => toDay(props.today, false), children: strings.calendar_today }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-            lineNumber: 674,
+            lineNumber: 676,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV(
@@ -433,7 +431,7 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
               onClick: () => step(-1),
               children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-chevron-left", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-                lineNumber: 684,
+                lineNumber: 686,
                 columnNumber: 21
               })
             },
@@ -441,7 +439,7 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-              lineNumber: 677,
+              lineNumber: 679,
               columnNumber: 17
             }
           ),
@@ -455,7 +453,7 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
               onClick: () => step(1),
               children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-chevron-right", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-                lineNumber: 693,
+                lineNumber: 695,
                 columnNumber: 21
               })
             },
@@ -463,28 +461,28 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-              lineNumber: 686,
+              lineNumber: 688,
               columnNumber: 17
             }
           ),
           /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__caption", id: CAPTION, "aria-live": "polite", "data-region": "dim-cal-caption", children: labels.caption }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-            lineNumber: 695,
+            lineNumber: 697,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__spacer" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-            lineNumber: 696,
+            lineNumber: 698,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV(ViewSwitch, { strings, view: shown.span.view, phone, onView: toView }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-            lineNumber: 697,
+            lineNumber: 699,
             columnNumber: 17
           })
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-          lineNumber: 672,
+          lineNumber: 674,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__toolbar", children: [
@@ -501,23 +499,23 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-              lineNumber: 700,
+              lineNumber: 702,
               columnNumber: 17
             }
           ),
           /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__spacer" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-            lineNumber: 707,
+            lineNumber: 709,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV(ClearFilters, { shown: on.length !== VISITOR_KEYS.length, label: strings.calendar_clearfilters, onClear: clear }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-            lineNumber: 708,
+            lineNumber: 710,
             columnNumber: 17
           })
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-          lineNumber: 699,
+          lineNumber: 701,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV(
@@ -543,7 +541,7 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
                 false,
                 {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-                  lineNumber: 717,
+                  lineNumber: 719,
                   columnNumber: 21
                 }
               ) : null
@@ -553,13 +551,13 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
           true,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-            lineNumber: 710,
+            lineNumber: 712,
             columnNumber: 13
           }
         ),
         shown.answer.truncated ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__status", children: strings.calendar_truncatedpublic }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-          lineNumber: 728,
+          lineNumber: 730,
           columnNumber: 39
         }) : null,
         popped && poppedentry ? /* @__PURE__ */ jsxDEV(
@@ -580,7 +578,7 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-            lineNumber: 730,
+            lineNumber: 732,
             columnNumber: 17
           }
         ) : null
@@ -590,20 +588,18 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
-      lineNumber: 665,
+      lineNumber: 667,
       columnNumber: 9
     }
   );
 }, "PublicCalendar");
 var PublicCalendar_default = PublicCalendar;
 export {
-  METHOD,
   VISITOR_KEYS,
-  ask,
+  askHalves,
   PublicCalendar_default as default,
   emptyPublicAnswer,
   publicAddress,
-  publicArgs,
   readPublicAddress,
   visitorKeys
 };

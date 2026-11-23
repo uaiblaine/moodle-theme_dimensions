@@ -5,9 +5,9 @@ Feature: A visitor sees the public categories' events on the theme's calendar on
   I need the calendar page to show the public categories' events and the public event courses, and the login page while the site keeps it closed
 
   # Thin smoke tests of the public calendar: that the switch opens the same page
-  # to a visitor under forced login, that the visitor's client draws and asks its own service, and that the switch
+  # to a visitor under forced login, that the visitor's client draws and asks its own route, and that the switch
   # off is the login page. What a visitor may be told is PHPUnit's (tests/local/calendar/public_*_test.php,
-  # tests/external/get_public_calendar_range_test.php); the client's contract is Jest's. March 2027 is fixed so the
+  # tests/route/controller/calendar_public_test.php); the client's contract is Jest's. March 2027 is fixed so the
   # scenarios do not move with the day they run on.
 
   Background:

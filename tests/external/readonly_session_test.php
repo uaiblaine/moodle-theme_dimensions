@@ -45,10 +45,9 @@ require_once(__DIR__ . '/../local/category/fixture.php');
  * (category_listing::view(), category_hero::fold(), remembered::record()) are page code and the
  * remember_category_state write service; no read reaches them.
  *
- * get_public_category_rows and its calendar twin get_public_calendar_range are the two reads left
- * undeclared: they are served by service-nologin.php under NO_MOODLE_COOKIES, so there is no session
- * to lock, and they change $SESSION->forcelang around their own work, which a read-only declaration
- * would misdescribe.
+ * get_public_category_rows is the read left undeclared: it is served by service-nologin.php under
+ * NO_MOODLE_COOKIES, so there is no session to lock, and it changes $SESSION->forcelang around its
+ * own work, which a read-only declaration would misdescribe.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -66,7 +65,6 @@ final class readonly_session_test extends \advanced_testcase {
     /** @var string[] The reads that stay undeclared, and why is in the class docblock. */
     private const SESSIONLESS_READS = [
         'theme_dimensions_get_public_category_rows',
-        'theme_dimensions_get_public_calendar_range',
     ];
 
     /**

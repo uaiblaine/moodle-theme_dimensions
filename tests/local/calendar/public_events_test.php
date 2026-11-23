@@ -306,6 +306,9 @@ final class public_events_test extends \advanced_testcase {
      */
     public function test_the_cap(): void {
         global $DB;
+        // The late event must renew the kept half, and its observer runs after a commit: the rollback transaction
+        // PostgreSQL wraps a test in would hold it, and the second answer would be the first one, kept.
+        $this->preventResetByRollback();
         $this->seed();
         $template = $DB->get_record('event', ['id' => $this->event($this->ids['public'], ['timestart' => self::at(1)])]);
         unset($template->id);

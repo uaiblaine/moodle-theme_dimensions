@@ -25,10 +25,10 @@
  * session's own user only. The calendar range gives its order of checks in its class docblock. Focus mode records a
  * switch made in place, in the session alone.
  *
- * The visitor services (get_public_category_rows and get_public_calendar_range) answer over
- * lib/ajax/service-nologin.php and so are not loginrequired: they serve only the public categories' listing and the
- * public events and event courses, refuse every logged-in session, and stay closed until the site opens them
- * (publicaccess::client_enabled() and local\calendar\visitor::enabled()).
+ * The visitor service get_public_category_rows answers over lib/ajax/service-nologin.php and so is not
+ * loginrequired: it serves only the public categories' listing, refuses every logged-in session, and stays closed until
+ * the site opens it (publicaccess::client_enabled()). The public calendar has no service: its visitor reads the route
+ * of route\controller\calendar_public, which a CDN may cache.
  *
  * Registered on upgrade, so any change here ships with a version bump.
  *
@@ -123,15 +123,6 @@ $functions = [
     'theme_dimensions_get_public_category_rows' => [
         'classname' => 'theme_dimensions\external\get_public_category_rows',
         'description' => 'One page of a public category\'s showcase, for a visitor: the cards, the counts and the facets.',
-        'type' => 'read',
-        'ajax' => true,
-        'loginrequired' => false,
-        'capabilities' => '',
-    ],
-    'theme_dimensions_get_public_calendar_range' => [
-        'classname' => 'theme_dimensions\external\get_public_calendar_range',
-        'description' => 'One month grid of the public calendar, for a visitor: the public categories\' events and the '
-            . 'public event courses.',
         'type' => 'read',
         'ajax' => true,
         'loginrequired' => false,

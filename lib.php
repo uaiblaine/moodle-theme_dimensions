@@ -348,6 +348,25 @@ function theme_dimensions_extend_navigation_user_settings(
 }
 
 /**
+ * Mint new public calendar tokens after a switch that decides what a visitor is shown.
+ *
+ * Registered with set_updatedcallback() on the public calendar's switch and the two showcase switches its events'
+ * categories go through (local\category\publicaccess::enabled()), so a page loaded after the change asks for answers
+ * no cache holds yet (local\calendar\publiccache). Short-circuits during an install and an upgrade, when
+ * admin_apply_default_settings() runs it.
+ *
+ * @return void
+ */
+function theme_dimensions_public_calendar_changed(): void {
+    global $CFG;
+
+    if (during_initial_install() || !empty($CFG->upgraderunning)) {
+        return;
+    }
+    \theme_dimensions\local\calendar\publiccache::bump();
+}
+
+/**
  * Keep the courses which never answered the focus mode question on the answer that applied to them.
  *
  * Registered with set_updatedcallback(), which takes a plain function name, so this is a shim over

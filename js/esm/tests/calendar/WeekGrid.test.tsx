@@ -39,24 +39,34 @@ jest.mock('@moodle/lms/core/location', () => ({redirect: jest.fn()}));
 
 const fetched = fetchOne as jest.Mock;
 
+/** The global fetch, which the visitor's halves are asked through. */
+const fetchedPublic = jest.fn();
+
+/** The visitor's halves' address prefixes. */
+const EVENTS = 'http://localhost/r.php/theme_dimensions/calendar/public/events/t1/en';
+const COURSES = 'http://localhost/r.php/theme_dimensions/calendar/public/courses/t2/en';
+
 const HOUR = 3600;
 
 beforeEach(() => {
     document.documentElement.lang = 'en';
     Object.entries(STRINGS).forEach(([key, value]) => mockString(key, 'theme_dimensions', value));
     fetched.mockReset();
-    fetched.mockImplementation(({methodname, args}: {methodname: string, args: {from: string, to: string}}) => {
-        if (methodname === 'theme_dimensions_get_public_calendar_range') {
-            return Promise.resolve({...answer([], args.from, args.to), descriptions: []});
-        }
-        return Promise.resolve(methodname === 'theme_dimensions_get_calendar_range' ? answer([], args.from, args.to) : {});
+    fetched.mockImplementation(({methodname, args}: {methodname: string, args: {from: string, to: string}}) =>
+        Promise.resolve(methodname === 'theme_dimensions_get_calendar_range' ? answer([], args.from, args.to) : {}));
+    fetchedPublic.mockReset();
+    fetchedPublic.mockImplementation((url: string) => {
+        const [from, to] = url.split('/').slice(-2);
+        return Promise.resolve({ok: true, status: 200, json: () => Promise.resolve({...answer([], from, to), descriptions: []})});
     });
+    (global as unknown as {fetch: unknown}).fetch = fetchedPublic;
     window.history.replaceState({}, '', '/r.php/theme_dimensions/calendar');
     forget();
 });
 
 afterEach(() => {
     document.body.replaceChildren();
+    delete (global as unknown as {fetch?: unknown}).fetch;
     jest.useRealTimers();
 });
 
@@ -609,27 +619,33 @@ describe('the visitor\'s week', () => {
         answer: {...answer(BUSY.slice(0, 2), '2026-11-15', '2026-11-21'), descriptions: []},
         keys: ['category', 'open'],
         modalities: [],
-        urls: {page: 'http://localhost/r.php/theme_dimensions/calendar', home: 'http://localhost/'},
+        urls: {
+            page: 'http://localhost/r.php/theme_dimensions/calendar',
+            home: 'http://localhost/',
+            events: EVENTS,
+            courses: COURSES,
+        },
         ...more,
     });
 
     it('draws the week from its props, the overlaps side by side, and asks nothing', async() => {
         await mount(<PublicCalendar {...visitor()} />);
         expect(fetched).not.toHaveBeenCalled();
+        expect(fetchedPublic).not.toHaveBeenCalled();
         expect([named('Mentoring').dataset.column, named('Area meeting').dataset.column]).toEqual(['0', '1']);
     });
 
-    it('asks its own service for a week without a login, and writes the week into the address', async() => {
+    it('asks its own halves for a week with no cookie, and writes the week into the address', async() => {
         await mount(<PublicCalendar {...visitor()} />);
         await act(async() => {
             fireEvent.click(document.querySelector('[data-action="dim-cal-next"]') as HTMLElement);
         });
-        expect(fetched).toHaveBeenCalledWith(
-            {methodname: 'theme_dimensions_get_public_calendar_range', args: expect.objectContaining({
-                from: '2026-11-22', to: '2026-11-28', keys: ['category', 'open'],
-            })},
-            {loginrequired: false}
-        );
+        expect(fetched).not.toHaveBeenCalled();
+        const options = {credentials: 'omit', headers: {Accept: 'application/json'}};
+        expect(fetchedPublic.mock.calls).toEqual([
+            [`${EVENTS}/2026-11-22/2026-11-28`, options],
+            [`${COURSES}/2026-11-22/2026-11-28`, options],
+        ]);
         const url = new URL(window.location.href);
         expect([url.searchParams.get('view'), url.searchParams.get('week')]).toEqual(['week', '2026-11-22']);
     });
@@ -640,7 +656,7 @@ describe('the visitor\'s week', () => {
             fireEvent.click(view('month'));
         });
         await waitFor(() => expect(document.querySelector('[data-region="dim-cal-grid"]')).not.toBeNull());
-        expect(fetched.mock.calls[0][0].args).toEqual(expect.objectContaining({from: '2026-11-01', to: '2026-12-05'}));
+        expect(fetchedPublic.mock.calls[0][0]).toBe(`${EVENTS}/2026-11-01/2026-12-05`);
         expect(new URL(window.location.href).searchParams.get('month')).toBe('2026-11');
     });
 });

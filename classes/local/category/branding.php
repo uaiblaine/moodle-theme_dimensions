@@ -772,6 +772,8 @@ final class branding {
      */
     public static function forget_all(): void {
         \core_cache\cache::make(self::COMPONENT, self::CACHE)->purge();
+        // The public calendar names categories with their pair: its halves are kept under tokens this renews.
+        \theme_dimensions\local\calendar\publiccache::bump();
     }
 
     /**
