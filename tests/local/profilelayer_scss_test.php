@@ -140,15 +140,40 @@ final class profilelayer_scss_test extends \advanced_testcase {
             $scss,
             $shown
         );
-        $this->assertCount(2, $animations[0], 'The backdrop\'s fade and the layer\'s slide.');
+        $this->assertCount(4, $animations[0], 'The backdrop\'s fade and the layer\'s slide, in and out.');
         $this->assertCount(2, $shown[0]);
+        // The closing: the same two, backwards, only while the module's class is on them and under the same media
+        // query, holding their end state until the module hides them.
+        preg_match_all(
+            '~@media \(prefers-reduced-motion: no-preference\)\s*\{(?:(?!@media).)*?'
+                . '&\.dimensions-layer-closing:not\(\[hidden\]\)\s*\{\s*animation\s*:[^;]*\bforwards;~s',
+            $scss,
+            $leaving
+        );
+        $this->assertCount(2, $leaving[0], 'The closing motion is guarded and holds its end.');
+        $this->assertStringContainsString(
+            'animation: dimensions-layer-out var(--dim-layer-motion-base) var(--dim-layer-motion-ease) forwards;',
+            $scss
+        );
+        foreach (['.dimensions-layer.dimensions-layer-closing', '.dimensions-layer-backdrop.dimensions-layer-closing'] as $leaver) {
+            $this->assertMatchesRegularExpression('~pointer-events:\s*none;~', $this->declarations($leaver), $leaver);
+        }
+        $this->assertMatchesRegularExpression(
+            '~@keyframes dimensions-layer-out\s*\{\s*from\s*\{\s*transform: none;\s*\}\s*to\s*\{\s*'
+                . 'transform: var\(--dim-layer-from\);~',
+            $scss,
+            'The layer leaves by where it came in, the sheet by the bottom.'
+        );
         $this->assertStringContainsString(
             'animation: dimensions-layer-in var(--dim-layer-motion-base) var(--dim-layer-motion-ease);',
             $scss
         );
         $this->assertStringContainsString('--dim-layer-motion-base: var(--dimensions-motion-base, 250ms);', $scss);
         preg_match_all('~@keyframes ([a-z-]+)~', $scss, $keyframes);
-        $this->assertSame(['dimensions-layer-in', 'dimensions-layer-fade'], $keyframes[1]);
+        $this->assertSame(
+            ['dimensions-layer-in', 'dimensions-layer-out', 'dimensions-layer-fade', 'dimensions-layer-fade-out'],
+            $keyframes[1]
+        );
         $this->assertMatchesRegularExpression(
             '~@media \(max-width: 575\.98px\)\s*\{\s*\.dimensions-layer\.dimensions-layer--end\s*\{\s*'
                 . '--dim-layer-from: translateY\(100%\);~',
@@ -416,6 +441,9 @@ final class profilelayer_scss_test extends \advanced_testcase {
             $top
         );
         $this->assertMatchesRegularExpression('~overflow:\s*hidden;~', $top);
+        // A clipping flex item has no automatic minimum height: without this a layer lower than its content shrinks
+        // the header and cuts the profile buttons.
+        $this->assertMatchesRegularExpression('~flex:\s*none;~', $top, 'The header never shrinks.');
         $this->assertMatchesRegularExpression(
             '~position:\s*relative;~',
             $this->declarations('.dimensions-layer .dimensions-layer-top > :not(.dimensions-layer-spark)'),

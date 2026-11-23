@@ -33,8 +33,10 @@
  * control, and writes CLASSES.MODES on the body, by which scss/post.scss hides the navbar's own colour mode menu.
  * The Look options are theme_dimensions/flavourchoice's, delegated from the document.
  *
- * The motion is the stylesheet's (an animation on the open layer, under prefers-reduced-motion: no-preference); a
- * Pending token is held until it ends, so Behat never presses a row that is still sliding in.
+ * The motion is the stylesheet's, under prefers-reduced-motion: no-preference: an animation on the open layer, and its
+ * way back while the layer and the backdrop carry CLASSES.CLOSING, after which the module hides both. A Pending token
+ * is held until each ends, so Behat never presses a row that is still sliding in nor reads a layer that is on its way
+ * out. A closing layer is inert, and a press on the user button meanwhile ends the closing and opens the layer again.
  *
  * @module     theme_dimensions/profilelayer
  * @copyright  2026 Anderson Blaine
@@ -70,6 +72,8 @@ const CLASSES = {
     ARMED: 'dimensions-layer-js',
     // On the body while an armed layer carries the colour mode control: scss/post.scss hides the navbar's menu by it.
     MODES: 'dimensions-profilelayer-modes',
+    // On the layer and its backdrop while they leave: scss/profilelayer.scss plays the closing motion by it.
+    CLOSING: 'dimensions-layer-closing',
 };
 
 /** The events the layer dispatches on itself; they bubble. amd/src/phonemenu.js listens for ARMED and SHOWN. */
@@ -82,7 +86,7 @@ export const EVENTS = {
 /** The id core's drawer template gives Boost's primary drawer, the navigation drawer's home. */
 const PRIMARY = 'theme_boost-drawers-primary';
 
-/** The longest the opening motion may hold Behat, in milliseconds, should its animationend never come. */
+/** The longest the opening or the closing motion may hold Behat, in milliseconds, should its animationend never come. */
 const SETTLE = 600;
 
 /** The keys that move among a sub-view's items, and where each one moves. */
@@ -99,13 +103,17 @@ const MODESTEPS = {
     ArrowUp: -1,
 };
 
-/** The page's one layer, its backdrop and the user button, once armed; whether it is open; the row of the sub-view. */
+/**
+ * The page's one layer, its backdrop and the user button, once armed; whether it is open; the row of the sub-view;
+ * and, while the layer is leaving, the function that ends its closing.
+ */
 const state = {
     layer: null,
     backdrop: null,
     toggle: null,
     open: false,
     opener: null,
+    closing: null,
 };
 
 /**
@@ -160,11 +168,59 @@ const settle = (layer) => {
 };
 
 /**
+ * Take the closed layer off the screen: play the closing motion, then hide the layer and its backdrop and put the
+ * layer back on its main view for the next opening.
+ *
+ * The layer is inert while it leaves, so nothing in it is pressed or focused. A Pending token is held until it is
+ * hidden: when the motion ends, at once when there is none (prefers-reduced-motion: reduce), after a bound in any case.
+ */
+const dismiss = () => {
+    const {layer, backdrop} = state;
+    const pending = new Pending('theme_dimensions/profilelayer:close');
+    const ended = (event) => {
+        // A row's own transition never ends the closing: only the layer's animation does.
+        if (event.target === layer) {
+            finish();
+        }
+    };
+    const finish = () => {
+        if (state.closing !== finish) {
+            return;
+        }
+        state.closing = null;
+        layer.removeEventListener('animationend', ended);
+        layer.hidden = true;
+        backdrop.hidden = true;
+        layer.classList.remove(CLASSES.CLOSING);
+        backdrop.classList.remove(CLASSES.CLOSING);
+        layer.inert = false;
+        showView(layer.querySelector(SELECTORS.MAIN));
+        layer.dispatchEvent(new CustomEvent(EVENTS.HIDDEN, {bubbles: true}));
+        pending.resolve();
+    };
+    state.closing = finish;
+    layer.inert = true;
+    layer.classList.add(CLASSES.CLOSING);
+    backdrop.classList.add(CLASSES.CLOSING);
+    if (window.getComputedStyle(layer).animationName === 'none') {
+        finish();
+        return;
+    }
+    layer.addEventListener('animationend', ended);
+    window.setTimeout(finish, SETTLE);
+};
+
+/**
  * Open the layer on its main view, hold the focus in it and put it on the main view's close button.
+ *
+ * A layer still on its way out is hidden first, so the opening starts from a closed layer.
  */
 const open = () => {
     if (state.open) {
         return;
+    }
+    if (state.closing) {
+        state.closing();
     }
     state.open = true;
     // The navigation drawer and the layer are never open together.
@@ -184,7 +240,7 @@ const open = () => {
 };
 
 /**
- * Close the layer, put it back on its main view for the next opening and give the focus back to the user button.
+ * Close the layer and give the focus back to the user button; the layer then leaves the screen (dismiss()).
  *
  * The focus is released before it is given back: while it is held, focuslock would pull it into the layer again.
  *
@@ -197,14 +253,11 @@ const close = (returnFocus = true) => {
     state.open = false;
     state.opener = null;
     untrapFocus();
-    state.layer.hidden = true;
-    state.backdrop.hidden = true;
-    showView(state.layer.querySelector(SELECTORS.MAIN));
     state.toggle.setAttribute('aria-expanded', 'false');
     if (returnFocus) {
         state.toggle.focus();
     }
-    state.layer.dispatchEvent(new CustomEvent(EVENTS.HIDDEN, {bubbles: true}));
+    dismiss();
 };
 
 /**

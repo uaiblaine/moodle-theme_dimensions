@@ -5,6 +5,10 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The profile layer leaves as it came** (2026100640). Closing the layer of the user button now plays the opening
+  backwards, on a desktop (it slides out by its side) and on a phone (the sheet goes down), with the backdrop fading
+  out; with "reduce motion" on it still closes at once. **Fixed:** in a window lower than the layer's content, "View
+  profile" and "Edit profile" were cut at the bottom, because the header shrank instead of the list scrolling.
 - **The public calendar can be served from a CDN** (2026100639). A visitor's calendar now reads each half of what it
   shows (the public categories' events, the public event courses) from its own address,
   `/theme_dimensions/calendar/public/{events|courses}/{token}/{lang}/{from}/{to}`: a GET that reads no session, sets no

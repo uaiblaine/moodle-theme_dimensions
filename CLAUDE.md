@@ -874,7 +874,13 @@ it, `scss/profilelayer.scss` styles it and `amd/src/profilelayer.js` opens it. T
   The nav is marked `dimensions-phonenav-<key>` only once the entries are placed. The group is hidden from md up. A
   press on an entry closes the layer, so the messaging drawer it opens is not under the layer's backdrop.
 - **The opening motion is a CSS animation on `:not([hidden])`**, under `prefers-reduced-motion: no-preference`, with a
-  Pending token until `animationend` (bounded by 600 ms; gate `js_profilelayer_pending`). Closing is at once. Core's
+  Pending token until `animationend` (bounded by 600 ms; gate `js_profilelayer_pending`). Closing is the same motion backwards:
+  `close()` releases and returns the focus at once, then `dismiss()` puts `dimensions-layer-closing` on the layer and
+  its backdrop (the sheet's `-out` keyframes, `forwards`), makes the layer inert and hides both on the LAYER's own
+  `animationend` (a row's transition bubbles too), at once under reduced motion, after 600 ms in any case, under the
+  token `profilelayer:close`; `open()` ends a closing still running first (gates `js_profilelayer_closing_hides`,
+  `js_profilelayer_closing_pending`, `js_profilelayer_reopen_ends_closing`, `profilelayer_top_never_shrinks`). The
+  identity header is `flex: none`: it clips, so it would shrink and cut the profile buttons in a low layer. Core's
   Behat site does not drop the animation (only its `optional-animation` mixin does, and the layer's selectors cannot
   carry `body.behat-site`), which is why the token exists.
 - **Behat.** `tests/behat/behat_theme_dimensions_behat_navigation.php` overrides core's `I follow "..." in the user
