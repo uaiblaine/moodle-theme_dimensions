@@ -6,9 +6,13 @@ Feature: The profile layer of a logged-in account
 
   # The logic (the groups, the identity and its mask, the notice, the hooks of the module) is PHPUnit's: these
   # scenarios only run the module. Generated names are random, so every person here has a first and a last name.
+  # local_rank, where a site has it, owns user.alternatename and composes it again when a user is created (the full
+  # name for somebody without a rank), so it is switched off before the users are made: the alternate names below
+  # are then the ones stored. The row is inert on a site without the plugin.
   Background:
     Given the following config values are set as admin:
-      | theme | dimensions |
+      | theme   | dimensions |            |
+      | enabled | 0          | local_rank |
     And the following "theme_boost_union > flavours" exist:
       | title   |
       | Harbour |
