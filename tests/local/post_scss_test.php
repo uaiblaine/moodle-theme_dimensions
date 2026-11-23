@@ -529,4 +529,118 @@ final class post_scss_test extends \basic_testcase {
             $scss
         );
     }
+
+    /**
+     * The help popover's rules, comments stripped: from its section header to the end of the stylesheet.
+     *
+     * @return string
+     */
+    private function help_popover_block(): string {
+        $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
+        $start = strpos($scss, "/* ---- Core's help popover");
+        $this->assertNotFalse($start, 'Precondition: the help popover section exists.');
+        return preg_replace('~/\*.*?\*/~s', '', substr($scss, $start));
+    }
+
+    /**
+     * The help popover's width cap is read from a custom property, and that property holds the min().
+     *
+     * Moodle's stylelint refuses min() in a length property and passes it inside a custom property read through
+     * var(). The control is the same block's height cap, a length property that must hold no min(), max() or clamp().
+     *
+     * @return void
+     */
+    public function test_the_help_popover_width_is_a_min_held_in_a_custom_property(): void {
+        $block = $this->help_popover_block();
+        $this->assertMatchesRegularExpression(
+            '/--dim-help-width:\s*min\(26rem,\s*calc\(100vw - 1\.5rem\)\);/',
+            $block
+        );
+        $this->assertMatchesRegularExpression(
+            '/--bs-popover-max-width:\s*var\(--dim-help-width\);/',
+            $block
+        );
+        $this->assertMatchesRegularExpression('/max-height:\s*70vh;/', $block, 'Control: a length property is here.');
+        $this->assertDoesNotMatchRegularExpression(
+            '/(?<![-\w])(?:min|max|clamp)\(/',
+            preg_replace('/--dim-help-width:[^;]*;/', '', $block),
+            'No length property of the block holds min(), max() or clamp().'
+        );
+    }
+
+    /**
+     * The popover's body scrolls past 70vh, past 45vh under the md breakpoint, and keeps the scroll to itself.
+     *
+     * @return void
+     */
+    public function test_the_help_popover_body_is_capped_and_scrolls(): void {
+        $block = $this->help_popover_block();
+        $this->assertMatchesRegularExpression(
+            '/\.popover-body \{\s*max-height: 70vh;\s*overflow-y: auto;\s*overscroll-behavior: contain;/',
+            $block
+        );
+        $this->assertMatchesRegularExpression(
+            '/@include media-breakpoint-down\(md\) \{\s*max-height: 45vh;\s*\}/',
+            $block
+        );
+    }
+
+    /**
+     * The popover's skin reads the theme's tokens: the ground, the line, the elevation and the 12px radius.
+     *
+     * The control is the token reads themselves: a pattern that found no declaration would pass for the wrong reason.
+     *
+     * @return void
+     */
+    public function test_the_help_popover_skin_reads_tokens_and_paints_no_literal_colour(): void {
+        $block = $this->help_popover_block();
+        foreach (
+            [
+                '--bs-popover-bg: var(--dimensions-surface);',
+                '--bs-popover-border-color: var(--dimensions-line);',
+                '--bs-popover-border-radius: var(--dim-ds-radius-lg);',
+                'box-shadow: var(--dimensions-elevation-md);',
+            ] as $declaration
+        ) {
+            $this->assertStringContainsString($declaration, $block);
+        }
+        $this->assertSame(
+            0,
+            preg_match('/#[0-9a-fA-F]{3,8}\b|\b(?:rgb|rgba|hsl|hsla|color-mix)\(/', $block),
+            'No literal colour in the block.'
+        );
+        $this->assertSame(0, preg_match('/!important/', $block));
+    }
+
+    /**
+     * The scroll hint is a sticky fade over the text's bottom edge, in tokens, and no background paints it.
+     *
+     * A background sits behind the text and cut it with no sign; the pseudo-element must stay sticky at the bottom,
+     * fade to the ground token, let clicks through, and stand in for the body's bottom padding. The control is the
+     * positive assertions: a block that lost the rule would fail them before the absence below could pass.
+     *
+     * @return void
+     */
+    public function test_the_help_popover_scroll_hint_is_a_sticky_fade_over_the_text(): void {
+        $block = $this->help_popover_block();
+        $this->assertMatchesRegularExpression('/\.popover-body \{[^}]*?padding-bottom: 0;/s', $block);
+        $this->assertSame(1, preg_match('/&::after \{([^}]*)\}/', $block, $after), 'Control: the pseudo-element rule.');
+        $this->assertStringContainsString('content: "";', $after[1]);
+        $this->assertStringContainsString('position: sticky;', $after[1]);
+        $this->assertStringContainsString('bottom: 0;', $after[1]);
+        $this->assertStringContainsString(
+            'background: linear-gradient(transparent, var(--dimensions-surface));',
+            $after[1]
+        );
+        $this->assertStringContainsString('pointer-events: none;', $after[1]);
+        $this->assertStringContainsString('height: var(--dim-help-fade);', $after[1]);
+        $this->assertStringContainsString('--dim-help-fade: 1.25rem;', $block);
+        $this->assertStringNotContainsString('background-attachment', $block, 'No background paints the hint.');
+        $this->assertStringContainsString(
+            'border-radius: var(--bs-popover-inner-border-radius);',
+            $block,
+            'The body clips the fade to the popover\'s inner radius.'
+        );
+    }
 }
