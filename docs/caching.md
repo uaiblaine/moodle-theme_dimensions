@@ -118,6 +118,11 @@ does with `Vary: Accept-Language` when no such setting is configured is not stat
 ([Cloudflare Vary][cf-vary]). Since the language is in the address of every cacheable answer above, keeping
 one copy per address is correct.
 
+**`Vary: Accept-Encoding` is the web server's, and harmless.** Apache's compression (`mod_deflate`) adds it to
+every compressible answer after PHP has finished, the public calendar route's included (measured on the dev
+stacks, 2026-11-23). Cloud CDN accepts it ([caching overview][gcdn-caching] lists `Accept-Encoding` among the
+`Vary` values it caches), and Cloudflare respects it ([Cloudflare Cache-Control][cf-cachecontrol]).
+
 **Caller-chosen revisions.** Core answers any revision up to the current time on `javascript.php`,
 `requirejs.php`, the ES module route and the strings service's `cachekey` with a long `immutable` lifetime.
 That exposes no personal data, but anyone can create new cacheable addresses. Rate limiting by client at the
@@ -212,8 +217,9 @@ gcloud compute backend-services update moodle-web --global \
 
 **Multi-language sites and `Vary: Accept-Language`.** A `Vary` naming a header outside Cloud CDN's allowlist
 blocks caching unless the header is in the cache key; `Accept-Language` is not on the list of headers
-refused as cache-key headers ([caching overview][gcdn-caching]). The public calendar route sends no `Vary`
-(the theme removes core's), so it is cached on any site. Core's `javascript.php` and strings service keep it
+refused as cache-key headers ([caching overview][gcdn-caching]). The public calendar route sends no
+`Vary: Accept-Language` (the theme removes core's), and the web server's `Vary: Accept-Encoding` is on Cloud CDN's
+allowlist, so it is cached on any site. Core's `javascript.php` and strings service keep it
 on a multi-language site. Two ways out for those:
 
 - Route `/lib/javascript.php/*` and `/lib/ajax/service-nologin.php` through the URL map to a second backend
@@ -459,7 +465,8 @@ hdrs() { curl -s -o /dev/null -D - "$1" \
 3. **The public calendar halves are cached, cookie-free.** Open the public calendar in a private browser
    window and copy a `/calendar/public/courses/...` address from the network panel (or take the prefix from
    the page source). Expect `public, max-age=60, s-maxage=300` (courses, default) or `s-maxage=86400`
-   (events), no `Set-Cookie`, no `Vary` (even on a multi-language site), and a hit on the second run.
+   (events), no `Set-Cookie`, no `Vary` other than `Accept-Encoding` (even on a multi-language site), and a
+   hit on the second run.
 
    ```sh
    HALF="$SITE/theme_dimensions/calendar/public/courses/<token>/<lang>/<from>/<to>"
@@ -493,8 +500,8 @@ hdrs() { curl -s -o /dev/null -D - "$1" \
   ([Cloudflare Vary][cf-vary] does not say).
 - Which Cloudflare plans may use `http.cookie` and `starts_with()` in Cache Rules, and which offer Cache
   Deception Armor (the pages cited do not say).
-- The public calendar route's headers were read from the code, not measured on a running site; its
-  `Vary: Accept-Language` is inferred from core's template route, which goes through the same router setup.
+- The public calendar route behind a real CDN. Its origin headers were measured (2026-11-23) through the mini
+  cluster's balancer and on a stack with three languages: items 3 to 5 of the checklist above, a hit apart.
 
 [gcdn-caching]: https://docs.cloud.google.com/cdn/docs/caching
 [gcdn-modes]: https://docs.cloud.google.com/cdn/docs/using-cache-modes
