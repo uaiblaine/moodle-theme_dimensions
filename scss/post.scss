@@ -1508,3 +1508,79 @@ body:has(#theme_boost-drawers-primary.show) .navbar.fixed-top {
         }
     }
 }
+
+/* ---- Core's help popover ------------------------------------------------------------------------------------------
+   The icon beside a form label (core/help_icon) opens a Bootstrap popover whose element carries `.help-popover` and is
+   appended to the body. Core caps it at 300px wide and gives it no height, so a long text, with the lists and
+   examples the fleet's help texts hold, becomes a tall narrow column that runs off a small screen. CSS only: core's
+   template and behaviour are untouched.
+
+   The width goes through a custom property because stylelint refuses min() in a length property and lets it pass in
+   a custom property's value, which var() then reads. */
+.help-popover {
+    --dim-help-width: min(26rem, calc(100vw - 1.5rem));
+    --dim-help-gap: .625rem;
+    --dim-help-indent: 1.125rem;
+    --dim-help-fade: 1.25rem;
+    --bs-popover-max-width: var(--dim-help-width);
+    --bs-popover-font-size: .875rem;
+    --bs-popover-bg: var(--dimensions-surface);
+    --bs-popover-border-color: var(--dimensions-line);
+    --bs-popover-border-radius: var(--dim-ds-radius-lg);
+    --bs-popover-inner-border-radius: calc(var(--dim-ds-radius-lg) - 1px);
+    --bs-popover-body-padding-x: var(--dim-ds-space-md);
+    --bs-popover-body-padding-y: .875rem;
+    /* Bootstrap applies --bs-popover-box-shadow only through its box-shadow() mixin, which prints nothing while
+       $enable-shadows is false, as it is on Boost: the elevation is set here, on the element. */
+    box-shadow: var(--dimensions-elevation-md);
+
+    .popover-body {
+        /* 45vh on a phone, not the 70vh of a larger screen: Popper flips the popover to the side of the icon that has
+           room, and one side always holds at least 45vh, so a long text never has to be clipped by the viewport. */
+        max-height: 70vh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        border-radius: var(--bs-popover-inner-border-radius);
+        line-height: 1.5;
+        padding-bottom: 0;
+        scrollbar-width: thin;
+        scrollbar-color: var(--dimensions-ink-faint) transparent;
+
+        /* The scroll hint, with no script, painted over the text (a background would sit behind it and cut the
+           text without a sign). The pseudo-element is the body's last block: with text below the fold it sticks to the
+           bottom edge and fades the line under it; at the end of the text it rests under the last line, where the
+           ground over the ground shows nothing; when the text fits it is the bottom padding the body gave up. */
+        &::after {
+            content: "";
+            display: block;
+            position: sticky;
+            bottom: 0;
+            height: var(--dim-help-fade);
+            background: linear-gradient(transparent, var(--dimensions-surface));
+            pointer-events: none;
+        }
+
+        @include media-breakpoint-down(md) {
+            max-height: 45vh;
+        }
+
+        p,
+        ul,
+        ol {
+            margin: 0 0 var(--dim-help-gap);
+        }
+
+        ul,
+        ol {
+            padding-inline-start: var(--dim-help-indent);
+        }
+
+        li + li {
+            margin-top: var(--dim-ds-space-xxs);
+        }
+
+        > :last-child {
+            margin-bottom: 0;
+        }
+    }
+}

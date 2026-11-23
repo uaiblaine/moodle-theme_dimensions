@@ -5,6 +5,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Help popovers fit the screen and scroll** (2026100641). The popover behind core's help icon is up to 26rem wide and
+  never wider than the window less a margin, its text scrolls inside it (at most 70% of the window's height, 45% on a
+  phone, so it can open on the side of the icon that has room), and the bottom edge fades while there is more to read below. It wears the Design
+  System's popover skin (12px radius, the line, the medium elevation) and a reading rhythm for paragraphs and lists.
+  CSS only; core's template is untouched.
 - **The profile layer leaves as it came** (2026100640). Closing the layer of the user button now plays the opening
   backwards, on a desktop (it slides out by its side) and on a phone (the sheet goes down), with the backdrop fading
   out; with "reduce motion" on it still closes at once. **Fixed:** in a window lower than the layer's content, "View
