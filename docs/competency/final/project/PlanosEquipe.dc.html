@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Planos de um aluno, por quem acompanha</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./comp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0a4f8f}a:hover{color:#073560}
+.menu{position:absolute;right:12px;top:52px;z-index:5;min-width:220px;padding:4px;background:#fff;border:1px solid #dde1ea;border-radius:8px;box-shadow:0 4px 14px rgba(16,24,48,.14);display:flex;flex-direction:column}
+.menu a{display:flex;align-items:center;gap:8px;min-height:32px;padding:0 8px;border-radius:4px;font-size:14px;color:#1d2433;text-decoration:none}
+.menu a.hov{background:#e7f1fa;color:#0a4f8f}
+.menu hr{border:0;border-top:1px solid #dde1ea;margin:4px 0;width:100%}
+.menu svg{width:16px;height:16px;color:#5a6278}
+</style>
+</helmet>
+<div class="dm" style="min-height: 980px;">
+  <nav class="nav" aria-label="Site">
+    <span class="brand">Dimensions</span>
+    <a href="#">Painel</a>
+    <a href="#">Meus cursos</a>
+    <span class="grow"></span>
+    <span class="avatar">RD</span>
+  </nav>
+  <div class="viewing"><div class="wrap">Você está vendo os planos de Marina Alves.</div></div>
+
+  <header class="hdr">
+    <div class="wrap row wrapx" style="align-items: flex-end; gap: 16px 32px;">
+      <div class="col grow" style="gap: 6px; flex-basis: 320px;">
+        <nav class="crumb" aria-label="Você está em"><a href="#">Marina Alves</a><span>/</span><span>Planos de aprendizagem</span></nav>
+        <h1 class="h1">Planos de aprendizagem</h1>
+      </div>
+      <a class="btn line" href="Evidencias.dc.html">Evidências</a>
+      <a class="btn primary" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Novo plano</a>
+    </div>
+  </header>
+
+  <main class="wrap col" style="gap: 16px; padding-top: 20px; padding-bottom: 40px;">
+    <div class="bar">
+      <div class="seg" role="radiogroup" aria-label="Estado dos planos">
+        <button type="button" role="radio" aria-checked="true">Ativos <small>3</small></button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1">Em revisão <small>1</small></button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1">Concluídos <small>2</small></button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1">Rascunhos <small>1</small></button>
+      </div>
+      <span class="grow"></span>
+      <div class="cluster">
+        <span class="count" aria-live="polite">3 planos</span>
+        <div class="caps">
+          <button type="button" class="ib" aria-expanded="false" aria-label="Filtros"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z"></path></svg></button>
+          <button type="button" class="ib" aria-expanded="false" aria-label="Organizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4"></path></svg><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+        </div>
+      </div>
+      <div class="caps">
+        <button type="button" class="ib" aria-label="Buscar planos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg></button>
+      </div>
+    </div>
+
+    <ul class="plans" style="grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));">
+      <li class="pc v">
+        <div class="cover" style="background: linear-gradient(160deg, #1a6fc4, #0b2d5c); min-height: 132px;">
+          <a class="go" href="#">Ver plano<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+          <div class="tags"><span class="tag">Docência digital</span><span class="tag">Formação continuada</span></div>
+        </div>
+        <div class="body">
+          <div class="top">
+            <div class="col grow" style="gap: 4px;">
+              <h2 class="name"><a href="#">Docência digital (DigCompEdu)</a></h2>
+              <span class="small">22 competências · até 12 dez 2026</span>
+            </div>
+            <button type="button" class="kebab" aria-expanded="true" aria-haspopup="menu" aria-label="Ações do plano Docência digital (DigCompEdu)" style="background: #e7f1fa; color: #0a4f8f;"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="12" cy="19" r="1.7"></circle></svg></button>
+          </div>
+          <div class="menu" role="menu" aria-label="Ações do plano">
+            <a role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"></path></svg>Editar</a>
+            <a role="menuitem" class="hov" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Concluir este plano</a>
+            <a role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 15l6-6M10 6l1-1a4 4 0 016 6l-1 1M14 18l-1 1a4 4 0 01-6-6l1-1"></path></svg>Desvincular do modelo</a>
+            <hr>
+            <a role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"></path></svg>Excluir</a>
+          </div>
+          <ol class="trail" aria-label="Competências do plano">
+            <li class="done"><span class="tk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span>1.1 Comunicação institucional</span></li>
+            <li class="done"><span class="tk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span>2.2 Criação e modificação</span></li>
+            <li class="done"><span class="tk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span>2.3 Gestão, proteção e partilha</span></li>
+            <li><span class="tk"></span><span>4.1 Estratégias de avaliação</span></li>
+          </ol>
+          <span class="more small">e mais 18 competências</span>
+        </div>
+      </li>
+
+      <li class="pc v">
+        <div class="cover" style="background: linear-gradient(160deg, #9a3fd0, #4a1d7a); min-height: 132px;">
+          <a class="go" href="#">Ver plano<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+          <div class="tags"><span class="tag">Ingresso</span><span class="tag">Formação continuada</span></div>
+        </div>
+        <div class="body">
+          <div class="top">
+            <div class="col grow" style="gap: 4px;">
+              <h2 class="name"><a href="#">Trilha de ingresso 2026</a></h2>
+              <span class="small">9 etapas · até 28 fev 2027</span>
+            </div>
+            <button type="button" class="kebab" aria-expanded="false" aria-haspopup="menu" aria-label="Ações do plano Trilha de ingresso 2026"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="12" cy="19" r="1.7"></circle></svg></button>
+          </div>
+          <ol class="trail" aria-label="Etapas do plano">
+            <li class="done"><span class="tk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span>Conhece o projeto pedagógico</span></li>
+            <li class="done"><span class="tk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span>Planeja aulas eficazes</span></li>
+            <li><span class="tk"></span><span>Trabalha com as famílias</span></li>
+            <li><span class="tk"></span><span>Reflete sobre a prática</span></li>
+          </ol>
+          <span class="more small">e mais 5 etapas</span>
+        </div>
+      </li>
+
+      <li class="pc v">
+        <div class="cover" style="background: linear-gradient(160deg, #12827a, #07403c); min-height: 132px;">
+          <a class="go" href="#">Ver plano<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+          <div class="tags"><span class="tag">Liderança</span></div>
+        </div>
+        <div class="body">
+          <div class="top">
+            <div class="col grow" style="gap: 4px;">
+              <h2 class="name"><a href="#">Liderança pedagógica</a></h2>
+              <span class="small">3 competências · sem prazo · plano individual</span>
+            </div>
+            <button type="button" class="kebab" aria-expanded="false" aria-haspopup="menu" aria-label="Ações do plano Liderança pedagógica"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="12" cy="19" r="1.7"></circle></svg></button>
+          </div>
+          <ol class="trail" aria-label="Competências do plano">
+            <li><span class="tk"></span><span>Mentoria entre pares</span></li>
+            <li><span class="tk"></span><span>Condução de equipes</span></li>
+            <li><span class="tk"></span><span>Decisões com dados</span></li>
+          </ol>
+        </div>
+      </li>
+    </ul>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":980}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

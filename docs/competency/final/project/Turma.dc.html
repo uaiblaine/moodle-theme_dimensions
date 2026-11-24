@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Turma</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./comp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0a4f8f}a:hover{color:#073560}
+.first{display:flex;align-items:center;gap:10px;min-width:230px}
+.first .nm{flex:1 1 auto;min-width:0}
+.look li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:8px 0;border-top:1px solid #dde1ea;font-size:14px}
+.look li:first-child{border-top:0}
+</style>
+</helmet>
+<div class="dm" style="min-height: 1380px;">
+  <nav class="nav" aria-label="Site">
+    <span class="brand">Dimensions</span>
+    <a href="#">Painel</a>
+    <a class="on" href="#" aria-current="page">Meus cursos</a>
+    <span class="grow"></span>
+    <span class="avatar">RD</span>
+  </nav>
+
+  <header class="hdr" style="padding-bottom: 0;">
+    <div class="wrap col" style="gap: 14px;">
+      <div class="col" style="gap: 6px;">
+        <nav class="crumb" aria-label="Você está em"><a href="#">Meus cursos</a><span>/</span><a href="#">Avaliação com tecnologias digitais</a><span>/</span><span>Competências</span></nav>
+        <h1 class="h1">Turma</h1>
+      </div>
+      <nav class="tabs" aria-label="Competências neste curso" style="border-bottom: 0;">
+        <a href="CursoProfessor.dc.html">Competências</a>
+        <a class="on" href="#" aria-current="page">Turma</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap col" style="gap: 16px; padding-top: 20px; padding-bottom: 40px;">
+    <div class="bar">
+      <div class="seg" role="radiogroup" aria-label="Mostrar">
+        <button type="button" role="radio" aria-checked="true">Todos <small>24</small></button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1">Sem avaliação <small>10</small></button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1">Proficientes em todas <small>6</small></button>
+      </div>
+      <span class="grow"></span>
+      <div class="cluster">
+        <span class="count" aria-live="polite">24 alunos</span>
+        <div class="caps">
+          <button type="button" class="ib" aria-expanded="false" aria-label="Filtros"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.900" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16l-6 7.500V19l-4-2v-4.500z"></path></svg></button>
+          <button type="button" class="ib" aria-expanded="false" aria-label="Colunas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.900" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="M10 5v14M15 5v14"></path></svg><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+          <button type="button" class="ib" aria-expanded="false" aria-label="Visualização"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.900" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.500"></rect><rect x="13" y="4" width="7" height="7" rx="1.500"></rect><rect x="4" y="13" width="7" height="7" rx="1.500"></rect><rect x="13" y="13" width="7" height="7" rx="1.500"></rect></svg><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+          <button type="button" class="ib" aria-expanded="false" aria-label="Baixar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.900" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.500l5 5 5-5M5 20h14"></path></svg><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+        </div>
+      </div>
+      <div class="caps">
+        <button type="button" class="ib" aria-label="Buscar alunos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.900" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.500"></circle><path d="M16 16l4.500 4.500"></path></svg></button>
+      </div>
+    </div>
+
+    <section class="col" aria-label="Resumo da turma" style="gap: 12px;">
+      <div class="tiles">
+        <div class="tile"><span class="lbl">Alunos</span><span class="val num">24</span><span class="sub">inscritos que podem ser avaliados</span></div>
+        <div class="tile"><span class="lbl">Proficientes nas três</span><span class="val num">6</span><span class="sub">de 24 alunos</span></div>
+        <div class="tile"><span class="lbl">Sem avaliação em alguma</span><span class="val num">10</span><span class="sub">14 avaliações faltando</span></div>
+        <div class="tile"><span class="lbl">Evidências nos últimos 7 dias</span><span class="val num">7</span><span class="sub">de 5 alunos</span></div>
+      </div>
+      <div class="panels">
+        <section class="card pad col" aria-labelledby="tu-dist" style="gap: 12px;">
+          <h2 class="h3" id="tu-dist">Distribuição por competência</h2>
+          <div class="dist">
+            <a href="#">4.1 Estratégias de avaliação</a>
+            <div class="stack" role="img" aria-label="3 sem avaliação, 2 em A1, 5 em A2, 10 em B1, 4 em B2 ou acima"><i class="lv0" style="width: 12.500%;"></i><i class="lv1" style="width: 8.300%;"></i><i class="lv2" style="width: 20.800%;"></i><i class="lv3" style="width: 41.700%;"></i><i class="lv4" style="width: 16.700%;"></i></div>
+            <span class="num small">14 de 24</span>
+            <a href="#">4.3 Feedback e planificação</a>
+            <div class="stack" role="img" aria-label="9 sem avaliação, 3 em A1, 6 em A2, 5 em B1, 1 em B2 ou acima"><i class="lv0" style="width: 37.500%;"></i><i class="lv1" style="width: 12.500%;"></i><i class="lv2" style="width: 25%;"></i><i class="lv3" style="width: 20.800%;"></i><i class="lv4" style="width: 4.200%;"></i></div>
+            <span class="num small">6 de 24</span>
+            <a href="#">3.3 Aprendizagem colaborativa</a>
+            <div class="stack" role="img" aria-label="2 sem avaliação, 1 em A1, 3 em A2, 12 em B1, 6 em B2 ou acima"><i class="lv0" style="width: 8.300%;"></i><i class="lv1" style="width: 4.200%;"></i><i class="lv2" style="width: 12.500%;"></i><i class="lv3" style="width: 50%;"></i><i class="lv4" style="width: 25%;"></i></div>
+            <span class="num small">18 de 24</span>
+          </div>
+          <div class="legend"><span><i class="lv0"></i>Sem avaliação</span><span><i class="lv1"></i>A1</span><span><i class="lv2"></i>A2</span><span><i class="lv3"></i>B1, proficiente</span><span><i class="lv4"></i>B2 ou acima</span></div>
+        </section>
+        <section class="card pad col" aria-labelledby="tu-look" style="gap: 6px;">
+          <h2 class="h3" id="tu-look">Onde olhar primeiro</h2>
+          <ul class="look">
+            <li><a href="#">4.3 Feedback e planificação</a><span class="small num">9 alunos sem avaliação</span></li>
+            <li><a href="#">Evidências novas sem avaliação depois delas</a><span class="small num">4 alunos</span></li>
+            <li><a href="#">Sem nenhuma evidência neste curso</a><span class="small num">2 alunos</span></li>
+          </ul>
+        </section>
+      </div>
+    </section>
+
+    <div class="col" style="gap: 8px;">
+      <div class="gridframe" style="max-height: 37rem;">
+        <table class="grid">
+          <caption class="vh">Alunos do curso e o nível de cada um em cada competência, por nome</caption>
+          <thead><tr>
+            <th scope="col" aria-sort="ascending"><button type="button" class="sortbtn">Aluno<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.600" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg></button></th>
+            <th scope="col"><button type="button" class="sortbtn">4.1 Estratégias de avaliação</button></th>
+            <th scope="col"><button type="button" class="sortbtn">4.3 Feedback e planificação</button></th>
+            <th scope="col"><button type="button" class="sortbtn">3.3 Aprendizagem colaborativa</button></th>
+            <th scope="col"><button type="button" class="sortbtn">Proficiente em</button></th>
+            <th scope="col"><button type="button" class="sortbtn">Última evidência</button></th>
+          </tr></thead>
+          <tbody>
+            <tr><th scope="row"><span class="first"><span class="avatar">AS</span><span class="nm"><a href="#">Ana Beatriz Souza</a><span class="sub">Turma A</span></span><a class="btn line sm" href="AlunoCompetencia.dc.html">Avaliar</a></span></th><td><span class="st ok">B1 Integrador</span></td><td><span class="st">A2 Explorador</span></td><td><span class="st ok">B2 Especialista</span></td><td class="num">2 de 3</td><td class="num">20 out</td></tr>
+            <tr><th scope="row"><span class="first"><span class="avatar">CR</span><span class="nm"><a href="#">Caio Ribeiro</a><span class="sub">Turma B</span></span><a class="btn line sm" href="AlunoCompetencia.dc.html">Avaliar</a></span></th><td><span class="st">A2 Explorador</span></td><td><span class="small">Sem avaliação</span></td><td><span class="st ok">B1 Integrador</span></td><td class="num">1 de 3</td><td class="num">28 out</td></tr>
+            <tr><th scope="row"><span class="first"><span class="avatar">DM</span><span class="nm"><a href="#">Daniela Moraes</a><span class="sub">Turma A</span></span><a class="btn line sm" href="AlunoCompetencia.dc.html">Avaliar</a></span></th><td><span class="st ok">B1 Integrador</span></td><td><span class="st ok">B1 Integrador</span></td><td><span class="st ok">B1 Integrador</span></td><td class="num">3 de 3</td><td class="num">22 out</td></tr>
+            <tr><th scope="row"><span class="first"><span class="avatar">FT</span><span class="nm"><a href="#">Felipe Tavares</a><span class="sub">Turma B</span></span><a class="btn line sm" href="AlunoCompetencia.dc.html">Avaliar</a></span></th><td><span class="small">Sem avaliação</span></td><td><span class="small">Sem avaliação</span></td><td><span class="st">A1 Recém-chegado</span></td><td class="num">0 de 3</td><td><span class="small">nenhuma</span></td></tr>
+            <tr><th scope="row"><span class="first"><span class="avatar">JT</span><span class="nm"><a href="#">Júlia Teixeira</a><span class="sub">Turma A</span></span><a class="btn line sm" href="AlunoCompetencia.dc.html">Avaliar</a></span></th><td><span class="st ok">B2 Especialista</span></td><td><span class="st ok">B1 Integrador</span></td><td><span class="st ok">B2 Especialista</span></td><td class="num">3 de 3</td><td class="num">27 out</td></tr>
+            <tr><th scope="row"><span class="first"><span class="avatar">LB</span><span class="nm"><a href="#">Lucas Barros</a><span class="sub">Turma B</span></span><a class="btn line sm" href="AlunoCompetencia.dc.html">Avaliar</a></span></th><td><span class="st ok">B1 Integrador</span></td><td><span class="st">A1 Recém-chegado</span></td><td><span class="st ok">B1 Integrador</span></td><td class="num">2 de 3</td><td class="num">14 out</td></tr>
+            <tr><th scope="row"><span class="first"><span class="avatar">MA</span><span class="nm"><a href="#">Marina Alves</a><span class="sub">Turma B</span></span><a class="btn line sm" href="AlunoCompetencia.dc.html">Avaliar</a></span></th><td><span class="st">A2 Explorador</span></td><td><span class="small">Sem avaliação</span></td><td><span class="st ok">B1 Integrador</span></td><td class="num">1 de 3</td><td class="num">18 out</td></tr>
+            <tr><th scope="row"><span class="first"><span class="avatar">PL</span><span class="nm"><a href="#">Pedro Lins</a><span class="sub">Turma B</span></span><a class="btn line sm" href="AlunoCompetencia.dc.html">Avaliar</a></span></th><td><span class="st">A1 Recém-chegado</span></td><td><span class="small">Sem avaliação</span></td><td><span class="st">A2 Explorador</span></td><td class="num">0 de 3</td><td class="num">26 out</td></tr>
+            <tr><th scope="row"><span class="first"><span class="avatar">RC</span><span class="nm"><a href="#">Renata Campos</a><span class="sub">Turma A</span></span><a class="btn line sm" href="AlunoCompetencia.dc.html">Avaliar</a></span></th><td><span class="st ok">B1 Integrador</span></td><td><span class="st">A2 Explorador</span></td><td><span class="st ok">B1 Integrador</span></td><td class="num">2 de 3</td><td class="num">9 out</td></tr>
+            <tr><th scope="row"><span class="first"><span class="avatar">SG</span><span class="nm"><a href="#">Sofia Guimarães</a><span class="sub">Turma A</span></span><a class="btn line sm" href="AlunoCompetencia.dc.html">Avaliar</a></span></th><td><span class="st ok">B2 Especialista</span></td><td><span class="st ok">B1 Integrador</span></td><td><span class="st ok">C1 Líder</span></td><td class="num">3 de 3</td><td class="num">29 out</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <nav class="pager" aria-label="Páginas">
+        <span class="num">1–24 de 24</span>
+        <span class="grow"></span>
+        <button type="button" class="pg" aria-current="page">1</button>
+        <label class="row" style="gap: 6px;">Por página<select class="sel" style="min-height: 32px;"><option selected>30</option><option>50</option><option>100</option></select></label>
+      </nav>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1380}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

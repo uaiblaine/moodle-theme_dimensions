@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Para onde cada página do core leva</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./comp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0a4f8f}a:hover{color:#073560}
+.who4{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.who4 li{font-size:14px;color:#3c4458;padding-left:14px;position:relative}
+.who4 li::before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:#5a6278}
+</style>
+</helmet>
+<div class="dm" style="min-height: 1100px;">
+  <header class="hdr">
+    <div class="wrap col" style="gap: 6px;">
+      <span class="eyebrow">Competências no tema</span>
+      <h1 class="h1">Para onde cada página do core leva</h1>
+      <p class="lede">O tema redesenha as páginas do core no mesmo endereço. Só o plano e a competência no plano saem dele, e só para o dono do plano.</p>
+    </div>
+  </header>
+
+  <main class="wrap col" style="gap: 24px; padding-top: 24px; padding-bottom: 40px;">
+    <section class="card" aria-label="Páginas do core">
+      <div class="route">
+        <div class="col" style="gap: 2px;"><span class="h3">Planos de aprendizagem</span><code>admin/tool/lp/plans.php</code></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <div><span class="st brand">Tema redesenha</span></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <p style="font-size: 14px;">Cartões de trilha do block_dimensions, na horizontal ou na vertical. O clique abre o panorama do plano.</p>
+      </div>
+      <div class="route">
+        <div class="col" style="gap: 2px;"><span class="h3">Plano</span><code>admin/tool/lp/plan.php</code></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <div><span class="st info">Tema redireciona o dono do plano</span></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <p style="font-size: 14px;">Panorama do plano no local_dimensions. Quem acompanha o aluno continua na página do core, onde estão a avaliação e o fluxo de revisão.</p>
+      </div>
+      <div class="route">
+        <div class="col" style="gap: 2px;"><span class="h3">Competência no plano</span><code>admin/tool/lp/user_competency_in_plan.php</code></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <div><span class="st info">Tema redireciona o dono do plano</span></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <p style="font-size: 14px;">Panorama do plano com a competência aberta na aba Progresso, na visão Jornada.</p>
+      </div>
+      <div class="route">
+        <div class="col" style="gap: 2px;"><span class="h3">Evidências</span><code>admin/tool/lp/user_evidence_list.php</code></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <div><span class="st brand">Tema redesenha</span></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <p style="font-size: 14px;">Uma lista só, com filtros: o que a pessoa registrou e o que a plataforma registrou em cursos e atividades.</p>
+      </div>
+      <div class="route">
+        <div class="col" style="gap: 2px;"><span class="h3">Competências do curso</span><code>admin/tool/lp/coursecompetencies.php</code></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <div><span class="st brand">Tema redesenha</span></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <p style="font-size: 14px;">No mesmo endereço, a tela do professor e a tela do aluno.</p>
+      </div>
+      <div class="route">
+        <div class="col" style="gap: 2px;"><span class="h3">Competência de um aluno no curso</span><code>admin/tool/lp/user_competency_in_course.php</code></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <div><span class="st brand">Tema redesenha</span></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <p style="font-size: 14px;">Quem, o quê e o nível primeiro; depois as evidências do curso. Avaliar é a ação principal.</p>
+      </div>
+      <div class="route">
+        <div class="col" style="gap: 2px;"><span class="h3">Distribuição de competências</span><code>report/competency/index.php</code></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <div><span class="st brand">Tema redesenha</span></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <p style="font-size: 14px;">Turma: um aluno por linha, uma competência por coluna, em relatório de dados.</p>
+      </div>
+      <div class="route">
+        <div class="col" style="gap: 2px;"><span class="h3">Estruturas, modelos, regras e importação</span><code>admin/tool/lp/competencyframeworks.php e as demais</code></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <div><span class="st">Só a folha de estilo, como hoje</span></div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span>
+        <p style="font-size: 14px;">Sem redesenho nesta rodada. A gestão avança no hub do local_dimensions.</p>
+      </div>
+    </section>
+
+    <section class="col" style="gap: 12px;" aria-labelledby="ro-who">
+      <h2 class="h2" id="ro-who">Quem faz o quê</h2>
+      <div class="who4">
+        <div class="card pad col" style="gap: 8px;">
+          <h3 class="h3">theme_dimensions</h3>
+          <ul class="col" style="gap: 6px;">
+            <li>Redesenha as cinco páginas do core acima.</li>
+            <li>Redireciona o dono do plano.</li>
+            <li>Guarda a escolha do cartão: horizontal ou vertical.</li>
+          </ul>
+        </div>
+        <div class="card pad col" style="gap: 8px;">
+          <h3 class="h3">block_dimensions</h3>
+          <ul class="col" style="gap: 6px;">
+            <li>Entrega o cartão de trilha para a página de planos.</li>
+            <li>Passa a barra de filtro para o Design System.</li>
+          </ul>
+        </div>
+        <div class="card pad col" style="gap: 8px;">
+          <h3 class="h3">local_dimensions</h3>
+          <ul class="col" style="gap: 6px;">
+            <li>Recebe os dois redirecionamentos.</li>
+            <li>Ganha a visão Jornada no panorama do plano.</li>
+            <li>Telas novas de equipe, no futuro.</li>
+          </ul>
+        </div>
+        <div class="card pad col" style="gap: 8px;">
+          <h3 class="h3">local_evidencehub</h3>
+          <ul class="col" style="gap: 6px;">
+            <li>Informa a validade das evidências registradas.</li>
+            <li>A gaveta do hub fica na sessão do hub.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1100}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Competência de um aluno no curso</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./comp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0a4f8f}a:hover{color:#073560}
+.navsel{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.navsel label{font-size:13px;font-weight:600;color:#5a6278}
+.step{width:36px;height:36px;border-radius:8px;border:1px solid #8a93a8;background:#fff;display:inline-grid;place-items:center;color:#3c4458}
+.step svg{width:16px;height:16px}
+.lst li{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:8px 0;border-top:1px solid #dde1ea;font-size:14px}
+.lst li:first-child{border-top:0}
+</style>
+</helmet>
+<div class="dm" style="min-height: 1240px;">
+  <nav class="nav" aria-label="Site">
+    <span class="brand">Dimensions</span>
+    <a href="#">Painel</a>
+    <a class="on" href="#" aria-current="page">Meus cursos</a>
+    <span class="grow"></span>
+    <span class="avatar">RD</span>
+  </nav>
+
+  <header class="hdr">
+    <div class="wrap col" style="gap: 14px;">
+      <nav class="crumb" aria-label="Você está em"><a href="#">Avaliação com tecnologias digitais</a><span>/</span><a href="CursoProfessor.dc.html">Competências</a><span>/</span><a href="Turma.dc.html">Turma</a><span>/</span><span>Marina Alves</span></nav>
+      <div class="row wrapx" style="gap: 16px 24px; align-items: center;">
+        <span class="avatar" style="width: 56px; height: 56px; font-size: 18px;">MA</span>
+        <div class="col grow" style="gap: 2px; flex-basis: 320px;">
+          <span class="eyebrow">Marina Alves · turma B</span>
+          <h1 class="h1">4.1 Estratégias de avaliação</h1>
+          <div class="row wrapx" style="gap: 6px 8px;"><span class="st">A2 Explorador</span><span class="small">ainda não proficiente · proficiente a partir de B1 Integrador</span></div>
+        </div>
+        <button type="button" class="btn primary">Avaliar</button>
+      </div>
+      <div class="navsel">
+        <span class="row" style="gap: 6px;">
+          <a class="step" href="#" aria-label="Aluno anterior: Lucas Barros"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a>
+          <label for="ac-user" class="vh">Aluno</label>
+          <select class="sel" id="ac-user"><option>Lucas Barros</option><option selected>Marina Alves</option><option>Pedro Lins</option></select>
+          <a class="step" href="#" aria-label="Próximo aluno: Pedro Lins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a>
+        </span>
+        <span class="row" style="gap: 6px;">
+          <label for="ac-comp">Competência</label>
+          <select class="sel" id="ac-comp"><option selected>4.1 Estratégias de avaliação</option><option>4.3 Feedback e planificação</option><option>3.3 Aprendizagem colaborativa</option></select>
+        </span>
+        <span class="small">11 de 24 alunos</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap col" style="gap: 20px; padding-top: 20px; padding-bottom: 40px;">
+    <section class="tiles" aria-label="Resumo">
+      <div class="tile"><span class="lbl">Nível neste curso</span><span class="val" style="font-size: 22px; line-height: 1.300; padding: 3px 0;">A2 Explorador</span><span class="sub">avaliado por Lúcia Prado em 9 out</span></div>
+      <div class="tile"><span class="lbl">Evidências neste curso</span><span class="val num">3</span><span class="sub">a mais recente em 9 out</span></div>
+      <div class="tile"><span class="lbl">Atividades concluídas</span><span class="val num">1 de 3</span><span class="sub">das ligadas a esta competência</span></div>
+      <div class="tile"><span class="lbl">Nos planos</span><span class="val num">1</span><span class="sub">Docência digital (DigCompEdu)</span></div>
+    </section>
+
+    <section class="card pad col" aria-labelledby="ac-scale" style="gap: 10px;">
+      <h2 class="h3" id="ac-scale">Escala</h2>
+      <ol class="scale" aria-label="Nível atual: A2 Explorador, de seis níveis">
+        <li class="past">A1 Recém-chegado</li><li class="here">A2 Explorador</li><li class="flag">B1 Integrador</li><li>B2 Especialista</li><li>C1 Líder</li><li>C2 Pioneiro</li>
+      </ol>
+    </section>
+
+    <section class="col" aria-labelledby="ac-ev" style="gap: 10px;">
+      <div class="row wrapx" style="gap: 8px 12px;"><h2 class="h2 grow" id="ac-ev">Evidências neste curso</h2><span class="cnt">3 registros</span></div>
+      <div class="gridframe">
+        <table class="grid">
+          <caption class="vh">Evidências de Marina Alves para 4.1 Estratégias de avaliação neste curso, da mais recente para a mais antiga</caption>
+          <thead><tr>
+            <th scope="col" style="width: 34%;">O que aconteceu</th>
+            <th scope="col" aria-sort="descending"><button type="button" class="sortbtn">Quando<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.600" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button></th>
+            <th scope="col">Nível</th>
+            <th scope="col">Por</th>
+            <th scope="col" style="width: 30%;">Nota</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <th scope="row">Avaliação no curso<span class="sub">Avaliação com tecnologias digitais</span></th>
+              <td class="num">9 out 2026</td>
+              <td><span class="st">A2 Explorador</span></td>
+              <td>Lúcia Prado</td>
+              <td style="white-space: normal;">Usa rubricas nas tarefas, ainda sem variar os formatos de avaliação.</td>
+            </tr>
+            <tr>
+              <th scope="row"><a href="#">Oficina de rubricas digitais</a><span class="sub">Atividade concluída · tarefa, tópico 2</span></th>
+              <td class="num">2 out 2026</td>
+              <td><span class="small">sem nível</span></td>
+              <td><span class="small">plataforma</span></td>
+              <td><span class="small">–</span></td>
+            </tr>
+            <tr>
+              <th scope="row"><a href="#">Diagnóstico de práticas de avaliação</a><span class="sub">Atividade concluída · questionário, tópico 1</span></th>
+              <td class="num">18 set 2026</td>
+              <td><span class="st">A1 Recém-chegado</span></td>
+              <td><span class="small">plataforma</span></td>
+              <td><span class="small">–</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="panels">
+      <section class="card pad col" aria-labelledby="ac-acts" style="gap: 6px;">
+        <h2 class="h3" id="ac-acts">Atividades ligadas</h2>
+        <ul class="lst">
+          <li><span class="dotst done"></span><a href="#">Oficina de rubricas digitais</a><span class="small">Concluída em 2 out</span></li>
+          <li><span class="dotst going"></span><a href="#">Questionário: feedback e notas</a><span class="small">Em andamento</span></li>
+          <li><span class="dotst"></span><a href="#">Projeto: plano de avaliação da turma</a><span class="small">Não iniciada</span></li>
+        </ul>
+      </section>
+      <section class="card pad col" aria-labelledby="ac-plans" style="gap: 6px;">
+        <h2 class="h3" id="ac-plans">Planos com esta competência</h2>
+        <ul class="lst">
+          <li style="grid-template-columns: minmax(0, 1fr) auto;"><a href="#">Docência digital (DigCompEdu)</a><span class="st brand">Ativo</span></li>
+        </ul>
+        <p class="small">As avaliações deste curso entram também no plano.</p>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1240}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
