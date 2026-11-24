@@ -1,0 +1,327 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-18T23:40:00Z"
+  },
+  "title": "Dimensões — páginas de competência",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 860,
+      "title": "0 · Vocabulário dimensional"
+    },
+    "PlanConstellation.dc.html": {
+      "x": 0,
+      "y": 1300,
+      "w": 1280,
+      "h": 1040,
+      "title": "1A · Plano como constelação"
+    },
+    "PlanRings.dc.html": {
+      "x": 1360,
+      "y": 1300,
+      "w": 1280,
+      "h": 1040,
+      "title": "1B · Plano como anéis de crescimento",
+      "is_interactive": true
+    },
+    "PlanTrails.dc.html": {
+      "x": 2720,
+      "y": 1300,
+      "w": 1280,
+      "h": 1040,
+      "title": "1C · Plano como mapa de trilhas"
+    },
+    "PlanPhone.dc.html": {
+      "x": 4080,
+      "y": 1300,
+      "w": 390,
+      "h": 844,
+      "title": "1 · Plano no celular"
+    },
+    "CompetencyJourney.dc.html": {
+      "x": 0,
+      "y": 2780,
+      "w": 1280,
+      "h": 1160,
+      "title": "2A · Competência: diário de bordo"
+    },
+    "CompetencyRiver.dc.html": {
+      "x": 1360,
+      "y": 2780,
+      "w": 1280,
+      "h": 920,
+      "title": "2B · Competência: linha do tempo horizontal"
+    },
+    "CompetencyPhone.dc.html": {
+      "x": 2720,
+      "y": 2780,
+      "w": 390,
+      "h": 844,
+      "title": "2 · Competência no celular"
+    },
+    "PlansAtlas.dc.html": {
+      "x": 0,
+      "y": 4380,
+      "w": 1280,
+      "h": 940,
+      "title": "3 · Meus planos: o atlas"
+    },
+    "EvidenceNotebook.dc.html": {
+      "x": 1360,
+      "y": 4380,
+      "w": 1280,
+      "h": 940,
+      "title": "4 · Evidências: caderno de campo"
+    },
+    "EvidencePhone.dc.html": {
+      "x": 2720,
+      "y": 4380,
+      "w": 390,
+      "h": 844,
+      "title": "4 · Uma evidência no celular"
+    },
+    "CourseDimensions.dc.html": {
+      "x": 0,
+      "y": 5760,
+      "w": 1280,
+      "h": 900,
+      "title": "5 · Competências do curso"
+    },
+    "TeacherSky.dc.html": {
+      "x": 1360,
+      "y": 5760,
+      "w": 1280,
+      "h": 900,
+      "title": "6 · Relatório da turma"
+    },
+    "BlockLp.dc.html": {
+      "x": 2720,
+      "y": 5760,
+      "w": 400,
+      "h": 720,
+      "title": "7 · Bloco Planos de aprendizagem"
+    },
+    "Fallback.dc.html": {
+      "x": 0,
+      "y": 7100,
+      "w": 1280,
+      "h": 760,
+      "title": "8 · Sem o local_dimensions"
+    },
+    "PlanMap.dc.html": {
+      "x": 0,
+      "y": 8460,
+      "w": 1440,
+      "h": 1060,
+      "title": "R2 · Mapa dos planos (interativo)",
+      "is_interactive": true
+    },
+    "RadarRange.dc.html": {
+      "x": 1520,
+      "y": 8460,
+      "w": 1440,
+      "h": 1000,
+      "title": "R2 · Radar com faixa e escalas mistas",
+      "is_interactive": true
+    },
+    "HubNodes.dc.html": {
+      "x": 3040,
+      "y": 8460,
+      "w": 1600,
+      "h": 1040,
+      "title": "R2 · Hub do local_dimensions em nós (React Flow)",
+      "is_interactive": true
+    },
+    "ReviewDesk.dc.html": {
+      "x": 0,
+      "y": 10120,
+      "w": 1440,
+      "h": 1000,
+      "title": "R2 · Mesa de revisão (mentoria, gestão)",
+      "is_interactive": true
+    },
+    "PlanWorkflow.dc.html": {
+      "x": 1520,
+      "y": 10120,
+      "w": 1440,
+      "h": 900,
+      "title": "R2 · Fluxo do plano (gestor)",
+      "is_interactive": true
+    },
+    "CourseTeacher.dc.html": {
+      "x": 3040,
+      "y": 10120,
+      "w": 1440,
+      "h": 1000,
+      "title": "R2 · Competências do curso (docente)"
+    },
+    "TemplateManager.dc.html": {
+      "x": 0,
+      "y": 11820,
+      "w": 1440,
+      "h": 1000,
+      "title": "R2 · Modelo de plano no Hub (gestão)"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "PlanConstellation.dc.html",
+    "PlanRings.dc.html",
+    "PlanTrails.dc.html",
+    "PlanPhone.dc.html",
+    "CompetencyJourney.dc.html",
+    "CompetencyRiver.dc.html",
+    "CompetencyPhone.dc.html",
+    "PlansAtlas.dc.html",
+    "EvidenceNotebook.dc.html",
+    "EvidencePhone.dc.html",
+    "CourseDimensions.dc.html",
+    "TeacherSky.dc.html",
+    "BlockLp.dc.html",
+    "Fallback.dc.html",
+    "PlanMap.dc.html",
+    "RadarRange.dc.html",
+    "HubNodes.dc.html",
+    "ReviewDesk.dc.html",
+    "PlanWorkflow.dc.html",
+    "CourseTeacher.dc.html",
+    "TemplateManager.dc.html"
+  ],
+  "notes": {
+    "row0": {
+      "x": 0,
+      "y": -300,
+      "text": "Uma linguagem visual: dimensões, não metas",
+      "kind": "title1",
+      "maxW": 1760
+    },
+    "row1": {
+      "x": 0,
+      "y": 1000,
+      "text": "Plano de aprendizagem · três mapas para escolher",
+      "kind": "title1",
+      "maxW": 4470
+    },
+    "row2": {
+      "x": 0,
+      "y": 2480,
+      "text": "Uma competência · a jornada",
+      "kind": "title1",
+      "maxW": 3110
+    },
+    "row3": {
+      "x": 0,
+      "y": 4080,
+      "text": "Planos e evidências",
+      "kind": "title1",
+      "maxW": 3110
+    },
+    "row4": {
+      "x": 0,
+      "y": 5460,
+      "text": "Curso, turma e painel",
+      "kind": "title1",
+      "maxW": 3120
+    },
+    "row5": {
+      "x": 0,
+      "y": 6800,
+      "text": "Sem o plugin",
+      "kind": "title1",
+      "maxW": 1280
+    },
+    "principles": {
+      "x": 1360,
+      "y": 0,
+      "w": 400,
+      "fill": "blue",
+      "text": "Princípios: nada vermelho, nenhum 'atrasado', nenhum percentual em destaque. O que ainda não foi alcançado aparece como território a descobrir (contorno tracejado, estrela apagada), nunca como falta. A escala é uma subida em degraus com a bandeira da proficiência, não uma barra de aprovação."
+    },
+    "detect": {
+      "x": 1360,
+      "y": 560,
+      "w": 400,
+      "fill": "yellow",
+      "text": "O tema detecta o local_dimensions por nome de classe (como já faz com local_page e auth_loginsteps): cor, imagem, ícone e tipo vêm dos campos do plugin; sem ele, a cor vem do quadro (matiz derivado do id) e não há imagem. Ver prancha 8."
+    },
+    "pick1": {
+      "x": 4550,
+      "y": 1300,
+      "w": 380,
+      "fill": "green",
+      "text": "Escolha: 1A, 1B ou 1C é o mapa principal do plano. Os outros dois podem virar abas ('Ver como') do mesmo plano; a rosa (glifo pequeno) aparece em todas as listas, qualquer que seja a escolha."
+    },
+    "pick2": {
+      "x": 3190,
+      "y": 2780,
+      "w": 380,
+      "fill": "green",
+      "text": "2A é a evolução direta do 'On the journey' do local_dimensions: o que passou, onde está, para onde pode ir. 2B mostra o mesmo em horizontal, bom para competências com muitas evidências ao longo de meses."
+    },
+    "teacher": {
+      "x": 3200,
+      "y": 5760,
+      "w": 380,
+      "fill": "purple",
+      "text": "A visão da turma usa o mesmo vocabulário: cada linha é um estudante, cada coluna uma competência, o brilho é o nível. Sem ranking e sem ordenar por 'pior'."
+    },
+    "r2a": {
+      "x": 0,
+      "y": 8160,
+      "text": "Rodada 2 · Mapa e radar com controles",
+      "kind": "title1",
+      "maxW": 4640
+    },
+    "r2map": {
+      "x": 4720,
+      "y": 8460,
+      "w": 400,
+      "fill": "green",
+      "text": "Rodada 2: o mapa de trilhas sem metáforas (áreas, competências, cursos e atividades). Controles: planos combinados (até 3), destaque, cursos e atividades ligados, e a faixa visível embaixo, que leva o mapa a qualquer trecho de planos longos. Clique numa competência para o painel ao lado."
+    },
+    "r2radar": {
+      "x": 4720,
+      "y": 8960,
+      "w": 400,
+      "fill": "blue",
+      "text": "Radar: no máximo 8 eixos por vez, escolhidos na faixa embaixo, ou um eixo por área (resumo). Escalas de 2 a 5 níveis numa régua comum: o nível proficiente de cada escala cai no mesmo anel tracejado."
+    },
+    "r2hub": {
+      "x": 4720,
+      "y": 9420,
+      "w": 400,
+      "fill": "purple",
+      "text": "Hub em nós: o mesmo componente React Flow serve para editar a árvore (gestor) e, em modo só leitura, para navegar o plano (estudante). Fica no local_dimensions (React do core, 5.2+); o tema só monta o componente quando o plugin existe. Lista sempre ao lado, como alternativa acessível."
+    },
+    "r2b": {
+      "x": 0,
+      "y": 9820,
+      "text": "Rodada 2 · Quem avalia, ensina e gerencia",
+      "kind": "title1",
+      "maxW": 4480
+    },
+    "r2c": {
+      "x": 0,
+      "y": 11520,
+      "text": "Rodada 2 · Quem gerencia modelos e participantes",
+      "kind": "title1",
+      "maxW": 1440
+    },
+    "r2staff": {
+      "x": 1520,
+      "y": 11820,
+      "w": 420,
+      "fill": "yellow",
+      "text": "Telas da equipe: cada botão vem do inventário de ações (docs/competency/actions-inventory.md). A tela só mostra o que o core já permite a quem vê: os flags dos exporters (canmanage, isapproveallowed...) continuam decidindo. Rótulos: um texto de idioma próprio por área de texto, para o site poder ajustar a tradução de cada lugar separadamente."
+    }
+  },
+  "designSystems": []
+}

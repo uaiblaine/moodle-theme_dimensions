@@ -5,6 +5,10 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **local_dimensions and block_dimensions are required** (2026100643). The theme now declares both as dependencies
+  (local_dimensions 2026100532, block_dimensions 2026100506, their Moodle 5.3 versions), so a site installs or
+  upgrades them before the theme. Nothing the theme draws changes yet: its competency pages are being rebuilt over
+  the two plugins, and the plan and mockups of that work are in `docs/competency/`.
 - **A long help text opens in a dialogue** (2026100642). Pressing a help icon, or Enter on it, whose text does not fit
   the popover opens a dialogue instead, titled with the icon's name ("Help with ..."), with the same text, a close
   button, Escape and a press outside to close it, and the focus given back to the icon. A text that fits stays the

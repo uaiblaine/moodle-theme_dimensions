@@ -1,0 +1,324 @@
+<title>Dimensões nas competências</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=Noto+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: one reading column with a navy masthead carrying the theme's 3px band; wide tables scroll in their own box. */
+:root {
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --ink: #1d2033;
+  --ink-2: #3a3e58;
+  --mute: #5d6180;
+  --line: #e1e3ef;
+  --tint: #f2f3fa;
+  --navy: #070093;
+  --band: #4456ff;
+  --accent: #2f3fd6;
+  --ok: #17694a;
+  --ok-bg: #dcf3e8;
+  --warm: #7a4a00;
+  --warm-bg: #fbedd5;
+  --c1: #0f7d74;
+  --c2: #7b2fa8;
+  --c3: #c2570c;
+  --display: "Outfit", "Noto Sans", system-ui, sans-serif;
+  --body: "Noto Sans", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1024; --surface: #171a36; --ink: #e8e9f5; --ink-2: #c6c8dd; --mute: #9ea2c2; --line: #2b2f55; --tint: #1f2346;
+    --navy: #070093; --band: #6f7dff; --accent: #9aa5ff; --ok: #7fd9ad; --ok-bg: #143a2b; --warm: #f2c27a; --warm-bg: #3a2a10;
+    --c1: #4fc7b9; --c2: #c08bf0; --c3: #f29a5c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1024; --surface: #171a36; --ink: #e8e9f5; --ink-2: #c6c8dd; --mute: #9ea2c2; --line: #2b2f55; --tint: #1f2346;
+  --navy: #070093; --band: #6f7dff; --accent: #9aa5ff; --ok: #7fd9ad; --ok-bg: #143a2b; --warm: #f2c27a; --warm-bg: #3a2a10;
+  --c1: #4fc7b9; --c2: #c08bf0; --c3: #f29a5c; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); }
+* { box-sizing: border-box; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--band); outline-offset: 2px; }
+.mast { background: var(--navy); color: #fff; position: relative; padding-block: 44px 38px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.mast::after { content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 3px; background: var(--band); }
+.mast .in { max-width: 920px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: center; }
+.mast .eyebrow { color: rgba(255, 255, 255, 0.72); }
+.mast h1 { font: 800 clamp(30px, 5vw, 44px)/1.08 var(--display); margin: 8px 0 12px; letter-spacing: -0.01em; text-wrap: balance; }
+.mast p { margin: 0; color: rgba(255, 255, 255, 0.86); max-width: 58ch; }
+.mast .cta { display: inline-flex; margin-top: 18px; gap: 10px; flex-wrap: wrap; }
+.mast .cta a { color: #fff; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 12px; padding: 10px 16px; font-weight: 700; text-decoration: none; }
+main { max-width: 920px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 44px; }
+section { display: flex; flex-direction: column; gap: 14px; }
+h2 { font: 700 26px/1.2 var(--display); margin: 0; text-wrap: balance; }
+h3 { font: 700 18px/1.3 var(--display); margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--mute); }
+.lede { color: var(--ink-2); }
+.small { font-size: 14px; color: var(--mute); }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.box.pick { border-top: 3px solid var(--sw, var(--accent)); }
+.box ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 14.5px; }
+.tag { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; background: var(--tint); font-size: 12.5px; font-weight: 700; color: var(--ink-2); align-self: flex-start; }
+.tag.ok { background: var(--ok-bg); color: var(--ok); }
+.tag.warm { background: var(--warm-bg); color: var(--warm); }
+.principles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 26px; padding: 0; margin: 0; list-style: none; }
+.principles li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; font-size: 15px; }
+.principles b { display: block; }
+.principles .k { font: 800 14px/26px var(--display); color: var(--accent); }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 680px; font-size: 14.5px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mute); background: var(--tint); }
+tr:last-child td { border-bottom: 0; }
+code { font-size: 0.88em; background: var(--tint); padding: 1px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+.decisions { display: flex; flex-direction: column; gap: 10px; }
+.dec { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; }
+.dec .id { font: 800 18px/1.3 var(--display); color: var(--navy); }
+:root[data-theme="dark"] .dec .id { color: var(--accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .dec .id { color: var(--accent); } }
+.dec .rec { font-size: 14px; color: var(--ok); font-weight: 600; }
+.rose { width: 150px; height: 150px; }
+@media (max-width: 720px) {
+  .grid3, .grid2, .principles { grid-template-columns: minmax(0, 1fr); }
+  .mast .in { grid-template-columns: minmax(0, 1fr); }
+  .rose { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .rose path { transition: transform 0.4s ease; transform-origin: 75px 75px; }
+  .rose:hover path.on { transform: scale(1.04); }
+}
+</style>
+
+<header class="mast">
+  <div class="in">
+    <div>
+      <span class="eyebrow">theme_dimensions · brainstorm, rodadas 1 e 2 · 19 out 2026</span>
+      <h1>Dimensões nas páginas de competência</h1>
+      <p>Uma linguagem visual para planos, competências e evidências que fala de descoberta e de caminho, não de cobrança. O canvas tem as telas; este texto explica as ideias, de onde vêm os dados e o que preciso que você decida.</p>
+      <div class="cta"><a href="https://claude.ai/artifact/U2x5eLkNqwXMMpgaCzPtw8">Abrir o canvas das telas</a></div>
+    </div>
+    <svg class="rose" viewBox="0 0 150 150" role="img" aria-label="Uma rosa de nove pétalas, o glifo do plano">
+      <g fill="#ffffff" fill-opacity="0.1">
+        <path d="M75 75L77.5 7A68 68 0 0 1 117.8 22.3Z"></path><path d="M75 75L119.5 23.8A68 68 0 0 1 140.9 61.5Z"></path><path d="M75 75L141.2 63.9A68 68 0 0 1 133.8 106.2Z"></path>
+        <path d="M75 75L132.5 108.3A68 68 0 0 1 99.6 136.4Z"></path><path d="M75 75L97.3 137.2A68 68 0 0 1 52.7 137.2Z"></path><path d="M75 75L50.4 136.4A68 68 0 0 1 17.5 108.3Z"></path>
+        <path d="M75 75L16.2 106.2A68 68 0 0 1 8.8 63.9Z"></path><path d="M75 75L9.1 61.5A68 68 0 0 1 30.5 23.8Z"></path><path d="M75 75L32.2 22.3A68 68 0 0 1 72.5 7Z"></path>
+      </g>
+      <path class="on" fill="#5fd6c8" d="M75 75L77.5 7A68 68 0 0 1 117.8 22.3Z"></path>
+      <path class="on" fill="#7fe3d6" d="M75 75L111.2 33.4A55.3 55.3 0 0 1 128.6 64.1Z"></path>
+      <path class="on" fill="#3fbfb0" d="M75 75L141.2 63.9A68 68 0 0 1 133.8 106.2Z"></path>
+      <path class="on" fill="#d9b2ff" d="M75 75L121.7 102.1A55.3 55.3 0 0 1 95 124.9Z"></path>
+      <path class="on" fill="#e7cbff" d="M75 75L93.1 125.6A55.3 55.3 0 0 1 56.9 125.6Z"></path>
+      <path fill="none" stroke="#c697f5" stroke-width="1.5" stroke-dasharray="3 3" d="M75 75L62.5 106.2A34 34 0 0 1 46 92Z"></path>
+      <path fill="#ffb27a" fill-opacity="0.6" d="M75 75L48.5 89A42.5 42.5 0 0 1 33.6 66.1Z"></path>
+      <path fill="none" stroke="#ffc99e" stroke-width="1.5" stroke-dasharray="3 3" d="M75 75L41.4 68.1A34 34 0 0 1 52.3 49.3Z"></path>
+      <path fill="none" stroke="#f29a5c" stroke-width="1.5" stroke-dasharray="3 3" d="M75 75L53.6 48.6A34 34 0 0 1 73.8 41Z"></path>
+    </svg>
+  </div>
+</header>
+
+<main>
+  <section>
+    <span class="eyebrow">Rodada 2 · 19 out 2026</span>
+    <h2>O que mudou depois da sua leitura</h2>
+    <p class="lede">Escopo: Moodle 5.3 em diante, como o tema. Ficaram o mapa de trilhas (sem as metáforas) e o diário de bordo com a vizinhança. O radar ganhou controles e uma régua comum para escalas diferentes. Entraram o modelo em nós (React Flow) e as telas de quem avalia, ensina e gerencia, todas tiradas do inventário de ações.</p>
+    <div class="grid2">
+      <div class="box">
+        <span class="tag">Mapa dos planos (R2 · Mapa)</span>
+        <ul>
+          <li>Áreas, competências, cursos e atividades: sem estações, trilhas ou paradas</li>
+          <li>Planos combinados por botões (até 3), cada um com sua marca nas competências que compartilham</li>
+          <li>Destacar: tudo, próximos passos, proficientes, sem avaliação</li>
+          <li>Faixa visível embaixo: todas as competências como uma régua clicável; o mapa mostra 5 por vez e anda com as setas</li>
+          <li>Painel ao lado com a escala da competência, último registro e próximo passo</li>
+        </ul>
+      </div>
+      <div class="box">
+        <span class="tag">Radar (R2 · Radar)</span>
+        <ul>
+          <li>No máximo 8 eixos por vez, escolhidos na mesma faixa</li>
+          <li>Ou um eixo por área, como resumo</li>
+          <li>Escalas de 2 a 5 níveis numa régua comum: o nível que cada escala chama de proficiente cai sempre no anel tracejado</li>
+          <li>Cada eixo marca os níveis da própria escala</li>
+        </ul>
+      </div>
+      <div class="box">
+        <span class="tag">Modelo em nós (R2 · Hub em nós)</span>
+        <ul>
+          <li>React Flow no local_dimensions, com o React do core 5.3; o tema monta o componente só quando o plugin existe</li>
+          <li>Gestor: edita a árvore (filhas, regra com pontos, relacionadas, cursos e atividades) com minimapa e painel de detalhes</li>
+          <li>Estudante: o mesmo componente em modo leitura pode ser uma quarta vista do plano</li>
+          <li>Uma lista ao lado continua sendo a alternativa acessível</li>
+        </ul>
+        <p class="small">Riscos a provar num experimento: como instalar e empacotar a biblioteca no plugin, o CSS dela passar no stylelint, teclado e leitor de tela, Behat com arrastar.</p>
+      </div>
+      <div class="box">
+        <span class="tag">Equipe (R2 · Revisão, Fluxo, Curso, Modelo)</span>
+        <ul>
+          <li>Mesa de revisão: fila de pedidos, diário desde a última avaliação, vizinhança, avaliar e abrir o próximo</li>
+          <li>Fluxo do plano: os cinco estados do core com só as transições permitidas, como botões que dizem o efeito</li>
+          <li>Curso para quem ensina: resultado ao concluir o curso e por atividade, a turma por competência</li>
+          <li>Modelo de plano no Hub: andamento por competência, coortes sincronizadas, pedidos de revisão</li>
+        </ul>
+      </div>
+    </div>
+    <p class="small">O inventário completo de ações por papel está em <code>docs/competency/actions-inventory.md</code>; o catálogo de textos (uma string por área de texto, en e pt_br) em <code>docs/competency/strings.md</code>; o estudo do React Flow em <code>docs/competency/react-flow.md</code>.</p>
+  </section>
+
+  <section>
+    <span class="eyebrow">Decisões da rodada 2</span>
+    <h2>Seis perguntas novas</h2>
+    <div class="decisions">
+      <div class="dec"><span class="id">R1</span><div><b>O React Flow entra no local_dimensions (main, 5.3)?</b><p class="small">Para o Hub (editar e navegar a árvore) e, em modo leitura, como vista do plano.</p><span class="rec">Sugestão: sim, começando por um experimento curto que prove empacotamento, CSS e acessibilidade.</span></div></div>
+      <div class="dec"><span class="id">R2</span><div><b>Onde moram as telas da equipe?</b><p class="small">A mesa de revisão e o modelo de plano precisam de serviços próprios. O tema redesenha páginas do core; o plugin tem os dados e o Hub.</p><span class="rec">Sugestão: mesa de revisão e modelo no local_dimensions (abas do Hub); fluxo do plano e curso do docente como cópias de templates do core no tema.</span></div></div>
+      <div class="dec"><span class="id">R3</span><div><b>Limites dos controles</b><p class="small">Até 3 planos combinados, 5 competências por faixa no mapa, 8 eixos no radar.</p><span class="rec">Sugestão: esses números, ajustáveis por configuração do tema depois de medir em planos reais.</span></div></div>
+      <div class="dec"><span class="id">R4</span><div><b>Ao avaliar na mesa de revisão, a revisão se encerra sozinha?</b><p class="small">No core, avaliar não muda o estado; quem revisa precisa clicar em "Encerrar revisão".</p><span class="rec">Sugestão: sim, um clique faz os dois, com o texto dizendo isso.</span></div></div>
+      <div class="dec"><span class="id">R5</span><div><b>Strings: o tema cria chaves próprias mesmo onde o core já tem o texto?</b><p class="small">Uma chave por área de texto, sem reaproveitar a do core, para cada lugar poder ser traduzido do seu jeito.</p><span class="rec">Sugestão: sim, como no catálogo.</span></div></div>
+      <div class="dec"><span class="id">R6</span><div><b>Qual vista abre por padrão no plano?</b><p class="small">Mapa (faixas por área), Radar, Lista ou Nós.</p><span class="rec">Sugestão: Mapa, lembrando a última escolha da pessoa por plano.</span></div></div>
+    </div>
+  </section>
+  <section>
+    <span class="eyebrow">A ideia</span>
+    <h2>Cada competência é uma dimensão do espaço onde a pessoa se move</h2>
+    <p class="lede">Hoje o core mostra uma tabela com "proficiente: sim/não" e uma barra de progresso. A proposta troca a pergunta "quanto falta?" por três perguntas: onde estou, por onde passei, para onde posso ir. O "On the journey" do local_dimensions (a lista de evidências dentro da aba Progresso) é a semente: ele vira o centro da página de cada competência e ganha o trecho que falta, o que vem pela frente.</p>
+    <ul class="principles">
+      <li><span class="k">P1</span><span><b>Território, não falta</b>O que não foi avaliado é contorno tracejado, estrela apagada, "a descobrir". Nunca vermelho, nunca "pendente".</span></li>
+      <li><span class="k">P2</span><span><b>Nenhum percentual em destaque</b>O número existe (5/9 no centro da rosa), mas pequeno. O desenho é que conta.</span></li>
+      <li><span class="k">P3</span><span><b>A escala é uma subida</b>Degraus com uma bandeira onde a escala diz "proficiente". O degrau de cima fica visível e é opcional.</span></li>
+      <li><span class="k">P4</span><span><b>Sempre um próximo passo</b>Toda tela de plano ou competência termina com paradas possíveis: cursos e atividades ligados, com o estado de inscrição.</span></li>
+      <li><span class="k">P5</span><span><b>Cor é identidade</b>A cor da competência (campo do local_dimensions) acompanha ela em todo lugar: pétala, estrela, linha, faixa.</span></li>
+      <li><span class="k">P6</span><span><b>Todo gráfico tem um texto</b>Uma frase montada no servidor com os mesmos dados ("Seis paradas em sete meses...") é a alternativa acessível e o resumo para quem só lê.</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <span class="eyebrow">O vocabulário (prancha 0)</span>
+    <h2>Cinco peças que se repetem em todas as telas</h2>
+    <div class="grid3">
+      <div class="box"><h3>Rosa do plano</h3><p class="small">Uma pétala por competência, comprimento = nível, cor = competência, tracejado = a descobrir, fundo esmaecido = o território todo. Vai em lista de planos, painel, cabeçalho, bloco.</p></div>
+      <div class="box"><h3>Estrela</h3><p class="small">O estado de uma competência no mapa: brilho pelo nível, anel na proficiência, halo dourado só no topo da escala.</p></div>
+      <div class="box"><h3>Subida</h3><p class="small">A escala do quadro em degraus com a bandeira de proficiência (vem do <code>scaleconfiguration</code> do core).</p></div>
+      <div class="box"><h3>Paradas</h3><p class="small">A jornada: cada evidência é uma parada com ícone do tipo. Os tipos já existem no local_dimensions (atividade, nota de curso, regra, avaliação manual, evidência própria).</p></div>
+      <div class="box"><h3>Trilha</h3><p class="small">Linhas de metrô: área = linha, competência = estação, curso ou atividade ligada = parada, baldeação = curso que serve a duas áreas.</p></div>
+      <div class="box"><h3>Fonte da cor</h3><p class="small">Competência → modelo de plano → matiz do quadro (sem plugin) → navy do tema.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">A decisão grande (pranchas 1A, 1B, 1C)</span>
+    <h2>Três mapas para o plano</h2>
+    <p>As três usam os mesmos dados e podem coexistir como "Ver como" no cabeçalho do plano. A pergunta é qual delas é a porta de entrada.</p>
+    <div class="grid3">
+      <div class="box pick" style="--sw: var(--navy);">
+        <span class="tag">1A · Constelação</span>
+        <p class="small">O plano é um céu noturno. Áreas são constelações; o caminho percorrido é um pontilhado em ordem de data.</p>
+        <ul><li>Mais "descoberta" e mais memorável</li><li>Posições estáveis: a pessoa aprende o próprio céu</li><li>Exige um algoritmo de posição determinístico por área</li><li>Pior para comparar níveis com precisão</li></ul>
+      </div>
+      <div class="box pick" style="--sw: var(--c2);">
+        <span class="tag">1B · Anéis de crescimento</span>
+        <p class="small">O radar que se espera, mas em camadas no tempo, como anéis de árvore. Um seletor de momento mostra o que cresceu.</p>
+        <ul><li>Leitura de nível mais exata</li><li>Mostra evolução, não só estado</li><li>Precisa do histórico de notas das evidências do plano inteiro</li><li>Com mais de 12 competências os raios ficam densos</li></ul>
+      </div>
+      <div class="box pick" style="--sw: var(--c3);">
+        <span class="tag">1C · Mapa de trilhas</span>
+        <p class="small">Linhas de metrô com "Você está aqui" e as próximas paradas: a mais forte em direcionamento.</p>
+        <ul><li>Responde "para onde ir" melhor que as outras</li><li>Usa os cursos e atividades ligados e o estado de inscrição</li><li>Layout mais difícil de automatizar em planos grandes</li><li>Menos bonito como "retrato" do plano</li></ul>
+      </div>
+    </div>
+    <p class="small">Minha leitura: 1C como porta de entrada (direcionamento é o que a página mais carece), 1A como "Ver como" para a contemplação, e 1B guardado para a revisão com a mentoria, onde a evolução no tempo é o assunto. A rosa vai em todo lugar, qualquer que seja a escolha.</p>
+  </section>
+
+  <section>
+    <span class="eyebrow">Página por página</span>
+    <h2>O que cada página do core passa a ser</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Página do core</th><th>Proposta</th><th>Prancha</th><th>Como entra no tema</th></tr></thead>
+        <tbody>
+          <tr><td><code>plans.php</code></td><td>Atlas: cartão por plano com capa colorida e rosa, "última parada", ações do fluxo num menu</td><td>3</td><td>Cópia de <code>plans_page</code> (hoje não copiada)</td></tr>
+          <tr><td><code>plan.php</code></td><td>Cabeçalho com cor/imagem do modelo, mapa (1A/1B/1C), horizontes a descobrir, últimas paradas; fluxo do plano em botões</td><td>1A-1C, 1</td><td>Cópia de <code>plan_page</code> + dados extras: renderer <code>theme_dimensions\output\tool_lp\renderer</code></td></tr>
+          <tr><td><code>user_competency_in_plan.php</code></td><td>Diário de bordo: daqui para frente, você está aqui, o caminho até aqui; regra em pontos; vizinhança; conteúdos</td><td>2A, 2B, 2</td><td>Cópia de <code>user_competency_summary_in_plan</code> (a "próxima candidata" já anotada no CLAUDE.md)</td></tr>
+          <tr><td><code>user_evidence_list.php</code> e <code>user_evidence.php</code></td><td>Caderno de campo por mês; cobertura das dimensões na rosa; "onde um registro ajudaria"</td><td>4, 4</td><td>Cópias de <code>user_evidence_list_page</code> e <code>user_evidence_page</code></td></tr>
+          <tr><td><code>coursecompetencies.php</code></td><td>Prisma do curso (largura = quanto o curso trabalha a competência), atividades como paradas, "o que o curso faz por você" a partir do resultado da regra</td><td>5</td><td>Cópia de <code>course_competencies_page</code> (com cuidado: tem arrastar e soltar para gestores)</td></tr>
+          <tr><td><code>report/competency</code></td><td>Matriz da turma em pontos (tamanho e opacidade = nível), distribuição por coluna, leitura em texto, pedidos de revisão</td><td>6</td><td>A cópia de <code>report_competency/report</code> já existe; mantém os ganchos do diálogo de avaliação</td></tr>
+          <tr><td><code>block_lp</code></td><td>Rosa + próxima parada por plano; listas de revisão com contagem</td><td>7</td><td>A cópia de <code>block_lp/summary</code> já existe</td></tr>
+          <tr><td><code>user_competency_in_course.php</code></td><td>Mesma linguagem do 2A, recortada ao curso</td><td>(não desenhada)</td><td>Cópia de <code>user_competency_summary_in_course</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Dados</span>
+    <h2>De onde vem cada coisa</h2>
+    <div class="grid2">
+      <div class="box">
+        <span class="tag ok">Só o core</span>
+        <ul>
+          <li>Nível e proficiência por competência (<code>user_competency</code>, ou <code>user_competency_plan</code> em plano concluído)</li>
+          <li>Escala e onde ela diz "proficiente" (<code>scaleconfiguration</code>)</li>
+          <li>Evidências com data, nota, autor, nota escrita e tipo (<code>descidentifier</code> + <code>action</code>): a jornada e a evolução no tempo</li>
+          <li>Árvore do quadro (pai = área), relacionadas, regras (todas / pontos)</li>
+          <li>Cursos e atividades ligados, com o resultado da regra (anexar evidência, concluir, recomendar)</li>
+        </ul>
+      </div>
+      <div class="box">
+        <span class="tag">Com o local_dimensions</span>
+        <ul>
+          <li>Cor de fundo e de texto por competência e por modelo de plano</li>
+          <li>Imagem de card e de fundo (<code>picture_manager</code>)</li>
+          <li><code>tag1</code> / <code>tag2</code> (ex.: área, etapa) e o tipo ("9 Etapas")</li>
+          <li>Progresso e estado de inscrição dos cursos ligados: as "próximas paradas" e a baldeação</li>
+          <li>Caches prontos: <code>template_metadata_cache</code>, <code>competency_metadata_cache</code>, <code>plan_trail_cache</code></li>
+        </ul>
+      </div>
+    </div>
+    <p class="small">Custo a medir: anéis e constelação precisam das evidências do plano inteiro numa leitura (hoje o local_dimensions busca por competência, ao abrir). A rosa e a trilha saem do <code>plan_trail_cache</code> sem leitura nova.</p>
+  </section>
+
+  <section>
+    <span class="eyebrow">Detecção do plugin</span>
+    <h2>Uma classe do tema decide se há extras</h2>
+    <p>Mesmo padrão já usado para <code>local_page</code> e <code>auth_loginsteps</code>: o plugin não entra no <code>version.php</code>, o tema pergunta por nome de classe (<code>class_exists('\local_dimensions\template_metadata_cache')</code> e <code>method_exists</code> no método que usar), sem try/catch em volta da chamada. Uma classe só, algo como <code>classes/local/competency/sources.php</code>, entrega a cor, a imagem, as etiquetas e as próximas paradas, com o fallback do core ao lado. Os testes do tema rodam com e sem o plugin (stub para as regras do tema, integração que se pula sem ele), como na faixa de páginas da vitrine. A prancha 8 mostra a página sem o plugin.</p>
+  </section>
+
+  <section>
+    <span class="eyebrow">Implementação</span>
+    <h2>SVG desenhado no servidor, JavaScript só para interagir</h2>
+    <ul class="principles">
+      <li><span class="k">I1</span><span><b>Sem Chart.js</b>O core 5.3 tem só barra, linha e pizza; radar exigiria Chart.js cru. A geometria (pétalas, raios, posições) sai de um exportador PHP e o Mustache desenha o SVG: funciona sem JS, no PHPUnit e na Behat.</span></li>
+      <li><span class="k">I2</span><span><b>Alternativa textual</b>Cada SVG tem <code>role="img"</code> com rótulo e uma frase ou tabela ao lado, montadas dos mesmos dados.</span></li>
+      <li><span class="k">I3</span><span><b>A decisão continua no core</b>Como já diz o CLAUDE.md do tema: ele restyla e re-renderiza, nunca muda quem vê o quê. Todos os ganchos (<code>data-region</code>, <code>data-action</code>) das cópias são mantidos.</span></li>
+      <li><span class="k">I4</span><span><b>Tokens da família</b>Cores de estado e superfícies pelos <code>--dimensions-*</code>; a cor de cada competência é dado da instância, escrita no elemento, como o local_dimensions já faz.</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <span class="eyebrow">Para a próxima rodada</span>
+    <h2>Mais ideias, ainda sem tela</h2>
+    <div class="grid2">
+      <div class="box"><h3>Bandeira cruzada</h3><p class="small">Ao chegar à proficiência, a estrela ganha o anel com uma animação curta e silenciosa, uma vez só (respeitando movimento reduzido).</p></div>
+      <div class="box"><h3>Conversa de revisão</h3><p class="small">Os anéis (1B) lado a lado com o plano do modelo na tela do mentor, com as evidências novas desde a última revisão.</p></div>
+      <div class="box"><h3>Relevo</h3><p class="small">Um quarto mapa: o quadro inteiro como terreno, a altitude pelo nível, curvas de nível. Mais abstrato; guardei.</p></div>
+      <div class="box"><h3>Céu do quadro</h3><p class="small">Para quem gere o quadro: o mesmo céu com todas as competências do quadro, mostrando quais nenhum plano usa.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Decisões que preciso de você</span>
+    <h2>Oito perguntas da rodada 1</h2>
+    <p class="small">Respondidas: C1 (o mapa de trilhas, sem as metáforas, virou o Mapa dos planos) e C3 (o diário de bordo fica, com a vizinhança). C8 (app) cai com o escopo 5.3+ e web. As outras seguem abertas.</p>
+    <div class="decisions">
+      <div class="dec"><span class="id">C1</span><div><b>Qual mapa é a porta de entrada do plano?</b><p class="small">1A constelação, 1B anéis, 1C trilhas, ou combinação com "Ver como".</p><span class="rec">Sugestão: 1C na entrada, 1A e Lista no "Ver como".</span></div></div>
+      <div class="dec"><span class="id">C2</span><div><b>Com o local_dimensions instalado, qual é "a" página do plano?</b><p class="small">O plugin já tem <code>view-plan.php</code> e <code>view-competency.php</code>. O tema pode (a) redesenhar só as páginas do core e deixar as do plugin como estão, (b) também restilizar as do plugin, ou (c) levar os gráficos para o plugin e o tema só fornece tokens.</p><span class="rec">Sugestão: (a) agora, e os gráficos em parciais que o plugin possa adotar depois sem depender do tema.</span></div></div>
+      <div class="dec"><span class="id">C3</span><div><b>A jornada da competência: vertical, horizontal ou as duas?</b><p class="small">2A (diário, de cima para baixo: o que vem, onde estou, o que passou) ou 2B (linha do tempo com a subida).</p><span class="rec">Sugestão: 2A como padrão, 2B como alternância.</span></div></div>
+      <div class="dec"><span class="id">C4</span><div><b>O número "x de y proficientes" some, fica pequeno ou continua?</b><p class="small">As telas mostram só no centro da rosa e no texto de resumo.</p><span class="rec">Sugestão: pequeno, como nas telas.</span></div></div>
+      <div class="dec"><span class="id">C5</span><div><b>A visão da turma (prancha 6) entra nesta fase?</b><p class="small">É a única tela para quem ensina; o resto é do estudante.</p><span class="rec">Sugestão: depois do plano e da competência.</span></div></div>
+      <div class="dec"><span class="id">C6</span><div><b>Sem o plugin, a cor vem do quadro?</b><p class="small">Matiz derivado do id do quadro, luminosidade pelo ramo da árvore; ou tudo no navy do tema.</p><span class="rec">Sugestão: matiz do quadro.</span></div></div>
+      <div class="dec"><span class="id">C7</span><div><b>A área de uma competência vem de onde?</b><p class="small">Do pai na árvore do quadro (core) ou da <code>tag1</code> do local_dimensions quando houver.</p><span class="rec">Sugestão: tag1 quando preenchida, senão o pai.</span></div></div>
+      <div class="dec"><span class="id">C8</span><div><b>Moodle App entra no escopo?</b><p class="small">As páginas do tool_lp não aparecem no app; as do local_dimensions podem aparecer como web view.</p><span class="rec">Sugestão: fora desta fase.</span></div></div>
+    </div>
+  </section>
+</main>

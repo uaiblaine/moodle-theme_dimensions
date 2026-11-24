@@ -92,6 +92,8 @@ jobs:
       plugin-dependencies: |
         moodle-an-hochschulen/moodle-theme_boost_union,MOODLE_503_STABLE
         uaiblaine/moodle-local_unlistedcourses,MOODLE_503_STABLE
+        uaiblaine/moodle-local_dimensions,main
+        uaiblaine/moodle-block_dimensions,main
         uaiblaine/moodle-customfield_picture,master
         uaiblaine/moodle-local_page,main
         uaiblaine/moodle-block_compass,MOODLE_503_STABLE

@@ -531,6 +531,8 @@ Requirements
 |---|---|---|
 | [theme_boost_union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union) | 2026100503 or later, its Moodle 5.3 version (`MOODLE_503_STABLE`, v5.3-r3 or later) | The parent theme. |
 | [local_unlistedcourses](https://github.com/uaiblaine/moodle-local_unlistedcourses) | 2026100506 or later | Decides which courses and categories are listed, unlisted or public; the category showcase, the public pages and the listings ask it. |
+| [local_dimensions](https://github.com/uaiblaine/moodle-local_dimensions) | 2026100532 or later, its Moodle 5.3 version (`main`) | Competency Dimensions: the custom fields of competencies and learning plan templates, and the learner's plan overview. The theme's competency pages are being rebuilt over it; required from 2026100643, before the first of those pages arrives. |
+| [block_dimensions](https://github.com/uaiblaine/moodle-block_dimensions) | 2026100506 or later, its Moodle 5.3 version (`main`) | The learning plan card the theme's learning plans page will draw. Required from 2026100643 with local_dimensions, which it depends on. |
 
 ### Optional plugins
 

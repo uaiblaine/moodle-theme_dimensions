@@ -19,7 +19,9 @@ the privacy provider is a request, userlist and user preference provider: the st
 and, on deletion, cleared to 0 with the branding kept.
 Supports Moodle **5.3 only** (`$plugin->requires = 2026100500`, `$plugin->supported = [503, 503]`),
 on Boost Union's `MOODLE_503_STABLE` branch (v5.3-r1 onwards). Hard-depends on
-`theme_boost_union` (2026100500 or later) and `local_unlistedcourses` (2026100506);
+`theme_boost_union` (2026100500 or later), `local_unlistedcourses` (2026100506) and, since 2026100643, the two
+competency companions `local_dimensions` (2026100532) and `block_dimensions` (2026100506), declared before any
+code of the theme calls them (`docs/competency/PLAN.md`, phase 0);
 `customfield_picture`, `auth_loginsteps`, `local_page`, `tool_courserating`, `tool_imagepicker` and `filter_shortcodes` (which reads `db/shortcodes.php`) are optional and asked for at run time,
 never declared (`customfield_picture` through `landingfields::picture_type_available()`, `filter_shortcodes` through
 `core_component` and its config version, the other four by class name; `tool_imagepicker` through `local\imagepicker`,
@@ -82,6 +84,7 @@ In a Claude Code cloud session none of `mdl`, the stacks, `~/dev/CLAUDE.md` or t
 exist. The cloud environment's setup script (`moodle-dev/cloud/setup.sh`) installs
 `moodle-plugin-ci` and the `mpci` runner instead, and `mpci` reads this repo's `ci.yml`: it installs
 `MOODLE_503_STABLE` with the `plugin-dependencies` (Boost Union's `MOODLE_503_STABLE`, `local_unlistedcourses`,
+`local_dimensions` and `block_dimensions` from their `main`,
 and the optional `customfield_picture`, `local_page`, `block_compass`, `tool_courserating`, `tool_imagepicker`, `mod_subcourse` and
 `filter_shortcodes`, all public) by itself.
 

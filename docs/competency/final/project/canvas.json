@@ -1,0 +1,37 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-23T15:00:00Z"},
+  "title": "Competências no tema: versões finais",
+  "launch": {"view": "canvas", "page": "tema"},
+  "pages": [
+    {"id": "tema", "name": "Tema: páginas do core"},
+    {"id": "plugins", "name": "Plugins companheiros"}
+  ],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1280, "h": 1020, "title": "1 · Planos de aprendizagem (cartão horizontal)", "page": "tema", "expand": "fill"},
+    "PlanosEquipe.dc.html": {"x": 1360, "y": 0, "w": 1280, "h": 980, "title": "1 · Planos de um aluno, por quem acompanha (cartão vertical)", "page": "tema", "expand": "fill"},
+    "Rotas.dc.html": {"x": 2720, "y": 0, "w": 1280, "h": 1100, "title": "2 e 3 · Para onde cada página do core leva", "page": "tema", "expand": "fill"},
+    "Evidencias.dc.html": {"x": 4080, "y": 0, "w": 1280, "h": 1360, "title": "4 · Evidências", "page": "tema", "expand": "fill"},
+    "CursoAluno.dc.html": {"x": 5440, "y": 0, "w": 1280, "h": 1420, "title": "5 · Competências do curso (aluno)", "page": "tema", "expand": "fill"},
+    "CursoProfessor.dc.html": {"x": 0, "y": 1960, "w": 1280, "h": 1620, "title": "5 · Competências do curso (professor)", "page": "tema", "expand": "fill"},
+    "AlunoCompetencia.dc.html": {"x": 1360, "y": 1960, "w": 1280, "h": 1240, "title": "6 · Competência de um aluno no curso", "page": "tema", "expand": "fill"},
+    "Turma.dc.html": {"x": 2720, "y": 1960, "w": 1280, "h": 1380, "title": "7 · Turma", "page": "tema", "expand": "fill"},
+    "Jornada.dc.html": {"x": 0, "y": 0, "w": 1280, "h": 1380, "title": "local_dimensions · Panorama do plano: visão Jornada", "page": "plugins", "expand": "fill"}
+  },
+  "order": [
+    "Main.dc.html",
+    "PlanosEquipe.dc.html",
+    "Rotas.dc.html",
+    "Evidencias.dc.html",
+    "CursoAluno.dc.html",
+    "CursoProfessor.dc.html",
+    "AlunoCompetencia.dc.html",
+    "Turma.dc.html",
+    "Jornada.dc.html"
+  ],
+  "notes": {
+    "rowaluno": {"x": 0, "y": -300, "text": "Aluno: páginas do core que o tema redesenha", "kind": "title1", "maxW": 6720, "page": "tema"},
+    "rowprof": {"x": 0, "y": 1660, "text": "Professor: páginas do core no curso", "kind": "title1", "maxW": 4000, "page": "tema"}
+  },
+  "designSystems": []
+}
