@@ -11,6 +11,9 @@
 #                         until moodle-dev's extra_deps_for() lists it beside the theme's other optional plugins
 #   filter_shortcodes     the [relatedcourses] shortcode through the filter; GitHub's ci.yml installs it too, as
 #                         mod_subcourse above
+#   enrol_conditional     the resolver's conditional tests and the superset test's conditional shapes (the
+#                         enrolconditional block of mutations/gates.conf); its engine, local_enrolconditions,
+#                         arrives through the method's own $plugin->dependencies
 extra-plugins:
   - repo: moodle-enrol_apply
     path: enrol/apply
@@ -30,3 +33,9 @@ extra-plugins:
   - repo: moodle-filter_shortcodes
     path: filter/shortcodes
     branches: [MOODLE_503_STABLE]
+  # The ref is the commit of the fork's audited line the method's public helpers (is_self_enrol_available(),
+  # evaluate_conditions()) are relied on at; the fork's main contains it.
+  - repo: moodle-enrol_conditional
+    path: enrol/conditional
+    branches: [MOODLE_503_STABLE]
+    ref: 593b83cca6d132e20c9547ea6f3c44a162b3d004

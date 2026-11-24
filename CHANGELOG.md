@@ -5,6 +5,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Conditional self enrolment (enrol_conditional) on the cards and the landing page.** A course whose way in is a
+  conditional self enrolment method now reads "open" on the category showcase for a logged-in reader the method could
+  take: inside its enrolment window, taking new enrolments, with a place left, and not already holding an enrolment
+  through it. Before, such a course was drawn muted as having nothing on offer. Its conditions are not judged on the
+  card: the landing page lists the method under those same rules, and the method's own panel there shows the enrol
+  button to a reader who meets them and the conditions still missing to one who does not. A reader without the
+  method's "enrol themselves" capability is not offered it, and a method whose window is shut, that takes no new
+  enrolments, that is full or that already enrolled the reader is hidden like any other, where its panel used to
+  show the method's own refusal. A visitor's "Log in to enrol" no longer counts a method
+  whose window has closed, that takes no new enrolments or that is full.
 - **local_dimensions and block_dimensions are required** (2026100643). The theme now declares both as dependencies
   (local_dimensions 2026100532, block_dimensions 2026100506, their Moodle 5.3 versions), so a site installs or
   upgrades them before the theme. Nothing the theme draws changes yet: its competency pages are being rebuilt over

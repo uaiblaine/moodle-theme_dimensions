@@ -72,7 +72,8 @@ use local_unlistedcourses\access;
  * Which of each plugin's checks are reproduced, and which are dropped
  * (dropped means: the classifier says open where the plugin might say no,
  * which is the permitted direction). The methods named are the ones this
- * class must agree with; re-read them on each upgrade of core or of enrol_apply.
+ * class must agree with; re-read them on each upgrade of core, of enrol_apply
+ * or of enrol_conditional.
  *
  * - enrol_self ({@see \enrol_self_plugin::is_self_enrol_available()},
  *   {@see \enrol_self_plugin::can_self_enrol()}): instance enabled, the
@@ -81,6 +82,17 @@ use local_unlistedcourses\access;
  *   which the viewer must belong to; a deleted cohort answers no because the
  *   viewer belongs to nothing by that id), and "already holds a row on this
  *   instance" (any status). Dropped: the enrol/self:enrolself capability.
+ * - enrol_conditional (\enrol_conditional_plugin::is_self_enrol_available(),
+ *   which the resolver asks): instance enabled, the enrolment window,
+ *   customint6 read as the plugin's own "!customint6" (any value other than
+ *   zero allows new enrolments), customint3 (the places cap) and "already
+ *   holds a row on this instance". It has no cohort: customint5 means nothing
+ *   to it and is not read. Dropped: the enrol/conditional:enrolself capability
+ *   and the condition tree in customtext2, whose conditions run statements of
+ *   their own per condition and per viewer. That is the method's own listing
+ *   rule (its get_info_icons() and show_enrolme_link() decide from these facts
+ *   alone): the landing page is where the conditions are judged, and where the
+ *   method's own widget says which of them the viewer does not meet.
  * - enrol_apply ({@see \enrol_apply_plugin::allow_apply()},
  *   {@see \enrol_apply_plugin::is_full()} over
  *   {@see \enrol_apply\local\capacity::applications_closed()}): enabled,
@@ -109,11 +121,12 @@ use local_unlistedcourses\access;
  *   holds. Anyone else is told nothing about it: naming the prerequisite to them
  *   would defeat the unlisting.
  *
- * The one grouped count serves both capped plugins and uses enrol_apply's
- * shape - rows whose timeend is 0 or in the future - because the two shapes
- * differ and only one direction of error is allowed: enrol_self counts every
- * row, expired ones included, so counting fewer than it does can only make a
- * full self instance look open, never an open one look full.
+ * The one grouped count serves the three capped plugins (self, conditional
+ * and apply) and uses enrol_apply's shape - rows whose timeend is 0 or in the
+ * future - because the shapes differ and only one direction of error is
+ * allowed: enrol_self and enrol_conditional count every row, expired ones
+ * included, so counting fewer than they do can only make a full instance look
+ * open, never an open one look full.
  *
  * A guest is a viewer who can never enrol (can_self_enrol() refuses guests
  * outright and the resolver returns its visitor state before asking any
@@ -239,7 +252,7 @@ final class classifier {
     ];
 
     /** @var string[] The enrol plugins this class has a rule for. Anything else is ignored. */
-    private const PLUGINS = ['self', 'guest', 'fee', 'apply', 'paypal', 'autoenrol', 'coursecompleted'];
+    private const PLUGINS = ['self', 'guest', 'fee', 'apply', 'paypal', 'autoenrol', 'coursecompleted', 'conditional'];
 
     /** @var array How good an offer is: open beats free beats key beats conditional beats nothing. */
     private const OFFER_RANK = [
@@ -483,7 +496,7 @@ final class classifier {
             );
             foreach ($rows as $row) {
                 $instances[(int) $row->courseid][] = $row;
-                if ((int) $row->customint3 > 0 && in_array($row->enrol, ['self', 'apply'], true)) {
+                if ((int) $row->customint3 > 0 && in_array($row->enrol, ['self', 'apply', 'conditional'], true)) {
                     $capped = true;
                 }
             }
@@ -498,7 +511,7 @@ final class classifier {
                    FROM {user_enrolments} ue
                    JOIN {enrol} e ON e.id = ue.enrolid
                    JOIN {course} c ON c.id = e.courseid
-                  WHERE c.category {$catsql} AND e.customint3 > 0 AND e.enrol IN ('self', 'apply')
+                  WHERE c.category {$catsql} AND e.customint3 > 0 AND e.enrol IN ('self', 'apply', 'conditional')
                         AND (ue.timeend = 0 OR ue.timeend > :now)
                GROUP BY ue.enrolid",
                 $catparams + ['now' => time()]
@@ -650,6 +663,14 @@ final class classifier {
                     return self::STATE_NONE;
                 }
                 return self::STATE_OPEN;
+
+            case 'conditional':
+                // The plugin's own test is a plain "!customint6"; its conditions are judged on the landing page.
+                if ((int) $instance->customint6 === 0) {
+                    return self::STATE_NONE;
+                }
+                $cap = (int) $instance->customint3;
+                return ($cap > 0 && $taken >= $cap) ? self::STATE_NONE : self::STATE_OPEN;
 
             case 'fee':
             case 'paypal':

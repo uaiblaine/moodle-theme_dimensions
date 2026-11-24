@@ -840,6 +840,125 @@ final class resolver_test extends \advanced_testcase {
         $this->assertSame(resolution::STATE_CLOSED, $resolution->state);
         $this->assertSame([], $resolution->methods);
     }
+
+    /**
+     * Enable enrol_conditional and give a course an instance whose tree lists one username, or skip without the plugin.
+     *
+     * The method checks a tree against what the acting user may name, so the instance is added as an administrator;
+     * the caller logs in as whoever it resolves for afterwards.
+     *
+     * @param \stdClass $course The course.
+     * @param string|null $username The one username the tree admits, or null for an instance with no conditions.
+     * @return \stdClass The {enrol} record.
+     */
+    private function add_conditional_instance(\stdClass $course, ?string $username): \stdClass {
+        global $DB;
+        $plugin = enrol_get_plugin('conditional');
+        if (!$plugin) {
+            $this->markTestSkipped('enrol_conditional is not installed on this site.');
+        }
+        $this->enable_enrol('conditional');
+        $this->setAdminUser();
+        $fields = [
+            'status' => ENROL_INSTANCE_ENABLED,
+            'roleid' => $DB->get_field('role', 'id', ['shortname' => 'student'], MUST_EXIST),
+            'customint6' => 1,
+        ];
+        if ($username !== null) {
+            $fields['customtext2'] = json_encode(['op' => 'and', 'children' => [
+                ['type' => 'userlist', 'config' => ['usernames' => [$username]]],
+            ]]);
+        }
+        return $DB->get_record('enrol', ['id' => $plugin->add_instance($course, $fields)], '*', MUST_EXIST);
+    }
+
+    /**
+     * enrol_conditional is listed where its cheap facts and its capability admit the viewer, whatever the conditions.
+     *
+     * The conditions are left to the method's own widget, which names those a viewer does not meet, so the viewer who
+     * meets them and the one who does not are both offered the widget. New enrolments switched off hide it; so does
+     * the capability prohibited in the course, for the viewer it was listed to a moment before.
+     */
+    public function test_conditional_is_listed_where_its_cheap_facts_and_capability_admit_the_viewer(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $course = $generator->create_course();
+        $instance = $this->add_conditional_instance($course, 'meets');
+        $meets = $generator->create_user(['username' => 'meets']);
+        $misses = $generator->create_user(['username' => 'misses']);
+        $plugin = enrol_get_plugin('conditional');
+        $this->assertTrue($plugin->evaluate_conditions($instance, (int) $meets->id)->is_met(), 'Precondition.');
+        $this->assertFalse($plugin->evaluate_conditions($instance, (int) $misses->id)->is_met(), 'Precondition.');
+
+        foreach ([$meets, $misses] as $user) {
+            $this->setUser($user);
+            \local_unlistedcourses\access::reset_caches();
+            $resolution = resolver::resolve($course);
+            $this->assertSame(resolution::STATE_OPEN, $resolution->state, $user->username);
+            $this->assertCount(1, $resolution->methods, $user->username);
+            $this->assertSame(method::TYPE_FALLBACK, $resolution->methods[0]->type, $user->username);
+            $this->assertSame('conditional', $resolution->methods[0]->instance->enrol, $user->username);
+            $this->assertFalse(is_enrolled(\core\context\course::instance($course->id), $user), 'Resolving enrols nobody.');
+        }
+
+        $this->setUser($meets);
+        $DB->set_field('enrol', 'customint6', 0, ['id' => $instance->id]);
+        $this->assertSame([], resolver::resolve($course)->methods, 'New enrolments off.');
+        $DB->set_field('enrol', 'customint6', 1, ['id' => $instance->id]);
+
+        assign_capability(
+            'enrol/conditional:enrolself',
+            CAP_PROHIBIT,
+            (int) $CFG->defaultuserroleid,
+            \core\context\course::instance($course->id)->id,
+            true
+        );
+        accesslib_clear_all_caches_for_unit_testing();
+        $this->setUser($meets);
+        $resolution = resolver::resolve($course);
+        $this->assertSame(resolution::STATE_CLOSED, $resolution->state, 'Without the capability.');
+        $this->assertSame([], $resolution->methods);
+    }
+
+    /**
+     * A conditional instance is a visitor's way in through a login only while an enrol_self instance would be.
+     *
+     * Its conditions, like a self method's cohort, depend on who logs in, so a tree is no reason to drop the button;
+     * a shut window, new enrolments off and a full instance are, each beside the open control. It declares nothing to
+     * the visitor's offers, which list the plugins whose seats and deadline offer::export() reads.
+     */
+    public function test_a_conditional_instance_is_a_login_way_in_only_while_open_to_anybody(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $course = $generator->create_course();
+        $instance = $this->add_conditional_instance($course, 'meets');
+        $holder = $generator->create_user();
+
+        $this->setUser(null);
+        $resolution = resolver::resolve($course);
+        $this->assertSame(resolution::STATE_VISITOR, $resolution->state);
+        $this->assertTrue($resolution->loginwayin, 'Open, conditions or not.');
+        $this->assertSame([], $resolution->offers);
+
+        $DB->set_field('enrol', 'enrolenddate', time() - DAYSECS, ['id' => $instance->id]);
+        $this->assertFalse(resolver::resolve($course)->loginwayin, 'The window has closed.');
+        $DB->set_field('enrol', 'enrolenddate', 0, ['id' => $instance->id]);
+
+        $DB->set_field('enrol', 'customint6', 0, ['id' => $instance->id]);
+        $this->assertFalse(resolver::resolve($course)->loginwayin, 'It takes no new enrolments.');
+        $DB->set_field('enrol', 'customint6', 1, ['id' => $instance->id]);
+
+        enrol_get_plugin('conditional')->enrol_user($instance, (int) $holder->id);
+        $DB->set_field('enrol', 'customint3', 1, ['id' => $instance->id]);
+        $this->assertFalse(resolver::resolve($course)->loginwayin, 'Its one place is taken.');
+        $DB->set_field('enrol', 'customint3', 2, ['id' => $instance->id]);
+        $this->assertTrue(resolver::resolve($course)->loginwayin, 'Control: one place of two left.');
+
+        $DB->set_field('enrol', 'customtext2', null, ['id' => $instance->id]);
+        $this->assertTrue(resolver::resolve($course)->loginwayin, 'With no conditions it is a self method.');
+    }
     /**
      * A visitor is told the seats and deadline of every method open to anybody, cohort-restricted ones included.
      *
