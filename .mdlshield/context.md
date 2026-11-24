@@ -6,7 +6,8 @@ organisation's branding and a few behaviours that need no plugin of their own. I
 layout; `auth_loginsteps` draws its own screens on its own shell and gets nothing from this theme); where the navbar
 shows the user's name (the name itself is core's `fullname()`); the user profile page; the course category pages (a
 `course_renderer` override, a hero and a showcase listing); and an optional reduced "focus mode" shell for
-activities. It depends on `theme_boost_union` and `local_unlistedcourses`; `customfield_picture` (the badges' and
+activities. It depends on `theme_boost_union`, `local_unlistedcourses`, `local_dimensions` and `block_dimensions` (the last two
+declared, not called yet); `customfield_picture` (the badges' and
 the share picture's field type) is optional, asked for at run time. It owns one
 table, `theme_dimensions_cat` (the branding of a category; its one personal datum is the
 `usermodified` authorship stamp, which the privacy provider exports and clears to 0 on deletion).
