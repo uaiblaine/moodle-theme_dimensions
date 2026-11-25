@@ -43,8 +43,9 @@ use theme_dimensions\reportbuilder\local\systemreports\class_ratings;
  * - {@see render_report()}: the class report ({@see class_ratings}) instead of core's export, which would insert a
  *   `competency_usercompcourse` row per missing competency of that first learner;
  * - {@see context_header()}: nothing instead of the first learner's heading; the page's heading stays the course's;
- * - {@see render_user_course_navigation()}: core's navigation with "All learners" chosen and the group selector
- *   pointing at the class report.
+ * - {@see render_user_course_navigation()}: core's navigation with "All learners" chosen, the group selector
+ *   pointing at the class report and the learners named limited to the ones the report lists
+ *   ({@see classreport::learner_ids()}).
  *
  * With `?user=` or for a viewer who may not read the class (one who reads learners only through per-user grants),
  * every call is core's, through the theme's copy of `report_competency/report`, which is untouched.
@@ -129,6 +130,15 @@ class report_competency_renderer extends \report_competency\output\renderer {
         $courseid = (int) $data->courseid;
         $classmode = $this->draws_class($courseid);
         $offered = $classmode || ($courseid > 0 && classreport::may_view(context_course::instance($courseid)));
+        if (!empty($data->hasusers) && $classmode) {
+            // Core lists the gradable users of its active group, where group 0 is everybody: the class report's own
+            // group rule decides who is named here, so the selector never names a learner the report withholds.
+            $admitted = array_flip(classreport::learner_ids(context_course::instance($courseid)));
+            $data->users = array_values(array_filter(
+                $data->users,
+                static fn(\stdClass $user): bool => isset($admitted[(int) $user->id])
+            ));
+        }
         if (!empty($data->hasusers) && $offered) {
             foreach ($data->users as $user) {
                 $user->selected = $user->selected && !$classmode;

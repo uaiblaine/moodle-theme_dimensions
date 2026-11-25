@@ -86,7 +86,10 @@ table, `theme_dimensions_cat` (the branding of a category; its one personal datu
   download all build the report, so all apply both. The only parameter, `moduleid`, narrows the columns to an
   activity of the same course. Cells carry core's grading-popup hooks only for `moodle/competency:competencygrade`;
   the dialogue and its web services are core's. Reading writes nothing. Stored filter values (core's
-  `reportbuilder_user_filter` under this report) are declared, exported and deleted by the theme's provider.
+  `reportbuilder_user_filter` under this report) are declared, exported and deleted by the theme's provider, and removed with the course (a `course_deleted` observer, by the
+  event's context id). Every Report Builder door (retrieve, dynamic table, filter set and reset, download) rebuilds the
+  report from its persistent and re-asks `can_view()` and the group condition; the learner selector beside the report
+  lists the same learners as the report, not core's active-group list.
 - File serving, which differs by area. Category areas (`categoryhero`, `categorycover`, `categoryogimage`, three
   badges, `categorycovervideo`) go through `branding::resolve()`: category context, id in the path, content hash
   and filename, and `is_valid_image()`; the cover video is checked by its first bytes. Course areas go through

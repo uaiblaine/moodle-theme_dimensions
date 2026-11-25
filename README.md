@@ -276,7 +276,8 @@ The activity selector keeps the columns of one activity's competencies.
   page.
 - **Groups**: in a course with separate groups, a teacher without `moodle/site:accessallgroups` sees the learners of
   the group chosen in the page's group selector, among their own groups, and **none when they are in no group**
-  (Moodle's page shows everybody to such a teacher); otherwise the chosen group, or everybody.
+  (Moodle's page shows everybody to such a teacher); otherwise the chosen group, or everybody. The learner selector
+  beside the report names only the learners the report lists, so it never offers a learner the report withholds.
 - **Rating**: a teacher holding `moodle/competency:competencygrade` in the course opens Moodle's rating dialogue
   from a cell; when it closes, the report reads its rows again. Without JavaScript a cell links to Moodle's page of
   that learner's competency in the course.
@@ -787,7 +788,8 @@ table `reportbuilder_user_filter`, one row per reader and course, until the read
 deleted or the theme is uninstalled. Moodle's own privacy provider covers its custom reports only, so the theme's
 provider declares these rows: a data request exports them in the reader's user context, naming the course where the
 reader may still open its class report, and a deletion request removes them; deleting the account removes them too,
-and uninstalling the theme deletes its report builder reports with every reader's values.
+uninstalling the theme deletes its report builder reports with every reader's values, and deleting a course deletes
+the class report's report builder record of that course with the values stored on it.
 
 
 Capabilities

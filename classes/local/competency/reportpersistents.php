@@ -94,6 +94,49 @@ final class reportpersistents {
     }
 
     /**
+     * Keep the oldest of the report's persistents of one context and delete the others, with what hangs on them.
+     *
+     * The table has no unique index, and core's factory creates a persistent when it finds none: two first views at
+     * once can create two, after which core's finder (`report::get_record()`) answers with either and debugs. The
+     * oldest (lowest id) is the one every reader keeps, with its stored filter values. No lock: the cut is
+     * idempotent (a row already deleted by a racing reader is skipped), core's own services create persistents
+     * through the factory without this method, so a lock here would not close the race, and the page must draw
+     * whatever a lock would answer; the next read repairs a duplicate that appears after this one.
+     *
+     * @param int $contextid The report's context.
+     * @param string $source The system report class.
+     * @param string $component The persistent's component.
+     * @param string $area The persistent's area.
+     * @param int $itemid The persistent's item id.
+     * @return void
+     */
+    public static function keep_oldest(int $contextid, string $source, string $component, string $area, int $itemid): void {
+        global $DB;
+
+        $ids = $DB->get_fieldset_select(
+            report::TABLE,
+            'id',
+            'type = :type AND source = :source AND contextid = :contextid AND component = :component'
+                . ' AND area = :area AND itemid = :itemid',
+            [
+                'type' => base::TYPE_SYSTEM_REPORT,
+                'source' => $source,
+                'contextid' => $contextid,
+                'component' => $component,
+                'area' => $area,
+                'itemid' => $itemid,
+            ],
+            'id'
+        );
+        array_shift($ids);
+        foreach ($ids as $id) {
+            if ($extra = report::get_record(['id' => (int) $id])) {
+                $extra->delete();
+            }
+        }
+    }
+
+    /**
      * Delete one user's stored filter values of the theme's reports, in core's table.
      *
      * The one cut shared by the privacy requests and the deletion of the account, after which the user context the
@@ -125,6 +168,45 @@ final class reportpersistents {
         $ids = $DB->get_fieldset_sql('SELECT r.id FROM {' . report::TABLE . "} r WHERE {$isthemes}", $params);
         foreach ($ids as $id) {
             (new report((int) $id))->delete();
+        }
+    }
+
+    /**
+     * Delete the theme's report persistents of one context, through core's model so the stored filter values,
+     * columns and conditions hanging on each go too.
+     *
+     * @param int $contextid The context the persistents were created in.
+     * @return void
+     */
+    public static function delete_for_context(int $contextid): void {
+        global $DB;
+
+        [$isthemes, $params] = self::is_themes('r');
+        $ids = $DB->get_fieldset_sql(
+            'SELECT r.id FROM {' . report::TABLE . "} r WHERE r.contextid = :contextid AND {$isthemes}",
+            $params + ['contextid' => $contextid]
+        );
+        foreach ($ids as $id) {
+            if ($persistent = report::get_record(['id' => (int) $id])) {
+                $persistent->delete();
+            }
+        }
+    }
+
+    /**
+     * A course was deleted: the class report's persistents of its context, and so every reader's stored filter
+     * values, go. The context row is gone by then, so the persistents are found by the context id the event carries.
+     * Runs after the deletion commits; a failure here must not undo or hide the course's deletion.
+     *
+     * @param \core\event\course_deleted $event The event.
+     * @return void
+     */
+    public static function course_deleted(\core\event\course_deleted $event): void {
+        try {
+            self::delete_for_context((int) $event->contextid);
+        } catch (\Throwable $exception) {
+            debugging('theme_dimensions: the class report of a deleted course was not removed: '
+                . $exception->getMessage(), DEBUG_DEVELOPER);
         }
     }
 

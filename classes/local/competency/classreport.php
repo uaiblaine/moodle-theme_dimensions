@@ -208,6 +208,23 @@ final class classreport {
     }
 
     /**
+     * The ids of the learners the class report lists to the current user: the report's own rule, as a list.
+     *
+     * One statement over {@see learners()}, so the selector of learners beside the report names exactly the rows the
+     * report would show. A viewer the group rule leaves no row gets an empty list.
+     *
+     * @param context_course $context The course's context.
+     * @return int[] User ids.
+     */
+    public static function learner_ids(context_course $context): array {
+        global $DB;
+
+        [$where, $params] = self::learners($context, 'dimlu.id');
+
+        return array_map('intval', $DB->get_fieldset_sql("SELECT dimlu.id FROM {user} dimlu WHERE {$where}", $params));
+    }
+
+    /**
      * The course's competencies, in the course's order, and the scale each is rated on.
      *
      * One statement. The scale is the competency's own or, without one, its framework's

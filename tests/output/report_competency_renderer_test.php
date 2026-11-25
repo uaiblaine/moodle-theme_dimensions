@@ -192,4 +192,75 @@ final class report_competency_renderer_test extends \advanced_testcase {
         $this->assertMatchesRegularExpression('~<option value="' . $this->learner->id . '"\s+selected="selected">~', $html);
         $this->assertStringContainsString('<input type="hidden" name="user" value="' . $this->learner->id . '">', $html);
     }
+
+    /**
+     * The ids of the learners named by the navigation's learner select, in class mode.
+     *
+     * @param report_competency_renderer $renderer The page's renderer.
+     * @param \stdClass $viewer The viewer.
+     * @return int[] User ids, 0 (the "All learners" entry) included.
+     */
+    private function selector_ids(report_competency_renderer $renderer, \stdClass $viewer): array {
+        global $SESSION;
+        $this->setUser($viewer);
+        $SESSION->activegroup = [];
+        $baseurl = new \moodle_url('/report/competency/index.php');
+        $html = $renderer->render(new user_course_navigation($viewer->id, $this->course->id, $baseurl, 0));
+        $this->assertSame(1, preg_match('~<select id="user-nav-[^"]*">(.*?)</select>~s', $html, $select), 'The learner select.');
+        preg_match_all('~<option value="(\\d+)"~', $select[1], $options);
+        $ids = array_map('intval', $options[1]);
+        sort($ids);
+
+        return $ids;
+    }
+
+    /**
+     * In class mode the learner selector names the learners the report lists: a separate-groups grader in no group
+     * none, one in group A the learners of A, one holding accessallgroups everybody.
+     *
+     * @return void
+     */
+    public function test_the_selector_follows_the_reports_group_rule(): void {
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $this->course = $generator->create_course(['groupmode' => SEPARATEGROUPS, 'groupmodeforce' => 1]);
+        $one = $generator->create_and_enrol($this->course, 'student');
+        $two = $generator->create_and_enrol($this->course, 'student');
+        $ingroup = $generator->create_and_enrol($this->course, 'teacher');
+        $nogroup = $generator->create_and_enrol($this->course, 'teacher');
+        $editor = $generator->create_and_enrol($this->course, 'editingteacher');
+        $a = $generator->create_group(['courseid' => $this->course->id]);
+        $b = $generator->create_group(['courseid' => $this->course->id]);
+        $generator->create_group_member(['groupid' => $a->id, 'userid' => $one->id]);
+        $generator->create_group_member(['groupid' => $b->id, 'userid' => $two->id]);
+        $generator->create_group_member(['groupid' => $a->id, 'userid' => $ingroup->id]);
+        $renderer = $this->page(null);
+
+        $everybody = [0, (int) $one->id, (int) $two->id];
+        sort($everybody);
+        $this->assertSame($everybody, $this->selector_ids($renderer, $editor), 'The control: accessallgroups names everybody.');
+        $this->assertSame([0, (int) $one->id], $this->selector_ids($renderer, $ingroup), 'A group A grader names group A only.');
+        $this->assertSame([0], $this->selector_ids($renderer, $nogroup), 'A grader in no group names only All learners.');
+    }
+
+    /**
+     * On a named learner's page the navigation is core's, with core's rule: the same viewer in no group keeps core's
+     * list (the control that the limit belongs to class mode).
+     *
+     * @return void
+     */
+    public function test_a_breakdowns_selector_stays_cores_list(): void {
+        global $SESSION;
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $this->course = $generator->create_course(['groupmode' => SEPARATEGROUPS, 'groupmodeforce' => 1]);
+        $one = $generator->create_and_enrol($this->course, 'student');
+        $nogroup = $generator->create_and_enrol($this->course, 'teacher');
+        $this->setUser($nogroup);
+        $SESSION->activegroup = [];
+        $baseurl = new \moodle_url('/report/competency/index.php');
+
+        $html = $this->page((int) $one->id)->render(new user_course_navigation($one->id, $this->course->id, $baseurl, 0));
+        $this->assertStringContainsString('<option value="' . $one->id . '"', $html);
+    }
 }

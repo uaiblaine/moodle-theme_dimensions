@@ -32,6 +32,7 @@ use core_user\fields;
 use moodle_url;
 use stdClass;
 use theme_dimensions\local\competency\classreport;
+use theme_dimensions\local\competency\reportpersistents;
 use theme_dimensions\reportbuilder\local\entities\coursecompetency;
 
 /**
@@ -82,11 +83,16 @@ class class_ratings extends system_report {
     /**
      * The report of a course, created or found through core's factory.
      *
+     * A duplicate persistent of the course (two first views racing) is removed first, keeping the oldest
+     * ({@see reportpersistents::keep_oldest()}).
+     *
      * @param context_course $context The course's context.
      * @param int $moduleid A course module whose competencies are the columns, or 0.
      * @return self The report.
      */
     public static function for_course(context_course $context, int $moduleid = 0): self {
+        reportpersistents::keep_oldest((int) $context->id, self::class, 'theme_dimensions', self::AREA, 0);
+
         return system_report_factory::create(
             self::class,
             $context,

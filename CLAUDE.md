@@ -2298,7 +2298,15 @@ or in `scss/competency.scss`, except the learning plans page's cards (below).
   Columns are keyed `comp:<competencyid>` (`class_ratings::active_keys()`), capped at `classreport::MAX_COLUMNS`.
   The rating filter is `reportbuilder\local\filters\rating`, core's select without its static options cache (keyed
   by name, it would serve another scale's items for the same competency id). The stored filter values are the
-  theme's personal data (`local\competency\reportpersistents`, D146). Core's own Behat for report_competency
+  theme's personal data (`local\competency\reportpersistents`, D146); the persistents and their stored filters go with
+  the course (`course_deleted` observer, found by the event's `contextid`, the context row being gone), and
+  `class_ratings::for_course()` keeps the oldest persistent of a course and deletes a duplicate, no lock (core's own
+  services create persistents without it). **In class mode the learner selector lists `classreport::learner_ids()`**,
+  the report's own group rule, not core's active-group list (a viewer in no group gets only "All learners"); with
+  `?user=` core's list stays. **Every Report Builder door rebuilds the report and re-asks `can_view()` and the group
+  condition**: `core_reportbuilder_retrieve_system_report`, `core_table_get_dynamic_table_content`,
+  `core_reportbuilder_set_filters`, `core_reportbuilder_filters_reset` and `download.php`
+  (`class_ratings_doors_test`). Core's own Behat for report_competency
   opens index.php without `user`: under this theme that page is the class report, so the theme's scenarios open a
   breakdown through the page type "theme_dimensions > competency breakdown" (`C1|student1`). Gates `classreport_*`,
   `class_ratings_hooks`, `reportcompetency_*`, `js_classratings_reload`.
