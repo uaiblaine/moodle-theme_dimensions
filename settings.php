@@ -35,6 +35,7 @@ use theme_dimensions\local\category\filterfields_setting;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\category\publicaccess;
 use theme_dimensions\local\compactnav;
+use theme_dimensions\local\competency\plancards;
 use theme_dimensions\local\darklogo;
 use theme_dimensions\local\drawernav;
 use theme_dimensions\local\focusmode;
@@ -785,6 +786,33 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             $setting->set_updatedcallback('theme_reset_all_caches');
             $tab->add($setting);
         }
+
+        // Add tab to settings page.
+        $page->add($tab);
+
+        // Create competencies tab: core's competency pages as the theme redraws them.
+        $tab = new admin_settingpage(
+            'theme_dimensions_competency',
+            get_string('competencytab', 'theme_dimensions', null, true)
+        );
+
+        // Create competency pages heading.
+        $name = 'theme_dimensions/competencyheading';
+        $title = get_string('competencyheading', 'theme_dimensions', null, true);
+        $setting = new admin_setting_heading($name, $title, null);
+        $tab->add($setting);
+
+        // Setting: The layout of the plan cards on the learning plans page. Only the server-rendered cards read it, so a
+        // change needs no callback; an unset or unknown value reads as horizontal ({@see plancards::layout()}).
+        $name = 'theme_dimensions/' . plancards::SETTING;
+        $title = get_string('planscardlayout', 'theme_dimensions', null, true);
+        $description = get_string('planscardlayout_desc', 'theme_dimensions', null, true);
+        $choices = [
+            plancards::HORIZONTAL => get_string('planscardlayout_horizontal', 'theme_dimensions', null, true),
+            plancards::VERTICAL => get_string('planscardlayout_vertical', 'theme_dimensions', null, true),
+        ];
+        $setting = new admin_setting_configselect($name, $title, $description, plancards::HORIZONTAL, $choices);
+        $tab->add($setting);
 
         // Add tab to settings page.
         $page->add($tab);

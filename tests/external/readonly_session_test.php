@@ -38,9 +38,10 @@ require_once(__DIR__ . '/../local/category/fixture.php');
  * Core's contract for a read-only session is the one write_close() checks
  * (lib/classes/session/manager.php, the array_session_diff() of $SESSION taken at session start
  * and at close): no $SESSION key added, removed or changed. That is what is asserted here around
- * the showcase's three logged-in reads, the mobile drawer's summary, the calendar range and the
- * calendar trails, the way the clients make them (the range builds core's calendar sets without the
- * session-only key bitmask core writes into $SESSION, see \theme_dimensions\local\calendar\scope).
+ * the showcase's three logged-in reads, the mobile drawer's summary, the calendar range, the
+ * calendar trails and the reader's own plan cards, the way the clients make them (the range builds
+ * core's calendar sets without the session-only key bitmask core writes into $SESSION, see
+ * \theme_dimensions\local\calendar\scope).
  * $USER is not compared, as core does not compare it. The page's own preference writes
  * (category_listing::view(), category_hero::fold(), remembered::record()) are page code and the
  * remember_category_state write service; no read reaches them.
@@ -59,6 +60,7 @@ require_once(__DIR__ . '/../local/category/fixture.php');
 #[CoversClass(get_drawer_summary::class)]
 #[CoversClass(get_calendar_range::class)]
 #[CoversClass(get_calendar_trails::class)]
+#[CoversClass(get_plan_cards::class)]
 final class readonly_session_test extends \advanced_testcase {
     use \theme_dimensions\local\category\fixture;
 
@@ -85,14 +87,16 @@ final class readonly_session_test extends \advanced_testcase {
      *
      * @param int $categoryid The fixture's category.
      * @param int $courseid The fixture's course.
+     * @param int $userid The reader, whose own learning plans the plan cards are asked for.
      * @return array Service name => arguments.
      */
-    private static function read_only_calls(int $categoryid, int $courseid): array {
+    private static function read_only_calls(int $categoryid, int $courseid, int $userid): array {
         return [
             'theme_dimensions_get_category_rows' => ['categoryid' => $categoryid],
             'theme_dimensions_get_card_details' => ['courseids' => [$courseid]],
             'theme_dimensions_get_course_dialogue' => ['courseid' => $courseid],
             'theme_dimensions_get_drawer_summary' => [],
+            'theme_dimensions_get_plan_cards' => ['userid' => $userid],
             'theme_dimensions_get_calendar_range' => ['from' => '2026-11-01', 'to' => '2026-11-30'],
             // Three months, the most one answer covers: the read-only session holds for the longest window too.
             'theme_dimensions_get_calendar_trails' => ['month' => '2026-11', 'months' => 3],
@@ -159,7 +163,7 @@ final class readonly_session_test extends \advanced_testcase {
             }
         }
         sort($declared);
-        $exercised = array_keys(self::read_only_calls(1, 1));
+        $exercised = array_keys(self::read_only_calls(1, 1, 1));
         sort($exercised);
 
         foreach (self::SESSIONLESS_READS as $name) {
@@ -214,7 +218,7 @@ final class readonly_session_test extends \advanced_testcase {
         $viewer = $generator->create_user();
         $CFG->enable_read_only_sessions = true;
 
-        foreach (self::read_only_calls((int) $category->id, (int) $course->id) as $name => $args) {
+        foreach (self::read_only_calls((int) $category->id, (int) $course->id, (int) $viewer->id) as $name => $args) {
             \core\session\manager::init_empty_session();
             $this->become($viewer);
             $PAGE = new \moodle_page();
@@ -238,6 +242,9 @@ final class readonly_session_test extends \advanced_testcase {
             } else if ($name === 'theme_dimensions_get_calendar_trails') {
                 // Past the refusals to the answer: the three months were read and their days named.
                 $this->assertSame(['2026-11-01', '2027-01-31'], [$result['data']['from'], $result['data']['to']], $name);
+            } else if ($name === 'theme_dimensions_get_plan_cards') {
+                // Past the refusals to the builder: the layout is written only on the way to the (empty) cards.
+                $this->assertSame('horizontal', $result['data']['layout'], $name);
             } else if ($name === 'theme_dimensions_get_course_dialogue') {
                 // Admitted and built: the labels come only past the refusals.
                 $this->assertNotSame('', $result['data']['learnlabel'], $name);

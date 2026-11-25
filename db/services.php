@@ -18,12 +18,13 @@
  * Theme Dimensions - External functions of the category showcase, the mobile drawer and focus mode.
  *
  * The account services (the category rows, the card details, the course dialogue, the wishlist toggle, the remembered
- * category state, the drawer summary, the calendar range, the calendar trails, the remembered calendar state, focus
- * mode and the flavour choice) are loginrequired and ajax, with no capability of their own: every refusal is decided
- * inside the function. Those that only read declare readonlysession; the writers keep a writable session, and the
- * remembered states write the reader's own preference and nothing else. The drawer summary answers about the
- * session's own user only. The calendar range gives its order of checks in its class docblock. Focus mode records a
- * switch made in place, in the session alone.
+ * category state, the drawer summary, the plan cards, the calendar range, the calendar trails, the remembered calendar
+ * state, focus mode and the flavour choice) are loginrequired and ajax, with no capability of their own: every refusal
+ * is decided inside the function. Those that only read declare readonlysession; the writers keep a writable session,
+ * and the remembered states write the reader's own preference and nothing else. The drawer summary answers about the
+ * session's own user only. The plan cards repeat core's access rule for the learning plans page before building. The
+ * calendar range gives its order of checks in its class docblock. Focus mode records a switch made in place, in the
+ * session alone.
  *
  * The visitor service get_public_category_rows answers over lib/ajax/service-nologin.php and so is not
  * loginrequired: it serves only the public categories' listing, refuses every logged-in session, and stays closed until
@@ -86,6 +87,15 @@ $functions = [
     'theme_dimensions_get_drawer_summary' => [
         'classname' => 'theme_dimensions\external\get_drawer_summary',
         'description' => 'The mobile drawer\'s deferred summary: what to continue.',
+        'type' => 'read',
+        'ajax' => true,
+        'readonlysession' => true,
+        'loginrequired' => true,
+        'capabilities' => '',
+    ],
+    'theme_dimensions_get_plan_cards' => [
+        'classname' => 'theme_dimensions\external\get_plan_cards',
+        'description' => 'The plan cards of one user\'s learning plans page, after core re-renders it.',
         'type' => 'read',
         'ajax' => true,
         'readonlysession' => true,

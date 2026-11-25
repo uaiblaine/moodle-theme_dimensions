@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The learning plans page shows plan cards** (2026100644). Core's list of a user's learning plans
+  (`admin/tool/lp/plans.php`) draws each plan as block_dimensions' plan card, which opens the plan in local_dimensions'
+  overview, in a grid. A bar above it narrows the list by status (active, in review, completed, drafts where Moodle
+  lets the viewer read them), counts the plans shown and searches their names in place. Core's actions stay: "Add new
+  learning plan" and "Evidence of prior learning" above the cards, each card's actions in a menu at its corner, and
+  the cards are put back after each of them. A new setting, *Plan card layout* (horizontal or vertical), on a new
+  *Competencies* tab. New read web service `theme_dimensions_get_plan_cards`; block_dimensions 2026100507 is required.
+  Without JavaScript the page is the grid of cards, with core's menus inert as on core's own page.
 - **Conditional self enrolment (enrol_conditional) on the cards and the landing page.** A course whose way in is a
   conditional self enrolment method now reads "open" on the category showcase for a logged-in reader the method could
   take: inside its enrolment window, taking new enrolments, with a place left, and not already holding an enrolment

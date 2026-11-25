@@ -35,7 +35,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * The theme restyles those templates and must never change what they do. The hooks below are read by
  * one of core's AMD modules (tool_lp/evidence_delete, tool_lp/competencyactions,
  * tool_lp/competencydialogue, tool_lp/grade_dialogue, tool_lp/user_competency_workflow,
- * tool_lp/user_competency_info, the three navigation modules, report_competency/grading_popup), by a
+ * tool_lp/user_competency_info, the three navigation modules, report_competency/grading_popup,
+ * tool_lp/planactions with tool_lp/menubar), by a
  * core Behat selector (tool_lp's and report_competency's named selectors), or are a literal core's own
  * template hands to one of those modules; the few no reader reads (class hooks core styles, the
  * statistics, summary and grader regions, block_lp's page regions) are kept to mirror core's markup.
@@ -83,6 +84,7 @@ final class competency_templates_test extends \advanced_testcase {
             'tool_lp/template_statistics' => 'admin/tool/lp/templates/template_statistics.mustache',
             'tool_lp/competency_grader' => 'admin/tool/lp/templates/competency_grader.mustache',
             'tool_lp/user_competency_summary' => 'admin/tool/lp/templates/user_competency_summary.mustache',
+            'tool_lp/plans_page' => 'admin/tool/lp/templates/plans_page.mustache',
             'report_competency/report' => 'report/competency/templates/report.mustache',
             'report_competency/user_competency_summary' => 'report/competency/templates/user_competency_summary.mustache',
             'report_competency/user_course_navigation' => 'report/competency/templates/user_course_navigation.mustache',
@@ -242,6 +244,42 @@ final class competency_templates_test extends \advanced_testcase {
                     "//dt[contains(., 'Proficient')]/following-sibling::dd[1][contains(., 'Yes')]",
                     "//dt[contains(., 'Rating')]/following-sibling::dd[1][contains(., 'Competent')]",
                     "//dl[@data-region='evidence-listing']//*[@data-region='evidence'][@data-id='1']",
+                ],
+            ],
+            'tool_lp/plans_page' => [
+                ['data-region="plans"', 'data-region="plan-node"', 'data-id="{{id}}"', 'data-userid="{{userid}}"',
+                    'class="planactions"', 'class="dropdown dropdown-menu"', 'class="dropdown-item"',
+                    'data-action="plan-reopen"', 'data-action="plan-complete"', 'data-action="plan-request-review"',
+                    'data-action="plan-cancel-review-request"', 'data-action="plan-start-review"',
+                    'data-action="plan-stop-review"', 'data-action="plan-approve"', 'data-action="plan-unapprove"',
+                    'data-action="plan-unlink"', 'data-action="plan-delete"', '{{#canmanage}}', '{{#canbeedited}}',
+                    '{{pluginbaseurl}}/editplan.php?id={{id}}&amp;userid={{userid}}&amp;return=plans',
+                    '{{pluginbaseurl}}/plan.php?id={{id}}', '{{{name}}}', '{{#navigation}}', '{{{.}}}',
+                    '{{#canreaduserevidence}}', '{{pluginbaseurl}}/user_evidence_list.php?userid={{userid}}',
+                    'nouserplans, tool_lp', "'tool_lp/planactions'", "new ActionsMod('plans')",
+                    "enhanceMenubar('.planactions')"],
+                [
+                    "//div[@data-region='plans'][contains(@class, 'dim-comp-plans')][@data-dim-layout='horizontal']",
+                    "//*[@data-region='plans']//ul[contains(concat(' ', @class, ' '), ' block_dimensions ')]" .
+                        "/li[@data-region='plan-node'][@data-id='4'][@data-userid='3'][@data-dim-status='active']",
+                    "//li[@data-region='plan-node'][@data-id='5'][@data-dim-status='draft']",
+                    "//li[@data-id='4']//*[@data-region='dim-comp-extra'][@data-planid='4']" .
+                        "//article[contains(@class, 'plan-card')]" .
+                        "//a[@href='https://example.com/local/dimensions/view-plan.php?id=4']",
+                    "//li[@data-id='5']//article[contains(@class, 'dim-comp-plan-fallback')]" .
+                        "//a[@href='https://example.com/admin/tool/lp/plan.php?id=5'][normalize-space(.)='Garden plan']",
+                    "//li[@data-id='4']//ul[@class='planactions']/li/a[@href='#']/following-sibling::ul" .
+                        "[@class='dropdown dropdown-menu']/li[@class='dropdown-item']/a[@data-action='plan-complete']",
+                    "//li[@data-id='4']//a[@href='https://example.com/admin/tool/lp/editplan.php?id=4&userid=3&return=plans']",
+                    "//li[@data-id='4']//a[@data-action='plan-unlink']",
+                    "//li[@data-id='5']//a[@data-action='plan-request-review']",
+                    "//li[@data-id='5']//a[@data-action='plan-approve']",
+                    "//li[@data-id='5']//a[@data-action='plan-delete']",
+                    "//*[@data-region='plans']//a[@href='https://example.com/admin/tool/lp/editplan.php?userid=3']",
+                    "//a[@href='https://example.com/admin/tool/lp/user_evidence_list.php?userid=3']",
+                    "//*[@data-region='dim-comp-bar'][@hidden]//*[@role='radiogroup']/button[@role='radio'][@data-value='draft']",
+                    "//*[@data-region='dim-comp-total'][@aria-live='polite']",
+                    "//*[@data-region='dim-comp-nomatch'][@hidden]",
                 ],
             ],
             'report_competency/report' => [

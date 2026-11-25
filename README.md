@@ -517,6 +517,19 @@ page loaded after a change asks for an address no cache holds yet and no CDN is 
 page is marked `noindex` unless the site is open to search engines. The theme adds no link to it in a visitor's navigation: share its address. Off, a
 visitor who opens it is sent to the login page; the guest account keeps Moodle's own calendar.
 
+### The learning plans page
+
+Core's list of a user's learning plans (*Learning plans*, `/admin/tool/lp/plans.php`) is drawn as
+block_dimensions' plan cards: a click on a card opens the plan in local_dimensions' plan overview. The
+setting *Plan card layout* (`theme_dimensions/planscardlayout`, on the *Competencies* tab; horizontal by
+default) chooses the cards' layout; the Dimensions block keeps its own setting for its cards. Above the cards a
+bar narrows the list by status (active, in review, completed, and drafts where Moodle lets the viewer read
+them), counts what is shown, and searches the plans' names. Every action of core's (add, edit, complete,
+reopen, review, delete, the evidence of prior learning) stays, each card's actions in its menu. Which plans a
+viewer sees is Moodle's own decision: after each action the page asks the web service
+`theme_dimensions_get_plan_cards` for the cards again, which applies the same rule as the page and keeps
+nothing.
+
 
 Requirements
 ------------
@@ -532,7 +545,7 @@ Requirements
 | [theme_boost_union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union) | 2026100503 or later, its Moodle 5.3 version (`MOODLE_503_STABLE`, v5.3-r3 or later) | The parent theme. |
 | [local_unlistedcourses](https://github.com/uaiblaine/moodle-local_unlistedcourses) | 2026100506 or later | Decides which courses and categories are listed, unlisted or public; the category showcase, the public pages and the listings ask it. |
 | [local_dimensions](https://github.com/uaiblaine/moodle-local_dimensions) | 2026100532 or later, its Moodle 5.3 version (`main`) | Competency Dimensions: the custom fields of competencies and learning plan templates, and the learner's plan overview. The theme's competency pages are being rebuilt over it; required from 2026100643, before the first of those pages arrives. |
-| [block_dimensions](https://github.com/uaiblaine/moodle-block_dimensions) | 2026100506 or later, its Moodle 5.3 version (`main`) | The learning plan card the theme's learning plans page will draw. Required from 2026100643 with local_dimensions, which it depends on. |
+| [block_dimensions](https://github.com/uaiblaine/moodle-block_dimensions) | 2026100507 or later, its Moodle 5.3 version (`main`) | The learning plan card the theme's learning plans page draws (`block_dimensions\plan_cards`, from 2026100644). Required from 2026100643 with local_dimensions, which it depends on. |
 
 ### Optional plugins
 

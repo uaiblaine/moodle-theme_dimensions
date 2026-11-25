@@ -81,7 +81,8 @@ One mechanism for the three redrawn pages that have actions:
 - A theme module fills the placeholders on load and again whenever core replaces the region
   (a `MutationObserver` on the region root), under a Pending token.
 - Without JavaScript the first render already has the extras, from the derived renderer
-  `theme_dimensions\output\tool_lp\renderer`.
+  `theme_dimensions\output\tool_lp_renderer` (the name theme_overridden_renderer_factory derives for
+  `$PAGE->get_renderer('tool_lp')`).
 
 ## Pages
 
@@ -92,8 +93,13 @@ One mechanism for the three redrawn pages that have actions:
   another user's list.
 - Theme setting "Plan card layout" (horizontal, vertical) on a new "Competencies" settings tab.
 - The bar: scope by status (active, in review, completed, drafts where the viewer can read them), count,
-  Filters (the template's tags), search. Core's "Add new learning plan" and "Evidence of prior learning" stay.
+  Filters (the template's tags, phase 1c), search. Core's "Add new learning plan" and "Evidence of prior learning" stay.
 - Core's row actions stay, as the card's menu, inside core's menu structure.
+- The re-arm point is the template's js block: tool_lp/planactions replaces the region with the template rendered
+  on the client and runs that block again (`templates.runTemplateJS`), so pattern E1 needs no `MutationObserver`
+  on this page. The first paint is decorated by `local\competency\plancards` through the derived renderer; the
+  module `theme_dimensions/plancards` puts the remembered cards back at once and refills them from
+  `theme_dimensions_get_plan_cards`.
 - Cost: `api::list_user_plans()` once (as core), the block's caches for cover, tags and trail; cold, one
   statement per plan for the trail.
 
@@ -158,7 +164,8 @@ competency and a long form (one row per learner and competency). Core's grading 
 |---|---|---|---|
 | 0 | Commit `docs/competency/`; dependencies in `version.php`, `ci.yml` and the README | theme | 3 |
 | 1a | Public plan-card builder; the Design System bar on the block | block_dimensions (local_dimensions if the builder moves there) | 2 |
-| 1b | Learning plans page, with what it is the first reader of: the "Competencies" settings tab and its card layout setting, the derived renderer with its factory test, pattern E1 | theme | 3 |
+| 1b | Learning plans page: cards, scope by status, count, search, with what it is the first reader of: the "Competencies" settings tab and its card layout setting, the derived renderer with its factory test, pattern E1 (a web service) | theme | 3 |
+| 1c | Filters by the template's tags, favourites on one's own list, Organise | theme, plus the star outside the block in block_dimensions | 3 |
 | 2a | Competency from a parameter, plan review actions, link back | local_dimensions | 3 |
 | 2b | The owner's redirects | theme | 3 |
 | 3 | Evidence page | theme | 3 |

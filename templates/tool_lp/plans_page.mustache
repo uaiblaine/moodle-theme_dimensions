@@ -1,0 +1,275 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template tool_lp/plans_page
+
+    A user's learning plans as cards, with a bar of scope, count and search, overridden by Dimensions.
+
+    Mirrors tool_lp/plans_page of Moodle 5.3 (2026100500), admin/tool/lp/templates/plans_page.mustache.
+    Re-diff it against that file on every core upgrade.
+
+    It renders from core's context alone: that is what tool_lp/planactions hands it on the client after
+    every row action, when it replaces the region whole and runs this template's js block again. The
+    theme's first paint adds keys of its own (dimfirstpaint, dimlayout, dimitemclasses, and per plan
+    hasdimcard and dimcard, from theme_dimensions\local\competency\plancards); theme_dimensions/plancards,
+    started from the js block, puts the cards back after each re-render and runs the bar.
+
+    Kept from core: the root data-region="plans" (replaced whole by tool_lp/planactions), one
+    data-region="plan-node" per plan with data-id and data-userid (the one ancestor _findPlanData reads),
+    the menu's structure ul.planactions > li > a[href="#"] + ul.dropdown.dropdown-menu > li.dropdown-item,
+    every action under core's own flag and everything under canmanage, the plain edit link, core's two js
+    lines, the navigation buttons, the evidence link under canreaduserevidence, the nouserplans message,
+    the plan's name triple-stashed as core prints it.
+    Changed: a grid of cards (the block_dimensions class literal is plan_cards::HOST_CLASS, held by a
+    test) in place of the table; each card is block_dimensions' plan card when the first paint has one,
+    else a fallback card naming the plan, its status and whether it follows a template; the menu is the
+    card's kebab, named "Actions for" the plan in visually hidden text, with the ul's title dropped (the
+    module copies the name into the CSS tooltip's attribute as text: the plan's name is formatted HTML,
+    never written into an attribute by the template); the evidence link is an outline button beside the navigation; the empty message is the
+    Design System's compact line; a scope by status, a count and a search, printed hidden and revealed by
+    the module, with a second hidden line for a search that leaves nothing.
+
+    Context variables required for this template:
+    * userid - The plan user id
+    * pluginbaseurl - tool_lp base url
+    * plans - The list of learning plans
+    * navigation - array of strings containing buttons for navigation
+    * canreaduserevidence - whether the viewer may read the user's evidence of prior learning
+
+    Example context (json):
+    {
+        "userid": 3,
+        "pluginbaseurl": "https://example.com/admin/tool/lp",
+        "canreaduserevidence": true,
+        "canmanageuserplans": true,
+        "navigation": [
+            "<a class=\"btn btn-secondary\" href=\"https://example.com/admin/tool/lp/editplan.php?userid=3\">Add new learning plan</a>"
+        ],
+        "dimfirstpaint": true,
+        "dimlayout": "horizontal",
+        "dimitemclasses": "dims-plan-item mb-3 dims-card-item dims-plan-item-horizontal col-12 col-lg-6 col-xl-4",
+        "plans": [
+            {
+                "id": 4,
+                "userid": 3,
+                "name": "Kitchen plan",
+                "statusname": "Active",
+                "isactive": true,
+                "isdraft": false,
+                "iscompleted": false,
+                "isinreview": false,
+                "iswaitingforreview": false,
+                "isbasedontemplate": true,
+                "canmanage": true,
+                "canbeedited": true,
+                "iscompleteallowed": true,
+                "isunlinkallowed": true,
+                "hasdimcard": true,
+                "dimcard": "<article class=\"card plan-card plan-card-horizontal h-100\"><div class=\"card-body\"><h4 class=\"card-title\"><a href=\"https://example.com/local/dimensions/view-plan.php?id=4\" class=\"plan-card-link stretched-link\">Kitchen plan</a></h4></div></article>"
+            },
+            {
+                "id": 5,
+                "userid": 3,
+                "name": "Garden plan",
+                "statusname": "Draft",
+                "isactive": false,
+                "isdraft": true,
+                "iscompleted": false,
+                "isinreview": false,
+                "iswaitingforreview": false,
+                "isbasedontemplate": false,
+                "canmanage": true,
+                "canbeedited": true,
+                "isrequestreviewallowed": true,
+                "isapproveallowed": true,
+                "hasdimcard": false,
+                "dimcard": ""
+            }
+        ]
+    }
+}}
+<div data-region="plans" class="dim-comp-plans"{{#dimfirstpaint}} data-dim-layout="{{dimlayout}}" data-dim-itemclasses="{{dimitemclasses}}"{{/dimfirstpaint}}>
+    <div class="dim-comp-plans-head">
+        {{#navigation}}
+        {{{.}}}
+        {{/navigation}}
+        {{#canreaduserevidence}}
+        <a class="btn btn-outline-secondary" href="{{pluginbaseurl}}/user_evidence_list.php?userid={{userid}}">{{#str}}userevidence, tool_lp{{/str}}</a>
+        {{/canreaduserevidence}}
+    </div>
+
+    <div class="dim-comp-bar" data-region="dim-comp-bar" hidden>
+        <div class="dim-comp-seg" role="radiogroup" data-region="dim-comp-scope" aria-label="{{#str}} competency_planscope, theme_dimensions {{/str}}">
+            <button type="button" class="dim-comp-seg-cell" role="radio" aria-checked="false" tabindex="-1" data-value="active">
+                {{#str}} competency_planscope_active, theme_dimensions {{/str}} <small data-region="dim-comp-scope-count"></small>
+            </button>
+            <button type="button" class="dim-comp-seg-cell" role="radio" aria-checked="false" tabindex="-1" data-value="review">
+                {{#str}} competency_planscope_review, theme_dimensions {{/str}} <small data-region="dim-comp-scope-count"></small>
+            </button>
+            <button type="button" class="dim-comp-seg-cell" role="radio" aria-checked="false" tabindex="-1" data-value="complete">
+                {{#str}} competency_planscope_complete, theme_dimensions {{/str}} <small data-region="dim-comp-scope-count"></small>
+            </button>
+            <button type="button" class="dim-comp-seg-cell" role="radio" aria-checked="false" tabindex="-1" data-value="draft">
+                {{#str}} competency_planscope_draft, theme_dimensions {{/str}} <small data-region="dim-comp-scope-count"></small>
+            </button>
+        </div>
+        <span class="dim-comp-bar-spacer"></span>
+        <div class="dim-comp-bar-cluster">
+            <span class="dim-comp-bar-count" data-region="dim-comp-total" aria-live="polite"></span>
+        </div>
+        <div class="dim-comp-capsule dim-comp-search" data-region="dim-comp-search">
+            <button type="button" class="dim-comp-iconbtn dim-comp-tip" data-action="dim-comp-search-open"
+                    aria-label="{{#str}} competency_plansearch, theme_dimensions {{/str}}"
+                    data-dim-comp-tip="{{#str}} competency_plansearch, theme_dimensions {{/str}}">
+                {{#pix}} i/search, core {{/pix}}
+            </button>
+            <span class="dim-comp-search-field" hidden>
+                {{#pix}} i/search, core {{/pix}}
+                <input type="search" class="dim-comp-search-input" autocomplete="off"
+                       aria-label="{{#str}} competency_plansearch, theme_dimensions {{/str}}"
+                       placeholder="{{#str}} competency_plansearch, theme_dimensions {{/str}}">
+                <button type="button" class="dim-comp-eraser dim-comp-tip" data-action="dim-comp-search-clear"
+                        aria-label="{{#str}} category_searchclear, theme_dimensions {{/str}}"
+                        data-dim-comp-tip="{{#str}} category_searchclear, theme_dimensions {{/str}}" hidden>
+                    {{#pix}} e/clear_formatting, core {{/pix}}
+                </button>
+            </span>
+        </div>
+    </div>
+
+    <ul class="block_dimensions dim-comp-plans-grid row list-unstyled">
+        {{#plans}}
+        <li data-region="plan-node" data-id="{{id}}" data-userid="{{userid}}" class="dim-comp-plan {{dimitemclasses}}"
+            data-dim-status="{{#isactive}}active{{/isactive}}{{#isinreview}}review{{/isinreview}}{{!
+            }}{{#iswaitingforreview}}review{{/iswaitingforreview}}{{#iscompleted}}complete{{/iscompleted}}{{!
+            }}{{#isdraft}}draft{{/isdraft}}">
+            <div class="dim-comp-plan-inner">
+                <div class="dim-comp-plan-extra" data-region="dim-comp-extra" data-planid="{{id}}">
+                    {{#hasdimcard}}
+                    {{{dimcard}}}
+                    {{/hasdimcard}}
+                    {{^hasdimcard}}
+                    <article class="card dim-comp-plan-fallback h-100">
+                        <div class="card-body">
+                            <h4 class="dim-comp-plan-fallback-title">
+                                <a href="{{pluginbaseurl}}/plan.php?id={{id}}">{{{name}}}</a>
+                            </h4>
+                            <span class="dim-comp-pill">{{statusname}}</span>
+                            {{#isbasedontemplate}}
+                            <p class="dim-comp-plan-fallback-template">{{#str}}templatebased, tool_lp{{/str}}</p>
+                            {{/isbasedontemplate}}
+                        </div>
+                    </article>
+                    {{/hasdimcard}}
+                </div>
+                {{#canmanage}}
+                <div class="dim-comp-plan-menu">
+                <ul class="planactions">
+                <li>
+                    <a href="#" class="dim-comp-plan-menu-trigger dim-comp-tip">
+                        {{#pix}} i/menu, core {{/pix}}<span class="visually-hidden">{{#str}} competency_planactions, theme_dimensions, {{{name}}} {{/str}}</span>
+                    </a>
+                    <ul class="dropdown dropdown-menu">
+                    {{#canbeedited}}
+                    <li class="dropdown-item">
+                        <a href="{{pluginbaseurl}}/editplan.php?id={{id}}&amp;userid={{userid}}&amp;return=plans">
+                            {{#pix}}t/edit{{/pix}} {{#str}}editthisplan, tool_lp{{/str}}
+                        </a>
+                    </li>
+                    {{/canbeedited}}
+                    {{#isreopenallowed}}
+                    <li class="dropdown-item">
+                        <a data-action="plan-reopen" href="#">
+                            {{#pix}}t/edit{{/pix}} {{#str}}reopenplan, tool_lp{{/str}}
+                        </a>
+                    </li>
+                    {{/isreopenallowed}}
+                    {{#iscompleteallowed}}
+                    <li class="dropdown-item">
+                        <a data-action="plan-complete" href="#">
+                            {{#pix}}t/edit{{/pix}} {{#str}}completeplan, tool_lp{{/str}}
+                        </a>
+                    </li>
+                    {{/iscompleteallowed}}
+                    {{#isrequestreviewallowed}}
+                    <li class="dropdown-item">
+                        <a data-action="plan-request-review" href="#">{{#pix}}t/edit{{/pix}} {{#str}}requestreview, tool_lp{{/str}}</a>
+                    </li>
+                    {{/isrequestreviewallowed}}
+                    {{#iscancelreviewrequestallowed}}
+                    <li class="dropdown-item">
+                        <a data-action="plan-cancel-review-request" href="#">{{#pix}}t/edit{{/pix}} {{#str}}cancelreviewrequest, tool_lp{{/str}}</a>
+                    </li>
+                    {{/iscancelreviewrequestallowed}}
+                    {{#isstartreviewallowed}}
+                    <li class="dropdown-item">
+                        <a data-action="plan-start-review" href="#">{{#pix}}t/edit{{/pix}} {{#str}}startreview, tool_lp{{/str}}</a>
+                    </li>
+                    {{/isstartreviewallowed}}
+                    {{#isstopreviewallowed}}
+                    <li class="dropdown-item">
+                        <a data-action="plan-stop-review" href="#">{{#pix}}t/edit{{/pix}} {{#str}}stopreview, tool_lp{{/str}}</a>
+                    </li>
+                    {{/isstopreviewallowed}}
+                    {{#isapproveallowed}}
+                    <li class="dropdown-item">
+                        <a data-action="plan-approve" href="#">{{#pix}}t/edit{{/pix}} {{#str}}planapprove, tool_lp{{/str}}</a>
+                    </li>
+                    {{/isapproveallowed}}
+                    {{#isunapproveallowed}}
+                    <li class="dropdown-item">
+                        <a data-action="plan-unapprove" href="#">{{#pix}}t/edit{{/pix}} {{#str}}planunapprove, tool_lp{{/str}}</a>
+                    </li>
+                    {{/isunapproveallowed}}
+                    {{#isunlinkallowed}}
+                    <li class="dropdown-item">
+                        <a data-action="plan-unlink" href="#">
+                            {{#pix}}t/edit{{/pix}} {{#str}}unlinkplantemplate, tool_lp{{/str}}
+                        </a>
+                    </li>
+                    {{/isunlinkallowed}}
+                    <li class="dropdown-item">
+                        <a data-action="plan-delete" href="#">
+                            {{#pix}}t/delete{{/pix}} {{#str}}deletethisplan, tool_lp{{/str}}
+                        </a>
+                    </li>
+                    </ul>
+                </li>
+                </ul>
+                </div>
+                {{/canmanage}}
+            </div>
+        </li>
+        {{/plans}}
+    </ul>
+
+    {{^plans}}
+    <p class="dim-comp-plans-empty">{{#str}}nouserplans, tool_lp{{/str}}</p>
+    {{/plans}}
+    <p class="dim-comp-plans-empty" data-region="dim-comp-nomatch" hidden>{{#str}} competency_plannomatch, theme_dimensions {{/str}}</p>
+
+    {{#js}}
+    // Initialise the JS.
+    require(['tool_lp/planactions'], function(ActionsMod) {
+        var planActions = new ActionsMod('plans');
+        planActions.enhanceMenubar('.planactions');
+    });
+    require(['theme_dimensions/plancards'], function(PlanCards) {
+        PlanCards.init();
+    });
+    {{/js}}
+</div>

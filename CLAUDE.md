@@ -2124,23 +2124,41 @@ a-f, the flows and the mockup); local_unlistedcourses 5a owns the rule. What the
 
 The theme's reason to exist: tool_lp's pages and dialogues, report_competency's breakdown report and
 block_lp in the theme's design (phase 5B, 2026-10-15). **The decision lives in core; the theme restyles
-and re-renders and never changes what a page decides or shows to whom.** No renderer is overridden: every
-change is in a template copy or in `scss/competency.scss`. If one ever needs data a template does not get,
-the class is `theme_dimensions\output\tool_lp\renderer extends \tool_lp\output\renderer`, DERIVED by
-the renderer factory (see the profile page section), with a factory test beside it.
+and re-renders and never changes what a page decides or shows to whom.** Every change is in a template copy
+or in `scss/competency.scss`, except the learning plans page's cards (below).
 
-- **Twenty templates are copies of Moodle 5.3 (2026100500) and must be re-diffed against core on every
-  core upgrade**; each docblock names its core file. `templates/tool_lp/`: `progress_bar`,
+- **One renderer is derived: `theme_dimensions\output\tool_lp_renderer extends \tool_lp\output\renderer`.**
+  The name is the one `theme_overridden_renderer_factory` derives for `$PAGE->get_renderer('tool_lp')`
+  (`theme_<name>\output\<component>_renderer`; a namespace `output\tool_lp\renderer` is never looked up, and a
+  wrong name fails silently, core's renderer answering). It overrides `render_plans_page()` alone; held by
+  `tool_lp_renderer_test::test_the_theme_renderer_is_the_one_the_factory_returns`.
+- **The learning plans page has three layers.** (1) `templates/tool_lp/plans_page` renders from core's context
+  alone, because `tool_lp/planactions` re-renders it on the client from `tool_lp_data_for_plans_page` after
+  every row action and replaces `[data-region="plans"]` whole; without the theme's keys it draws a fallback card
+  per plan. (2) The first paint is decorated by `local\competency\plancards::decorate()` (the one class that
+  calls `block_dimensions\plan_cards`) with keys of the theme's own (`dimfirstpaint`, `dimlayout`,
+  `dimitemclasses`, per plan `hasdimcard`/`dimcard`). (3) `amd/src/plancards.js` is started from the template's
+  js block, which core runs again after each replace: that is the re-arm point, no observer. It puts the
+  remembered cards back at once and refills them from `theme_dimensions_get_plan_cards`, which repeats
+  `api::list_user_plans()`'s access rule before building. The grid's `block_dimensions` class is a literal
+  equal to `plan_cards::HOST_CLASS`, held by `tool_lp_renderer_test`. The plan's name is formatted HTML that does
+  not escape quotes: the template never writes it into an attribute (the module copies it into the tooltip as
+  text).
+- **Twenty-one templates are copies of Moodle 5.3 (2026100500) and must be re-diffed against core on every
+  core upgrade**; each docblock names its core file. `templates/tool_lp/`: `plans_page`, `progress_bar`,
   `competency_summary`, `competency_path`, `evidence_summary`, `user_summary`, `linked_courses_summary`,
   `module_navigation`, `competency_plan_navigation`, `user_competency_course_navigation`,
   `related_competencies`, `course_competency_statistics`, `template_statistics`, `competency_grader` (the
   rating dialogue), `user_competency_summary`. `templates/report_competency/`: `report`,
   `user_competency_summary`, `user_course_navigation`. `templates/block_lp/`: `summary`,
   `competencies_to_review_page`, `plans_to_review_page`. **Not** copied, on purpose (large, inline JS, drag
-  and drop): `plan_page`, `plans_page`, `course_competencies_page`, the `manage_*` pages, the trees and
+  and drop): `plan_page`, `course_competencies_page`, the `manage_*` pages, the trees and
   pickers, the rule configuration, and `user_competency_summary_in_plan` / `_in_course` (the next
   candidates). Those are styled by the stylesheet alone.
-- **The hooks, by reader.** `tool_lp/evidence_delete`: `data-region="evidence"` (exactly ONE ancestor of
+- **The hooks, by reader.** `tool_lp/planactions`: the root `data-region="plans"` (replaced whole, so it is the
+  template's root), exactly ONE `data-region="plan-node"` ancestor of each action with `data-id`/`data-userid`
+  (`_findPlanData`), the menu `ul.planactions > li > a + ul > li > a[data-action]` that `tool_lp/menubar` enhances.
+  `tool_lp/evidence_delete`: `data-region="evidence"` (exactly ONE ancestor of
   the trigger, `parents()` refuses two) with `data-id`, `data-action="delete-evidence"`.
   `tool_lp/competencyactions`: `data-region="relatedcompetencies"` (replaced whole),
   `data-action="deleterelation"` with `id="id-related-<id>"` (the handler does `this.id.substr(11)`, so the

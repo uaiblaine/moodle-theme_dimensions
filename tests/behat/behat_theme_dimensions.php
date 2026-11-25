@@ -53,6 +53,9 @@ class behat_theme_dimensions extends behat_base {
      *   string, e.g. "PUBCAT|q=Resgate"): the anonymous shell of the showcase, the route on a
      *   site whose router is configured and the script elsewhere - exact either way.
      * - 'Category appearance' (category idnumber): the editor of the category's hero.
+     * - 'Learning plan' (plan name): core's page of one learning plan, which the theme's plan cards no longer link
+     *   to (they open local_dimensions' overview).
+     * - 'Learning plans' (username): core's list of one user's learning plans, the theme's plan cards.
      *
      * @param string $type The page type.
      * @param string $identifier The page identifier.
@@ -97,6 +100,12 @@ class behat_theme_dimensions extends behat_base {
             case 'category appearance':
                 $categoryid = $DB->get_field('course_categories', 'id', ['idnumber' => $identifier], MUST_EXIST);
                 return new moodle_url('/theme/dimensions/categoryhero.php', ['id' => $categoryid]);
+            case 'learning plan':
+                $planid = $DB->get_field('competency_plan', 'id', ['name' => $identifier], MUST_EXIST);
+                return new moodle_url('/admin/tool/lp/plan.php', ['id' => $planid]);
+            case 'learning plans':
+                $userid = $DB->get_field('user', 'id', ['username' => $identifier], MUST_EXIST);
+                return new moodle_url('/admin/tool/lp/plans.php', ['userid' => $userid]);
             case 'activity with focus mode off':
                 $cm = $this->get_cm_by_activity_name('page', $identifier);
                 return new moodle_url('/mod/page/view.php', [

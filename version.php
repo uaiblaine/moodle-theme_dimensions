@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'theme_dimensions';
-$plugin->version = 2026100643;
+$plugin->version = 2026100644;
 $plugin->release = 'v5.3-r1-dev';
 $plugin->requires = 2026100500;
 $plugin->supported = [503, 503];
@@ -35,5 +35,5 @@ $plugin->dependencies = [
     'theme_boost_union' => 2026100503,
     'local_unlistedcourses' => 2026100506,
     'local_dimensions' => 2026100532,
-    'block_dimensions' => 2026100506,
+    'block_dimensions' => 2026100507,
 ];

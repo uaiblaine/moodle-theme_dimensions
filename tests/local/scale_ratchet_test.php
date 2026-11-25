@@ -328,6 +328,10 @@ final class scale_ratchet_test extends \basic_testcase {
             '100ms' => 1,
             '2s' => 1,
         ],
+        'competency.scss' => [
+            // The learning plans bar's tooltip delay, the same decided exception as the category bar's (D51).
+            '100ms' => 1,
+        ],
         'drawer.scss' => [
             '0s' => 2,
             '1.2s' => 1,
