@@ -53,6 +53,12 @@ final class classreportpreference {
     /** @var string The names of every course's preference, as core's declaration of a preference by pattern reads it. */
     public const PATTERN = '/^theme_dimensions_classreport_\d+$/';
 
+    /** @var int The most column keys the preference's service reads in one request: more is refused before cleaning. */
+    public const MAX_POSTED_COLUMNS = 200;
+
+    /** @var int The most widths the preference's service reads in one request: more is refused before cleaning. */
+    public const MAX_POSTED_WIDTHS = 100;
+
     /** @var int The most widths kept: the learner, the identity fields and the shown competencies hold fewer. */
     public const MAX_WIDTHS = 40;
 
@@ -268,14 +274,18 @@ final class classreportpreference {
         $rawcolumns = array_key_exists('c', $settings) ? $settings['c'] : ($settings['columns'] ?? null);
         $columns = null;
         if (is_array($rawcolumns)) {
-            $columns = [];
+            // A keyed set, and the loop stops at the cap: a long list costs no more than MAX_COLUMNS distinct ids.
+            $seen = [];
             foreach ($rawcolumns as $id) {
                 $id = is_int($id) ? $id : filter_var($id, FILTER_VALIDATE_INT);
-                if ($id !== false && $id > 0 && !in_array($id, $columns, true)) {
-                    $columns[] = $id;
+                if ($id !== false && $id > 0 && !isset($seen[$id])) {
+                    $seen[$id] = true;
+                    if (count($seen) >= classreport::MAX_COLUMNS) {
+                        break;
+                    }
                 }
             }
-            $columns = $columns === [] ? null : array_slice($columns, 0, classreport::MAX_COLUMNS);
+            $columns = $seen === [] ? null : array_keys($seen);
         }
 
         $rawwidths = array_key_exists('w', $settings) ? $settings['w'] : ($settings['widths'] ?? []);

@@ -26,6 +26,7 @@
 namespace theme_dimensions\external;
 
 use context_course;
+use core_competency\api;
 use core_external\external_api;
 use core_privacy\local\request\writer;
 use core_reportbuilder\local\filters\select;
@@ -552,6 +553,272 @@ final class class_report_services_test extends \advanced_testcase {
         $this->assertSame([], $rows['rows']);
         $this->assertTrue($rows['nogroup']);
         $this->assertSame(0, $this->answer(self::SUMMARY, $args)['learners']);
+    }
+
+    /**
+     * Two calls of one request (a `core/ajax` batch) that differ in their search: core keeps the first call's report
+     * for the whole request, so the second must be refused rather than answered from it. The same call repeated is
+     * answered, and the second call alone, in a request of its own, is answered with its own rows.
+     *
+     * @return void
+     */
+    public function test_a_second_call_in_one_request_is_never_answered_with_the_first_ones_rows(): void {
+        $this->class_of_three();
+        $this->as_user($this->teacher);
+        $_POST['sesskey'] = sesskey();
+        $args = ['courseid' => $this->course->id, 'search' => 'Zelda'];
+
+        $first = external_api::call_external_function(self::ROWS, $args, true);
+        $this->assertFalse($first['error']);
+        $this->assertSame($this->ids('zelda'), self::row_ids($first['data']));
+
+        // No manager::reset_caches() between the calls, as in a batch.
+        $repeat = external_api::call_external_function(self::SUMMARY, $args, true);
+        $this->assertFalse($repeat['error'], 'The same report in the same request is answered.');
+        $this->assertSame(1, $repeat['data']['learners']);
+
+        $second = external_api::call_external_function(self::ROWS, ['search' => 'Yuri'] + $args, true);
+        $this->assert_refused($second, 'invalidparameter', 'Another search in the same request');
+        $moved = external_api::call_external_function(self::SUMMARY, ['moduleid' => 99999] + $args, true);
+        $this->assert_refused($moved, 'invalidparameter', 'Another activity in the same request');
+        $regrouped = external_api::call_external_function(self::ROWS, ['groupid' => 12345] + $args, true);
+        $this->assert_refused($regrouped, 'invalidparameter', 'Another group in the same request');
+
+        $alone = $this->answer(self::ROWS, ['search' => 'Yuri'] + $args);
+        $this->assertSame($this->ids('yuri'), self::row_ids($alone), 'The control: its own request.');
+        $this->assertSame('Yuri', $alone['search']);
+    }
+
+    /**
+     * The preference's writer reads at most 200 column keys and 100 widths: one more is refused before anything is
+     * cleaned or stored; the full lists are accepted and cut to the cap and to MAX_WIDTHS.
+     *
+     * @return void
+     */
+    public function test_a_list_past_the_services_bound_is_refused(): void {
+        $this->class_of_three();
+        $generator = $this->getDataGenerator();
+        $lpg = $generator->get_plugin_generator('core_competency');
+        $framework = $lpg->create_framework();
+        $keys = [];
+        for ($i = 0; $i < classreport::MAX_COLUMNS + 2; $i++) {
+            $competency = $lpg->create_competency(['competencyframeworkid' => $framework->get('id')]);
+            $lpg->create_course_competency(['courseid' => $this->course->id, 'competencyid' => $competency->get('id')]);
+            $keys[] = 'comp:' . $competency->get('id');
+        }
+        $forged = [];
+        for ($i = 1; count($keys) + count($forged) < classreportpreference::MAX_POSTED_COLUMNS + 1; $i++) {
+            $forged[] = 'comp:' . (900000000 + $i);
+        }
+        $toomany = array_merge($keys, $forged);
+        $this->assertCount(classreportpreference::MAX_POSTED_COLUMNS + 1, $toomany);
+        $this->as_user($this->teacher);
+
+        $this->assert_refused(
+            $this->call(self::SET, ['courseid' => $this->course->id, 'columns' => $toomany]),
+            'invalidparameter',
+            '201 columns'
+        );
+        $this->assertFalse($this->has_choice($this->teacher), 'A refusal stores nothing.');
+
+        $stored = $this->answer(self::SET, ['courseid' => $this->course->id, 'columns' => array_slice($toomany, 0, 200)]);
+        $this->assertSame(array_slice($keys, 0, classreport::MAX_COLUMNS), $stored['columns'], 'The control: 200, cut to 30.');
+
+        $widths = [];
+        for ($i = 1; $i <= classreportpreference::MAX_POSTED_WIDTHS + 1; $i++) {
+            $widths[] = ['key' => 'comp:' . $i, 'width' => 100];
+        }
+        $this->assert_refused(
+            $this->call(self::SET, ['courseid' => $this->course->id, 'widths' => $widths]),
+            'invalidparameter',
+            '101 widths'
+        );
+        $stored = $this->answer(self::SET, [
+            'courseid' => $this->course->id,
+            'columns' => [$keys[0]],
+            'widths' => array_slice($widths, 0, classreportpreference::MAX_POSTED_WIDTHS),
+        ]);
+        $this->assertCount(classreportpreference::MAX_WIDTHS, $stored['widths'], 'The control: 100, cut to MAX_WIDTHS.');
+    }
+
+    /**
+     * A service has no page to take the group from: a negative group is an invalid parameter in both reads, 0 is every
+     * group the rule admits, and a group that is nobody's reads as nobody, however large the id.
+     *
+     * @return void
+     */
+    public function test_a_negative_group_is_refused_and_a_huge_one_lists_nobody(): void {
+        $this->class_of_three(SEPARATEGROUPS);
+        [$a] = $this->two_groups();
+        $this->as_user($this->teacher);
+
+        foreach ([self::ROWS, self::SUMMARY] as $function) {
+            foreach ([-1, -5] as $negative) {
+                $this->assert_refused(
+                    $this->call($function, ['courseid' => $this->course->id, 'groupid' => $negative]),
+                    'invalidparameter',
+                    $function . ' with group ' . $negative
+                );
+            }
+        }
+        $this->assertSame(
+            $this->ids('zelda'),
+            self::row_ids($this->answer(self::ROWS, ['courseid' => $this->course->id, 'groupid' => (int) $a->id])),
+            'The control: the grader\'s own group.'
+        );
+        $this->assertSame(
+            $this->ids('zelda'),
+            self::row_ids($this->answer(self::ROWS, ['courseid' => $this->course->id])),
+            'The default is 0: the grader\'s own groups.'
+        );
+        $huge = ['courseid' => $this->course->id, 'groupid' => 2147483647];
+        $rows = $this->answer(self::ROWS, $huge);
+        $this->assertSame([], $rows['rows']);
+        $this->assertTrue($rows['nogroup']);
+        $this->assertSame(0, $this->answer(self::SUMMARY, $huge)['learners']);
+    }
+
+    /**
+     * Visible groups, with and without accessallgroups: the groups of the course's default grouping may be chosen, by
+     * the editor and by the teacher alike, and nobody has a choice by default.
+     *
+     * @return void
+     */
+    public function test_visible_groups_may_be_chosen_with_or_without_accessallgroups(): void {
+        $this->class_of_three(VISIBLEGROUPS);
+        [$a, $b] = $this->two_groups();
+        $context = context_course::instance($this->course->id);
+        $this->assertTrue(has_capability('moodle/site:accessallgroups', $context, $this->editor));
+        $this->assertFalse(has_capability('moodle/site:accessallgroups', $context, $this->teacher));
+
+        foreach ([$this->editor, $this->teacher] as $reader) {
+            $this->as_user($reader);
+            $who = 'reader ' . $reader->id;
+            $all = $this->answer(self::ROWS, ['courseid' => $this->course->id]);
+            $this->assertSame($this->ids('zelda', 'yuri', 'xena'), self::row_ids($all), $who . ': no choice lists everybody.');
+            $rows = $this->answer(self::ROWS, ['courseid' => $this->course->id, 'groupid' => (int) $b->id]);
+            $this->assertSame($this->ids('yuri'), self::row_ids($rows), $who . ': any group may be chosen.');
+            $summary = $this->answer(self::SUMMARY, ['courseid' => $this->course->id, 'groupid' => (int) $a->id]);
+            $this->assertSame(1, $summary['learners'], $who);
+            $rows = $this->answer(self::ROWS, ['courseid' => $this->course->id, 'groupid' => 2147483647]);
+            $this->assertSame([], self::row_ids($rows), $who . ': a group of nobody lists nobody.');
+        }
+    }
+
+    /**
+     * The groups a grader may read and choose are those of the course's default grouping, in separate groups and in
+     * visible ones: a grader in A and B, the grouping holding A only, lists A's learners and nobody for a posted B;
+     * with no default grouping both groups are theirs, the control.
+     *
+     * @return void
+     */
+    public function test_the_default_grouping_limits_the_groups_that_may_be_read(): void {
+        global $DB;
+        $this->class_of_three(SEPARATEGROUPS);
+        $generator = $this->getDataGenerator();
+        [$a, $b] = $this->two_groups();
+        $generator->create_group_member(['groupid' => $b->id, 'userid' => $this->teacher->id]);
+        $grouping = $generator->create_grouping(['courseid' => $this->course->id]);
+        $generator->create_grouping_group(['groupingid' => $grouping->id, 'groupid' => $a->id]);
+        $id = ['courseid' => $this->course->id];
+
+        $this->as_user($this->teacher);
+        $this->assertSame(
+            $this->ids('zelda', 'yuri'),
+            self::row_ids($this->answer(self::ROWS, $id)),
+            'The control: without a default grouping both of the grader\'s groups are theirs.'
+        );
+
+        $DB->set_field('course', 'defaultgroupingid', $grouping->id, ['id' => $this->course->id]);
+        rebuild_course_cache((int) $this->course->id, true);
+        $this->as_user($this->teacher);
+        $this->assertSame($this->ids('zelda'), self::row_ids($this->answer(self::ROWS, $id)), 'B is outside the grouping.');
+        $this->assertSame(1, $this->answer(self::SUMMARY, $id)['learners']);
+        $posted = $this->answer(self::ROWS, $id + ['groupid' => (int) $b->id]);
+        $this->assertSame([], $posted['rows']);
+        $this->assertTrue($posted['nogroup']);
+        $this->assertSame($this->ids('zelda'), self::row_ids($this->answer(self::ROWS, $id + ['groupid' => (int) $a->id])));
+
+        // Visible groups: the same grouping decides what may be chosen.
+        $DB->set_field('course', 'groupmode', VISIBLEGROUPS, ['id' => $this->course->id]);
+        rebuild_course_cache((int) $this->course->id, true);
+        $this->as_user($this->teacher);
+        $this->assertSame(
+            $this->ids('zelda'),
+            self::row_ids($this->answer(self::ROWS, $id + ['groupid' => (int) $a->id])),
+            'The control: a group of the grouping may be chosen.'
+        );
+        $posted = $this->answer(self::ROWS, $id + ['groupid' => (int) $b->id]);
+        $this->assertSame([], $posted['rows'], 'A group outside the grouping lists nobody.');
+        $this->assertTrue($posted['nogroup']);
+    }
+
+    /**
+     * An activity the viewer cannot see is an unknown one: a reader without moodle/course:viewhiddenactivities who
+     * posts the id of a hidden activity gets no column and no narrowing; an activity of the course they can see, and
+     * an editing teacher posting the hidden one, are the controls that do get its competencies.
+     *
+     * @return void
+     */
+    public function test_a_hidden_activity_adds_no_column_for_a_viewer_who_cannot_see_it(): void {
+        $this->class_of_three();
+        $generator = $this->getDataGenerator();
+        $hidden = $generator->create_module('page', ['course' => $this->course->id, 'visible' => 0]);
+        $shown = $generator->create_module('page', ['course' => $this->course->id]);
+        $this->setAdminUser();
+        api::add_competency_to_course_module($hidden->cmid, $this->first->get('id'));
+        api::add_competency_to_course_module($shown->cmid, $this->first->get('id'));
+
+        // A grader who reads the class report but holds no viewhiddenactivities.
+        $roleid = create_role('Class grader', 'dimclassgrader', '');
+        set_role_contextlevels($roleid, [CONTEXT_COURSE]);
+        foreach ([classreport::USERVIEW, 'moodle/competency:coursecompetencyview'] as $capability) {
+            assign_capability($capability, CAP_ALLOW, $roleid, \context_system::instance()->id);
+        }
+        $viewer = $generator->create_and_enrol($this->course, 'dimclassgrader');
+        $context = context_course::instance($this->course->id);
+        $this->assertFalse(has_capability('moodle/course:viewhiddenactivities', $context, $viewer));
+        $id = ['courseid' => $this->course->id];
+        $firstkey = 'comp:' . $this->first->get('id');
+
+        $this->as_user($viewer);
+        $everyone = $this->answer(self::ROWS, $id);
+        $data = $this->answer(self::ROWS, $id + ['moduleid' => (int) $shown->cmid]);
+        $this->assertSame([$firstkey], self::active_competencies($data), 'The control: an activity the viewer sees.');
+        $this->assertSame(self::row_ids($everyone), self::row_ids($data));
+
+        $data = $this->answer(self::ROWS, $id + ['moduleid' => (int) $hidden->cmid]);
+        $this->assertSame([], self::active_competencies($data), 'No column from a hidden activity.');
+        $this->assertSame(0, $data['competencies']);
+        $this->assertSame(self::row_ids($everyone), self::row_ids($data), 'It narrows nothing.');
+        $unknown = $this->answer(self::ROWS, $id + ['moduleid' => 99999]);
+        $this->assertSame([$data['competencies'], self::active_competencies($data)], [
+            $unknown['competencies'],
+            self::active_competencies($unknown),
+        ], 'Read as an unknown activity.');
+        $summary = $this->answer(self::SUMMARY, $id + ['moduleid' => (int) $hidden->cmid]);
+        $this->assertSame([], $summary['competencies']);
+
+        $this->as_user($this->editor);
+        $data = $this->answer(self::ROWS, $id + ['moduleid' => (int) $hidden->cmid]);
+        $this->assertSame([$firstkey], self::active_competencies($data), 'The control: a teacher who sees hidden activities.');
+        $this->assertSame(1, $data['competencies']);
+    }
+
+    /**
+     * Two groups of the fixture's course: zelda in the first, yuri in the second, the teacher in the first.
+     *
+     * @return array The groups, A then B.
+     */
+    private function two_groups(): array {
+        $generator = $this->getDataGenerator();
+        $a = $generator->create_group(['courseid' => $this->course->id]);
+        $b = $generator->create_group(['courseid' => $this->course->id]);
+        $generator->create_group_member(['groupid' => $a->id, 'userid' => $this->learners['zelda']->id]);
+        $generator->create_group_member(['groupid' => $b->id, 'userid' => $this->learners['yuri']->id]);
+        $generator->create_group_member(['groupid' => $a->id, 'userid' => $this->teacher->id]);
+
+        return [$a, $b];
     }
 
     /**

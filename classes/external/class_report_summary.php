@@ -59,9 +59,9 @@ final class class_report_summary extends external_api {
             ),
             'groupid' => new external_value(
                 PARAM_INT,
-                'The group, 0 for all participants, -1 for the one chosen on the page',
+                'The group, 0 for every group the reader may read; never negative',
                 VALUE_DEFAULT,
-                -1
+                0
             ),
             'search' => new external_value(PARAM_TEXT, 'Part of the learner\'s name, two characters or more', VALUE_DEFAULT, ''),
         ]);
@@ -72,13 +72,13 @@ final class class_report_summary extends external_api {
      *
      * @param int $courseid The course.
      * @param int $moduleid An activity, or 0.
-     * @param int $groupid A group, 0 for all participants, -1 for the session's choice.
+     * @param int $groupid A group, 0 for every group the reader may read; negative is refused.
      * @param string $search Part of a name.
      * @return array See execute_returns().
      * @throws \core_reportbuilder\exception\report_access_exception When the reader may not read the class report.
      * @throws \moodle_exception For a guest, and with competencies disabled.
      */
-    public static function execute(int $courseid, int $moduleid = 0, int $groupid = -1, string $search = ''): array {
+    public static function execute(int $courseid, int $moduleid = 0, int $groupid = 0, string $search = ''): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'courseid' => $courseid,
             'moduleid' => $moduleid,
@@ -101,7 +101,7 @@ final class class_report_summary extends external_api {
         return new external_single_structure([
             'courseid' => new external_value(PARAM_INT, 'The course'),
             'moduleid' => new external_value(PARAM_INT, 'The activity applied, 0 for none'),
-            'groupid' => new external_value(PARAM_INT, 'The group asked for, -1 for the one chosen on the page'),
+            'groupid' => new external_value(PARAM_INT, 'The group asked for, 0 for every group the reader may read'),
             'search' => new external_value(PARAM_RAW, 'The search applied, empty for none'),
             'nogroup' => new external_value(PARAM_BOOL, 'Whether the group rule leaves the reader no learner'),
             'learners' => new external_value(PARAM_INT, 'Learners listed'),

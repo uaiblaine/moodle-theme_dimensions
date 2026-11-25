@@ -293,7 +293,7 @@ final class classreport {
      * activity is the course's (a module id is a parameter a client sends).
      *
      * @param int $courseid The course.
-     * @param int $moduleid A course module of the course, or 0.
+     * @param int $moduleid A course module of the course the current user can see, or 0; any other reads as unknown.
      * @return array Competency id => record (id, shortname, idnumber, scaleid), in the course's order.
      */
     public static function catalogue(int $courseid, int $moduleid): array {
@@ -302,6 +302,12 @@ final class classreport {
         $params = ['courseid' => $courseid];
         $modulesql = '';
         if ($moduleid > 0) {
+            /* An activity the viewer cannot see, or one the course does not have, is an unknown activity: no
+               competency matches, so it adds no column and answers nothing about itself. */
+            $cm = get_fast_modinfo($courseid)->cms[$moduleid] ?? null;
+            if ($cm === null || !$cm->uservisible) {
+                return [];
+            }
             $modulesql = "AND cc.competencyid IN (
                               SELECT mc.competencyid
                                 FROM {competency_modulecomp} mc

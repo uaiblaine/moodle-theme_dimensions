@@ -92,6 +92,7 @@ final class set_class_report_preference extends external_api {
      * @param array $widths Each: key, width.
      * @return array What was stored; see execute_returns().
      * @throws \core_reportbuilder\exception\report_access_exception When the reader may not read the class report.
+     * @throws \core\exception\invalid_parameter_exception For more than 200 columns or 100 widths.
      * @throws \moodle_exception For a guest, and with competencies disabled.
      */
     public static function execute(int $courseid, bool $usedefault = false, array $columns = [], array $widths = []): array {
@@ -101,6 +102,13 @@ final class set_class_report_preference extends external_api {
             'columns' => $columns,
             'widths' => $widths,
         ]);
+        // Bounded before anything is cleaned or stored: a list this long is no reader's choice.
+        if (
+            count($params['columns']) > classreportpreference::MAX_POSTED_COLUMNS
+            || count($params['widths']) > classreportpreference::MAX_POSTED_WIDTHS
+        ) {
+            throw new \core\exception\invalid_parameter_exception('Too many columns or widths.');
+        }
         $context = classreportengine::locate($params['courseid']);
         $courseid = (int) $context->instanceid;
 

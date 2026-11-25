@@ -144,6 +144,22 @@ final class classreportpreference_test extends \advanced_testcase {
     }
 
     /**
+     * A very long list is read only as far as the cap: the first distinct ids in order, whatever follows (repeats,
+     * junk, thousands more) changes nothing.
+     *
+     * @return void
+     */
+    public function test_a_very_long_list_keeps_the_first_distinct_ids(): void {
+        $head = array_merge([7, '7', 3], range(100, 100 + classreport::MAX_COLUMNS - 3));
+        $tail = array_merge(array_fill(0, 3000, 'x'), range(5000, 7000), [7, 3]);
+        $kept = classreportpreference::clean(['c' => array_merge($head, $tail)])['columns'];
+
+        $this->assertCount(classreport::MAX_COLUMNS, $kept);
+        $this->assertSame(array_slice(array_values(array_unique(array_map('intval', $head))), 0, classreport::MAX_COLUMNS), $kept);
+        $this->assertSame([7, 3], array_slice($kept, 0, 2));
+    }
+
+    /**
      * The value stored never exceeds what core's column holds: the widths go, from the last, and the ids stay.
      *
      * @return void

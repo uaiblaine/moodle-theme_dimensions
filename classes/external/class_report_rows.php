@@ -63,9 +63,9 @@ final class class_report_rows extends external_api {
             ),
             'groupid' => new external_value(
                 PARAM_INT,
-                'The group, 0 for all participants, -1 for the one chosen on the page',
+                'The group, 0 for every group the reader may read; never negative',
                 VALUE_DEFAULT,
-                -1
+                0
             ),
             'search' => new external_value(PARAM_TEXT, 'Part of the learner\'s name, two characters or more', VALUE_DEFAULT, ''),
             'page' => new external_value(PARAM_INT, 'The page, from 0', VALUE_DEFAULT, 0),
@@ -86,7 +86,7 @@ final class class_report_rows extends external_api {
      *
      * @param int $courseid The course.
      * @param int $moduleid An activity, or 0.
-     * @param int $groupid A group, 0 for all participants, -1 for the session's choice.
+     * @param int $groupid A group, 0 for every group the reader may read; negative is refused.
      * @param string $search Part of a name.
      * @param int $page The page, from 0.
      * @param int $perpage Rows per page.
@@ -100,7 +100,7 @@ final class class_report_rows extends external_api {
     public static function execute(
         int $courseid,
         int $moduleid = 0,
-        int $groupid = -1,
+        int $groupid = 0,
         string $search = '',
         int $page = 0,
         int $perpage = classreportengine::DEFAULT_PERPAGE,
@@ -143,7 +143,7 @@ final class class_report_rows extends external_api {
         return new external_single_structure([
             'courseid' => new external_value(PARAM_INT, 'The course'),
             'moduleid' => new external_value(PARAM_INT, 'The activity applied, 0 for none'),
-            'groupid' => new external_value(PARAM_INT, 'The group asked for, -1 for the one chosen on the page'),
+            'groupid' => new external_value(PARAM_INT, 'The group asked for, 0 for every group the reader may read'),
             'search' => new external_value(PARAM_RAW, 'The search applied, empty for none'),
             'nogroup' => new external_value(PARAM_BOOL, 'Whether the group rule leaves the reader no learner'),
             'sort' => new external_value(PARAM_RAW, 'The column key sorted by, empty for the report\'s own sort'),

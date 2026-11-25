@@ -105,13 +105,35 @@ final class classreportengine {
      *
      * @param context_course $context The course's context.
      * @param int $moduleid An activity whose competencies are the columns, or 0.
-     * @param int $groupid A group asked for (0 for all participants), or a negative number for the session's choice.
+     * @param int $groupid A group asked for, 0 for every group the group rule admits. Never negative: a service has no
+     *     session to read the page's choice from, and the session's group is not read here.
      * @param string $search A search of the learner's name.
      * @return class_ratings
      * @throws report_access_exception When the report's can_view() refuses the current user.
+     * @throws \core\exception\invalid_parameter_exception For a negative group, and for a second call in one request
+     *     that asks for another activity, group or search than the report core already built for this reader.
      */
     public static function report(context_course $context, int $moduleid, int $groupid, string $search): class_ratings {
-        return class_ratings::for_course($context, max(0, $moduleid), $groupid >= 0 ? $groupid : null, $search);
+        if ($groupid < 0) {
+            throw new \core\exception\invalid_parameter_exception('The group is 0 for every group, or the id of one.');
+        }
+        $report = class_ratings::for_course($context, max(0, $moduleid), $groupid, $search);
+        /* Core keeps one instance of a report per reader and request and ignores the parameters of a later call
+           (\core_reportbuilder\manager::get_report_from_persistent(); its reset_caches() is for tests only), so a
+           batch's second call would be answered from the first one's report. Answer only from a report that holds
+           what this call asked for. */
+        if (
+            $report->moduleid() !== max(0, $moduleid)
+            || $report->requested_group() !== $groupid
+            || $report->search() !== classreport::search($search)
+        ) {
+            throw new \core\exception\invalid_parameter_exception(
+                'Each call of the class report needs its own request: the report of this request was built for another '
+                . 'activity, group or search.'
+            );
+        }
+
+        return $report;
     }
 
     /**
@@ -294,13 +316,13 @@ final class classreportengine {
      * the group rule leaves the reader no row.
      *
      * @param class_ratings $report The report.
-     * @return array courseid, moduleid, groupid (-1 for the session's choice), search, nogroup.
+     * @return array courseid, moduleid, groupid (0 for every group the rule admits), search, nogroup.
      */
     private static function request(class_ratings $report): array {
         return [
             'courseid' => (int) $report->get_context()->instanceid,
             'moduleid' => $report->moduleid(),
-            'groupid' => $report->requested_group() ?? -1,
+            'groupid' => $report->requested_group() ?? 0,
             'search' => $report->search(),
             'nogroup' => $report->no_group(),
         ];
