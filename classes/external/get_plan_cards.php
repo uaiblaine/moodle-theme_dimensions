@@ -48,6 +48,11 @@ use theme_dimensions\local\competency\plancards;
  * only to a viewer who may read drafts) is core's list, taken inside the builder. The guest account is refused after
  * login, as the theme's other account services do.
  *
+ * A card's favourite flag and the top-level `favourites` are block_dimensions' answer passed through: the block offers
+ * the star only on the session user's own list with its favourites on, so another person's list never says which of
+ * its plans are favourites. The flag is a tri-state integer the external API can type: {@see FAVOURITE_NONE} (the
+ * card offers no star), {@see FAVOURITE_NO}, {@see FAVOURITE_YES}.
+ *
  * Read-only, so it raises no event.
  *
  * @package    theme_dimensions
@@ -55,6 +60,15 @@ use theme_dimensions\local\competency\plancards;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class get_plan_cards extends external_api {
+    /** @var int The card offers no favourite star: not the viewer's own list, or favourites are off. */
+    public const FAVOURITE_NONE = -1;
+
+    /** @var int The card offers the star and the plan is not a favourite. */
+    public const FAVOURITE_NO = 0;
+
+    /** @var int The card offers the star and the plan is a favourite. */
+    public const FAVOURITE_YES = 1;
+
     /**
      * The parameters of the function.
      *
@@ -70,7 +84,7 @@ class get_plan_cards extends external_api {
      * The cards of a user's plans.
      *
      * @param int $userid The user whose plans are listed.
-     * @return array layout, itemclasses and cards.
+     * @return array layout, itemclasses, favourites, tagfilters and cards.
      * @throws \require_login_exception Without a session.
      * @throws \moodle_exception For the guest account, or with competencies disabled.
      * @throws required_capability_exception When the viewer may read neither the user's plans nor their drafts.
@@ -94,12 +108,19 @@ class get_plan_cards extends external_api {
         $extras = plancards::for_user($userid, $PAGE->get_renderer('core'));
         $cards = [];
         foreach ($extras['cards'] as $planid => $html) {
-            $cards[] = ['id' => $planid, 'html' => $html];
+            $meta = $extras['meta'][$planid];
+            $favourite = self::FAVOURITE_NONE;
+            if ($meta['favourite'] !== null) {
+                $favourite = $meta['favourite'] ? self::FAVOURITE_YES : self::FAVOURITE_NO;
+            }
+            $cards[] = ['id' => $planid, 'html' => $html, 'favourite' => $favourite, 'tags' => $meta['tags']];
         }
 
         return [
             'layout' => $extras['layout'],
             'itemclasses' => $extras['itemclasses'],
+            'favourites' => $extras['favourites'],
+            'tagfilters' => $extras['tagfilters'],
             'cards' => $cards,
         ];
     }
@@ -108,7 +129,9 @@ class get_plan_cards extends external_api {
      * What the function returns: an allowlist.
      *
      * The HTML is the block's card template rendered on this server from the block's own builder, every value in it
-     * escaped by that template: trusted server markup, put in place as markup by the module.
+     * escaped by that template: trusted server markup, put in place as markup by the module. The tag values and
+     * labels are plain text (format_string() without escaping, in {@see plancards::for_user()}), written by the module
+     * as text only.
      *
      * @return external_single_structure
      */
@@ -116,10 +139,29 @@ class get_plan_cards extends external_api {
         return new external_single_structure([
             'layout' => new external_value(PARAM_ALPHA, 'The layout the cards were drawn for: horizontal or vertical.'),
             'itemclasses' => new external_value(PARAM_TEXT, 'The class list of a card\'s list item for that layout.'),
+            'favourites' => new external_value(PARAM_BOOL, 'Whether any card offers the favourite star.'),
+            'tagfilters' => new external_multiple_structure(
+                new external_single_structure([
+                    'key' => new external_value(PARAM_ALPHANUM, 'The tag: tag1 or tag2.'),
+                    'label' => new external_value(PARAM_TEXT, 'The filter\'s label, plain text.'),
+                ]),
+                'The block\'s tag filters a listed plan has a value for, in the block\'s order.'
+            ),
             'cards' => new external_multiple_structure(
                 new external_single_structure([
                     'id' => new external_value(PARAM_INT, 'The plan.'),
                     'html' => new external_value(PARAM_RAW, 'The card, server-rendered markup.'),
+                    'favourite' => new external_value(
+                        PARAM_INT,
+                        'The favourite star: -1 not offered, 0 offered and off, 1 a favourite.'
+                    ),
+                    'tags' => new external_multiple_structure(
+                        new external_single_structure([
+                            'key' => new external_value(PARAM_ALPHANUM, 'The tag: tag1 or tag2.'),
+                            'value' => new external_value(PARAM_TEXT, 'The plan template\'s value, plain text.'),
+                        ]),
+                        'The plan template\'s tag values.'
+                    ),
                 ]),
                 'The cards in core\'s order of the plans.'
             ),

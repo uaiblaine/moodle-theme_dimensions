@@ -111,3 +111,40 @@ Feature: The competency pages and dialogues wear the theme and keep core's actio
     And ".plan-card" "css_element" should exist in the "//li[@data-region='plan-node'][contains(., 'Kitchen plan')]" "xpath_element"
     And "Garden plan" "link" should be visible
     And "Herb plan" "link" should not be visible
+
+  Scenario: A learner stars a plan, keeps only favourites, filters by a tag and sorts by due date on their plans page
+    Given the following config values are set as admin:
+      | enable_favourites       | 1 | block_dimensions |
+      | enable_plan_tag1_filter | 1 | block_dimensions |
+    And the following "core_competency > templates" exist:
+      | shortname |
+      | Safety    |
+    And the learning plan template "Safety" shows plan cards tagged "Kitchen"
+    And "student1" holds an active learning plan "Fire safety" based on the template "Safety"
+    And the following "core_competency > plans" exist:
+      | name      | user     | status | duedate     |
+      | Herb plan | student1 | active | ##+1 week## |
+    When I am on the "student1" "theme_dimensions > learning plans" page logged in as "student1"
+    # The star is block_dimensions' own, on the card; the bar's star keeps the favourites.
+    And I click on ".dims-fav-btn" "css_element" in the "//li[@data-region='plan-node'][contains(., 'Fire safety')]" "xpath_element"
+    And I click on "Favourites only" "button"
+    Then the "aria-pressed" attribute of "[data-action='dim-comp-fav']" "css_element" should contain "true"
+    And "Fire safety" "link" should be visible
+    And "Kitchen plan" "link" should not be visible
+    And "Herb plan" "link" should not be visible
+    When I click on "Remove filter Favourites only" "button"
+    Then "Herb plan" "link" should be visible
+    # Filters: the template's tag values, applied on press; the chip removes it again.
+    When I click on "Filters" "button"
+    And I click on "Kitchen" "button" in the "[data-region='dim-comp-fpanel']" "css_element"
+    And I click on "Show results" "button"
+    Then "Fire safety" "link" should be visible
+    And "Herb plan" "link" should not be visible
+    When I click on "Remove filter" "button" in the "[data-region='dim-comp-chips']" "css_element"
+    Then "Herb plan" "link" should be visible
+    # Organise sorts in place: core's order is by name; by due date the dated plan comes first.
+    And "Fire safety" "link" should appear before "Herb plan" "link"
+    When I click on "Organise" "button"
+    And I click on "Due date" "button" in the "[data-region='dim-comp-organise-menu']" "css_element"
+    Then "Herb plan" "link" should appear before "Fire safety" "link"
+    And the "aria-checked" attribute of "//*[@data-region='dim-comp-organise-menu']//button[@data-value='due']" "xpath_element" should contain "true"

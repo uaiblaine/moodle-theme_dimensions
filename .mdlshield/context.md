@@ -9,8 +9,10 @@ shows the user's name (the name itself is core's `fullname()`); the user profile
 activities. It depends on `theme_boost_union`, `local_unlistedcourses`, `local_dimensions` and `block_dimensions`
 (2026100507: its `plan_cards` draws the learning plans page, `admin/tool/lp/plans.php`, through the derived renderer
 `theme_dimensions\output\tool_lp_renderer` and the read service `theme_dimensions_get_plan_cards`, which repeats
-`core_competency\api::list_user_plans()`'s access rule before building; `local_dimensions` is declared, not called
-yet); `customfield_picture` (the badges' and
+`core_competency\api::list_user_plans()`'s access rule before building; from 2026100645 (block_dimensions 2026100508)
+the service also passes through each card's favourite flag, which the block offers only on the session user's own
+list, and the plan templates' tag values, and the page loads the block's `favourite_star` module, the theme writing no
+favourite itself; `local_dimensions` is declared, not called yet); `customfield_picture` (the badges' and
 the share picture's field type) is optional, asked for at run time. It owns one
 table, `theme_dimensions_cat` (the branding of a category; its one personal datum is the
 `usermodified` authorship stamp, which the privacy provider exports and clears to 0 on deletion).

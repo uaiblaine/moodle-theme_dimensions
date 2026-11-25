@@ -116,6 +116,115 @@ final class plancards_source_test extends \basic_testcase {
     }
 
     /**
+     * The star's change event is the one block_dimensions' star module dispatches, read from the block's own source.
+     *
+     * @return void
+     */
+    public function test_the_event_is_the_blocks(): void {
+        $source = $this->source();
+        $this->assertSame(
+            1,
+            preg_match("~^const FAVCHANGED = '([^']+)';$~m", $source, $ours),
+            'The module names no event.'
+        );
+        $block = \core_component::get_plugin_directory('block', 'dimensions');
+        $star = $block === null ? '' : $block . '/amd/src/favourite_star.js';
+        if ($star === '' || !is_readable($star)) {
+            $this->markTestSkipped('block_dimensions ships no favourite_star module here.');
+        }
+        $this->assertSame(
+            1,
+            preg_match("~export const EVENT = '([^']+)';~", (string) file_get_contents($star), $theirs),
+            'The block\'s module exports no EVENT.'
+        );
+        $this->assertSame($theirs[1], $ours[1]);
+    }
+
+    /**
+     * The event is listened for once, on the document, which core's re-render never replaces; it updates the meta
+     * and paints again.
+     *
+     * @return void
+     */
+    public function test_the_event_is_heard_on_the_document_once(): void {
+        $source = $this->source();
+        $this->assertSame(1, substr_count($source, 'addEventListener(FAVCHANGED'), 'One listener only.');
+        $this->assertMatchesRegularExpression(
+            '~if \(state\.docwired\) \{\s*return;\s*\}\s*state\.docwired = true;\s*document\.addEventListener\(FAVCHANGED,~',
+            $source
+        );
+        $this->assertMatchesRegularExpression(
+            '~meta\.favourite = Boolean\(detail\.isfavourite\);.*?paint\(current\);~s',
+            $source
+        );
+    }
+
+    /**
+     * The star module is the one the server names, loaded by that name; the theme calls no toggle service.
+     *
+     * @return void
+     */
+    public function test_the_star_module_is_named_by_the_server(): void {
+        $source = $this->source();
+        $this->assertStringContainsString("state.starmodule = root.getAttribute('data-dim-starmodule') || '';", $source);
+        $this->assertStringContainsString('window.require([state.starmodule], resolve, reject)', $source);
+        $this->assertStringContainsString('Star.init();', $source);
+        $this->assertStringNotContainsString('toggle_favourite', $source);
+        $this->assertStringNotContainsString('block_dimensions/favourite_star', $source, 'The name is the server\'s.');
+    }
+
+    /**
+     * The two predicates of the paint: favourites only keeps a favourite, and every tag group in force must hold the
+     * plan's value (OR inside a group, AND across groups).
+     *
+     * @return void
+     */
+    public function test_the_paint_applies_the_star_and_the_tags(): void {
+        $source = $this->source();
+        $this->assertStringContainsString('const faved = !state.favonly || meta.favourite === true;', $source);
+        $this->assertStringContainsString(
+            'const tagged = [...state.picked].every(([key, values]) => values.has(meta.tags.get(key)));',
+            $source
+        );
+        $this->assertStringContainsString('node.hidden = !(inscope && matches && faved && tagged);', $source);
+    }
+
+    /**
+     * The sort is applied by every paint, so a re-render, which paints again from the state, keeps it; each render
+     * stamps core's order first, the ties' and "Name"'s order.
+     *
+     * @return void
+     */
+    public function test_the_sort_is_applied_after_each_render(): void {
+        $source = $this->source();
+        $this->assertMatchesRegularExpression(
+            '~node\.hidden = !\(inscope && matches && faved && tagged\);.*?\}\);\s*reorder\(root\);~s',
+            $source
+        );
+        $this->assertMatchesRegularExpression(
+            '~nodes\.forEach\(\(node, index\) => \{\s*node\.dataset\.dimRank = String\(index\);\s*\}\);' .
+            '.*?choose\(root, state\.scope, false\);~s',
+            $source
+        );
+        $this->assertStringContainsString("sort: SORTS[0],", $source);
+    }
+
+    /**
+     * Attributes are read with getAttribute and the tag filters parsed in a try, never through jQuery's data(), and
+     * every text the module writes goes in as text.
+     *
+     * @return void
+     */
+    public function test_attributes_are_read_as_text(): void {
+        $source = $this->source();
+        $this->assertStringContainsString("readFilters(root.getAttribute('data-dim-tagfilters'))", $source);
+        $this->assertMatchesRegularExpression('~try \{\s*list = JSON\.parse\(source \|\| \'\[\]\'\);~', $source);
+        $this->assertStringNotContainsString('.data(', $source);
+        $this->assertStringNotContainsString('insertAdjacentHTML', $source);
+        $this->assertStringNotContainsString('outerHTML =', $source);
+    }
+
+    /**
      * The committed build was made from the committed source: Moodle serves amd/build, never amd/src.
      *
      * @return void

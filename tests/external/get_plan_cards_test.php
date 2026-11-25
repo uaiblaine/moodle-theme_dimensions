@@ -139,6 +139,85 @@ final class get_plan_cards_test extends \advanced_testcase {
     }
 
     /**
+     * Select one option of a plan template's tag field, as the admin, the way local_dimensions' form saves it.
+     *
+     * instance_form_save() drops every field the current user cannot edit, so the save runs as the admin and the
+     * current user is put back afterwards.
+     *
+     * @param int $templateid The plan template.
+     * @param string $shortname The tag field's short name.
+     * @param int $option The 1-based position of the option chosen.
+     * @return void
+     */
+    private function tag_template(int $templateid, string $shortname, int $option): void {
+        global $USER;
+
+        $previous = $USER;
+        $this->setAdminUser();
+        \local_dimensions\helper::ensure_custom_fields_exist(\local_dimensions\helper::AREA_LP);
+        \local_dimensions\customfield\lp_handler::create()->instance_form_save((object) [
+            'id' => $templateid,
+            'customfield_' . $shortname => $option,
+        ], true);
+        $this->setUser($previous);
+    }
+
+    /**
+     * A learner with a plan on a template tagged with tag 1's second option and a plain plan, favourites on and
+     * both of the block's plan tag filters offered; the tagged plan is one of the learner's favourites.
+     *
+     * @return array [the owner, the tagged plan's id, the plain plan's id].
+     */
+    private function owner_with_a_favourite(): array {
+        $generator = self::getDataGenerator();
+        $lpg = $generator->get_plugin_generator('core_competency');
+        $owner = $generator->create_user();
+        $template = $lpg->create_template(['shortname' => 'Cookery']);
+        $this->tag_template((int) $template->get('id'), \local_dimensions\constants::CFIELD_TAG1, 2);
+        $tagged = $lpg->create_plan([
+            'userid' => $owner->id,
+            'name' => 'A tagged plan',
+            'templateid' => $template->get('id'),
+            'status' => plan::STATUS_ACTIVE,
+        ]);
+        $plain = $lpg->create_plan(['userid' => $owner->id, 'name' => 'B plain plan', 'status' => plan::STATUS_ACTIVE]);
+        set_config('enable_favourites', 1, 'block_dimensions');
+        set_config('enable_plan_tag1_filter', 1, 'block_dimensions');
+        set_config('enable_plan_tag2_filter', 1, 'block_dimensions');
+        $this->favourite((int) $owner->id, (int) $tagged->get('id'));
+
+        return [$owner, (int) $tagged->get('id'), (int) $plain->get('id')];
+    }
+
+    /**
+     * Make a plan one of a person's favourites, the row block_dimensions' star writes.
+     *
+     * @param int $userid The person.
+     * @param int $planid The plan.
+     * @return void
+     */
+    private function favourite(int $userid, int $planid): void {
+        $usercontext = \context_user::instance($userid);
+        \core_favourites\service_factory::get_service_for_user_context($usercontext)
+            ->create_favourite('block_dimensions', 'plan', $planid, $usercontext);
+    }
+
+    /**
+     * An answer's cards keyed by plan id.
+     *
+     * @param array $result call_external_function()'s answer.
+     * @return array Plan id => card.
+     */
+    private static function by_id(array $result): array {
+        $cards = [];
+        foreach ($result['data']['cards'] as $card) {
+            $cards[(int) $card['id']] = $card;
+        }
+
+        return $cards;
+    }
+
+    /**
      * The ids of an answer's cards, as integers, in the answer's order.
      *
      * @param array $result call_external_function()'s answer.
@@ -167,7 +246,7 @@ final class get_plan_cards_test extends \advanced_testcase {
         ));
         $this->assertCount(5, $core, 'Control: core lists the five plans to their owner.');
         $this->assertSame($core, self::ids($result));
-        $this->assertSame(['layout', 'itemclasses', 'cards'], array_keys($result['data']));
+        $this->assertSame(['layout', 'itemclasses', 'favourites', 'tagfilters', 'cards'], array_keys($result['data']));
 
         $active = array_values(array_filter(
             $result['data']['cards'],
@@ -375,7 +454,91 @@ final class get_plan_cards_test extends \advanced_testcase {
         $this->assertSame('read', $info->type);
 
         $returns = get_plan_cards::execute_returns();
-        $this->assertSame(['layout', 'itemclasses', 'cards'], array_keys($returns->keys));
-        $this->assertSame(['id', 'html'], array_keys($returns->keys['cards']->content->keys));
+        $this->assertSame(['layout', 'itemclasses', 'favourites', 'tagfilters', 'cards'], array_keys($returns->keys));
+        $this->assertSame(['key', 'label'], array_keys($returns->keys['tagfilters']->content->keys));
+        $this->assertSame(['id', 'html', 'favourite', 'tags'], array_keys($returns->keys['cards']->content->keys));
+        $this->assertSame(['key', 'value'], array_keys($returns->keys['cards']->content->keys['tags']->content->keys));
+    }
+
+    /**
+     * Another person's list carries no favourite flag, even where its owner and the viewer both hold one on the plan.
+     *
+     * The rule is block_dimensions' (a person's favourites are read for their own list only); the theme passes the
+     * flag through as the block hands it, and this pins the pass-through at the door. The owner's own call is the
+     * control: the same plans, the flag on each card, the favourite pressed.
+     *
+     * @return void
+     */
+    public function test_another_persons_list_carries_no_favourite(): void {
+        $this->resetAfterTest();
+        [$owner, $taggedid, $plainid] = $this->owner_with_a_favourite();
+        $viewer = $this->viewer_with($owner, ['moodle/competency:planview']);
+        $this->favourite((int) $viewer->id, $taggedid);
+
+        $this->setUser($owner);
+        $own = $this->ask((int) $owner->id);
+        $this->assertFalse($own['error'], json_encode($own['exception'] ?? null));
+        $this->assertTrue($own['data']['favourites'], 'Control: the owner is offered the star.');
+        $owncards = self::by_id($own);
+        $this->assertSame(get_plan_cards::FAVOURITE_YES, (int) $owncards[$taggedid]['favourite']);
+        $this->assertSame(get_plan_cards::FAVOURITE_NO, (int) $owncards[$plainid]['favourite']);
+
+        $this->setUser($viewer);
+        $other = $this->ask((int) $owner->id);
+        $this->assertFalse($other['error'], json_encode($other['exception'] ?? null));
+        $this->assertFalse($other['data']['favourites']);
+        $cards = self::by_id($other);
+        $this->assertSame([$taggedid, $plainid], array_keys($cards), 'The viewer must read both plans.');
+        foreach ($cards as $planid => $card) {
+            $this->assertSame(get_plan_cards::FAVOURITE_NONE, (int) $card['favourite'], "Plan {$planid} carries a flag.");
+        }
+    }
+
+    /**
+     * With the block's favourites off the owner's own list carries no flag; on again, the same call carries them.
+     *
+     * @return void
+     */
+    public function test_favourites_off_carry_no_flag(): void {
+        $this->resetAfterTest();
+        [$owner, $taggedid] = $this->owner_with_a_favourite();
+        $this->setUser($owner);
+
+        set_config('enable_favourites', 0, 'block_dimensions');
+        $off = $this->ask((int) $owner->id);
+        $this->assertFalse($off['data']['favourites']);
+        foreach (self::by_id($off) as $card) {
+            $this->assertSame(get_plan_cards::FAVOURITE_NONE, (int) $card['favourite']);
+        }
+
+        set_config('enable_favourites', 1, 'block_dimensions');
+        $on = $this->ask((int) $owner->id);
+        $this->assertTrue($on['data']['favourites'], 'Control: favourites on, the star is offered.');
+        $this->assertSame(get_plan_cards::FAVOURITE_YES, (int) self::by_id($on)[$taggedid]['favourite']);
+    }
+
+    /**
+     * Each card carries its template's tag values, and the tag filters are the block's that a listed plan has a
+     * value for, with the block's labels.
+     *
+     * @return void
+     */
+    public function test_the_tags_and_their_filters(): void {
+        $this->resetAfterTest();
+        [$owner, $taggedid, $plainid] = $this->owner_with_a_favourite();
+        $this->setUser($owner);
+
+        $result = $this->ask((int) $owner->id);
+
+        $this->assertFalse($result['error'], json_encode($result['exception'] ?? null));
+        $offered = plan_cards::tag_filters();
+        $this->assertSame(['tag1', 'tag2'], array_column($offered, 'key'), 'Control: the block offers both filters.');
+        $this->assertSame([['key' => 'tag1', 'label' => $offered[0]['label']]], $result['data']['tagfilters']);
+        $cards = self::by_id($result);
+        $this->assertSame([['key' => 'tag1', 'value' => 'Edit me 2']], $cards[$taggedid]['tags']);
+        $this->assertSame([], $cards[$plainid]['tags']);
+
+        set_config('enable_plan_tag1_filter', 0, 'block_dimensions');
+        $this->assertSame([], $this->ask((int) $owner->id)['data']['tagfilters'], 'A filter the block drops is dropped.');
     }
 }

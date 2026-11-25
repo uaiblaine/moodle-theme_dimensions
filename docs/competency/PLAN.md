@@ -93,7 +93,15 @@ One mechanism for the three redrawn pages that have actions:
   another user's list.
 - Theme setting "Plan card layout" (horizontal, vertical) on a new "Competencies" settings tab.
 - The bar: scope by status (active, in review, completed, drafts where the viewer can read them), count,
-  Filters (the template's tags, phase 1c), search. Core's "Add new learning plan" and "Evidence of prior learning" stay.
+  the favourites star, Filters (the template's tags), Organise, search. Core's "Add new learning plan" and
+  "Evidence of prior learning" stay.
+- Phase 1c (done, 2026100645 with block_dimensions 2026100508): the star keeps the favourites, offered by the block
+  only on the viewer's own list with its favourites on; the card's own star is the block's `favourite_star` module,
+  and the theme writes no favourite. Filters is a panel over the block's plan tag filters, values from the listed
+  plans (OR inside a tag, AND across tags), applied on press, a chip per value in force and "Clear all". Organise is
+  "Sort by" alone (Name, core's own `name ASC` order; Due date, undated last; Last change): this page has no
+  grouping. Nothing is stored; the choices survive core's re-renders in the module's state, and the dates are core's
+  own keys (`duedate`, `timemodified`), so they are there after a client re-render too.
 - Core's row actions stay, as the card's menu, inside core's menu structure.
 - The re-arm point is the template's js block: tool_lp/planactions replaces the region with the template rendered
   on the client and runs that block again (`templates.runTemplateJS`), so pattern E1 needs no `MutationObserver`
@@ -165,7 +173,7 @@ competency and a long form (one row per learner and competency). Core's grading 
 | 0 | Commit `docs/competency/`; dependencies in `version.php`, `ci.yml` and the README | theme | 3 |
 | 1a | Public plan-card builder; the Design System bar on the block | block_dimensions (local_dimensions if the builder moves there) | 2 |
 | 1b | Learning plans page: cards, scope by status, count, search, with what it is the first reader of: the "Competencies" settings tab and its card layout setting, the derived renderer with its factory test, pattern E1 (a web service) | theme | 3 |
-| 1c | Filters by the template's tags, favourites on one's own list, Organise | theme, plus the star outside the block in block_dimensions | 3 |
+| 1c | Filters by the template's tags, favourites on one's own list, Organise (sort only); done | theme, plus the star outside the block in block_dimensions | 3 |
 | 2a | Competency from a parameter, plan review actions, link back | local_dimensions | 3 |
 | 2b | The owner's redirects | theme | 3 |
 | 3 | Evidence page | theme | 3 |

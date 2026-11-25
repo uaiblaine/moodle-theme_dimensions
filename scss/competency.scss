@@ -727,7 +727,10 @@ body.path-admin-tool-lp table.managecompetencies {
 /* The plans as block_dimensions' cards in a grid of the block's own column classes, under the Design
    System's filter bar (moodle-dev/docs/design-system/components/filter-bar.md): the scope as a segmented
    control, the count on the inset cluster, the search in place. The bar is printed hidden and shown by
-   theme_dimensions/plancards. Each card's actions are core's menubar (tool_lp/menubar) restyled as a kebab
+   theme_dimensions/plancards, with the favourites star, Filters (filter-panel.md, the plan template's tags; a bottom
+   sheet at the narrow step), Organise (menu.md, "Sort by" alone) and the chips row (chip.md); the script places
+   each layer under the bar's control row, never under the chips. Each card's actions are core's menubar
+   (tool_lp/menubar) restyled as a kebab
    in a small capsule at the card's top end corner, above the card's stretched link (the block's
    .stretched-link overlay is z 1); core's menubar positions the open list itself, under the kebab here. */
 .dim-comp-plans {
@@ -745,6 +748,7 @@ body.path-admin-tool-lp table.managecompetencies {
     }
 
     .dim-comp-bar {
+        position: relative;
         display: flex;
         flex-wrap: wrap;
         align-items: center;
@@ -766,7 +770,7 @@ body.path-admin-tool-lp table.managecompetencies {
     }
 
     .dim-comp-bar-count {
-        padding: 0 .75rem;
+        padding: 0 .5rem 0 .75rem;
         font-size: .875rem;
         font-weight: 600;
         font-variant-numeric: tabular-nums;
@@ -830,6 +834,7 @@ body.path-admin-tool-lp table.managecompetencies {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        gap: .125rem;
         min-width: 2rem;
         height: 2rem;
         padding: 0 .375rem;
@@ -841,6 +846,13 @@ body.path-admin-tool-lp table.managecompetencies {
         .icon {
             margin: 0;
         }
+
+        // The chevron of a button that opens a menu (icon-button.md, D61).
+        > .icon + .icon {
+            width: .75rem;
+            height: .75rem;
+            font-size: .75rem;
+        }
     }
 
     .dim-comp-iconbtn:hover {
@@ -848,10 +860,301 @@ body.path-admin-tool-lp table.managecompetencies {
         color: var(--dimensions-ink);
     }
 
-    // A text in force while the field is closed: the search button says so in the pressed look.
-    .dim-comp-iconbtn--active {
+    // A text in force while the field is closed, the star pressed, a layer open: the pressed look.
+    .dim-comp-iconbtn--active,
+    .dim-comp-iconbtn[aria-pressed="true"],
+    .dim-comp-iconbtn[aria-expanded="true"] {
         background: var(--dimensions-brand-tint);
         color: var(--dimensions-brand-ink);
+    }
+
+    // The star's shape fills while it is pressed.
+    .dim-comp-fav-on,
+    .dim-comp-fav[aria-pressed="true"] .dim-comp-fav-off {
+        display: none;
+    }
+
+    .dim-comp-fav[aria-pressed="true"] .dim-comp-fav-on {
+        display: inline-flex;
+    }
+
+    // The loud counter on Filters (counter.md): the bar's one round shape; its number is in the button's name.
+    .dim-comp-badge {
+        position: absolute;
+        top: -.25rem;
+        inset-inline-end: -.25rem;
+        min-width: 1rem;
+        height: 1rem;
+        padding: 0 .25rem;
+        border-radius: 50%;
+        background: var(--dimensions-brand-fill);
+        color: var(--dimensions-on-brand-fill);
+        font-size: .75rem;
+        font-weight: 700;
+        line-height: 1rem;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // The Organise menu (menu.md): placed by the script under its trigger, its end on the trigger's end.
+    .dim-comp-menu {
+        position: absolute;
+        top: 100%;
+        inset-inline-end: 0;
+        z-index: 20;
+        min-width: 13.75rem;
+        padding: .25rem;
+        border: 1px solid var(--dimensions-line);
+        border-radius: var(--dim-ds-radius-md);
+        background: var(--dimensions-surface);
+        color: var(--dimensions-ink);
+        box-shadow: var(--dimensions-elevation-md);
+    }
+
+    .dim-comp-menu-head {
+        padding: .375rem .5rem .125rem;
+        font-size: .75rem;
+        font-weight: 600;
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-menu-item {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        width: 100%;
+        min-height: 2rem;
+        padding: .25rem .5rem;
+        border: 0;
+        border-radius: var(--dim-ds-radius-xs);
+        background: transparent;
+        color: var(--dimensions-ink);
+        font-size: .875rem;
+        text-align: start;
+    }
+
+    .dim-comp-menu-item:hover {
+        background: var(--dimensions-hover);
+        color: var(--dimensions-brand-ink);
+    }
+
+    .dim-comp-menu-item:active {
+        background: var(--dimensions-pressed);
+        color: var(--dimensions-brand-ink);
+    }
+
+    .dim-comp-menu-item[aria-checked="true"] {
+        font-weight: 600;
+    }
+
+    .dim-comp-menu-icon {
+        width: 1rem;
+        color: var(--dimensions-ink-muted);
+        text-align: center;
+    }
+
+    .dim-comp-menu-item:hover .dim-comp-menu-icon {
+        color: var(--dimensions-brand-ink);
+        transform: translateX(.125rem);
+    }
+
+    .dim-comp-menu-item:hover .dim-comp-menu-icon:dir(rtl) {
+        transform: translateX(-.125rem);
+    }
+
+    .dim-comp-menu-label {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .dim-comp-menu-tick {
+        visibility: hidden;
+        color: var(--dimensions-brand-ink);
+    }
+
+    .dim-comp-menu-item[aria-checked="true"] .dim-comp-menu-tick {
+        visibility: visible;
+    }
+
+    // The Filters panel (filter-panel.md): placed by the script under the bar's control row, at the bar's end.
+    .dim-comp-fpanel {
+        position: absolute;
+        top: 100%;
+        inset-inline-end: 0;
+        z-index: 20;
+        display: flex;
+        flex-direction: column;
+        min-width: 18.75rem;
+        max-height: 70vh;
+        border: 1px solid var(--dimensions-line);
+        border-radius: var(--dim-ds-radius-lg);
+        background: var(--dimensions-surface);
+        color: var(--dimensions-ink);
+        box-shadow: var(--dimensions-elevation-md);
+    }
+
+    .dim-comp-fpanel-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
+        padding: .75rem;
+    }
+
+    .dim-comp-fpanel-head {
+        display: block;
+        padding: 0 0 .375rem;
+        font-size: .75rem;
+        font-weight: 600;
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-fpanel-opts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .375rem;
+        margin-bottom: .75rem;
+    }
+
+    .dim-comp-fpanel-opt {
+        display: inline-flex;
+        align-items: center;
+        gap: .375rem;
+        min-height: 1.75rem;
+        padding: .125rem .5rem;
+        border: 1px solid var(--dimensions-control-line);
+        border-radius: var(--dim-ds-radius-sm);
+        background: var(--dimensions-surface);
+        color: var(--dimensions-ink);
+        font-size: .8125rem;
+        font-weight: 500;
+        line-height: 1.25;
+        text-align: start;
+    }
+
+    .dim-comp-fpanel-opt[aria-pressed="true"] {
+        border-color: var(--dimensions-brand-edge);
+        background: var(--dimensions-brand-tint);
+        color: var(--dimensions-brand-ink);
+    }
+
+    .dim-comp-fpanel-list {
+        display: flex;
+        flex-direction: column;
+        gap: .125rem;
+        max-height: 15rem;
+        overflow-y: auto;
+        margin: .375rem 0 .75rem;
+        padding: .25rem;
+        border: 1px solid var(--dimensions-line);
+        border-radius: var(--dim-ds-radius-md);
+    }
+
+    .dim-comp-fpanel-row {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        width: 100%;
+        min-height: 2rem;
+        padding: 0 .5rem;
+        border: 0;
+        border-radius: var(--dim-ds-radius-xs);
+        background: transparent;
+        color: var(--dimensions-ink);
+        font-size: .8125rem;
+        text-align: start;
+    }
+
+    .dim-comp-fpanel-row:hover {
+        background: var(--dimensions-hover);
+        color: var(--dimensions-brand-ink);
+    }
+
+    .dim-comp-fpanel-row[aria-pressed="true"] {
+        font-weight: 600;
+    }
+
+    .dim-comp-menu-box {
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        justify-content: center;
+        width: 1rem;
+        height: 1rem;
+        border: 1px solid var(--dimensions-control-line);
+        border-radius: var(--dim-ds-radius-xs);
+        background: transparent;
+        color: var(--dimensions-on-brand-fill);
+
+        .fa {
+            font-size: .75rem;
+            visibility: hidden;
+        }
+    }
+
+    [aria-pressed="true"] > .dim-comp-menu-box {
+        border-color: var(--dimensions-brand-fill);
+        background: var(--dimensions-brand-fill);
+        color: var(--dimensions-on-brand-fill);
+
+        .fa {
+            visibility: visible;
+        }
+    }
+
+    .dim-comp-fpanel-note {
+        margin: .25rem .5rem;
+        font-size: .75rem;
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-fpanel-foot {
+        display: flex;
+        flex: none;
+        justify-content: space-between;
+        gap: .5rem;
+        padding: .75rem;
+        border-top: 1px solid var(--dimensions-line);
+
+        .btn {
+            min-height: 2rem;
+        }
+    }
+
+    // The chips row (chip.md): a row of its own under the controls, wrapping, no sideways scroll.
+    .dim-comp-chips {
+        display: flex;
+        flex: 1 0 100%;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .375rem;
+    }
+
+    .dim-comp-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .375rem;
+        height: 1.75rem;
+        padding: 0 .375rem 0 .5rem;
+        border: 1px solid var(--dimensions-brand-edge);
+        border-radius: var(--dim-ds-radius-sm);
+        background: var(--dimensions-brand-tint);
+        color: var(--dimensions-brand-ink);
+        font-size: .8125rem;
+        font-weight: 500;
+
+        .fa {
+            font-size: .75rem;
+        }
+    }
+
+    .dim-comp-clearall {
+        padding: 0 .25rem;
+        border: 0;
+        background: none;
+        color: var(--dimensions-ink);
+        font-size: .8125rem;
+        font-weight: 600;
+        text-decoration: underline;
     }
 
     .dim-comp-search-field {
@@ -914,10 +1217,20 @@ body.path-admin-tool-lp table.managecompetencies {
     .dim-comp-seg-cell:focus-visible,
     .dim-comp-iconbtn:focus-visible,
     .dim-comp-eraser:focus-visible,
+    .dim-comp-fpanel-opt:focus-visible,
+    .dim-comp-chip:focus-visible,
+    .dim-comp-clearall:focus-visible,
     .dim-comp-plan-menu-trigger:focus-visible,
     .dim-comp-plan-menu .tool-lp-root-menu:focus-visible {
         outline: var(--dimensions-focus-width) solid var(--dimensions-focus-ring);
         outline-offset: .125rem;
+    }
+
+    // Menu items and list rows touch their neighbours: their ring is drawn inwards (menu.md).
+    .dim-comp-menu-item:focus-visible,
+    .dim-comp-fpanel-row:focus-visible {
+        outline: var(--dimensions-focus-width) solid var(--dimensions-focus-ring);
+        outline-offset: -2px;
     }
 
     // The tooltip (tooltip.md): the control keeps its own name and this repeats it. It opens below its
@@ -968,6 +1281,12 @@ body.path-admin-tool-lp table.managecompetencies {
     .dim-comp-tip:focus-visible::after,
     .dim-comp-tip:focus-visible::before {
         opacity: 1;
+    }
+
+    // While its menu or panel is open a control names nothing (D116); after the showing rules, so it wins.
+    .dim-comp-tip[aria-expanded="true"]::after,
+    .dim-comp-tip[aria-expanded="true"]::before {
+        opacity: 0;
     }
 
     // While a card's menu is open its kebab names nothing: the open list is under it.
@@ -1091,6 +1410,16 @@ body.path-admin-tool-lp table.managecompetencies {
             padding: 0 .25rem;
             white-space: nowrap;
         }
+
+        // The panel becomes a bottom sheet (filter-panel.md); the script leaves it unplaced at this step.
+        .dim-comp-fpanel {
+            position: fixed;
+            inset: auto 0 0;
+            z-index: 1050;
+            min-width: 0;
+            max-height: 80vh;
+            border-radius: var(--dim-ds-radius-xl) var(--dim-ds-radius-xl) 0 0;
+        }
     }
 }
 
@@ -1137,6 +1466,27 @@ body.path-admin-tool-lp table.managecompetencies {
         .dim-comp-tip:focus-visible::after,
         .dim-comp-tip:focus-visible::before {
             transition-delay: 100ms;
+        }
+
+        .dim-comp-tip[aria-expanded="true"]::after,
+        .dim-comp-tip[aria-expanded="true"]::before {
+            transition: none;
+        }
+
+        // Menu items and list rows: slow out, fast in (hover.md), the item's icon moving towards its label.
+        .dim-comp-menu-item,
+        .dim-comp-menu-icon,
+        .dim-comp-fpanel-row {
+            transition:
+                background-color var(--dimensions-motion-base) var(--dimensions-motion-ease),
+                color var(--dimensions-motion-base) var(--dimensions-motion-ease),
+                transform var(--dimensions-motion-base) var(--dimensions-motion-ease);
+        }
+
+        .dim-comp-menu-item:hover,
+        .dim-comp-menu-item:hover .dim-comp-menu-icon,
+        .dim-comp-fpanel-row:hover {
+            transition-duration: var(--dimensions-motion-fast);
         }
     }
 }

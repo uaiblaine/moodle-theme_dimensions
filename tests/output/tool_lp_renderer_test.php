@@ -135,6 +135,60 @@ final class tool_lp_renderer_test extends \advanced_testcase {
     }
 
     /**
+     * On the owner's own list the first paint says which plan is a favourite, which tag each carries, the tag filters
+     * and the star's module, and core's due date and last change on every plan.
+     *
+     * @return void
+     */
+    public function test_the_first_paint_carries_favourites_tags_and_cores_dates(): void {
+        global $PAGE, $USER;
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $lpg = $generator->get_plugin_generator('core_competency');
+        $owner = $generator->create_user();
+        $template = $lpg->create_template(['shortname' => 'Kitchen']);
+        $this->setAdminUser();
+        \local_dimensions\helper::ensure_custom_fields_exist(\local_dimensions\helper::AREA_LP);
+        \local_dimensions\customfield\lp_handler::create()->instance_form_save((object) [
+            'id' => $template->get('id'),
+            'customfield_' . \local_dimensions\constants::CFIELD_TAG1 => 3,
+        ], true);
+        $tagged = $lpg->create_plan([
+            'userid' => $owner->id,
+            'name' => 'A tagged plan',
+            'templateid' => $template->get('id'),
+            'status' => plan::STATUS_ACTIVE,
+        ]);
+        $plain = $lpg->create_plan(['userid' => $owner->id, 'name' => 'B plain plan', 'status' => plan::STATUS_ACTIVE]);
+        set_config('enable_favourites', 1, 'block_dimensions');
+        set_config('enable_plan_tag1_filter', 1, 'block_dimensions');
+        $this->setUser($owner);
+        $usercontext = \context_user::instance($owner->id);
+        \core_favourites\service_factory::get_service_for_user_context($usercontext)
+            ->create_favourite('block_dimensions', 'plan', (int) $tagged->get('id'), $usercontext);
+        $this->assertSame((int) $owner->id, (int) $USER->id);
+        $this->under_theme();
+
+        $html = $PAGE->get_renderer('tool_lp')->render(new \tool_lp\output\plans_page((int) $owner->id));
+        $xpath = self::parse($html);
+
+        $root = $xpath->query("//div[@data-region='plans'][@data-dim-favourites='1']" .
+            "[@data-dim-starmodule='" . plan_cards::STAR_MODULE . "']");
+        $this->assertSame(1, $root->length, 'The root lost favourites or the star module.');
+        $filters = json_decode($root->item(0)->getAttribute('data-dim-tagfilters'), true);
+        $this->assertSame(['tag1'], array_column($filters, 'key'));
+        $this->assertSame(plan_cards::tag_filters()[0]['label'], $filters[0]['label']);
+        $node = "//li[@data-region='plan-node'][@data-id='%d'][@data-dim-fav='%s']";
+        $this->assertSame(1, $xpath->query(sprintf($node, $tagged->get('id'), '1') . "[@data-dim-tag1='Edit me 3']")->length);
+        $this->assertSame(1, $xpath->query(sprintf($node, $plain->get('id'), '0') . "[not(@data-dim-tag1)]")->length);
+        foreach ([$tagged, $plain] as $plan) {
+            $dated = "//li[@data-id='{$plan->get('id')}'][@data-dim-due='{$plan->get('duedate')}']" .
+                "[@data-dim-modified='{$plan->get('timemodified')}']";
+            $this->assertSame(1, $xpath->query($dated)->length, 'Core\'s dates are missing on a plan.');
+        }
+    }
+
+    /**
      * Rendered from core's export alone, as the client re-renders it, the page has the fallback cards and every hook.
      *
      * @return void
@@ -175,6 +229,9 @@ final class tool_lp_renderer_test extends \advanced_testcase {
         $this->assertSame(1, $xpath->query("//a[contains(@href, 'user_evidence_list.php?userid={$learner->id}')]")->length);
         $this->assertSame(1, $xpath->query("//*[@data-region='dim-comp-bar'][@hidden]")->length);
         $this->assertSame(1, $xpath->query("//*[@data-region='dim-comp-nomatch'][@hidden]")->length);
+        // Core's own keys carry the sort's dates; the theme's favourites and tags are the first paint's only.
+        $this->assertSame(2, $xpath->query("//li[@data-region='plan-node'][@data-dim-due][@data-dim-modified!='']")->length);
+        $this->assertSame(0, $xpath->query("//*[@data-dim-fav or @data-dim-tag1 or @data-dim-tagfilters]")->length);
     }
 
     /**

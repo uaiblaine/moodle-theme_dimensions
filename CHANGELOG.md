@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The learning plans page filters, keeps favourites and sorts** (2026100645). The bar above the plan cards gains,
+  after its count: a star that keeps only one's favourite plans (on one's own list, where the Dimensions block's
+  favourites are on; the star on each card is the block's own), *Filters* over the plan templates' tags that the
+  block offers (several values of a group widen the list, two groups narrow it), and *Organise* to sort by name
+  (Moodle's own order), due date or last change. The criteria in force show as chips under the bar, each removable,
+  with "Clear all". Nothing is remembered between visits; the choices survive Moodle's redraws of the list.
+  `theme_dimensions_get_plan_cards` also returns each card's favourite (only on the viewer's own list) and tags,
+  and the tag filters. block_dimensions 2026100508 is required.
 - **The learning plans page shows plan cards** (2026100644). Core's list of a user's learning plans
   (`admin/tool/lp/plans.php`) draws each plan as block_dimensions' plan card, which opens the plan in local_dimensions'
   overview, in a grid. A bar above it narrows the list by status (active, in review, completed, drafts where Moodle
