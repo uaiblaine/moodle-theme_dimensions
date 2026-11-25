@@ -1,2 +1,2 @@
 # Answer for the site course.
-s/\n[^\n]*if \(\(int\) \$course->id === SITEID\) \{\n[^\n]*\n[^\n]*\}//;
+s/\n[^\n]*if \(\(int\) \$course->id === \(int\) SITEID\) \{\n[^\n]*\n[^\n]*\}//;

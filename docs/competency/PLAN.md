@@ -160,7 +160,7 @@ One mechanism for the three redrawn pages that have actions:
 The class aggregate goes in a MUC application cache keyed by the course with a revision; rating, evidence,
 completion, enrolment and review events bump it. A cold node rebuilds it from the database.
 
-Phase 4 (done, 2026100648). What it has:
+Phase 4 (done, 2026100647). What it has:
 
 - The copy `templates/tool_lp/course_competencies_page` renders from core's context alone, with every hook of
   `tool_lp/competencies` and core's Behat selectors; per competency a `dim-comp-extra` slot, per listed activity a
@@ -213,7 +213,7 @@ competency and a long form (one row per learner and competency). Core's grading 
 | 2a | Competency from a parameter, plan review actions, link back | local_dimensions | 3 |
 | 2b | The owner's redirects; done | theme | 3 |
 | 3 | Evidence page | theme | 3 |
-| 4 | Course competencies, teacher and learner; done (2026100648) | theme | 3 |
+| 4 | Course competencies, teacher and learner; done (2026100647) | theme | 3 |
 | 5 | A learner's competency in a course | theme | 2 |
 | 6 | Class report: spike, then the report | theme | 3 |
 | C | "Journey" view of the plan overview | local_dimensions | 2 |

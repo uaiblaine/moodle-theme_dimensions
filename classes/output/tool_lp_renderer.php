@@ -70,7 +70,7 @@ class tool_lp_renderer extends \tool_lp\output\renderer {
     public function render_course_competencies_page(course_competencies_page $page) {
         $data = $page->export_for_template($this);
         $courseid = (int) $data->courseid;
-        if ($courseid !== SITEID) {
+        if ($courseid !== (int) SITEID) {
             $ids = [];
             foreach ($data->competencies as $row) {
                 $ids[] = (int) $row['competency']->id;

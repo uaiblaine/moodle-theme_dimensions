@@ -83,7 +83,7 @@ class get_course_competency_extras extends external_api {
         ['courseid' => $courseid] = self::validate_parameters(self::execute_parameters(), ['courseid' => $courseid]);
 
         $course = get_course($courseid);
-        if ((int) $course->id === SITEID) {
+        if ((int) $course->id === (int) SITEID) {
             throw new \core\exception\invalid_parameter_exception('The site course has no course competencies page extras.');
         }
         require_login($course, false, null, false, true);

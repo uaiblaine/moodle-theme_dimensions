@@ -51,13 +51,17 @@ final class course_competencies_page_test extends \advanced_testcase {
     /**
      * Put the page under this theme, in the course, before any renderer exists.
      *
+     * The course is set before the theme is forced, as `require_login($course)` does in a real request: core's export
+     * reads an activity's icon through the global output, which initialises the page and, with no course set, sets the
+     * site course on it, and that is refused once the theme is set.
+     *
      * @param int $courseid The course.
      * @return void
      */
     private function under_theme(int $courseid): void {
         global $PAGE;
+        $PAGE->set_course(get_course($courseid));
         $PAGE->set_url('/admin/tool/lp/coursecompetencies.php', ['courseid' => $courseid]);
-        $PAGE->set_context(\core\context\course::instance($courseid));
         $PAGE->force_theme('dimensions');
     }
 

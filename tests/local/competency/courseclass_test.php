@@ -398,9 +398,15 @@ final class courseclass_test extends \advanced_testcase {
     /**
      * A course with two learners and one competency, its figures built once.
      *
+     * The observers are external (`'internal' => false`): core holds an external observer's event while a database
+     * transaction is open and dispatches it on commit, and the test's own transaction is rolled back, never
+     * committed. The rollback is given up first, so the events reach the observers as they do on a site, and
+     * `resetAfterTest()` resets by truncation.
+     *
      * @return array [course id, competency id, the first learner, the fixture].
      */
     private function primed(): array {
+        $this->preventResetByRollback();
         $fixture = $this->course_with_competencies(2, 1);
         $courseid = (int) $fixture['course']->id;
         $competencyid = $fixture['competencies'][0];

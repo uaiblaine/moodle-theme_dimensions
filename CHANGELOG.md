@@ -5,7 +5,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
-- **The course competencies page, for the teacher and the learner** (2026100648). Core's page of a course's
+- **The course competencies page, for the teacher and the learner** (2026100647). Core's page of a course's
   competencies (`admin/tool/lp/coursecompetencies.php`) is drawn in the theme's design, with everything Moodle offers
   kept: adding, removing and reordering competencies, the course outcome of each, the "push ratings to plans" setting,
   the statistics, the learner's own rating and the links to each competency in the course. Each linked activity shows

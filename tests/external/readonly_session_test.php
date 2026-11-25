@@ -90,7 +90,7 @@ final class readonly_session_test extends \advanced_testcase {
      * @param int $categoryid The fixture's category.
      * @param int $courseid The fixture's course.
      * @param int $userid The reader, whose own learning plans the plan cards are asked for.
-     * @param int $competencycourseid A course with competencies the reader is a learner of.
+     * @param int $competencycourseid A course with competencies, of which another user is a learner.
      * @return array Service name => arguments.
      */
     private static function read_only_calls(int $categoryid, int $courseid, int $userid, int $competencycourseid): array {
@@ -220,19 +220,22 @@ final class readonly_session_test extends \advanced_testcase {
         $category = $generator->create_category();
         $course = $generator->create_course(['category' => $category->id]);
         $viewer = $generator->create_user();
-        // A course of its own, elsewhere, with a competency the reader is a learner of: the showcase counts nothing new.
+        // A course of its own, elsewhere, with a competency of which ANOTHER user is a learner: the viewer stays enrolled
+        // nowhere, because an enrolment makes core's event retrieval (the calendar range's) write
+        // $SESSION->calendarshoweventtype itself, in calendar_set_filters() for the viewer's courses.
+        $learner = $generator->create_user();
         $competencycourse = $generator->create_course(['category' => $generator->create_category()->id]);
         $lpg = $generator->get_plugin_generator('core_competency');
         $framework = $lpg->create_framework();
         $competency = $lpg->create_competency(['competencyframeworkid' => $framework->get('id')]);
         $lpg->create_course_competency(['courseid' => $competencycourse->id, 'competencyid' => $competency->get('id')]);
-        $generator->enrol_user($viewer->id, $competencycourse->id, 'student');
+        $generator->enrol_user($learner->id, $competencycourse->id, 'student');
         $CFG->enable_read_only_sessions = true;
 
         $calls = self::read_only_calls((int) $category->id, (int) $course->id, (int) $viewer->id, (int) $competencycourse->id);
         foreach ($calls as $name => $args) {
             \core\session\manager::init_empty_session();
-            $this->become($viewer);
+            $this->become($name === 'theme_dimensions_get_course_competency_extras' ? $learner : $viewer);
             $PAGE = new \moodle_page();
             require_login();
             $_POST['sesskey'] = sesskey();
@@ -258,7 +261,7 @@ final class readonly_session_test extends \advanced_testcase {
                 // Past the refusals to the builder: the layout is written only on the way to the (empty) cards.
                 $this->assertSame('horizontal', $result['data']['layout'], $name);
             } else if ($name === 'theme_dimensions_get_course_competency_extras') {
-                // Past core's login to the course and its capability check: the reader is answered as a learner.
+                // Past core's login to the course and its capability check: the learner is answered as one.
                 $this->assertTrue($result['data']['learner'], $name);
             } else if ($name === 'theme_dimensions_get_course_dialogue') {
                 // Admitted and built: the labels come only past the refusals.

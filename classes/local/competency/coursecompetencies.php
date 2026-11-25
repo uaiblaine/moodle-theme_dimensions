@@ -142,7 +142,7 @@ final class coursecompetencies {
         $courseid = (int) $course->id;
         $competencyids = array_values(array_unique(array_map('intval', $competencyids)));
         $result = ['staff' => false, 'learner' => false, 'competencies' => []];
-        if ($courseid === SITEID || $competencyids === []) {
+        if ($courseid === (int) SITEID || $competencyids === []) {
             return $result;
         }
 
@@ -434,7 +434,7 @@ final class coursecompetencies {
     public static function aggregate(int $courseid): array {
         global $DB;
 
-        if ($courseid === SITEID) {
+        if ($courseid === (int) SITEID) {
             throw new \coding_exception('The site course has no class distribution.');
         }
         $context = \core\context\course::instance($courseid);
