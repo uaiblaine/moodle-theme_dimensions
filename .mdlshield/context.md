@@ -12,7 +12,7 @@ activities. It depends on `theme_boost_union`, `local_unlistedcourses`, `local_d
 `core_competency\api::list_user_plans()`'s access rule before building; from 2026100645 (block_dimensions 2026100508)
 the service also passes through each card's favourite flag, which the block offers only on the session user's own
 list, and the plan templates' tag values, and the page loads the block's `favourite_star` module, the theme writing no
-favourite itself; from 2026100648 the same renderer draws core's course competencies page,
+favourite itself; from 2026100647 the same renderer draws core's course competencies page,
 `admin/tool/lp/coursecompetencies.php`, with extras the read service `theme_dimensions_get_course_competency_extras`
 gives back after core's client re-render: it logs into the course as core's `tool_lp_data_for_course_competencies_page`
 does and calls `core_competency\api::list_course_competencies()` for core's capability check, refuses the site course,
