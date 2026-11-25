@@ -390,9 +390,13 @@ final class evidencelist_test extends \advanced_testcase {
      * @return void
      */
     public function test_a_record_carries_what_cores_summary_shows(): void {
+        global $DB;
         $this->resetAfterTest();
         [$learner, $one, , $uc] = $this->learner();
         $teacher = self::getDataGenerator()->create_user(['firstname' => 'Tess', 'lastname' => 'Teacher']);
+        $markup = self::getDataGenerator()->create_user(['firstname' => 'Tess', 'lastname' => 'Teacher']);
+        // The form would refuse markup in a name: write it as an import or an older release could have.
+        $DB->set_field('user', 'firstname', 'A <b>B</b>', ['id' => $markup->id]);
         $rated = $this->record($uc, 'evidence_manualoverride', self::NOON, [
             'action' => evidence::ACTION_OVERRIDE,
             'grade' => 1,
@@ -401,9 +405,10 @@ final class evidencelist_test extends \advanced_testcase {
             'url' => 'https://example.com/work',
         ]);
         $this->record($uc, 'evidence_coursecompleted', self::NOON - 10, ['url' => 'ftp://example.com/file']);
+        $byname = $this->record($uc, 'evidence_coursecompleted', self::NOON - 20, ['actionuserid' => $markup->id]);
         $this->setUser($learner);
 
-        [$first, $second] = evidencelist::page((int) $learner->id, [])['records'];
+        [$first, $second, $third] = evidencelist::page((int) $learner->id, [])['records'];
 
         $scale = $one->get_scale();
         $this->assertSame($rated, $first['id']);
@@ -420,6 +425,16 @@ final class evidencelist_test extends \advanced_testcase {
         $this->assertSame('', $second['gradename']);
         $this->assertSame('', $second['actor']);
         $this->assertSame('', $second['url'], 'An address that is not http(s) is withheld.');
+        $this->assertSame($byname, $third['id']);
+        $this->assertSame(clean_param($third['actor'], PARAM_TEXT), $third['actor'], 'The name is its own PARAM_TEXT cleaning.');
+        $this->assertStringNotContainsString('<', $third['actor']);
+        $this->assertStringContainsString('Teacher', $third['actor']);
+        $answer = \core_external\external_api::call_external_function(
+            'theme_dimensions_get_user_evidence_feed',
+            ['userid' => $learner->id],
+            true
+        );
+        $this->assertFalse($answer['error'], 'A name with markup does not fail the whole response.');
     }
 
     /**
@@ -454,6 +469,101 @@ final class evidencelist_test extends \advanced_testcase {
         }
 
         $this->assertSame($reads[2], $reads[24]);
+    }
+
+    /**
+     * The fold costs the same whatever the number of foreign rows: they are counted by one aggregate, never read.
+     *
+     * @return void
+     */
+    public function test_the_fold_does_not_grow_with_the_foreign_rows(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$learner, , , $uc] = $this->learner();
+        $this->record($uc, 'evidence_coursecompleted', time() - self::DAY);
+        $this->setUser($learner);
+        $this->setTimezone('UTC');
+
+        $reads = [];
+        $counted = [];
+        $rows = [];
+        foreach ([5, 500] as $size) {
+            while (count($rows) < $size) {
+                $rows[] = (object) [
+                    'usercompetencyid' => $uc->get('id'),
+                    'contextid' => \context_system::instance()->id,
+                    'action' => evidence::ACTION_LOG,
+                    'descidentifier' => 'evidence_status_valid',
+                    'desccomponent' => 'local_evidencehub',
+                    'desca' => json_encode('2027-03-14'),
+                    'timecreated' => time() - (count($rows) % 20) * self::DAY,
+                    'timemodified' => time(),
+                    'usermodified' => 2,
+                ];
+            }
+            $DB->delete_records(evidence::TABLE, ['desccomponent' => 'local_evidencehub']);
+            $DB->insert_records(evidence::TABLE, $rows);
+            // Warm the caches a page of any size shares, then measure.
+            evidencelist::page((int) $learner->id, []);
+            $before = $DB->perf_get_reads();
+            $page = evidencelist::page((int) $learner->id, []);
+            $reads[$size] = $DB->perf_get_reads() - $before;
+            $counted[$size] = array_sum(array_column($page['folds'], 'count'));
+        }
+
+        $this->assertSame([5 => 5, 500 => 500], $counted, 'Control: every foreign row is counted.');
+        $this->assertSame($reads[5], $reads[500]);
+    }
+
+    /**
+     * A foreign row dated exactly as the page's last record is counted on one of two consecutive pages: the one whose
+     * side of the keyset pair it is on.
+     *
+     * @return void
+     */
+    public function test_a_foreign_row_at_the_page_boundary_is_counted_once(): void {
+        $this->resetAfterTest();
+        [$learner, , , $uc] = $this->learner();
+        $this->record($uc, 'evidence_coursecompleted', self::NOON);
+        $this->foreign($uc, self::NOON - self::DAY);
+        $boundary = $this->record($uc, 'evidence_coursecompleted', self::NOON - self::DAY);
+        $this->foreign($uc, self::NOON - self::DAY);
+        $this->record($uc, 'evidence_coursecompleted', self::NOON - 2 * self::DAY);
+        $this->setUser($learner);
+
+        $first = evidencelist::page((int) $learner->id, [], 0, 0, 2);
+        $second = evidencelist::page((int) $learner->id, [], $first['nexttime'], $first['nextid'], 2);
+
+        $this->assertSame($boundary, $first['nextid'], 'Control: the boundary record ends the first page.');
+        $this->assertSame(1, array_sum(array_column($first['folds'], 'count')), 'The row above the pair.');
+        $this->assertSame(1, array_sum(array_column($second['folds'], 'count')), 'The row below the pair.');
+    }
+
+    /**
+     * Rows older than the months the fold counts apart are one more line: the cap hides no count.
+     *
+     * @return void
+     */
+    public function test_rows_older_than_the_cap_are_still_counted(): void {
+        $this->resetAfterTest();
+        [$learner, , , $uc] = $this->learner();
+        $this->record($uc, 'evidence_coursecompleted', time() - self::DAY);
+        $this->foreign($uc, time() - self::DAY);
+        $old = time() - 1200 * self::DAY;
+        $this->foreign($uc, $old);
+        $this->foreign($uc, $old - self::DAY);
+        $this->foreign($uc, $old - 40 * self::DAY);
+        $this->setUser($learner);
+        $this->setTimezone('UTC');
+
+        $folds = [];
+        foreach (evidencelist::page((int) $learner->id, [])['folds'] as $fold) {
+            $folds[$fold['key']] = $fold['count'];
+        }
+
+        $this->assertSame(1, $folds['local_evidencehub|' . userdate(time() - self::DAY, '%Y-%m')], 'Control: a month in range.');
+        $this->assertSame(3, $folds['local_evidencehub|' . evidencelist::EARLIER]);
+        $this->assertCount(2, $folds);
     }
 
     /**

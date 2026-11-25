@@ -280,9 +280,11 @@ const foldNode = async(line) => {
     item.setAttribute('data-dim-monthlabel', line.monthlabel);
     const rail = make('span', 'dim-comp-ev-rail');
     rail.setAttribute('aria-hidden', 'true');
+    const earlier = line.key.endsWith('|earlier');
     const words = line.count === 1
-        ? await getString('competency_evidencefoldone', 'theme_dimensions', {component: line.label, month: line.monthlabel})
-        : await getString('competency_evidencefold', 'theme_dimensions',
+        ? await getString(earlier ? 'competency_evidencefoldearlierone' : 'competency_evidencefoldone', 'theme_dimensions',
+            {component: line.label, month: line.monthlabel})
+        : await getString(earlier ? 'competency_evidencefoldearlier' : 'competency_evidencefold', 'theme_dimensions',
             {count: line.count, component: line.label, month: line.monthlabel});
     item.append(make('span', 'dim-comp-ev-when'), rail, make('p', 'dim-comp-ev-quiet', words));
     return item;

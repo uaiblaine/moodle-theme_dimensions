@@ -58,7 +58,7 @@ use core_competency\user_evidence;
  *
  * Paging is a keyset on (timecreated, id) descending: a cursor is the last record's pair, so a row written while the
  * reader pages shifts nothing. The folded rows of one page are those between the cursor and the page's last record,
- * so across the pages each is counted once.
+ * so across the pages each is counted once; one aggregate statement counts them and no row is read.
  *
  * Nothing is cached and nothing is written: every input is in the database, and a cold node answers as a warm one.
  *
@@ -75,6 +75,12 @@ final class evidencelist {
 
     /** @var string The description core writes when a prior-learning evidence is linked: the row left out. */
     public const LINKED = 'evidence_evidenceofpriorlearninglinked';
+
+    /** @var int The calendar months the fold of one page counts apart; the rows older than the last are one more line. */
+    public const FOLD_MONTHS = 24;
+
+    /** @var string The month of the fold's line for the rows older than the last month window. */
+    public const EARLIER = 'earlier';
 
     /** @var string The shape of a calendar day the period is given in. */
     private const DAY = '/^(\d{4})-(\d{2})-(\d{2})$/';
@@ -244,7 +250,7 @@ final class evidencelist {
 
         return [
             'records' => self::records($rows),
-            'folds' => self::folds($from, $where, $cursor, $params, $last),
+            'folds' => self::folds($from, $where, $cursor, $params, $last, $beforetime > 0 ? $beforetime : time()),
             'hasmore' => $hasmore,
             'nexttime' => $last ? (int) $last->timecreated : 0,
             'nextid' => $last ? (int) $last->id : 0,
@@ -293,7 +299,7 @@ final class evidencelist {
                 return null;
             }
             $from .= ' JOIN {context} ctx ON ctx.id = e.contextid';
-            $where .= ' AND (ctx.id = :coursecontextid OR ' . $DB->sql_like('ctx.path', ':coursepath', false, false) . ')';
+            $where .= ' AND (ctx.id = :coursecontextid OR ' . $DB->sql_like('ctx.path', ':coursepath') . ')';
             $params += ['coursecontextid' => $course->id, 'coursepath' => $course->path . '/%'];
         }
         if ($filters['from'] > 0) {
@@ -369,7 +375,7 @@ final class evidencelist {
         if ($actorids) {
             $fields = 'id, ' . implode(', ', \core_user\fields::get_name_fields());
             foreach ($DB->get_records_list('user', 'id', $actorids, '', $fields) as $actor) {
-                $actors[(int) $actor->id] = fullname($actor);
+                $actors[(int) $actor->id] = plancards::plain(fullname($actor), $system);
             }
         }
 
@@ -438,20 +444,31 @@ final class evidencelist {
 
     /**
      * The folded lines of a page: the other components' rows between the cursor and the page's last record (all of
-     * them below the cursor on the last page), one line per component and month.
+     * them below the cursor on the last page), one line per component and calendar month.
      *
-     * Only the component and the time of each row are read, through a recordset, so a long log costs memory for its
-     * lines only.
+     * One aggregate statement and no row is read: the months are windows of the reader's timezone computed here
+     * ({@see fold_windows()}), each counted by a conditional SUM and dated by a conditional MAX, grouped by component
+     * alone so the statement is the same on PostgreSQL and MariaDB. The keyset bounds are applied once, in the WHERE,
+     * around every window, so a row is counted on exactly one page. Rows older than the last window are one more
+     * line per component, month {@see EARLIER}, so the cap hides no count.
      *
      * @param string $from The FROM of the user's rows.
      * @param string $where The WHERE of the user's rows under the filters.
      * @param string $cursor The cursor's condition, or ''.
      * @param array $params The parameters of the three, and of the page's own condition.
      * @param \stdClass|null $last The page's last record when more pages follow.
+     * @param int $anchor The instant the newest window is counted from: the cursor's time, or now.
      * @return array List of ['key' => component|month, 'component', 'label', 'month', 'monthlabel', 'count',
      *     'time' => the newest row's time], newest first.
      */
-    private static function folds(string $from, string $where, string $cursor, array $params, ?\stdClass $last): array {
+    private static function folds(
+        string $from,
+        string $where,
+        string $cursor,
+        array $params,
+        ?\stdClass $last,
+        int $anchor
+    ): array {
         global $DB;
 
         $lower = '';
@@ -462,37 +479,97 @@ final class evidencelist {
             $params += ['lasttime' => (int) $last->timecreated, 'lasttimeeq' => (int) $last->timecreated,
                 'lastid' => (int) $last->id];
         }
-        $rows = $DB->get_recordset_sql(
-            "SELECT e.id, e.desccomponent, e.timecreated
+
+        $windows = self::fold_windows($anchor, $last ? (int) $last->timecreated : null);
+        $buckets = [];
+        $columns = [];
+        foreach ($windows as $index => $window) {
+            // The newest window has no end: a row dated after now is still the newest month's. Each placeholder once.
+            $count = "e.timecreated >= :lo{$index}";
+            $newest = "e.timecreated >= :tlo{$index}";
+            $params["lo{$index}"] = $params["tlo{$index}"] = $window['start'];
+            if ($index > 0) {
+                $count .= " AND e.timecreated < :hi{$index}";
+                $newest .= " AND e.timecreated < :thi{$index}";
+                $params["hi{$index}"] = $params["thi{$index}"] = $windows[$index - 1]['start'];
+            }
+            $columns[] = "SUM(CASE WHEN {$count} THEN 1 ELSE 0 END) AS b{$index}";
+            $columns[] = "MAX(CASE WHEN {$newest} THEN e.timecreated ELSE NULL END) AS t{$index}";
+            $buckets[$index] = ['month' => $window['month'], 'monthlabel' => $window['monthlabel'], 'earlier' => false];
+        }
+        if (!$last || end($windows)['start'] > (int) $last->timecreated) {
+            // The rows below the last window: the cap's remainder, counted whatever the page's lower bound is.
+            $index = count($windows);
+            $params["lo{$index}"] = $params["tlo{$index}"] = end($windows)['start'];
+            $columns[] = "SUM(CASE WHEN e.timecreated < :lo{$index} THEN 1 ELSE 0 END) AS b{$index}";
+            $columns[] = "MAX(CASE WHEN e.timecreated < :tlo{$index} THEN e.timecreated ELSE NULL END) AS t{$index}";
+            $buckets[$index] = ['month' => self::EARLIER, 'monthlabel' => '', 'earlier' => true];
+        }
+
+        $columnsql = implode(', ', $columns);
+        $rows = $DB->get_records_sql(
+            "SELECT e.desccomponent, {$columnsql}
                {$from}
               WHERE {$where} AND e.desccomponent <> :component{$cursor}{$lower}
-           ORDER BY e.timecreated DESC, e.id DESC",
+           GROUP BY e.desccomponent",
             $params
         );
+
         $lines = [];
         $names = [];
         foreach ($rows as $row) {
-            $time = (int) $row->timecreated;
-            $month = userdate($time, '%Y-%m');
-            $key = $row->desccomponent . '|' . $month;
-            if (!isset($lines[$key])) {
-                $component = clean_param((string) $row->desccomponent, PARAM_COMPONENT);
-                $names[$component] ??= self::component_name($component);
+            $component = clean_param((string) $row->desccomponent, PARAM_COMPONENT);
+            $names[$component] ??= self::component_name($component);
+            foreach ($buckets as $index => $bucket) {
+                $count = (int) $row->{"b{$index}"};
+                if ($count === 0) {
+                    continue;
+                }
+                $time = (int) $row->{"t{$index}"};
+                $month = $bucket['earlier'] ? userdate($time, '%Y-%m') : $bucket['month'];
+                $monthlabel = $bucket['earlier'] ? userdate($time, get_string('strftimemonthyear', 'langconfig'))
+                    : $bucket['monthlabel'];
+                $key = $component . '|' . ($bucket['earlier'] ? self::EARLIER : $month);
                 $lines[$key] = [
                     'key' => $key,
                     'component' => $component,
                     'label' => $names[$component],
                     'month' => $month,
-                    'monthlabel' => userdate($time, get_string('strftimemonthyear', 'langconfig')),
-                    'count' => 0,
+                    'monthlabel' => $monthlabel,
+                    'count' => $count,
                     'time' => $time,
                 ];
             }
-            $lines[$key]['count']++;
         }
-        $rows->close();
+        usort($lines, static fn(array $a, array $b): int => [$b['time'], $b['key']] <=> [$a['time'], $a['key']]);
 
-        return array_values($lines);
+        return $lines;
+    }
+
+    /**
+     * The calendar months of the reader's timezone a page's fold is counted in, newest first.
+     *
+     * The same month boundaries as {@see records()} headings: userdate() reads the same timezone. The windows run
+     * from the anchor's month down to the month holding the page's last record, never more than FOLD_MONTHS.
+     *
+     * @param int $anchor The instant the newest window holds.
+     * @param int|null $lasttime The page's last record's time, null on the last page.
+     * @return array List of ['start' => the month's first instant, 'month' => YYYY-MM, 'monthlabel'].
+     */
+    private static function fold_windows(int $anchor, ?int $lasttime): array {
+        $zone = \core_date::get_user_timezone_object();
+        $start = (new \DateTimeImmutable('@' . $anchor))->setTimezone($zone)->modify('first day of this month')->setTime(0, 0);
+        $format = get_string('strftimemonthyear', 'langconfig');
+        $windows = [];
+        for ($i = 0; $i < self::FOLD_MONTHS; $i++) {
+            $stamp = $start->getTimestamp();
+            $windows[] = ['start' => $stamp, 'month' => userdate($stamp, '%Y-%m'), 'monthlabel' => userdate($stamp, $format)];
+            if ($lasttime !== null && $stamp <= $lasttime) {
+                break;
+            }
+            $start = $start->modify('first day of previous month');
+        }
+        return $windows;
     }
 
     /**

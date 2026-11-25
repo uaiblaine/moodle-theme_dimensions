@@ -190,10 +190,10 @@ class get_user_evidence_feed extends external_api {
             ),
             'folds' => new external_multiple_structure(
                 new external_single_structure([
-                    'key' => new external_value(PARAM_TEXT, 'The component and the month: one line per key.'),
+                    'key' => new external_value(PARAM_TEXT, 'Component and month, or "earlier": one line per key.'),
                     'component' => new external_value(PARAM_COMPONENT, 'The component that wrote the rows.'),
                     'label' => new external_value(PARAM_TEXT, 'The component\'s name, plain text.'),
-                    'month' => new external_value(PARAM_ALPHANUMEXT, 'The month, YYYY-MM.'),
+                    'month' => new external_value(PARAM_ALPHANUMEXT, 'The month, YYYY-MM (the newest row\'s, on an earlier line).'),
                     'monthlabel' => new external_value(PARAM_TEXT, 'The month, in words.'),
                     'count' => new external_value(PARAM_INT, 'The rows of that component in that month, on this page.'),
                     'time' => new external_value(PARAM_INT, 'The newest of them.'),
