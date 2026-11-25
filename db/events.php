@@ -153,4 +153,63 @@ $observers = [
         'callback' => '\\theme_dimensions\\local\\calendar\\publiccache::category_changed',
         'internal' => false,
     ],
+    // The course competencies page's class distribution is kept under a revision per course and one for the site
+    // (local\competency\courseclass): each event that can change who is counted or how they are rated mints a new one,
+    // after the write commits, so a value built in between is never taken for the new state. A course competency added
+    // or removed fires no event; the value carries the competency ids instead.
+    [
+        'eventname' => '\\core\\event\\competency_user_competency_rated_in_course',
+        'callback' => '\\theme_dimensions\\local\\competency\\courseclass::course_changed',
+        'internal' => false,
+    ],
+    [
+        'eventname' => '\\core\\event\\competency_evidence_created',
+        'callback' => '\\theme_dimensions\\local\\competency\\courseclass::course_changed',
+        'internal' => false,
+    ],
+    [
+        'eventname' => '\\core\\event\\user_enrolment_created',
+        'callback' => '\\theme_dimensions\\local\\competency\\courseclass::course_changed',
+        'internal' => false,
+    ],
+    [
+        'eventname' => '\\core\\event\\user_enrolment_deleted',
+        'callback' => '\\theme_dimensions\\local\\competency\\courseclass::course_changed',
+        'internal' => false,
+    ],
+    [
+        'eventname' => '\\core\\event\\course_reset_ended',
+        'callback' => '\\theme_dimensions\\local\\competency\\courseclass::course_changed',
+        'internal' => false,
+    ],
+    [
+        'eventname' => '\\core\\event\\role_assigned',
+        'callback' => '\\theme_dimensions\\local\\competency\\courseclass::role_changed',
+        'internal' => false,
+    ],
+    [
+        'eventname' => '\\core\\event\\role_unassigned',
+        'callback' => '\\theme_dimensions\\local\\competency\\courseclass::role_changed',
+        'internal' => false,
+    ],
+    [
+        'eventname' => '\\core\\event\\capability_assigned',
+        'callback' => '\\theme_dimensions\\local\\competency\\courseclass::role_changed',
+        'internal' => false,
+    ],
+    [
+        'eventname' => '\\core\\event\\capability_unassigned',
+        'callback' => '\\theme_dimensions\\local\\competency\\courseclass::role_changed',
+        'internal' => false,
+    ],
+    [
+        'eventname' => '\\core\\event\\role_deleted',
+        'callback' => '\\theme_dimensions\\local\\competency\\courseclass::site_changed',
+        'internal' => false,
+    ],
+    [
+        'eventname' => '\\core\\event\\user_deleted',
+        'callback' => '\\theme_dimensions\\local\\competency\\courseclass::site_changed',
+        'internal' => false,
+    ],
 ];

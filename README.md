@@ -548,6 +548,33 @@ page, and an address carrying `noredirect=1` (the overview's link to Moodle's pl
 page. The setting *Open a learner's own plan in the Dimensions plan overview*
 (`theme_dimensions/planownerredirect`, on the *Competencies* tab; on by default) switches it off.
 
+### The course competencies page
+
+Core's page of a course's competencies (*Competencies* in a course, `/admin/tool/lp/coursecompetencies.php`) is drawn
+in the theme's design, and every action of core's stays: add, remove and reorder competencies, the course outcome of
+each, the setting that pushes the course's ratings to the learners' plans, the statistics, the learner's own rating and
+the link to each competency in the course. The theme adds, beside each linked activity, what completing it does for the
+competency (its outcome as Moodle names it; it is changed in the activity's settings; Moodle's own web service for an
+activity's competencies already returns it to anybody who may view the activity), and:
+
+- to whoever may see the whole class (`moodle/competency:coursecompetencymanage` in the course, or
+  `moodle/competency:competencygrade` there when the course is not in separate groups mode or the viewer holds
+  `moodle/site:accessallgroups`; a grader limited to their own groups gets no figures, since they count the whole
+  course), per competency, how many of the learners enrolled in the
+  course who can be rated there (`moodle/competency:coursecompetencygradable`, suspended enrolments included, as
+  Moodle rates them) are proficient, rated but not proficient, and not rated;
+- to a learner, whether they completed each linked activity they can see, and how many pieces of their evidence come
+  from this course, with the latest one's date. Nobody sees another person's figures.
+
+The class figures are kept in the shared application cache `coursecompetencyclass`: per course, the counts per
+competency and nothing else (no user id, no name: not personal data), with the revision they were built for. The
+revisions are kept in the cache `coursecompetencyrev` and renewed by the events that change the figures: a rating or an
+evidence in the course, an enrolment created or deleted, a role or a capability changed in the course (in a category or
+the system: every course's), a role or a user deleted, the course's ratings reset. A course competency added or removed
+is seen on the next read, and a value is rebuilt at least every hour; any web node rebuilds it from the database. After
+each of Moodle's redraws of the page, the read web service `theme_dimensions_get_course_competency_extras` gives the
+extras back, applying the page's own access rule. The site course's page has no extras.
+
 
 Requirements
 ------------
@@ -647,7 +674,9 @@ nothing a viewer's rights decide in it. The category of each course is cached to
 the cover of a course card without an image; a course's entry is dropped whenever the course is created, restored,
 updated (a move included) or deleted. The public calendar keeps what it shows visitors in the cache `publiccalendar` (the
 public categories' events and the public event courses, per window and language, the same for everybody) under a
-revision token per half kept in the cache `publiccalendarrev`; nothing of a visitor is in either.
+revision token per half kept in the cache `publiccalendarrev`; nothing of a visitor is in either. The course
+competencies page keeps its class figures in the cache `coursecompetencyclass` (counts per competency per course, no
+user id) under revisions kept in `coursecompetencyrev`.
 
 The theme also stores seven user preferences: the focus mode reading width, the category view
 (cards or list), how a person left each of their most recent category pages (organisation, view

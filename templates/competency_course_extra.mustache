@@ -1,0 +1,69 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/competency_course_extra
+
+    The theme's extras of one competency on the course competencies page: the class distribution for a viewer who may see the whole class, the
+    learner's own evidence in the course. Drawn into data-region="dim-comp-extra" by the theme's copy of
+    tool_lp/course_competencies_page on the first paint, and on the client by theme_dimensions/coursecompetencies
+    from theme_dimensions_get_course_competency_extras after core re-renders the page; the context is one entry of
+    theme_dimensions\local\competency\coursecompetencies::for_viewer() either way. Every text is plain, printed by
+    double stashes. The distribution is the proficient share as tool_lp/progress_bar draws a bar (a native progress
+    element, so no style attribute carries a number), then the other two counts.
+
+    Context variables required for this template:
+    * competencyid - the competency, which names the section
+    * hasdistribution, haslearners - booleans
+    * progresstextvalue, percentagevalue, percentlabelvalue - the bar's sentence, share (0 to 100) and label
+    * ratedtext, notratedtext - the other two counts as sentences
+    * haslearner - boolean; evidencetext - the learner's evidence line
+
+    Example context (json):
+    {
+        "competencyid": 7,
+        "hasdistribution": true,
+        "haslearners": true,
+        "progresstextvalue": "14 of 24 proficient",
+        "percentagevalue": 58,
+        "percentlabelvalue": "58%",
+        "ratedtext": "7 rated, not proficient",
+        "notratedtext": "3 not rated",
+        "haslearner": true,
+        "evidencetext": "2 pieces of evidence from this course, the latest on 18 October 2026"
+    }
+}}
+<div class="dim-comp-course-extra">
+    {{#hasdistribution}}
+    <section class="dim-comp-course-class" aria-labelledby="dim-comp-course-class-{{competencyid}}">
+        <h4 class="dim-comp-eyebrow" id="dim-comp-course-class-{{competencyid}}">{{#str}} competency_courseclass, theme_dimensions {{/str}}</h4>
+        {{#haslearners}}
+        {{> tool_lp/progress_bar }}
+        <p class="dim-comp-course-class-counts"><span>{{ratedtext}}</span> <span>{{notratedtext}}</span></p>
+        {{/haslearners}}
+        {{^haslearners}}
+        <p class="dim-comp-course-class-none">{{#str}} competency_courseclassnone, theme_dimensions {{/str}}</p>
+        {{/haslearners}}
+        <p class="dim-comp-course-class-note">{{#str}} competency_courseclassnote, theme_dimensions {{/str}}</p>
+    </section>
+    {{/hasdistribution}}
+    {{#haslearner}}
+    <p class="dim-comp-course-mine">
+        <i class="fa-regular fa-file-lines" aria-hidden="true"></i>
+        <span>{{evidencetext}}</span>
+    </p>
+    {{/haslearner}}
+</div>

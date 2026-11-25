@@ -150,7 +150,7 @@ One mechanism for the three redrawn pages that have actions:
 | Element | Source | Cost |
 |---|---|---|
 | Name, description, path, linked activities, course outcome select, push-ratings setting | core's export | as core |
-| Each activity's outcome | `competency_modulecomp.ruleoutcome`, one statement for the course; read-only here, edited in the activity's form (core has no web service for it) | 1 |
+| Each activity's outcome | `competency_modulecomp.ruleoutcome`, one statement for the course; read-only here, edited in the activity's form; core's `core_competency_list_course_module_competencies` already returns `ruleoutcome` to any viewer of the activity holding `coursecompetencyview`, so showing it beside the activity is parity | 1 |
 | Class distribution per competency | one aggregate over `competency_usercompcourse` joined to the enrolled set (`get_enrolled_with_capabilities_join`) | 1, cached |
 | Learner: own rating | core's export | as core |
 | Learner: state of each activity | `completion_info` for the course, `cm_info` availability | 1 |
@@ -159,6 +159,35 @@ One mechanism for the three redrawn pages that have actions:
 
 The class aggregate goes in a MUC application cache keyed by the course with a revision; rating, evidence,
 completion, enrolment and review events bump it. A cold node rebuilds it from the database.
+
+Phase 4 (done, 2026100647). What it has:
+
+- The copy `templates/tool_lp/course_competencies_page` renders from core's context alone, with every hook of
+  `tool_lp/competencies` and core's Behat selectors; per competency a `dim-comp-extra` slot, per listed activity a
+  `dim-comp-cm` slot. The derived renderer's `render_course_competencies_page()` decorates the first paint through
+  `local\competency\coursecompetencies`.
+- The re-arm point is the template's js block, as on the plans page: core's add, delete, course outcome and ratings
+  setting replace the region (`templates.replaceNode` or `replaceWith` with `runTemplateJS`) from
+  `tool_lp_data_for_course_competencies_page`, always with `moduleid: 0`, and run the block again; reordering moves the
+  rows in place. `theme_dimensions/coursecompetencies` puts the remembered extras back and refills them from
+  `theme_dimensions_get_course_competency_extras`. No `MutationObserver`.
+- The activity outcome is shown to every viewer, for the activities core's page lists to that viewer (`uservisible`).
+- The class distribution goes only to a viewer who may see the whole class (`coursecompetencymanage`, or `competencygrade` in a course not in separate groups mode or with `moodle/site:accessallgroups`; a grader limited to their groups gets none): three
+  counts, drawn as the proficient share on the progress bar and the other two as a line (the Design System decides no
+  stacked bar). The enrolled set is `get_enrolled_with_capabilities_join()` with
+  `moodle/competency:coursecompetencygradable`, suspended enrolments included (core rates them), counted once per user.
+- The cache: `coursecompetencyclass` (per course: counts, the course and site revisions, the competency ids, the time
+  built) and `coursecompetencyrev`. Events: rated in course, evidence created, enrolment created and deleted, course
+  reset ended, role assigned and unassigned, capability assigned and unassigned, role deleted, user deleted. A
+  completion rates through its evidence, so `course_module_completion_updated` is not observed; a course competency
+  added or removed fires no event and is seen by the competency ids; the review events change no course figure.
+- The learner: their state of each listed activity (`completion_info`, done with its date or not yet) and their
+  evidence count and latest date per competency in the course's context and its activities' (one grouped statement).
+
+What it left out: the mockups' tiles above the list (core's statistics stay instead), the "Class" tab and the
+per-level stacked bar (phase 6 and an undecided component), the side panels (how to read the class, what each outcome
+does, the learner's plans with this course), the course outcome sentence for the learner (core shows the course
+outcome to managers only), the scale strip of the learner's level, and the dropped items above.
 
 ### 6. A learner's competency in a course (`admin/tool/lp/user_competency_in_course.php`)
 
@@ -184,7 +213,7 @@ competency and a long form (one row per learner and competency). Core's grading 
 | 2a | Competency from a parameter, plan review actions, link back | local_dimensions | 3 |
 | 2b | The owner's redirects; done | theme | 3 |
 | 3 | Evidence page | theme | 3 |
-| 4 | Course competencies, teacher and learner | theme | 3 |
+| 4 | Course competencies, teacher and learner; done (2026100647) | theme | 3 |
 | 5 | A learner's competency in a course | theme | 2 |
 | 6 | Class report: spike, then the report | theme | 3 |
 | C | "Journey" view of the plan overview | local_dimensions | 2 |

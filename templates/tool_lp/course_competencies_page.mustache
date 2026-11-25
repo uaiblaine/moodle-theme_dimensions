@@ -1,0 +1,294 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template tool_lp/course_competencies_page
+
+    A course's competencies, for the teacher and for the learner, overridden by Dimensions.
+
+    Mirrors tool_lp/course_competencies_page of Moodle 5.3 (2026100500),
+    admin/tool/lp/templates/course_competencies_page.mustache. Re-diff it against that file on every core upgrade.
+
+    It renders from core's context alone: that is what tool_lp/competencies and tool_lp/course_competency_settings
+    hand it on the client after adding or removing a competency, changing a course outcome or the ratings setting,
+    when they replace the region whole (templates.replaceNode or replaceWith with runTemplateJS) and run this
+    template's js block again. Reordering moves the rows in place and renders nothing. The theme's first paint adds
+    keys of its own (dimfirstpaint, per competency dimextra, per listed activity dimcm, from
+    theme_dimensions\local\competency\coursecompetencies); theme_dimensions/coursecompetencies, started from the js
+    block, puts them back after each re-render from theme_dimensions_get_course_competency_extras.
+
+    Kept from core: the root data-region="coursecompetenciespage" (replaced whole); both data-region="actions"
+    with the "Add competencies to course" button under canmanagecoursecompetencies, disabled until
+    tool_lp/competencies enables it; data-region="configurecoursecompetencies" with core's two sentences under
+    cangradecompetencies and the data-action="configure-course-competency-settings" link with data-courseid and
+    data-pushratingstouserplans under canconfigurecoursecompetencies; the statistics partial; data-region
+    "coursecompetencies" with the table.managecompetencies, the tbody.drag-parentnode, one tr.drag-samenode per
+    competency with data-id, the span.drag-handlecontainer and the delete link (data-action
+    "delete-competency-link", data-id) under canmanagecoursecompetencies; the link titled "View details" with the
+    id competency-info-link-<id> (the statistics' anchors) to user_competency_in_course.php, the shortname
+    triple-stashed and the description a p directly in the cell (tool_lp's named selectors); the path partial;
+    the learner's rating as a span.badge with core's gradename; data-region="coursecompetency-ruleoutcome" with
+    the label wrapping select[data-field="ruleoutcome"][data-id] and core's options; the activities and the
+    learning plans regions and their empty strings; the empty course or activity message; the manage link; both
+    js blocks.
+    Changed: the classes are the theme's (scss/competency.scss); the rating is a status label with an icon per
+    proficiency where core used bg-success and bg-danger; the "Add" button is primary; the ratings setting is a
+    callout; each section has a small heading and its list is a plain list, where core put a ul inside a p (which
+    HTML does not allow); the activity icon has an empty alt; the empty message is a compact line. Added: per
+    listed activity a data-region="dim-comp-cm" keyed by data-cmid (its outcome, and the learner's state), per
+    competency a data-region="dim-comp-extra" keyed by data-competencyid (the class distribution for a viewer who may see the whole class, the
+    learner's evidence), and theme_dimensions/coursecompetencies in the js block. Neither carries data-id: core
+    reads the delete link's id through closest('[data-id]').
+
+    Context variables required for this template:
+    * courseid, moduleid, pagecontextid, pluginbaseurl, gradableuserid
+    * canmanagecoursecompetencies, cangradecompetencies, canconfigurecoursecompetencies,
+      canmanagecompetencyframeworks, manageurl
+    * settings - pushratingstouserplans
+    * statistics - see the statistics partial
+    * competencies - competency, coursecompetency, ruleoutcomeoptions, coursemodules, comppath, plans,
+      usercompetencycourse
+
+    Example context (json):
+    {
+        "courseid": 2,
+        "moduleid": 0,
+        "pagecontextid": 20,
+        "pluginbaseurl": "https://example.com/admin/tool/lp",
+        "gradableuserid": 3,
+        "canmanagecoursecompetencies": true,
+        "cangradecompetencies": true,
+        "canconfigurecoursecompetencies": true,
+        "canmanagecompetencyframeworks": true,
+        "manageurl": "https://example.com/admin/tool/lp/competencyframeworks.php?pagecontextid=1",
+        "settings": {
+            "pushratingstouserplans": true
+        },
+        "dimfirstpaint": true,
+        "competencies": [{
+            "competency": {
+                "id": 7,
+                "shortname": "Assessment strategies",
+                "idnumber": "DIG-4.1",
+                "description": "Uses digital technologies for formative and summative assessment."
+            },
+            "coursecompetency": {
+                "id": 1
+            },
+            "ruleoutcomeoptions": [{
+                "value": "0",
+                "text": "Do nothing",
+                "selected": false
+            }, {
+                "value": "1",
+                "text": "Attach evidence",
+                "selected": true
+            }],
+            "usercompetencycourse": {
+                "grade": 2,
+                "gradename": "Competent",
+                "proficiency": true
+            },
+            "coursemodules": [{
+                "id": 31,
+                "name": "Digital rubrics workshop",
+                "url": "https://example.com/mod/assign/view.php?id=31",
+                "iconurl": "https://example.com/theme/image.php/dimensions/assign/1/monologo",
+                "dimcm": {
+                    "cmid": 31,
+                    "outcome": 1,
+                    "outcomename": "Attach evidence",
+                    "outcometone": "rated",
+                    "hasstate": true,
+                    "isdone": true,
+                    "istodo": false,
+                    "statetext": "Completed on 2 October 2026"
+                }
+            }],
+            "plans": [{
+                "id": 4,
+                "name": "Digital teaching"
+            }],
+            "dimextra": {
+                "competencyid": 7,
+                "hasdistribution": true,
+                "haslearners": true,
+                "progresstextvalue": "14 of 24 proficient",
+                "percentagevalue": 58,
+                "percentlabelvalue": "58%",
+                "ratedtext": "7 rated, not proficient",
+                "notratedtext": "3 not rated",
+                "haslearner": true,
+                "evidencetext": "2 pieces of evidence from this course, the latest on 18 October 2026"
+            }
+        }]
+    }
+}}
+<div data-region="coursecompetenciespage" class="dim-comp-course"{{#dimfirstpaint}} data-dim-extras="1"{{/dimfirstpaint}}>
+    <div data-region="actions" class="clearfix dim-comp-course-actions">
+        <div class="float-sm-start">
+            {{#canmanagecoursecompetencies}}
+                <button class="btn btn-primary" disabled>{{#str}}addcoursecompetencies, tool_lp{{/str}}</button>
+            {{/canmanagecoursecompetencies}}
+        </div>
+    </div>
+    <div data-region="configurecoursecompetencies">
+    {{#cangradecompetencies}}
+        <p class="dim-comp-callout dim-comp-course-push">
+            <i class="fa-solid fa-circle-info dim-comp-callout__icon" aria-hidden="true"></i>
+            <span>
+            {{#settings.pushratingstouserplans}}
+                {{#str}}coursecompetencyratingsarepushedtouserplans, tool_lp{{/str}}
+            {{/settings.pushratingstouserplans}}
+            {{^settings.pushratingstouserplans}}
+                {{#str}}coursecompetencyratingsarenotpushedtouserplans, tool_lp{{/str}}
+            {{/settings.pushratingstouserplans}}
+            </span>
+        {{#canconfigurecoursecompetencies}}
+            <a href="#"
+               data-action="configure-course-competency-settings"
+               data-courseid="{{courseid}}"
+               data-pushratingstouserplans="{{settings.pushratingstouserplans}}">
+                {{#pix}}i/settings, core, {{#str}}edit{{/str}}{{/pix}}
+            </a>
+        {{/canconfigurecoursecompetencies}}
+        </p>
+    {{/cangradecompetencies}}
+    </div>
+{{#statistics}}
+{{> tool_lp/course_competency_statistics }}
+{{/statistics}}
+<div data-region="coursecompetencies">
+<table class="table generaltable fullwidth managecompetencies dim-comp-course-table">
+<tbody class="drag-parentnode">
+{{#competencies}}
+    <tr class="drag-samenode" data-id="{{competency.id}}">
+    <td class="dim-comp-course-cell">
+        {{#canmanagecoursecompetencies}}
+        <span class="drag-handlecontainer float-sm-start"></span>
+        <div class="float-sm-end">
+            <a href="#" data-action="delete-competency-link" data-id="{{competency.id}}">
+                {{#pix}}t/delete, core, {{#str}}delete{{/str}}{{/pix}}
+            </a>
+        </div>
+        <div class="clearfix"></div>
+        {{/canmanagecoursecompetencies}}
+        {{#competency}}
+        <h3 class="dim-comp-course-name">
+            <a href="{{pluginbaseurl}}/user_competency_in_course.php?courseid={{courseid}}&amp;competencyid={{competency.id}}&amp;userid={{gradableuserid}}"
+                   id="competency-info-link-{{competency.id}}"
+                   title="{{#str}}viewdetails, tool_lp{{/str}}">{{{competency.shortname}}} <em class="dim-comp-idnumber">{{competency.idnumber}}</em></a>
+        </h3>
+        <p class="dim-comp-course-description">{{{competency.description}}}</p>
+        {{/competency}}
+        {{#comppath}}
+        <div class="dim-comp-section dim-comp-course-path">
+            <span class="float-sm-start">{{#str}}path, tool_lp{{/str}}&nbsp;</span>{{> tool_lp/competency_path }}
+        </div>
+        {{/comppath}}
+        {{#usercompetencycourse}}
+            {{#grade}}
+            <div class="dim-comp-pills dim-comp-course-rating">
+                {{#proficiency}}
+                <span class="badge dim-comp-pill dim-comp-pill--proficient">
+                    <i class="fa-solid fa-circle-check dim-comp-pill__icon" aria-hidden="true"></i>
+                    {{gradename}}
+                </span>
+                {{/proficiency}}
+                {{^proficiency}}
+                <span class="badge dim-comp-pill dim-comp-pill--notproficient">
+                    <i class="fa-solid fa-circle-exclamation dim-comp-pill__icon" aria-hidden="true"></i>
+                    {{gradename}}
+                </span>
+                {{/proficiency}}
+            </div>
+            {{/grade}}
+        {{/usercompetencycourse}}
+        {{#canmanagecoursecompetencies}}
+        <div data-region="coursecompetency-ruleoutcome" class="dim-comp-course-outcome">
+            <label>
+                {{#str}}uponcoursecompletion, tool_lp{{/str}}
+                <select data-field="ruleoutcome" data-id="{{coursecompetency.id}}" class="form-select">
+                  {{#ruleoutcomeoptions}}
+                     <option value="{{value}}" {{#selected}}selected{{/selected}}>{{text}}</option>
+                  {{/ruleoutcomeoptions}}
+                </select>
+            </label>
+        </div>
+        {{/canmanagecoursecompetencies}}
+        <div data-region="coursecompetencyactivities" class="dim-comp-section">
+            <h4 class="dim-comp-eyebrow">{{#str}}activities{{/str}}</h4>
+            <ul class="dim-comp-course-cms">
+            {{#coursemodules}}
+                <li class="dim-comp-course-cmrow">
+                    <a href="{{url}}"><img class="icon" src="{{iconurl}}" alt=""> {{name}} </a>
+                    <span data-region="dim-comp-cm" data-cmid="{{id}}">{{#dimcm}}{{> theme_dimensions/competency_course_cm }}{{/dimcm}}</span>
+                </li>
+            {{/coursemodules}}
+            {{^coursemodules}}
+                <li class="dim-comp-course-cmrow dim-comp-muted">{{#str}}noactivities, tool_lp{{/str}}</li>
+            {{/coursemodules}}
+            </ul>
+        </div>
+        <div data-region="learningplans" class="dim-comp-section">
+            <h4 class="dim-comp-eyebrow">{{#str}}userplans, core_competency{{/str}}</h4>
+            <ul class="dim-comp-course-plans">
+            {{#plans}}
+                <li><a href="{{pluginbaseurl}}/plan.php?id={{id}}">{{{name}}}</a></li>
+            {{/plans}}
+            {{^plans}}
+                <li class="dim-comp-muted">{{#str}}nouserplanswithcompetency, core_competency{{/str}}</li>
+            {{/plans}}
+            </ul>
+        </div>
+        <div data-region="dim-comp-extra" data-competencyid="{{competency.id}}" class="dim-comp-course-extraslot">{{#dimextra}}{{> theme_dimensions/competency_course_extra }}{{/dimextra}}</div>
+    </td>
+    </tr>
+{{/competencies}}
+</tbody>
+</table>
+{{^competencies}}
+<p class="dim-comp-course-empty">
+    {{#moduleid}}
+        {{#str}}nocompetenciesinactivity, tool_lp{{/str}}
+    {{/moduleid}}
+    {{^moduleid}}
+        {{#str}}nocompetenciesincourse, tool_lp{{/str}}
+    {{/moduleid}}
+</p>
+{{/competencies}}
+</div>
+<div data-region="actions">
+    {{#canmanagecompetencyframeworks}}
+        <p><a href="{{manageurl}}">{{#str}}managecompetenciesandframeworks, tool_lp{{/str}}</a></p>
+    {{/canmanagecompetencyframeworks}}
+</div>
+</div>
+{{#js}}
+require(['tool_lp/competencies'], function(Mod) {
+    (new Mod({{courseid}}, 'course', {{pagecontextid}}));
+});
+require(['theme_dimensions/coursecompetencies'], function(Extras) {
+    Extras.init({{courseid}});
+});
+{{/js}}
+{{#canconfigurecoursecompetencies}}
+{{#js}}
+require(['tool_lp/course_competency_settings'], function(Mod) {
+    (new Mod('[data-action=configure-course-competency-settings]'));
+});
+{{/js}}
+{{/canconfigurecoursecompetencies}}

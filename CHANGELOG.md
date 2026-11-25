@@ -5,6 +5,18 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The course competencies page, for the teacher and the learner** (2026100647). Core's page of a course's
+  competencies (`admin/tool/lp/coursecompetencies.php`) is drawn in the theme's design, with everything Moodle offers
+  kept: adding, removing and reordering competencies, the course outcome of each, the "push ratings to plans" setting,
+  the statistics, the learner's own rating and the links to each competency in the course. Each linked activity shows
+  what completing it does for the competency (its outcome, as Moodle names it; it is still changed in the activity's
+  settings). Whoever may see the whole class (a manager of the course's competencies, or a grader in a course that is not in
+  separate groups mode or who may access all groups; a grader limited to their groups sees none) sees, per competency, how many of the enrolled
+  learners are proficient, rated but not proficient, and not rated; a learner sees whether they completed each linked
+  activity and how much of their evidence comes from this course. The figures are kept in a new shared cache,
+  `coursecompetencyclass` (counts only), renewed by the ratings, evidence, enrolment and role events that change them
+  (cache `coursecompetencyrev`). New read web service `theme_dimensions_get_course_competency_extras`, which puts the
+  figures back after Moodle redraws the page. The site course's page stays Moodle's.
 - **A learner's own plan opens in the plan overview** (2026100646). Moodle's page of a learning plan
   (`admin/tool/lp/plan.php`) and of a competency in a plan (`admin/tool/lp/user_competency_in_plan.php`) send the
   plan's owner to local_dimensions' plan overview, with the competency open when one was named. Only the owner is

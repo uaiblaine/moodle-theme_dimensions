@@ -39,7 +39,8 @@ require_once(__DIR__ . '/../local/category/fixture.php');
  * (lib/classes/session/manager.php, the array_session_diff() of $SESSION taken at session start
  * and at close): no $SESSION key added, removed or changed. That is what is asserted here around
  * the showcase's three logged-in reads, the mobile drawer's summary, the calendar range, the
- * calendar trails and the reader's own plan cards, the way the clients make them (the range builds
+ * calendar trails, the reader's own plan cards and a course competencies page's extras, the way the
+ * clients make them (the range builds
  * core's calendar sets without the session-only key bitmask core writes into $SESSION, see
  * \theme_dimensions\local\calendar\scope).
  * $USER is not compared, as core does not compare it. The page's own preference writes
@@ -61,6 +62,7 @@ require_once(__DIR__ . '/../local/category/fixture.php');
 #[CoversClass(get_calendar_range::class)]
 #[CoversClass(get_calendar_trails::class)]
 #[CoversClass(get_plan_cards::class)]
+#[CoversClass(get_course_competency_extras::class)]
 final class readonly_session_test extends \advanced_testcase {
     use \theme_dimensions\local\category\fixture;
 
@@ -88,15 +90,17 @@ final class readonly_session_test extends \advanced_testcase {
      * @param int $categoryid The fixture's category.
      * @param int $courseid The fixture's course.
      * @param int $userid The reader, whose own learning plans the plan cards are asked for.
+     * @param int $competencycourseid A course with competencies, of which another user is a learner.
      * @return array Service name => arguments.
      */
-    private static function read_only_calls(int $categoryid, int $courseid, int $userid): array {
+    private static function read_only_calls(int $categoryid, int $courseid, int $userid, int $competencycourseid): array {
         return [
             'theme_dimensions_get_category_rows' => ['categoryid' => $categoryid],
             'theme_dimensions_get_card_details' => ['courseids' => [$courseid]],
             'theme_dimensions_get_course_dialogue' => ['courseid' => $courseid],
             'theme_dimensions_get_drawer_summary' => [],
             'theme_dimensions_get_plan_cards' => ['userid' => $userid],
+            'theme_dimensions_get_course_competency_extras' => ['courseid' => $competencycourseid],
             'theme_dimensions_get_calendar_range' => ['from' => '2026-11-01', 'to' => '2026-11-30'],
             // Three months, the most one answer covers: the read-only session holds for the longest window too.
             'theme_dimensions_get_calendar_trails' => ['month' => '2026-11', 'months' => 3],
@@ -163,7 +167,7 @@ final class readonly_session_test extends \advanced_testcase {
             }
         }
         sort($declared);
-        $exercised = array_keys(self::read_only_calls(1, 1, 1));
+        $exercised = array_keys(self::read_only_calls(1, 1, 1, 1));
         sort($exercised);
 
         foreach (self::SESSIONLESS_READS as $name) {
@@ -216,11 +220,22 @@ final class readonly_session_test extends \advanced_testcase {
         $category = $generator->create_category();
         $course = $generator->create_course(['category' => $category->id]);
         $viewer = $generator->create_user();
+        // A course of its own, elsewhere, with a competency of which ANOTHER user is a learner: the viewer stays enrolled
+        // nowhere, because an enrolment makes core's event retrieval (the calendar range's) write
+        // $SESSION->calendarshoweventtype itself, in calendar_set_filters() for the viewer's courses.
+        $learner = $generator->create_user();
+        $competencycourse = $generator->create_course(['category' => $generator->create_category()->id]);
+        $lpg = $generator->get_plugin_generator('core_competency');
+        $framework = $lpg->create_framework();
+        $competency = $lpg->create_competency(['competencyframeworkid' => $framework->get('id')]);
+        $lpg->create_course_competency(['courseid' => $competencycourse->id, 'competencyid' => $competency->get('id')]);
+        $generator->enrol_user($learner->id, $competencycourse->id, 'student');
         $CFG->enable_read_only_sessions = true;
 
-        foreach (self::read_only_calls((int) $category->id, (int) $course->id, (int) $viewer->id) as $name => $args) {
+        $calls = self::read_only_calls((int) $category->id, (int) $course->id, (int) $viewer->id, (int) $competencycourse->id);
+        foreach ($calls as $name => $args) {
             \core\session\manager::init_empty_session();
-            $this->become($viewer);
+            $this->become($name === 'theme_dimensions_get_course_competency_extras' ? $learner : $viewer);
             $PAGE = new \moodle_page();
             require_login();
             $_POST['sesskey'] = sesskey();
@@ -245,6 +260,9 @@ final class readonly_session_test extends \advanced_testcase {
             } else if ($name === 'theme_dimensions_get_plan_cards') {
                 // Past the refusals to the builder: the layout is written only on the way to the (empty) cards.
                 $this->assertSame('horizontal', $result['data']['layout'], $name);
+            } else if ($name === 'theme_dimensions_get_course_competency_extras') {
+                // Past core's login to the course and its capability check: the learner is answered as one.
+                $this->assertTrue($result['data']['learner'], $name);
             } else if ($name === 'theme_dimensions_get_course_dialogue') {
                 // Admitted and built: the labels come only past the refusals.
                 $this->assertNotSame('', $result['data']['learnlabel'], $name);

@@ -102,6 +102,16 @@ $functions = [
         'loginrequired' => true,
         'capabilities' => '',
     ],
+    'theme_dimensions_get_course_competency_extras' => [
+        'classname' => 'theme_dimensions\external\get_course_competency_extras',
+        'description' => 'The extras of a course\'s competencies page (activity outcomes, the class distribution for '
+            . 'staff, the learner\'s own figures), after core re-renders it.',
+        'type' => 'read',
+        'ajax' => true,
+        'readonlysession' => true,
+        'loginrequired' => true,
+        'capabilities' => '',
+    ],
     'theme_dimensions_get_calendar_range' => [
         'classname' => 'theme_dimensions\external\get_calendar_range',
         'description' => 'One month grid of the calendar: the events once each, the event courses, the courses, '
