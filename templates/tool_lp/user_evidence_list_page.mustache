@@ -1,0 +1,385 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template tool_lp/user_evidence_list_page
+
+    A user's evidence of prior learning as one dated list, with the platform's records beside it once the
+    script runs, under a bar of scope, count, Filters, period and search, overridden by Dimensions.
+
+    Mirrors tool_lp/user_evidence_list_page of Moodle 5.3 (2026100500),
+    admin/tool/lp/templates/user_evidence_list_page.mustache. Re-diff it against that file on every core upgrade.
+
+    It renders from core's context alone: that is what tool_lp/user_evidence_actions hands it on the client after
+    every action (delete, link competencies, send for review), when it replaces the region whole with
+    templates.replaceNode() and runs this template's js block again. The theme's first paint adds keys of its
+    own (dimfirstpaint, dimplatform, and per evidence dimmonthhead, from
+    theme_dimensions\output\tool_lp_renderer, which also puts the evidence newest first);
+    theme_dimensions/competencyevidence, started from the js block, sorts and groups the list by month after a
+    re-render, adds the platform's records from theme_dimensions_get_user_evidence_feed, runs the bar and opens
+    the selected evidence beside the list.
+
+    Kept from core: the root data-region="user-evidence-list" (replaced whole), one
+    data-region='user-evidence-node' per evidence with data-id and data-userid (the one ancestor
+    _findEvidenceData reads), the menu's structure ul.user-evidence-actions > li > a[href="#"] +
+    ul.dropdown.dropdown-menu > li.dropdown-item under canmanage, its edit link and its three actions
+    (link-competency under userhasplan, send-competencies-review, user-evidence-delete), the evidence's link to
+    user_evidence.php, its URL and files, its competencies with their status and reviewer, the navigation
+    buttons, the list's caption as a heading, the nouserevidence message, core's two js lines, the name
+    triple-stashed as core prints it.
+    Changed: a dated list in place of the table; each evidence's date (core's timecreated), its competencies'
+    ids and its month as attributes; the menu is the item's kebab, named "Actions for" the evidence in visually
+    hidden text; the detail beside the list is copied by the script from a template element of each item, whose
+    buttons press the item's own menu entries, so core's handlers stay the only ones; a hidden bar, a hidden
+    side panel, a loading line and the button that loads older records, all revealed by the script.
+
+    Context variables required for this template:
+    * userid - The ID of the user whose page we're viewing
+    * canmanage - Whether the current user can manage the evidence
+    * evidence - The list of evidence, core's user_evidence_summary_exporter
+    * navigation - Buttons to add to the page
+    * pluginbaseurl - The plugin base URL
+
+    Example context (json):
+    {
+        "userid": 3,
+        "canmanage": true,
+        "pluginbaseurl": "https://example.com/admin/tool/lp",
+        "navigation": [
+            "<a class=\"btn btn-secondary\" href=\"https://example.com/admin/tool/lp/user_evidence_edit.php?userid=3\">Add new evidence</a>"
+        ],
+        "dimfirstpaint": true,
+        "dimplatform": true,
+        "evidence": [
+            {
+                "id": 7,
+                "userid": 3,
+                "name": "Data protection certificate",
+                "description": "<p>Eight hours, with exercises.</p>",
+                "url": "https://example.com/certificates/8841",
+                "urlshort": "example.com/certificates/8841",
+                "timecreated": 1792065600,
+                "canmanage": true,
+                "userhasplan": true,
+                "hasurlorfiles": true,
+                "filecount": 1,
+                "files": [
+                    {
+                        "filename": "certificate.pdf",
+                        "filenameshort": "certificate.pdf",
+                        "filesizeformatted": "240 KB",
+                        "icon": "f/pdf",
+                        "url": "https://example.com/pluginfile.php/5/core_competency/userevidence/7/certificate.pdf"
+                    }
+                ],
+                "competencycount": 1,
+                "usercompetencies": [
+                    {
+                        "competency": {
+                            "id": 12,
+                            "shortname": "Data protection",
+                            "idnumber": "2.3"
+                        },
+                        "usercompetency": {
+                            "id": 40,
+                            "statusname": "Waiting for review",
+                            "url": "https://example.com/admin/tool/lp/user_competency.php?id=40",
+                            "reviewer": {
+                                "fullname": "Renato Dias"
+                            }
+                        }
+                    }
+                ],
+                "dimmonthhead": "October 2026"
+            },
+            {
+                "id": 8,
+                "userid": 3,
+                "name": "Accessible materials",
+                "description": "",
+                "url": "",
+                "urlshort": "",
+                "timecreated": 1789473600,
+                "canmanage": true,
+                "userhasplan": false,
+                "hasurlorfiles": false,
+                "filecount": 0,
+                "files": [],
+                "competencycount": 0,
+                "usercompetencies": [],
+                "dimmonthhead": "September 2026"
+            }
+        ]
+    }
+}}
+<div data-region="user-evidence-list" class="dim-comp-ev" data-dim-userid="{{userid}}"{{#dimfirstpaint}} data-dim-firstpaint="1"{{!
+    }} data-dim-platform="{{#dimplatform}}1{{/dimplatform}}{{^dimplatform}}0{{/dimplatform}}"{{/dimfirstpaint}}>
+    <div class="dim-comp-plans-head">
+        {{#navigation}}
+        {{{.}}}
+        {{/navigation}}
+    </div>
+
+    <div class="dim-comp-bar" data-region="dim-comp-bar" hidden>
+        <div class="dim-comp-seg" role="radiogroup" data-region="dim-comp-scope" aria-label="{{#str}} competency_evidencescope, theme_dimensions {{/str}}">
+            <button type="button" class="dim-comp-seg-cell" role="radio" aria-checked="true" tabindex="0" data-value="all">
+                {{#str}} competency_evidencescope_all, theme_dimensions {{/str}} <small data-region="dim-comp-scope-count"></small>
+            </button>
+            <button type="button" class="dim-comp-seg-cell" role="radio" aria-checked="false" tabindex="-1" data-value="prior">
+                {{#str}} competency_evidencescope_prior, theme_dimensions {{/str}} <small data-region="dim-comp-scope-count"></small>
+            </button>
+            <button type="button" class="dim-comp-seg-cell" role="radio" aria-checked="false" tabindex="-1" data-value="platform">
+                {{#str}} competency_evidencescope_platform, theme_dimensions {{/str}} <small data-region="dim-comp-scope-count"></small>
+            </button>
+        </div>
+        <span class="dim-comp-bar-spacer"></span>
+        <div class="dim-comp-bar-cluster" data-region="dim-comp-cluster">
+            <span class="dim-comp-bar-count" data-region="dim-comp-total" aria-live="polite"></span>
+            <div class="dim-comp-capsule dim-comp-tools" data-region="dim-comp-tools">
+                <button type="button" class="dim-comp-iconbtn dim-comp-tip" data-action="dim-comp-filters" aria-expanded="false"
+                        aria-controls="{{uniqid}}-dim-filters" aria-label="{{#str}} competency_evidencefilters, theme_dimensions {{/str}}"
+                        data-dim-comp-tip="{{#str}} competency_evidencefilters, theme_dimensions {{/str}}" hidden>
+                    {{#pix}} i/filter, core {{/pix}}<span class="dim-comp-badge" data-region="dim-comp-badge" aria-hidden="true" hidden></span>
+                </button>
+                <button type="button" class="dim-comp-iconbtn dim-comp-tip" data-action="dim-comp-ev-period" aria-expanded="false"
+                        aria-controls="{{uniqid}}-dim-period" aria-label="{{#str}} competency_evidenceperiod, theme_dimensions {{/str}}"
+                        data-dim-comp-tip="{{#str}} competency_evidenceperiod, theme_dimensions {{/str}}">
+                    <i class="fa fa-calendar-days" aria-hidden="true"></i><span class="dim-comp-ev-perioddot" data-region="dim-comp-ev-perioddot" aria-hidden="true" hidden></span>
+                </button>
+            </div>
+        </div>
+        <div class="dim-comp-capsule dim-comp-search" data-region="dim-comp-search">
+            <button type="button" class="dim-comp-iconbtn dim-comp-tip" data-action="dim-comp-search-open"
+                    aria-label="{{#str}} competency_evidencesearch, theme_dimensions {{/str}}"
+                    data-dim-comp-tip="{{#str}} competency_evidencesearch, theme_dimensions {{/str}}">
+                {{#pix}} i/search, core {{/pix}}
+            </button>
+            <span class="dim-comp-search-field" hidden>
+                {{#pix}} i/search, core {{/pix}}
+                <input type="search" class="dim-comp-search-input" autocomplete="off"
+                       aria-label="{{#str}} competency_evidencesearch, theme_dimensions {{/str}}"
+                       placeholder="{{#str}} competency_evidencesearch, theme_dimensions {{/str}}">
+                <button type="button" class="dim-comp-eraser dim-comp-tip" data-action="dim-comp-search-clear"
+                        aria-label="{{#str}} category_searchclear, theme_dimensions {{/str}}"
+                        data-dim-comp-tip="{{#str}} category_searchclear, theme_dimensions {{/str}}" hidden>
+                    {{#pix}} e/clear_formatting, core {{/pix}}
+                </button>
+            </span>
+        </div>
+        <div class="dim-comp-fpanel" id="{{uniqid}}-dim-filters" data-region="dim-comp-fpanel" hidden>
+            <div class="dim-comp-fpanel-body" data-region="dim-comp-fpanel-body"></div>
+            <div class="dim-comp-fpanel-foot">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-action="dim-comp-clearfilters">
+                    {{#str}} competency_evidenceclearfilters, theme_dimensions {{/str}}
+                </button>
+                <button type="button" class="btn btn-sm btn-primary" data-action="dim-comp-show">
+                    {{#str}} competency_evidenceshow, theme_dimensions {{/str}}
+                </button>
+            </div>
+        </div>
+        <div class="dim-comp-fpanel dim-comp-ev-periodlayer" id="{{uniqid}}-dim-period" role="group" data-region="dim-comp-ev-periodlayer"
+             aria-label="{{#str}} competency_evidenceperiod, theme_dimensions {{/str}}" hidden>
+            <div class="dim-comp-fpanel-body">
+                <div class="dim-comp-fpanel-head" id="{{uniqid}}-dim-periodhead">{{#str}} competency_evidenceperiod, theme_dimensions {{/str}}</div>
+                <div class="dim-comp-fpanel-opts" role="group" aria-labelledby="{{uniqid}}-dim-periodhead">
+                    <button type="button" class="dim-comp-fpanel-opt" aria-pressed="false" data-dim-quick="month">
+                        {{#str}} competency_evidenceperiod_month, theme_dimensions {{/str}}
+                    </button>
+                    <button type="button" class="dim-comp-fpanel-opt" aria-pressed="false" data-dim-quick="quarter">
+                        {{#str}} competency_evidenceperiod_quarter, theme_dimensions {{/str}}
+                    </button>
+                    <button type="button" class="dim-comp-fpanel-opt" aria-pressed="false" data-dim-quick="year">
+                        {{#str}} competency_evidenceperiod_year, theme_dimensions {{/str}}
+                    </button>
+                </div>
+                <div class="dim-comp-ev-boxes">
+                    <label class="dim-comp-ev-box">
+                        <span class="dim-comp-ev-boxlabel">{{#str}} competency_evidenceperiodfrom, theme_dimensions {{/str}}</span>
+                        <input type="date" class="dim-comp-ev-date" data-region="dim-comp-ev-from">
+                    </label>
+                    <label class="dim-comp-ev-box">
+                        <span class="dim-comp-ev-boxlabel">{{#str}} competency_evidenceperiodto, theme_dimensions {{/str}}</span>
+                        <input type="date" class="dim-comp-ev-date" data-region="dim-comp-ev-to">
+                    </label>
+                </div>
+            </div>
+            <div class="dim-comp-fpanel-foot">
+                <button type="button" class="dim-comp-clearall" data-action="dim-comp-ev-periodclear">
+                    {{#str}} competency_evidenceperiodclear, theme_dimensions {{/str}}
+                </button>
+                <button type="button" class="btn btn-sm btn-primary" data-action="dim-comp-ev-periodshow">
+                    {{#str}} competency_evidenceshow, theme_dimensions {{/str}}
+                </button>
+            </div>
+        </div>
+        <div class="dim-comp-chips" data-region="dim-comp-chips" hidden></div>
+    </div>
+
+    <div class="dim-comp-ev-layout">
+        <div class="dim-comp-ev-main">
+            <h3 class="visually-hidden">{{#str}}listofevidence, tool_lp{{/str}}</h3>
+            <ol class="dim-comp-ev-list" data-region="dim-comp-ev-list">
+                {{#evidence}}
+                {{#dimmonthhead}}
+                <li class="dim-comp-ev-month" data-region="dim-comp-ev-month"><h3 class="dim-comp-ev-monthtitle">{{dimmonthhead}}</h3></li>
+                {{/dimmonthhead}}
+                <li data-region='user-evidence-node' data-id="{{id}}" data-userid="{{userid}}" class="dim-comp-ev-item"
+                    data-dim-kind="prior" data-dim-key="p{{id}}" data-dim-time="{{timecreated}}"
+                    data-dim-month="{{#userdate}} {{timecreated}}, %Y-%m {{/userdate}}"
+                    data-dim-monthlabel="{{#userdate}} {{timecreated}}, {{#str}} strftimemonthyear, core_langconfig {{/str}} {{/userdate}}"
+                    data-dim-comps="{{#usercompetencies}}{{competency.id}} {{/usercompetencies}}">
+                    <span class="dim-comp-ev-when">{{#userdate}} {{timecreated}}, {{#str}} strftimedateshort, core_langconfig {{/str}} {{/userdate}}</span>
+                    <span class="dim-comp-ev-rail" aria-hidden="true"><span class="dim-comp-ev-dot"></span></span>
+                    <div class="dim-comp-ev-card">
+                        <span class="dim-comp-ev-kind dim-comp-ev-kind--prior" aria-hidden="true"><i class="fa fa-file-lines"></i></span>
+                        <div class="dim-comp-ev-text">
+                            <div class="dim-comp-ev-top">
+                                <span class="dim-comp-ev-src">{{#str}} competency_evidencekind_prior, theme_dimensions {{/str}}</span>
+                                {{^competencycount}}
+                                <span class="badge dim-comp-pill dim-comp-pill--status">{{#str}} competency_evidencenolink, theme_dimensions {{/str}}</span>
+                                {{/competencycount}}
+                            </div>
+                            <h4 class="dim-comp-ev-title"><a href="{{pluginbaseurl}}/user_evidence.php?id={{id}}" data-action="dim-comp-ev-open">{{{name}}}</a></h4>
+                            {{#competencycount}}
+                            <ul class="dim-comp-ev-feeds user-evidence-competencies">
+                                {{#usercompetencies}}
+                                <li>{{{competency.shortname}}} <span class="dim-comp-muted">{{usercompetency.statusname}}{{#usercompetency.reviewer.fullname}} / {{usercompetency.reviewer.fullname}}{{/usercompetency.reviewer.fullname}}</span></li>
+                                {{/usercompetencies}}
+                            </ul>
+                            {{/competencycount}}
+                        </div>
+                        {{#canmanage}}
+                        <div class="dim-comp-plan-menu">
+                        <ul class="user-evidence-actions">
+                        <li>
+                            <a href="#" class="dim-comp-plan-menu-trigger dim-comp-tip">
+                                {{#pix}} i/menu, core {{/pix}}<span class="visually-hidden">{{#str}} competency_evidenceactions, theme_dimensions, {{{name}}} {{/str}}</span>
+                            </a>
+                            <ul class="dropdown dropdown-menu">
+                                <li class="dropdown-item">
+                                    <a href="{{pluginbaseurl}}/user_evidence_edit.php?id={{id}}&amp;userid={{userid}}&amp;return=list">
+                                        {{#pix}}t/edit{{/pix}} {{#str}}editthisuserevidence, tool_lp{{/str}}
+                                    </a>
+                                </li>
+                                {{#userhasplan}}
+                                <li class="dropdown-item">
+                                    <a href="#" data-action="link-competency">
+                                        {{#pix}}t/add{{/pix}} {{#str}}linkcompetencies, tool_lp{{/str}}
+                                    </a>
+                                </li>
+                                {{/userhasplan}}
+                                <li class="dropdown-item">
+                                    <a data-action="send-competencies-review" href="#">
+                                        {{#pix}}t/edit{{/pix}} {{#str}}sendcompetenciestoreview, tool_lp{{/str}}
+                                    </a>
+                                </li>
+                                <li class="dropdown-item">
+                                    <a data-action="user-evidence-delete" href="#">
+                                        {{#pix}}t/delete{{/pix}} {{#str}}deletethisuserevidence, tool_lp{{/str}}
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        </ul>
+                        </div>
+                        {{/canmanage}}
+                    </div>
+                    <template data-region="dim-comp-ev-detailsrc">
+                        <p class="dim-comp-ev-detail-meta">{{#str}} competency_evidencekind_prior, theme_dimensions {{/str}} · {{#userdate}} {{timecreated}}, {{#str}} strftimedate, core_langconfig {{/str}} {{/userdate}}</p>
+                        <h3 class="dim-comp-ev-detail-title">{{{name}}}</h3>
+                        <div class="dim-comp-ev-detail-desc">{{{description}}}</div>
+                        {{#url}}
+                        <dl class="dim-comp-ev-facts">
+                            <dt>{{#str}} competency_evidenceaddress, theme_dimensions {{/str}}</dt>
+                            <dd><a href="{{url}}" title="{{url}}">{{urlshort}}</a></dd>
+                        </dl>
+                        {{/url}}
+                        {{#filecount}}
+                        <h4 class="dim-comp-ev-detail-sub">{{#str}} userevidencefiles, tool_lp {{/str}}</h4>
+                        <ul class="dim-comp-ev-files user-evidence-documents">
+                            {{#files}}
+                            <li>{{#pix}}{{icon}}{{/pix}} <a href="{{url}}" title="{{filename}}">{{filenameshort}}</a></li>
+                            {{/files}}
+                        </ul>
+                        {{/filecount}}
+                        <h4 class="dim-comp-ev-detail-sub">{{#str}} linkedcompetencies, tool_lp {{/str}}</h4>
+                        {{#competencycount}}
+                        <ul class="dim-comp-ev-detail-comps">
+                            {{#usercompetencies}}
+                            <li>
+                                <a href="{{usercompetency.url}}">{{{competency.shortname}}}</a>
+                                <span class="badge dim-comp-pill dim-comp-pill--status">{{usercompetency.statusname}}</span>
+                                {{#usercompetency.reviewer.fullname}}<span class="dim-comp-muted">{{usercompetency.reviewer.fullname}}</span>{{/usercompetency.reviewer.fullname}}
+                            </li>
+                            {{/usercompetencies}}
+                        </ul>
+                        {{/competencycount}}
+                        {{^competencycount}}
+                        <p class="dim-comp-muted">{{#str}} competency_evidencenolink, theme_dimensions {{/str}}</p>
+                        {{/competencycount}}
+                        {{#canmanage}}
+                        <div class="dim-comp-ev-detail-actions">
+                            <a class="btn btn-sm btn-outline-secondary" href="{{pluginbaseurl}}/user_evidence_edit.php?id={{id}}&amp;userid={{userid}}&amp;return=list">{{#str}} editthisuserevidence, tool_lp {{/str}}</a>
+                            {{#userhasplan}}
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-dim-ev-proxy="link-competency">{{#str}} linkcompetencies, tool_lp {{/str}}</button>
+                            {{/userhasplan}}
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-dim-ev-proxy="send-competencies-review">{{#str}} sendcompetenciestoreview, tool_lp {{/str}}</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-dim-ev-proxy="user-evidence-delete">{{#str}} deletethisuserevidence, tool_lp {{/str}}</button>
+                        </div>
+                        {{/canmanage}}
+                    </template>
+                </li>
+                {{/evidence}}
+            </ol>
+            {{^evidence}}
+            <p class="dim-comp-plans-empty" data-region="dim-comp-ev-noprior">{{#str}}nouserevidence, tool_lp{{/str}}</p>
+            {{/evidence}}
+            <p class="dim-comp-plans-empty" data-region="dim-comp-ev-nomatch" hidden>{{#str}} competency_evidencenomatch, theme_dimensions {{/str}}</p>
+            <div class="dim-comp-ev-loading" data-region="dim-comp-ev-loading" hidden>
+                <span class="dim-comp-ev-skeleton" aria-hidden="true"></span>
+                <span class="dim-comp-ev-skeleton" aria-hidden="true"></span>
+                <span class="visually-hidden">{{#str}} competency_evidenceloading, theme_dimensions {{/str}}</span>
+            </div>
+            <p class="dim-comp-plans-empty" data-region="dim-comp-ev-failed" hidden>{{#str}} competency_evidencefailed, theme_dimensions {{/str}}</p>
+            <div class="dim-comp-ev-morerow">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-action="dim-comp-ev-more" hidden>
+                    {{#str}} competency_evidencemore, theme_dimensions {{/str}}
+                </button>
+            </div>
+        </div>
+        <aside class="dim-comp-ev-detail" id="{{uniqid}}-dim-detail" data-region="dim-comp-ev-detail" tabindex="-1"
+               aria-label="{{#str}} competency_evidencedetail, theme_dimensions {{/str}}" hidden>
+            <div class="dim-comp-ev-detail-head">
+                <button type="button" class="dim-comp-iconbtn dim-comp-tip" data-action="dim-comp-ev-close"
+                        aria-label="{{#str}} competency_evidenceclose, theme_dimensions {{/str}}"
+                        data-dim-comp-tip="{{#str}} competency_evidenceclose, theme_dimensions {{/str}}">
+                    <i class="fa fa-xmark" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="dim-comp-ev-detail-body" data-region="dim-comp-ev-detailbody"></div>
+        </aside>
+    </div>
+
+    {{#js}}
+    require(['tool_lp/user_evidence_actions'], function(UserEvidenceActions) {
+        var uea = new UserEvidenceActions('list');
+        uea.enhanceMenubar('.user-evidence-actions');
+    });
+    require(['theme_dimensions/competencyevidence'], function(CompetencyEvidence) {
+        CompetencyEvidence.init();
+    });
+    {{/js}}
+</div>

@@ -112,6 +112,15 @@ $functions = [
         'loginrequired' => true,
         'capabilities' => '',
     ],
+    'theme_dimensions_get_user_evidence_feed' => [
+        'classname' => 'theme_dimensions\external\get_user_evidence_feed',
+        'description' => 'One page of what the platform recorded of a user\'s competencies, for the evidence page.',
+        'type' => 'read',
+        'ajax' => true,
+        'readonlysession' => true,
+        'loginrequired' => true,
+        'capabilities' => '',
+    ],
     'theme_dimensions_get_calendar_range' => [
         'classname' => 'theme_dimensions\external\get_calendar_range',
         'description' => 'One month grid of the calendar: the events once each, the event courses, the courses, '

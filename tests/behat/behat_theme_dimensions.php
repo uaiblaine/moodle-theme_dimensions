@@ -117,6 +117,9 @@ class behat_theme_dimensions extends behat_base {
             case 'learning plans':
                 $userid = $DB->get_field('user', 'id', ['username' => $identifier], MUST_EXIST);
                 return new moodle_url('/admin/tool/lp/plans.php', ['userid' => $userid]);
+            case 'evidence':
+                $userid = $DB->get_field('user', 'id', ['username' => $identifier], MUST_EXIST);
+                return new moodle_url('/admin/tool/lp/user_evidence_list.php', ['userid' => $userid]);
             case 'activity with focus mode off':
                 $cm = $this->get_cm_by_activity_name('page', $identifier);
                 return new moodle_url('/mod/page/view.php', [
@@ -680,5 +683,34 @@ class behat_theme_dimensions extends behat_base {
                 $this->getSession()
             );
         }
+    }
+
+    /**
+     * Record that a user completed a course, for a competency, as core's course completion rule does.
+     *
+     * Core has no Behat generator for competency_evidence; this writes the row through core's own API, with core's own
+     * description, so the evidence page reads what a real completion leaves.
+     *
+     * @Given /^the platform recorded "(?P<username>[^"]*)" completed "(?P<shortname>[^"]*)" for "(?P<idnumber>[^"]*)"$/
+     * @param string $username The learner.
+     * @param string $shortname The course.
+     * @param string $idnumber The competency.
+     * @return void
+     */
+    public function the_platform_recorded_a_course_completion(string $username, string $shortname, string $idnumber): void {
+        global $DB;
+
+        $userid = (int) $DB->get_field('user', 'id', ['username' => $username], MUST_EXIST);
+        $course = $DB->get_record('course', ['shortname' => $shortname], 'id, fullname', MUST_EXIST);
+        $competencyid = (int) $DB->get_field('competency', 'id', ['idnumber' => $idnumber], MUST_EXIST);
+        \core_competency\api::add_evidence(
+            $userid,
+            $competencyid,
+            \context_course::instance($course->id),
+            \core_competency\evidence::ACTION_LOG,
+            'evidence_coursecompleted',
+            'core_competency',
+            $course->fullname
+        );
     }
 }

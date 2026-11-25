@@ -5,6 +5,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The evidence page is one dated list** (2026100649). Core's *Evidence of prior learning* page
+  (`admin/tool/lp/user_evidence_list.php`) lists the user's evidence of prior learning and what the platform recorded
+  of their competencies (an activity or a course completed, a rating, a rule met) together, newest first and headed by
+  month. The rows Moodle writes when an evidence is linked are left out, and other plugins' records (the evidence
+  hub's validity log) are one quiet line per plugin and month. A bar chooses all, prior learning or the platform's
+  records, counts them, filters by competency, learning plan, course and period, and searches the titles; older
+  records come with *Show older records*. A title opens the record beside the list (a sheet on a phone), with core's
+  actions for an evidence of prior learning (edit, link competencies, send for review, delete), which stay core's.
+  New read web service `theme_dimensions_get_user_evidence_feed`, answered to whoever Moodle lets read the user's
+  competencies. Without JavaScript the page is core's list, dated. The theme stores nothing new.
 - **A learner's competency in a course in the data report's look** (2026100648). Moodle's page of one learner's
   competency in a course (`admin/tool/lp/user_competency_in_course.php`) leads with the learner and the competency,
   *Rate* as its one primary button where Moodle lets the viewer rate (Moodle's own rating dialogue), then a band of

@@ -28,11 +28,13 @@ namespace theme_dimensions\output;
 use block_dimensions\plan_cards;
 use core_competency\plan;
 use PHPUnit\Framework\Attributes\CoversClass;
+use theme_dimensions\local\competency\evidencelist;
 use theme_dimensions\local\competency\plancards;
 
 /**
- * The learning plans page's three layers: the theme's renderer decorates the first paint, the template renders from
- * core's export alone (what tool_lp/planactions gives it on the client), and both keep every hook of core's.
+ * The learning plans page's and the evidence page's layers: the theme's renderer decorates the first paint, the
+ * template renders from core's export alone (what tool_lp/planactions and tool_lp/user_evidence_actions give it on the
+ * client), and both keep every hook of core's.
  *
  * @package    theme_dimensions
  * @category   test
@@ -41,6 +43,7 @@ use theme_dimensions\local\competency\plancards;
  */
 #[CoversClass(tool_lp_renderer::class)]
 #[CoversClass(plancards::class)]
+#[CoversClass(evidencelist::class)]
 final class tool_lp_renderer_test extends \advanced_testcase {
     /**
      * Put the page under this theme, before any renderer exists.
@@ -244,5 +247,89 @@ final class tool_lp_renderer_test extends \advanced_testcase {
 
         $this->assertSame(1, preg_match('~<ul class="([\w-]+) dim-comp-plans-grid~', $template, $matches));
         $this->assertSame(plan_cards::HOST_CLASS, $matches[1]);
+    }
+
+    /**
+     * A learner with two pieces of prior-learning evidence a month apart, the newer one's name first in core's order
+     * of names; the older one links a competency.
+     *
+     * @return array [the learner, the newer evidence's id, the older one's id].
+     */
+    private function learner_with_evidence(): array {
+        global $DB;
+        $generator = self::getDataGenerator();
+        $lpg = $generator->get_plugin_generator('core_competency');
+        $learner = $generator->create_user();
+        $newer = $lpg->create_user_evidence(['userid' => $learner->id, 'name' => 'A certificate']);
+        $older = $lpg->create_user_evidence(['userid' => $learner->id, 'name' => 'B workshop']);
+        $framework = $lpg->create_framework();
+        $competency = $lpg->create_competency(['competencyframeworkid' => $framework->get('id')]);
+        $lpg->create_user_evidence_competency(['userevidenceid' => $older->get('id'), 'competencyid' => $competency->get('id')]);
+        // Core lists a linked competency through the user competency (user_evidence_competency::get_user_competencies...()).
+        $lpg->create_user_competency(['userid' => $learner->id, 'competencyid' => $competency->get('id')]);
+        $DB->set_field('competency_userevidence', 'timecreated', 1792065600, ['id' => $newer->get('id')]);
+        $DB->set_field('competency_userevidence', 'timecreated', 1789473600, ['id' => $older->get('id')]);
+
+        return [$learner, (int) $newer->get('id'), (int) $older->get('id')];
+    }
+
+    /**
+     * The evidence page's first paint is newest first, headed by month, and says whether the platform's records may be
+     * asked for; the owner may.
+     *
+     * @return void
+     */
+    public function test_the_evidence_first_paint_is_dated(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        [$learner, $newer, $older] = $this->learner_with_evidence();
+        $this->setUser($learner);
+        $this->setTimezone('UTC');
+        $this->under_theme();
+
+        $html = $PAGE->get_renderer('tool_lp')->render(new \tool_lp\output\user_evidence_list_page((int) $learner->id));
+        $xpath = self::parse($html);
+
+        $root = "//div[@data-region='user-evidence-list'][@data-dim-firstpaint='1'][@data-dim-platform='1']";
+        $this->assertSame(1, $xpath->query($root)->length);
+        $items = $xpath->query("//ol[@data-region='dim-comp-ev-list']/li");
+        $order = [];
+        foreach ($items as $item) {
+            $order[] = $item->getAttribute('data-id') ?: trim($item->textContent);
+        }
+        $this->assertSame(['October 2026', (string) $newer, 'September 2026', (string) $older], $order);
+    }
+
+    /**
+     * Rendered from core's export alone, as the client re-renders it, the evidence page has no first paint and every
+     * hook of core's actions, with one evidence node above each action.
+     *
+     * @return void
+     */
+    public function test_the_evidence_page_from_cores_export_alone_keeps_every_hook(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        [$learner, $newer, $older] = $this->learner_with_evidence();
+        $this->setUser($learner);
+        $this->under_theme();
+        $output = $PAGE->get_renderer('core');
+        $page = new \tool_lp\output\user_evidence_list_page((int) $learner->id);
+
+        $xpath = self::parse($output->render_from_template('tool_lp/user_evidence_list_page', $page->export_for_template($output)));
+
+        $this->assertSame(1, $xpath->query("//div[@data-region='user-evidence-list'][contains(@class, 'dim-comp-ev')]")->length);
+        $this->assertSame(0, $xpath->query("//*[@data-dim-firstpaint or @data-dim-platform]")->length);
+        $this->assertSame(0, $xpath->query("//*[@data-region='dim-comp-ev-month']")->length, 'Months are the module\'s then.');
+        foreach ([$newer, $older] as $id) {
+            $node = "//li[@data-region='user-evidence-node'][@data-id='{$id}'][@data-userid='{$learner->id}'][@data-dim-time!='']";
+            $this->assertSame(1, $xpath->query($node)->length);
+            foreach (['user-evidence-delete', 'send-competencies-review'] as $action) {
+                $above = "//ul[@class='user-evidence-actions']//a[@data-action='{$action}']" .
+                    "[ancestor::li[@data-id='{$id}']]/ancestor::*[@data-region='user-evidence-node']";
+                $message = "One evidence node above {$action}, as _findEvidenceData needs.";
+                $this->assertSame(1, $xpath->query($above)->length, $message);
+            }
+        }
+        $this->assertSame(1, $xpath->query("//li[@data-id='{$older}'][@data-dim-comps!='']")->length);
     }
 }

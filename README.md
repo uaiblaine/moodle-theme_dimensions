@@ -555,6 +555,29 @@ page, and an address carrying `noredirect=1` (the overview's link to Moodle's pl
 page. The setting *Open a learner's own plan in the Dimensions plan overview*
 (`theme_dimensions/planownerredirect`, on the *Competencies* tab; on by default) switches it off.
 
+### The evidence page
+
+Core's *Evidence of prior learning* page (`/admin/tool/lp/user_evidence_list.php`) is drawn as one dated list,
+newest first and headed by month: the user's evidence of prior learning (core's own list, each with the competencies
+it feeds and their review status) and, beside it, what the platform recorded of the user's competencies (an activity
+or a course completed, a rating, a competency rule met, a rating restored with a course). The rows Moodle writes when
+an evidence of prior learning is linked to a competency are left out, since the evidence itself is listed. Records
+written by other plugins, such as the evidence hub's validity log, are never listed one by one: each plugin's records
+of a month are one quiet line with their count. A bar above the list chooses what is shown (all, prior learning, from
+the platform), counts it, filters it by a competency, a learning plan or a course (*Filters*), by a period (the
+calendar button: this month, the last three or twelve months, or two days), and searches the titles shown; each
+criterion in force is a removable chip. Older records are fetched with *Show older records*. A press on a title opens
+the record beside the list (a sheet from the bottom on a phone): for an evidence of prior learning its description,
+address, files and competencies, and core's actions (edit, link competencies, send for review, delete), which are
+core's own; for a record of the platform what it says, its rating, who recorded it, its note and its address, as
+Moodle's user competency page shows them. None of these choices is stored. Without JavaScript the page is core's
+list of prior learning, dated, in the theme's look.
+
+The platform's records are read by the web service `theme_dimensions_get_user_evidence_feed` (read-only) for whoever
+Moodle lets read the user's competencies (`moodle/competency:usercompetencyview` in the user's context, or reading
+their learning plans), the rule of Moodle's own list of a competency's evidence; the theme keeps nothing. Validity
+("Valid until") is not shown: the evidence hub keeps it per competency rather than per evidence of prior learning.
+
 ### The course competencies page
 
 Core's page of a course's competencies (*Competencies* in a course, `/admin/tool/lp/coursecompetencies.php`) is drawn

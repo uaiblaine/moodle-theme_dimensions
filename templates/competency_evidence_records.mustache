@@ -1,0 +1,106 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/competency_evidence_records
+
+    One page of the platform's records on the evidence page, rendered on the client by
+    theme_dimensions/competencyevidence from theme_dimensions_get_user_evidence_feed's answer: one list item per
+    record. The module moves the items into the page's dated list (the region core's tool_lp/user_evidence_actions
+    replaces) and drops this list; it draws the folded lines itself, because a component's month can span two pages
+    and its line is then one line with the two counts added.
+
+    Every value is plain text from the service, escaped once here by the double stash. A record's title links
+    to the user competency's page (core's own, which asks core's rule again); a plain press opens the detail
+    beside the list instead, copied from the item's template element. The kind flags (isactivity, iscourse,
+    isrule, israting, isrestore, isunlinked, isrecord) and hasdetailfacts are the module's, from the record's
+    kind and fields.
+
+    Context variables required for this template:
+    * records - id, time, month, monthlabel, date, title, competency, competencyurl, gradename, actor, note, url
+      and one kind flag each
+
+    Example context (json):
+    {
+        "records": [
+            {
+                "id": 51,
+                "time": 1792065600,
+                "month": "2026-10",
+                "monthlabel": "October 2026",
+                "date": "15 October",
+                "title": "The competency rating was manually set.",
+                "competencyid": 12,
+                "competency": "Data protection",
+                "competencyurl": "https://example.com/admin/tool/lp/user_competency.php?id=40",
+                "gradename": "Competent",
+                "actor": "Renato Dias",
+                "note": "Protects the learners' data.",
+                "url": "https://example.com/mod/page/view.php?id=9",
+                "israting": true
+            }
+        ]
+    }
+}}
+<ul class="dim-comp-ev-incoming">
+    {{#records}}
+    <li class="dim-comp-ev-item dim-comp-ev-item--platform" data-region="dim-comp-ev-record" data-dim-kind="platform"
+        data-dim-key="r{{id}}" data-dim-time="{{time}}" data-dim-id="{{id}}" data-dim-month="{{month}}"
+        data-dim-monthlabel="{{monthlabel}}" data-dim-comps="{{competencyid}}">
+        <span class="dim-comp-ev-when">{{date}}</span>
+        <span class="dim-comp-ev-rail" aria-hidden="true"><span class="dim-comp-ev-dot{{#israting}} dim-comp-ev-dot--mile{{/israting}}"></span></span>
+        <div class="dim-comp-ev-card">
+            <span class="dim-comp-ev-kind" aria-hidden="true">
+                {{#isactivity}}<i class="fa fa-list-check"></i>{{/isactivity}}
+                {{#iscourse}}<i class="fa fa-graduation-cap"></i>{{/iscourse}}
+                {{#isrule}}<i class="fa fa-scale-balanced"></i>{{/isrule}}
+                {{#israting}}<i class="fa fa-star"></i>{{/israting}}
+                {{#isrestore}}<i class="fa fa-rotate-left"></i>{{/isrestore}}
+                {{#isunlinked}}<i class="fa fa-link-slash"></i>{{/isunlinked}}
+                {{#isrecord}}<i class="fa fa-circle-info"></i>{{/isrecord}}
+            </span>
+            <div class="dim-comp-ev-text">
+                <div class="dim-comp-ev-top">
+                    <span class="dim-comp-ev-src">{{> theme_dimensions/competency_evidence_kind }}{{#actor}} · {{actor}}{{/actor}}</span>
+                    {{#gradename}}<span class="badge dim-comp-pill dim-comp-pill--rated">{{gradename}}</span>{{/gradename}}
+                </div>
+                <h4 class="dim-comp-ev-title"><a href="{{competencyurl}}" data-action="dim-comp-ev-open">{{title}}</a></h4>
+                {{#competency}}
+                <p class="dim-comp-ev-feeds">{{#str}} competency_evidencefeeds, theme_dimensions, {{competency}} {{/str}}</p>
+                {{/competency}}
+            </div>
+        </div>
+        <template data-region="dim-comp-ev-detailsrc">
+            <p class="dim-comp-ev-detail-meta">{{> theme_dimensions/competency_evidence_kind }} · {{date}}</p>
+            <h3 class="dim-comp-ev-detail-title">{{title}}</h3>
+            {{#gradename}}<p><span class="badge dim-comp-pill dim-comp-pill--rated">{{gradename}}</span></p>{{/gradename}}
+            {{#note}}<blockquote class="dim-comp-ev-detail-note">{{note}}</blockquote>{{/note}}
+            <dl class="dim-comp-ev-facts">
+                {{#actor}}
+                <dt>{{#str}} competency_evidenceby, theme_dimensions {{/str}}</dt>
+                <dd>{{actor}}</dd>
+                {{/actor}}
+                {{#url}}
+                <dt>{{#str}} competency_evidenceaddress, theme_dimensions {{/str}}</dt>
+                <dd><a href="{{url}}">{{url}}</a></dd>
+                {{/url}}
+                <dt>{{#str}} competency_evidencecompetency, theme_dimensions {{/str}}</dt>
+                <dd><a href="{{competencyurl}}">{{competency}}</a></dd>
+            </dl>
+        </template>
+    </li>
+    {{/records}}
+</ul>

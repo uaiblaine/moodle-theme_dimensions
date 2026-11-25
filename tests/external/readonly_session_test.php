@@ -39,10 +39,9 @@ require_once(__DIR__ . '/../local/category/fixture.php');
  * (lib/classes/session/manager.php, the array_session_diff() of $SESSION taken at session start
  * and at close): no $SESSION key added, removed or changed. That is what is asserted here around
  * the showcase's three logged-in reads, the mobile drawer's summary, the calendar range, the
- * calendar trails, the reader's own plan cards and a course competencies page's extras, the way the
- * clients make them (the range builds
- * core's calendar sets without the session-only key bitmask core writes into $SESSION, see
- * \theme_dimensions\local\calendar\scope).
+ * calendar trails, the reader's own plan cards, a course competencies page's extras and the evidence page's records,
+ * the way the clients make them (the range builds core's calendar sets without the session-only key bitmask core
+ * writes into $SESSION, see \theme_dimensions\local\calendar\scope).
  * $USER is not compared, as core does not compare it. The page's own preference writes
  * (category_listing::view(), category_hero::fold(), remembered::record()) are page code and the
  * remember_category_state write service; no read reaches them.
@@ -63,6 +62,7 @@ require_once(__DIR__ . '/../local/category/fixture.php');
 #[CoversClass(get_calendar_trails::class)]
 #[CoversClass(get_plan_cards::class)]
 #[CoversClass(get_course_competency_extras::class)]
+#[CoversClass(get_user_evidence_feed::class)]
 final class readonly_session_test extends \advanced_testcase {
     use \theme_dimensions\local\category\fixture;
 
@@ -101,6 +101,7 @@ final class readonly_session_test extends \advanced_testcase {
             'theme_dimensions_get_drawer_summary' => [],
             'theme_dimensions_get_plan_cards' => ['userid' => $userid],
             'theme_dimensions_get_course_competency_extras' => ['courseid' => $competencycourseid],
+            'theme_dimensions_get_user_evidence_feed' => ['userid' => $userid],
             'theme_dimensions_get_calendar_range' => ['from' => '2026-11-01', 'to' => '2026-11-30'],
             // Three months, the most one answer covers: the read-only session holds for the longest window too.
             'theme_dimensions_get_calendar_trails' => ['month' => '2026-11', 'months' => 3],
@@ -263,6 +264,9 @@ final class readonly_session_test extends \advanced_testcase {
             } else if ($name === 'theme_dimensions_get_course_competency_extras') {
                 // Past core's login to the course and its capability check: the learner is answered as one.
                 $this->assertTrue($result['data']['learner'], $name);
+            } else if ($name === 'theme_dimensions_get_user_evidence_feed') {
+                // Past the refusals to the counted first page: the reader's own, empty list.
+                $this->assertSame(0, $result['data']['total'], $name);
             } else if ($name === 'theme_dimensions_get_course_dialogue') {
                 // Admitted and built: the labels come only past the refusals.
                 $this->assertNotSame('', $result['data']['learnlabel'], $name);

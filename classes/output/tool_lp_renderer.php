@@ -15,8 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - The tool_lp renderer: the learning plans page's cards, the course competencies page's extras and the
- * band of a learner's competency in a course
+ * Theme Dimensions - The tool_lp renderer: the learning plans page's cards, the course competencies page's extras, the
+ * band of a learner's competency in a course and the evidence page's dated list
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -26,24 +26,29 @@
 namespace theme_dimensions\output;
 
 use theme_dimensions\local\competency\coursecompetencies;
+use theme_dimensions\local\competency\evidencelist;
 use theme_dimensions\local\competency\plancards;
 use tool_lp\output\course_competencies_page;
 use tool_lp\output\plans_page;
 use tool_lp\output\user_competency_summary_in_course;
+use tool_lp\output\user_evidence_list_page;
 
 /**
  * Adds the theme's plan cards to the first paint of the learning plans page, the extras to the first paint of the course
- * competencies page and the band's two counts to the first paint of a learner's competency in a course, and passes every
- * other call through.
+ * competencies page, the band's two counts to the first paint of a learner's competency in a course and the dates to
+ * the first paint of the evidence page, and passes every other call through.
  *
  * The class name is derived by the renderer factory for `$PAGE->get_renderer('tool_lp')` (theme_overridden_renderer_factory:
- * `theme_<name>\output\<component>_renderer`); neither Boost nor Boost Union has one. Three methods are overridden:
+ * `theme_<name>\output\<component>_renderer`); neither Boost nor Boost Union has one. Four methods are overridden:
  * render_plans_page() renders core's own export, decorated by {@see plancards::decorate()}, through the theme's copy of
  * tool_lp/plans_page. The template renders from core's context alone as well, which is what core's tool_lp/planactions
  * gives it after each row action; amd/src/plancards.js then puts the cards back. render_course_competencies_page()
  * does the same for the course competencies page with {@see coursecompetencies::decorate()}, the copy of
  * tool_lp/course_competencies_page and amd/src/coursecompetencies.js. render_user_competency_summary_in_course()
  * adds dimband to core's export; the template's own JavaScript counts the rows again after core's re-render.
+ * render_user_evidence_list_page() dates core's evidence with {@see evidencelist::decorate()} through
+ * tool_lp/user_evidence_list_page, which also renders from core's context alone (core's tool_lp/user_evidence_actions
+ * gives it after each action); amd/src/competencyevidence.js then adds the platform's records.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -105,5 +110,19 @@ class tool_lp_renderer extends \tool_lp\output\renderer {
         ];
 
         return parent::render_from_template('tool_lp/user_competency_summary_in_course', $data);
+    }
+
+    /**
+     * The evidence page: core's prior-learning evidence, newest first and headed by month, with what the theme's
+     * module needs to add the platform's records; those are fetched by the module, so the first paint reads nothing
+     * more than core's page does.
+     *
+     * @param user_evidence_list_page $page The page.
+     * @return string The page's HTML.
+     */
+    public function render_user_evidence_list_page(user_evidence_list_page $page) {
+        $data = evidencelist::decorate($page->export_for_template($this));
+
+        return parent::render_from_template('tool_lp/user_evidence_list_page', $data);
     }
 }
