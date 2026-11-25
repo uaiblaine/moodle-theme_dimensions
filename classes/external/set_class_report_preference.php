@@ -67,7 +67,7 @@ final class set_class_report_preference extends external_api {
             ),
             'columns' => new external_multiple_structure(
                 new external_value(PARAM_RAW, 'Column key, comp:<competency id>'),
-                'The chosen competency columns, in order',
+                'The chosen competency columns, kept in the course\'s order',
                 VALUE_DEFAULT,
                 []
             ),

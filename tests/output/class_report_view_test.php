@@ -152,22 +152,33 @@ final class class_report_view_test extends \advanced_testcase {
     }
 
     /**
-     * The props name the group the page resolved; the control is the same page with no group chosen.
+     * The props name the group core's page shows as the active one, and the client posts it: a viewer of every group
+     * opens on "All participants" (0) and then on the chosen group; a viewer without accessallgroups on visible groups
+     * opens on core's default, the first of their own groups else the first group of the course.
      *
      * @return void
      */
     public function test_the_props_name_the_pages_group(): void {
         $this->course_with_learner();
-        $group = $this->getDataGenerator()->create_group(['courseid' => $this->course->id]);
-        $this->getDataGenerator()->create_group_member(['groupid' => $group->id, 'userid' => $this->learner->id]);
-        $this->setUser($this->teacher);
+        $generator = $this->getDataGenerator();
+        $group = $generator->create_group(['courseid' => $this->course->id]);
+        $generator->create_group_member(['groupid' => $group->id, 'userid' => $this->learner->id]);
+        $editor = $generator->create_and_enrol($this->course, 'editingteacher');
 
+        // Core's own default for a viewer of every group is 0; the props agree with it and not with a group.
+        $this->setUser($editor);
+        $this->assertSame(0, groups_get_course_group($this->course));
         $this->assertSame(0, $this->props($this->render_page(null))['groupid']);
 
         // As index.php does: the selector's choice is read into the session before the page renders.
         $_GET['group'] = $group->id;
         groups_get_course_group($this->course, true);
         unset($_GET['group']);
+        $this->assertSame((int) $group->id, $this->props($this->render_page(null))['groupid']);
+
+        // The control: core opens the page of a viewer without accessallgroups on the one group, so the props do.
+        $this->setUser($this->teacher);
+        $this->assertSame((int) $group->id, groups_get_course_group($this->course));
         $this->assertSame((int) $group->id, $this->props($this->render_page(null))['groupid']);
     }
 

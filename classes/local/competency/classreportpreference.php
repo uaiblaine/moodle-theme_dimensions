@@ -28,8 +28,8 @@ namespace theme_dimensions\local\competency;
  * A reader's columns and widths on the class report of one course, in one user preference per course.
  *
  * The columns of the class report are the course's competencies, so the choice is the course's: the preference
- * `theme_dimensions_classreport_<courseid>` holds, as compact JSON, the chosen competency ids in order (`c`, at most
- * {@see classreport::MAX_COLUMNS}, null for no choice) and the widths by column key (`w`, at most {@see MAX_WIDTHS},
+ * `theme_dimensions_classreport_<courseid>` holds, as compact JSON, the chosen competency ids in the course's order (`c`,
+ * at most {@see classreport::MAX_COLUMNS}, null for no choice) and the widths by column key (`w`, at most {@see MAX_WIDTHS},
  * each clamped to {@see MIN_WIDTH}..{@see MAX_WIDTH} pixels). It holds ids, never column definitions: the report reads
  * it in initialise() ({@see \theme_dimensions\reportbuilder\local\systemreports\class_ratings}) and shows only the
  * catalogue's competencies it names ({@see classreport::chosen()}).
@@ -120,7 +120,8 @@ final class classreportpreference {
      *
      * @param int $courseid The course.
      * @param int|null $userid The reader; the current user when null.
-     * @return array 'columns' => competency ids in order, or null for the default; 'widths' => key => pixels.
+     * @return array 'columns' => competency ids in the course's order, or null for the default; 'widths' => key =>
+     *     pixels.
      */
     public static function read(int $courseid, ?int $userid = null): array {
         global $USER;
@@ -143,7 +144,8 @@ final class classreportpreference {
      * widths are dropped from the last before anything else, and the ids alone always fit.
      *
      * @param int $courseid The course.
-     * @param array|null $keys The chosen column keys in order, or null for the default columns.
+     * @param array|null $keys The chosen column keys, in any order (stored in the course's), or null for the default
+     *     columns.
      * @param array $widths Column key => pixels; empty for the default widths.
      * @param int|null $userid The reader; the current user when null.
      * @return array What {@see read()} now returns.
@@ -304,7 +306,8 @@ final class classreportpreference {
     }
 
     /**
-     * The ids that are competencies of the course now, in the order given; null when none is.
+     * The ids that are competencies of the course now, in the course's own order whatever order they were given in;
+     * null when none is.
      *
      * @param int $courseid The course.
      * @param array $ids Competency ids.
@@ -313,13 +316,20 @@ final class classreportpreference {
     private static function of_course(int $courseid, array $ids): ?array {
         global $DB;
 
-        $known = array_flip(array_map('intval', $DB->get_fieldset_select(
+        $wanted = array_flip(array_map('intval', $ids));
+        $kept = [];
+        // The order of classreport::catalogue(), so the stored list and the report's columns agree.
+        $coursecomps = $DB->get_fieldset_select(
             'competency_coursecomp',
             'competencyid',
-            'courseid = :courseid',
+            'courseid = :courseid ORDER BY sortorder, id',
             ['courseid' => $courseid]
-        )));
-        $kept = array_values(array_filter($ids, static fn(int $id): bool => isset($known[$id])));
+        );
+        foreach ($coursecomps as $id) {
+            if (isset($wanted[(int) $id])) {
+                $kept[] = (int) $id;
+            }
+        }
 
         return $kept === [] ? null : $kept;
     }

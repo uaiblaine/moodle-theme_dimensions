@@ -75,7 +75,8 @@ final class classreportpreference_test extends \advanced_testcase {
         $name = classreportpreference::name((int) $course->id);
         set_user_preference($name, json_encode(['c' => [$ids[1], $elsewhere[0], $ids[0]], 'w' => []]), $user);
 
-        $this->assertSame([$ids[1], $ids[0]], classreportpreference::read((int) $course->id, (int) $user->id)['columns']);
+        // The course's order, whatever order was stored.
+        $this->assertSame([$ids[0], $ids[1]], classreportpreference::read((int) $course->id, (int) $user->id)['columns']);
 
         $DB->delete_records('competency_coursecomp', ['courseid' => $course->id, 'competencyid' => $ids[1]]);
         $this->assertSame([$ids[0]], classreportpreference::read((int) $course->id, (int) $user->id)['columns']);

@@ -257,7 +257,7 @@ final class class_report_services_test extends \advanced_testcase {
     }
 
     /**
-     * The competency keys a rows answer shows, in order.
+     * The competency keys a rows answer shows, in the report's column order.
      *
      * @param array $data The rows answer.
      * @return string[]
@@ -869,8 +869,8 @@ final class class_report_services_test extends \advanced_testcase {
 
     /**
      * The catalogue lists every competency of the course; the first thirty are the default and the shown columns,
-     * with a filter each; a choice shows its competencies alone, in its order, with their filters alone; the page's
-     * report reads the same choice.
+     * with a filter each; a choice shows its competencies alone, in the course's order whatever order was posted, with
+     * their filters alone; the page's report reads the same choice.
      *
      * @return void
      */
@@ -899,21 +899,22 @@ final class class_report_services_test extends \advanced_testcase {
         $this->assertSame('learner', $data['columns'][0]['key']);
         $this->assertTrue($data['columns'][0]['fixed']);
 
+        // Posted last-first: the report shows the course's order whatever order was posted.
         $stored = $this->answer(self::SET, ['courseid' => $this->course->id, 'columns' => [$lastkey, $firstkey]]);
-        $this->assertSame([$lastkey, $firstkey], $stored['columns']);
+        $this->assertSame([$firstkey, $lastkey], $stored['columns']);
         $data = $this->answer(self::ROWS, ['courseid' => $this->course->id]);
-        $this->assertSame([$lastkey, $firstkey], self::active_competencies($data));
+        $this->assertSame([$firstkey, $lastkey], self::active_competencies($data));
         $this->assertSame(
-            ['coursecompetency:comp' . $last->get('id'), 'coursecompetency:comp' . $this->first->get('id')],
+            ['coursecompetency:comp' . $this->first->get('id'), 'coursecompetency:comp' . $last->get('id')],
             self::competency_filters($data)
         );
         $cellkeys = array_column($data['rows'][0]['cells'], 'key');
-        $this->assertSame([$lastkey, $firstkey], array_values(preg_grep('~^comp:~', $cellkeys)));
-        $this->assertSame([$lastkey, $firstkey], $data['preference']['columns']);
+        $this->assertSame([$firstkey, $lastkey], array_values(preg_grep('~^comp:~', $cellkeys)));
+        $this->assertSame([$firstkey, $lastkey], $data['preference']['columns']);
 
         manager::reset_caches();
         $page = class_ratings::for_course(context_course::instance($this->course->id));
-        $this->assertSame([$lastkey, $firstkey], array_values(preg_grep('~^comp:~', array_keys($page->active_keys()))));
+        $this->assertSame([$firstkey, $lastkey], array_values(preg_grep('~^comp:~', array_keys($page->active_keys()))));
     }
 
     /**
@@ -1124,6 +1125,9 @@ final class class_report_services_test extends \advanced_testcase {
      */
     public function test_course_deletion_and_uninstall_remove_the_choices(): void {
         global $CFG, $DB;
+        // The course_deleted observer is external: core dispatches it when the outer transaction commits, which a
+        // test's own transaction never does.
+        $this->preventResetByRollback();
         $this->class_of_three();
         $other = $this->getDataGenerator()->create_course();
         foreach ([$this->teacher, $this->editor] as $reader) {

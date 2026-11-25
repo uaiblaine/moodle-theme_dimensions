@@ -2333,7 +2333,8 @@ or in `scss/competency.scss`, except the learning plans page's cards (below).
   (a posted group goes through the same rule; for a reader of every group, a group outside the course's default
   grouping lists nobody) and `search_condition()`, so a parameter can only narrow on every door. **The columns are
   one user preference per course** (`classreportpreference`, `theme_dimensions_classreport_<courseid>`): ids
-  re-validated against the course on every read, the first 30 by default, filters for the shown columns only; the
+  re-validated against the course on every read and always in the course's order (the Columns menu is check boxes, so
+  the posted order is not kept), the first 30 by default, filters for the shown columns only; the
   course_deleted observer (`reportpersistents::course_deleted()`) removes every reader's row of that course, the
   uninstall all of them, core the account's. **Core's preference services are refused**: declared by pattern in
   `lib.php` with `classreportpreference::preference_editable()` answering no; the theme's service is the one writer.

@@ -425,7 +425,7 @@ class provider implements
             );
         }
 
-        /* The class report's columns, one preference per course, exported as stored (the competency ids in order and
+        /* The class report's columns, one preference per course, exported as stored (the competency ids in the course's order and
            the widths, JSON) under the preference's own name, which carries the course id. */
         foreach (classreportpreference::stored_for_user($userid) as $courseid => $value) {
             writer::export_user_preference(

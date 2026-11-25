@@ -293,7 +293,7 @@ there.
   that learner's competency in the course.
 - **At most 30 competency columns** are built per page: by default the first in the course's order; *Table view* says so
   when the course has more and *Columns* when the limit is reached, and a learner's breakdown lists every one. A reader may choose which competencies are the
-  columns, and in what order, and give the columns their widths: the choice is kept per reader and per course (below),
+  columns (always shown in the course's order), and give the columns their widths: the choice is kept per reader and per course (below),
   and the page, its sorts and pages, its filters (there is one per shown competency) and the download follow it.
 - **Web services** for the report's client: `theme_dimensions_class_report_rows` (a page of learners with the column
   catalogue, the cells as the report formats them, the filters and their counts), `theme_dimensions_class_report_summary`
@@ -812,7 +812,7 @@ the class report's report builder record of that course with the values stored o
 
 The competencies a reader chooses as the columns of a course's class report, and the widths they give the columns, are
 kept in one user preference per reader and course, `theme_dimensions_classreport_<course id>` (the competency ids in
-order, at most 30, and the widths in pixels, as a short JSON value). It is kept until the reader goes back to the
+the course's order, at most 30, and the widths in pixels, as a short JSON value). It is kept until the reader goes back to the
 default columns (which removes it), the course is deleted (which removes every reader's choice on it), the account is
 deleted or the theme is uninstalled; a data request exports it as stored. Only the theme's web service writes it,
 after the class report's own access rule; Moodle's preference services refuse it.

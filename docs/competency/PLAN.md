@@ -261,7 +261,7 @@ columns are. Phase 6 is split in two pull requests:
 - **Part two, server half (done, 2026100651): the services and the column preference.** The Columns choice is
   `local\competency\classreportpreference`, one user preference per course (`theme_dimensions_classreport_<id>`,
   JSON `{"c": [competency ids], "w": {key: px}}`), read in `class_ratings::initialise()` and re-validated against
-  the course's competencies on every read; `classreport::chosen()` keeps the catalogue's ids in the order chosen, the
+  the course's competencies on every read; `classreport::chosen()` keeps the catalogue's ids named, in the course's order whatever order they were posted in, the
   first 30 when none is left, and filters exist for the shown columns only. Three services over
   `local\competency\classreportengine` (copied from local_evidencehub's `reportengine`): `class_report_rows`
   (courseid, moduleid, groupid with -1 for the page's choice, search, page, perpage 30/50/100, sort, dir,

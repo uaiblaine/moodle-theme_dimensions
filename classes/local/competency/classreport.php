@@ -251,20 +251,16 @@ final class classreport {
      * The competencies the class report shows as columns: the viewer's choice, else the first {@see MAX_COLUMNS}.
      *
      * The choice is a list of competency ids ({@see classreportpreference}); only those of the catalogue are kept, in
-     * the order chosen, at most {@see MAX_COLUMNS}, so a forged id, one of another course or one the course no
-     * longer has matches nothing. A choice of which nothing is left reads as no choice.
+     * the course's order whatever order they were chosen in, at most {@see MAX_COLUMNS}, so a forged id, one of another
+     * course or one the course no longer has matches nothing. A choice of which nothing is left reads as no choice.
      *
      * @param array $catalogue Competency id => record, as {@see catalogue()} returns them.
      * @param array|null $chosen The chosen competency ids, or null for no choice.
      * @return array Competency id => record, in display order.
      */
     public static function chosen(array $catalogue, ?array $chosen): array {
-        $shown = [];
-        foreach ($chosen ?? [] as $id) {
-            if (isset($catalogue[$id]) && !isset($shown[$id])) {
-                $shown[$id] = $catalogue[$id];
-            }
-        }
+        $wanted = array_flip(array_map('intval', $chosen ?? []));
+        $shown = array_intersect_key($catalogue, $wanted);
         if ($shown === []) {
             return array_slice($catalogue, 0, self::MAX_COLUMNS, true);
         }
