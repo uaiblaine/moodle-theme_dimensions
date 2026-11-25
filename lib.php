@@ -118,6 +118,10 @@ function theme_dimensions_get_main_scss_content($theme) {
     // $fa-var-* from the Boost SCSS compiled above it.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/competency.scss');
 
+    // And the class competency report's React view (js/esm/src/classreport), every rule nested under the root class
+    // only its shell writes; it reads the family tokens post.scss declares.
+    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/competencyreport.scss');
+
     return $scss;
 }
 

@@ -99,7 +99,7 @@ Feature: The competency pages and dialogues wear the theme and keep core's actio
     And "Great" "report_competency > breakdown rating" should exist in the "Desserts" "report_competency > breakdown"
     And ".dim-comp-report" "css_element" should exist
 
-  Scenario: A teacher rates a learner from the class report and the cell shows the new rating
+  Scenario: A teacher hides a competency in the class report's view and rates a learner from a cell
     Given the following "users" exist:
       | username | firstname | lastname |
       | student2 | Student   | second   |
@@ -107,13 +107,20 @@ Feature: The competency pages and dialogues wear the theme and keep core's actio
       | user     | course | role    |
       | student2 | C1     | student |
     When I am on the "C1" "report_competency > breakdown" page logged in as "teacher1"
-    # No learner named: the class report, one row per learner, one column per competency.
-    Then ".dim-comp-classreport" "css_element" should exist
-    And I should see "Student first" in the ".dim-comp-classreport" "css_element"
-    And I should see "Student second" in the ".dim-comp-classreport" "css_element"
-    And I should see "Salads" in the ".dim-comp-classreport" "css_element"
+    # No learner named: the class report's React view, one row per learner, one column per competency.
+    Then I should see "Student first" in the "[data-region='dim-comp-rview-rows']" "css_element"
+    And I should see "Student second" in the "[data-region='dim-comp-rview-rows']" "css_element"
+    And I should see "2 learners" in the "[data-region='dim-comp-rview-total']" "css_element"
+    And I should see "Salads" in the "[data-region='dim-comp-rview-rows'] thead" "css_element"
+    And I should see "Desserts" in the "[data-region='dim-comp-rview-rows'] thead" "css_element"
     And I should see "Good" in the "Student first" "table_row"
-    # The first "Not rated" of the second learner's row is Salads, the course's first competency.
+    # Columns writes the reader's choice, then the view reads the rows again without the hidden competency.
+    When I press "Columns"
+    And I click on "Desserts" "button" in the "[data-region='dim-comp-rview-columns']" "css_element"
+    Then I should not see "Desserts" in the "[data-region='dim-comp-rview-rows']" "css_element"
+    And I should see "Salads" in the "[data-region='dim-comp-rview-rows'] thead" "css_element"
+    And I press "Columns"
+    # Core's grading dialogue, opened from the cell: the second learner's one "Not rated" is now Salads.
     When I click on "Not rated" "link" in the "Student second" "table_row"
     Then "User competency summary" "dialogue" should be visible
     When I click on "Rate" "button" in the "User competency summary" "dialogue"
@@ -125,8 +132,13 @@ Feature: The competency pages and dialogues wear the theme and keep core's actio
     And I click on "Rate" "button" in the ".competency-grader" "css_element"
     Then "Great" "tool_lp > competency page rating" should exist
     And I click on "Close" "button" in the "User competency summary" "dialogue"
-    # Report Builder read the rows again: the cell names the new rating.
+    # The dialogue's close told the view, which read its rows again: the cell names the new rating.
     And I should see "Great" in the "Student second" "table_row"
+    # Core's table is one link away and keeps part one's page: the same learners, the same choice of columns.
+    When I click on "Table view" "link" in the "[data-region='dim-comp-classreport']" "css_element"
+    Then I should see "Student second" in the "[data-region='core_reportbuilder/report']" "css_element"
+    And I should see "Great" in the "Student second" "table_row"
+    And I should not see "Desserts" in the "[data-region='core_reportbuilder/report']" "css_element"
 
   Scenario: A manager completes a learner's plan from its card and the card follows the plan
     Given the following "users" exist:

@@ -1,0 +1,95 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/competency_classreport_view
+
+    The class report of report/competency/index.php as a data report (phase 6 part two): what the page must say
+    above it, the way to core's table, one React mount and core's rendering of the report for a browser without
+    JavaScript.
+
+    The mount names js/esm/src/classreport/ClassReportView.tsx (class_report_view::COMPONENT), which core's
+    react_autoinit loads. Its inner
+    content is what the first paint shows until React commits, which replaces it: a skeleton in the shape of the
+    band and the grid, and, behind it, one sentence that is true only if the component never mounts; the
+    stylesheet swaps the two about 10 s after the first paint. Both show only under body.jsenabled.
+
+    The props arrive already JSON-encoded by theme_dimensions\output\class_report_view, in one value, through a
+    triple stash: nothing between here and React is an HTML context. They carry configuration and strings, never
+    a record. The noscript is core's own HTML, rendered by core.
+
+    The root keeps part one's region (dim-comp-classreport): theme_dimensions/classratings, armed once per page from
+    the js block, opens core's grading dialogue from a rating cell inside it and tells the view when it closes.
+
+    Context variables required for this template:
+    * courseid - The course.
+    * nogroup - Whether the group rule leaves the viewer no row.
+    * nocompetency - Whether the course (or the chosen activity) has no competency.
+    * nocompetencynotice - What to say then, plain.
+    * props - The component's props, JSON.
+    * tableurl - index.php with view=table.
+    * noscript - Core's rendering of the report without its filter form, HTML.
+
+    Example context (json):
+    {
+        "courseid": 2,
+        "nogroup": false,
+        "nocompetency": true,
+        "nocompetencynotice": "No competency is linked to this course yet.",
+        "props": "{\"courseid\": 2, \"moduleid\": 0, \"groupid\": 0}",
+        "tableurl": "https://example.com/report/competency/index.php?id=2&view=table",
+        "noscript": "<p>Core's report</p>"
+    }
+}}
+<div class="dim-comp-classreport dim-comp-rview" data-region="dim-comp-classreport" data-courseid="{{courseid}}">
+    {{#nogroup}}
+    <div class="alert alert-info" role="status">{{#str}}competency_classreport_nogroup, theme_dimensions{{/str}}</div>
+    {{/nogroup}}
+    {{#nocompetency}}
+    <div class="alert alert-info" role="status">{{nocompetencynotice}}</div>
+    {{/nocompetency}}
+    <p class="dim-comp-rview-tablelink">
+        <a href="{{tableurl}}">{{#str}}competency_classreport_tableview, theme_dimensions{{/str}}</a>
+    </p>
+    {{#react}}
+    {
+        "component": "@moodle/lms/theme_dimensions/classreport/ClassReportView",
+        "props": {{{props}}},
+        "class": "dim-comp-rview-mount"
+    }
+    <div class="dim-comp-rview-preload" aria-hidden="true">
+        <div class="dim-comp-rview-band">
+            <div class="dim-comp-rview-tile dim-comp-rview-sk"><span class="dim-comp-rview-skb"></span><span class="dim-comp-rview-skb dim-comp-rview-skb--big"></span></div>
+            <div class="dim-comp-rview-tile dim-comp-rview-sk"><span class="dim-comp-rview-skb"></span><span class="dim-comp-rview-skb dim-comp-rview-skb--big"></span></div>
+            <div class="dim-comp-rview-tile dim-comp-rview-sk"><span class="dim-comp-rview-skb"></span><span class="dim-comp-rview-skb dim-comp-rview-skb--big"></span></div>
+            <div class="dim-comp-rview-tile dim-comp-rview-sk"><span class="dim-comp-rview-skb"></span><span class="dim-comp-rview-skb dim-comp-rview-skb--big"></span></div>
+        </div>
+        <div class="dim-comp-rview-skgrid dim-comp-rview-sk">
+            <span class="dim-comp-rview-skb"></span>
+            <span class="dim-comp-rview-skb"></span>
+            <span class="dim-comp-rview-skb"></span>
+            <span class="dim-comp-rview-skb"></span>
+        </div>
+    </div>
+    <p class="dim-comp-rview-failed">{{#str}}competency_classreport_mountfailed, theme_dimensions{{/str}}</p>
+    {{/react}}
+    <noscript>{{{noscript}}}</noscript>
+</div>
+{{#js}}
+require(['theme_dimensions/classratings'], function(Classratings) {
+    Classratings.init();
+});
+{{/js}}

@@ -359,6 +359,13 @@ classes/local/competency/classreportpreference.php, classreportengine.php  Its c
 classes/reportbuilder/local/   Its Report Builder entity (coursecompetency), system report (class_ratings), headless
                                table (class_ratings_table) and rating filter; templates/competency_classreport*.mustache,
                                amd/src/classratings.js.
+classes/output/class_report_view.php, templates/competency_classreport_view.mustache  The class report's React shell:
+                               core's {{#react}} mount, props of configuration and strings, core's table in <noscript>.
+js/esm/src/datareport/         The data report's shared parts, copied from local_evidencehub (Bar, FilterPanel, Grid,
+                               Cards, Pager, Rows, menus, cells, icons, layout, sizing, pending, str, types), without
+                               the scope, the sets, the selection and the dock; prefix dim-comp-rview.
+js/esm/src/classreport/        The class report's view (ClassReportView, Band, Bar, Grid, Cards, cells, filters,
+                               repository, types); scss/competencyreport.scss, every rule under .dim-comp-rview.
 ```
 
 ## Architecture gotchas
@@ -2332,6 +2339,19 @@ or in `scss/competency.scss`, except the learning plans page's cards (below).
   `lib.php` with `classreportpreference::preference_editable()` answering no; the theme's service is the one writer.
   Gates `classreportengine_*`, `classreportpref_*`, `class_ratings_chosen`, `class_ratings_search`,
   `class_ratings_group_param`, `class_ratings_table_session`.
+- **The class report's client (phase 6 part two, client half, 2026100651)** is the data report of
+  `moodle-dev/docs/design-system/components/data-report.md` in `js/esm/src/classreport/`. Invariants: **the props carry
+  no record** (`class_report_view::props()`: ids of the course, activity, group and report, page sizes, limits, two
+  addresses, the formats, the strings; `class_report_view_test` decodes them and looks for the learner and the
+  competency, which the noscript holds); **the client posts the page's group** (`class_report_view::page_group()`, what
+  index.php resolved), never -1, on the rows, the summary and core's filter services (as the report's parameters
+  `moduleid`/`groupid`); **one writer of the preference**, `theme_dimensions_set_class_report_preference`, and a column
+  change is written before the rows and the band are read again (a width is written and read by nobody); **one request
+  per call** (`fetchOne`), each region numbering its requests so only the newest answer paints; **the cell's dialogue
+  is core's**: the shell keeps part one's root (`data-region="dim-comp-classreport"`) and arms `classratings.js`, whose
+  close dispatches `theme_dimensions/classratings:rated` on that root when no Report Builder table holds the cell; the
+  view listens there and reads its rows (the page kept) and band again (`classratings_source_test` pins both literals).
+  `?view=table` (exactly `table`, `PARAM_ALPHA`) renders part one's page whole. Cell HTML is the view's one HTML sink.
 - The Behat feature `theme_dimensions_competency.feature` (`@theme_dimensions_competency`) rates through
   the breakdown report's dialogues (opened from the class report's cells) and requests a review from the learning
   plan's: the only gate that runs core's JavaScript against the copies.

@@ -272,13 +272,22 @@ columns are. Phase 6 is split in two pull requests:
   the search are the report's base conditions on every door, the download included. The page is two statements
   (`reportbuilder\local\systemreports\class_ratings_table`), the facet counts and the summary conditional sums of
   one statement each.
-- **Part two, client half (next): the data-report client** of `moodle-dev/docs/design-system/components/data-report.md`
-  over those services: the grid (rows answer's `columns`, `rows[].cells`, `rows[].ratings` for the band's colours),
-  the Columns menu (catalogue keys, written through `set_class_report_preference`, then the rows read again), the
-  band (`class_report_summary`), the filters panel (the rows answer's `filters`, written through core's
-  `core_reportbuilder_set_filters`), the search (two characters, 300 ms), the page's group sent as `groupid`, and
-  core's table as the "Table view" and noscript fallback; the download through core's `reportbuilder/download.php`
-  with the report's parameters, search included. Behat scenario with it.
+- **Part two, client half (done, 2026100651): the data-report client** of `moodle-dev/docs/design-system/components/data-report.md`
+  over those services, in `js/esm/src/classreport/` over the shared parts copied from local_evidencehub
+  (`js/esm/src/datareport/`, class prefix `dim-comp-rview`, `scss/competencyreport.scss`). The shell
+  (`output\class_report_view`, `templates/competency_classreport_view.mustache`) is core's `{{#react}}` mount with
+  configuration and strings only (course, activity, the page's group, the report's id, page sizes, search minimum, the
+  column limit, the download formats and core's `reportbuilder/download.php`, the "Table view" address, the strings),
+  core's table inside `<noscript>`, and `?view=table` for part one's page whole. The grid (rows answer's `columns`,
+  `rows[].cells`; `rows[].ratings` for the cards' line), the Columns menu (catalogue keys, at most 30 shown, the last
+  one kept, written through `set_class_report_preference`, then the rows and the band read again), the band
+  (`class_report_summary`: four tiles and "By competency"), the filters panel (the rows answer's `filters`, written
+  through core's `core_reportbuilder_set_filters` with the report's parameters), the search (two characters, 300 ms),
+  the page's group posted on every read (never -1), the download through core's `reportbuilder/download.php` with the
+  report's parameters, search included. A grader's cell opens core's dialogue through `amd/src/classratings.js`, whose
+  close dispatches `theme_dimensions/classratings:rated` on the shell's root; the view reads its rows and band again.
+  Behat: the class report scenario of `theme_dimensions_competency.feature` drives the view, a column hidden, a rating
+  from a cell, and "Table view".
 
 ## Phases
 
@@ -293,7 +302,7 @@ columns are. Phase 6 is split in two pull requests:
 | 3 | Evidence page (done, 2026100649) | theme | 3 |
 | 4 | Course competencies, teacher and learner; done (2026100647) | theme | 3 |
 | 5 | A learner's competency in a course; done | theme | 2 |
-| 6 | Class report: spike, then the report. Part one (the server, core's table) done in 2026100650; part two's server half (the services, the column preference) in 2026100651; its client half (the data-report client, Columns, the band) next | theme | 3 |
+| 6 | Class report: spike, then the report. Part one (the server, core's table) done in 2026100650; part two (the services, the column preference, and the data-report client with Columns and the band) done in 2026100651 | theme | 3 |
 | C | "Journey" view of the plan overview | local_dimensions | 2 |
 
 Phase 0 carries only what stands on its own. The settings tab, the derived renderer and pattern E1 were

@@ -269,6 +269,16 @@ Builder report: sort by the name or by any competency, filters on the name (and 
 see) and one per competency (a rating of its scale, or *Not rated*), pages, and download in Report Builder's formats.
 The activity selector keeps the columns of one activity's competencies.
 
+The report is drawn as a data report: above it a band of figures over the listed learners (*Learners*, *Ratings
+given*, *Proficient*, *Not rated yet*, and per shown competency how many learners are proficient), then a bar with the
+count, *Filters* (one per shown competency: its ratings and *Not rated*, each with the learners it would list),
+*Columns* (the competencies to show, at most 30 at once, *Default columns* and *Reset column widths*), *View*
+(automatic, a table or cards; cards on a narrow screen) and *Download*, and a search by name. The rows are a table
+whose heading and learner column stay in place while it scrolls, with columns a reader may sort and resize, and pages
+of 30, 50 or 100 learners. *Table view* (`index.php?id=<course>&view=table`) shows the same report in Moodle's own
+table, which is also what a browser without JavaScript gets; the filters on the name and the identity fields are set
+there.
+
 - **Who sees it**: whoever Moodle's page admits for a whole class, asked again by the report itself on every request
   and download: access to the course, `moodle/competency:coursecompetencyview` or
   `moodle/competency:coursecompetencymanage`, and `moodle/competency:usercompetencyview` in the course context.
@@ -279,10 +289,10 @@ The activity selector keeps the columns of one activity's competencies.
   (Moodle's page shows everybody to such a teacher); otherwise the chosen group, or everybody. The learner selector
   beside the report names only the learners the report lists, so it never offers a learner the report withholds.
 - **Rating**: a teacher holding `moodle/competency:competencygrade` in the course opens Moodle's rating dialogue
-  from a cell; when it closes, the report reads its rows again. Without JavaScript a cell links to Moodle's page of
+  from a cell; when it closes, the report reads its rows and its figures again. Without JavaScript a cell links to Moodle's page of
   that learner's competency in the course.
-- **At most 30 competency columns** are built per page: by default the first in the course's order; the page says so
-  when the course has more, and a learner's breakdown lists every one. A reader may choose which competencies are the
+- **At most 30 competency columns** are built per page: by default the first in the course's order; *Table view* says so
+  when the course has more and *Columns* when the limit is reached, and a learner's breakdown lists every one. A reader may choose which competencies are the
   columns, and in what order, and give the columns their widths: the choice is kept per reader and per course (below),
   and the page, its sorts and pages, its filters (there is one per shown competency) and the download follow it.
 - **Web services** for the report's client: `theme_dimensions_class_report_rows` (a page of learners with the column

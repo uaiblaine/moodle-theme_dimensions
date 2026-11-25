@@ -118,7 +118,7 @@ final class classratings_source_test extends \basic_testcase {
             'dispatchEvent(reportEvents.tableReload, {preservePagination: true}, report);',
             $source
         );
-        $this->assertStringContainsString('() => reload(report),', $source);
+        $this->assertStringContainsString('() => reload(report, root, args),', $source);
         $this->assertStringContainsString(
             "report.addEventListener(TableEvents.tableContentRefreshed, () => pending.resolve(), {once: true});",
             $source
@@ -146,5 +146,30 @@ final class classratings_source_test extends \basic_testcase {
         $this->assertGreaterThan($pending, $request);
         $this->assertMatchesRegularExpression('~Templates\.runTemplateJS\(js\);\s*pending\.resolve\(\);~', $source);
         $this->assertMatchesRegularExpression('~\} catch \(error\) \{\s*pending\.resolve\(\);~', $source);
+    }
+
+    /**
+     * Inside the React view the close tells the view: the module dispatches the event the view listens for, on the
+     * root the view finds, both literals the same in the two sources; and core's table path is kept for a cell that
+     * a Report Builder table holds.
+     *
+     * @return void
+     */
+    public function test_the_close_tells_the_react_view(): void {
+        $source = $this->source();
+        $view = (string) file_get_contents(dirname(__DIR__, 2) . '/js/esm/src/classreport/ClassReportView.tsx');
+        $event = "'theme_dimensions/classratings:rated'";
+        $this->assertStringContainsString("const RATED = {$event};", $source);
+        $this->assertStringContainsString("export const RATED = {$event};", $view);
+        $this->assertStringContainsString("const ROOT = '[data-region=\"dim-comp-classreport\"]';", $source);
+        $this->assertStringContainsString("export const ROOT = '[data-region=\"dim-comp-classreport\"]';", $view);
+        $this->assertStringContainsString('root.dispatchEvent(new CustomEvent(RATED, {bubbles: true, detail: args}));', $source);
+        $this->assertStringContainsString('host.addEventListener(RATED, rated);', $view);
+        // The React path is taken only where no Report Builder table holds the cell.
+        $this->assertMatchesRegularExpression('~if \(!report\) \{\s*if \(root\) \{~', $source);
+
+        $template = (string) file_get_contents(dirname(__DIR__, 2) . '/templates/competency_classreport_view.mustache');
+        $this->assertStringContainsString('data-region="dim-comp-classreport"', $template);
+        $this->assertStringContainsString("require(['theme_dimensions/classratings']", $template);
     }
 }

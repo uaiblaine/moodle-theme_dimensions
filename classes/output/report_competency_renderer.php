@@ -41,7 +41,8 @@ use theme_dimensions\reportbuilder\local\systemreports\class_ratings;
  * three things index.php renders through this renderer:
  *
  * - {@see render_report()}: the class report ({@see class_ratings}) instead of core's export, which would insert a
- *   `competency_usercompcourse` row per missing competency of that first learner;
+ *   `competency_usercompcourse` row per missing competency of that first learner; drawn as the data report's React
+ *   view ({@see class_report_view}), or as core's table with `?view=table`;
  * - {@see context_header()}: nothing instead of the first learner's heading; the page's heading stays the course's;
  * - {@see render_user_course_navigation()}: core's navigation with "All learners" chosen, the group selector
  *   pointing at the class report and the learners named limited to the ones the report lists
@@ -90,14 +91,22 @@ class report_competency_renderer extends \report_competency\output\renderer {
     }
 
     /**
-     * The class report of a course, with what the page must say above it.
+     * The class report of a course, with what the page must say above it: the data report's React view
+     * ({@see class_report_view}), or core's table of the report with `?view=table` (part one's page, whole).
      *
      * @param int $courseid The course.
      * @param int $moduleid A course module whose competencies are the columns, or 0.
      * @return string
      */
     protected function render_class_report(int $courseid, int $moduleid): string {
-        $report = class_ratings::for_course(context_course::instance($courseid), $moduleid);
+        $context = context_course::instance($courseid);
+        $report = class_ratings::for_course($context, $moduleid);
+        if (!class_report_view::table_requested()) {
+            return parent::render_from_template(
+                'theme_dimensions/competency_classreport_view',
+                (new class_report_view($context, $moduleid, $report))->export_for_template($this)
+            );
+        }
         $shown = $report->shown_competencies();
         $total = $report->total_competencies();
         $data = [

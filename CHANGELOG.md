@@ -17,7 +17,13 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   lists what the page lists to that reader, group rule included; a group or a search it is given can only narrow, and
   the download holds the search too. The two reads keep the session read-only. The class report refuses the site
   course. The preference is removed with the course and on uninstall, exported on a data request, and Moodle's
-  preference services cannot write it.
+  preference services cannot write it. A teacher now sees the class report as a data report: a band of figures
+  (learners, ratings given, proficient cells, learners not rated yet, and a line per shown competency with how many
+  learners are proficient), a bar with the count, *Filters* (one per shown competency, each rating with the learners it
+  would list), *Columns*, *View* (table or cards, cards on a narrow screen) and *Download*, a search by name, a table
+  whose heading and learner column stay in place, sortable and resizable columns, and pages of 30, 50 or 100. Rating
+  from a cell still opens Moodle's dialogue, and the row and the figures follow when it closes. *Table view*
+  (`?view=table`) keeps Moodle's own table, which a browser without JavaScript also gets.
 - **The competency breakdown report shows the class** (2026100650). Moodle's competency breakdown of a course
   (`report/competency/index.php`), opened without a learner, is now one row per learner and one column per course
   competency (the first 30, in the course's order), each cell the learner's rating by name on that competency's scale
