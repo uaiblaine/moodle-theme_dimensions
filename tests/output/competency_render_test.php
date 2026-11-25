@@ -399,7 +399,9 @@ final class competency_render_test extends \advanced_testcase {
 
         $this->under_theme('/admin/tool/lp/user_evidence_list.php');
         $xpath = self::parse($PAGE->get_renderer('tool_lp')->render(new \tool_lp\output\user_evidence_list_page($user->id)));
-        $waiting = \core_competency\user_competency::get_status_name(\core_competency\user_competency::STATUS_WAITING_FOR_REVIEW);
+        $waiting = (string) \core_competency\user_competency::get_status_name(
+            \core_competency\user_competency::STATUS_WAITING_FOR_REVIEW
+        );
 
         $line = "//ul[contains(@class, 'user-evidence-competencies')]/li[contains(., '%s')]";
         $pill = "//ul[contains(@class, 'dim-comp-ev-detail-comps')]/li[contains(., '%s')]" .

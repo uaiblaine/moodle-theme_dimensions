@@ -404,7 +404,7 @@ final class competency_templates_test extends \advanced_testcase {
                         "[@data-dim-firstpaint='1'][@data-dim-platform='1']",
                     "//*[@data-region='user-evidence-list']//ol[@data-region='dim-comp-ev-list']" .
                         "/li[@data-region='user-evidence-node'][@data-id='7'][@data-userid='3'][@data-dim-time='1792065600']" .
-                        "[@data-dim-comps='12 ']",
+                        "[@data-dim-comps='12 13 ']",
                     "//ol[@data-region='dim-comp-ev-list']/li[@data-region='dim-comp-ev-month']" .
                         "/h3[normalize-space(.)='October 2026']",
                     "//li[@data-id='7']//h4/a[@href='https://example.com/admin/tool/lp/user_evidence.php?id=7']" .
