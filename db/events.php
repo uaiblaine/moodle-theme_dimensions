@@ -212,4 +212,10 @@ $observers = [
         'callback' => '\\theme_dimensions\\local\\competency\\courseclass::site_changed',
         'internal' => false,
     ],
+    // A deleted account's filter values on the class report of competency ratings: core keeps them in its own table,
+    // and the privacy finder reads the user context, which is gone by the time this fires.
+    [
+        'eventname' => '\\core\\event\\user_deleted',
+        'callback' => '\\theme_dimensions\\local\\competency\\reportpersistents::user_deleted',
+    ],
 ];

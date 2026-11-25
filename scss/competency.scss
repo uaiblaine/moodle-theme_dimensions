@@ -2301,6 +2301,27 @@ body.path-admin-tool-lp table.managecompetencies {
     }
 }
 
+/* ---- The class report (report/competency/index.php without a learner) ------- */
+/* Report Builder's table drawn by theme_dimensions\reportbuilder\local\systemreports\class_ratings: a rating cell is
+   the status label of its proficiency (the pills above), kept on one line so a column's width is its widest
+   rating; the link around it carries the grading dialogue's hooks and is no underlined text. */
+.dim-comp-classreport {
+    .dim-comp-classreport__cap {
+        margin-bottom: var(--dim-ds-space-sm);
+        color: var(--dimensions-ink-muted);
+        font-size: .875rem;
+    }
+
+    .dim-comp-classreport__cell {
+        display: inline-flex;
+        text-decoration: none;
+
+        .dim-comp-pill {
+            white-space: nowrap;
+        }
+    }
+}
+
 /* ---- Dark mode ------------------------------------------------------------ */
 /* The family tokens already flip with the colour mode; what is restated here is a pairing that is
    not the same token in both modes. The bar's fill: the brand fill (Bootstrap's primary) is a navy

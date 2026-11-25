@@ -236,6 +236,33 @@ course competency (chosen in Columns), the band over the same rows. It needs a R
 `competency_usercompcourse` that core lacks; a spike decides between a system report with one column per
 competency and a long form (one row per learner and competency). Core's grading popup stays the row's action.
 
+The spike chose the system report with one column per competency (D6), built per request as enrol_apply's question
+columns are. Phase 6 is split in two pull requests:
+
+- **Part one (done, 2026100650): the server, usable alone through core's Report Builder table.** The derived
+  renderer `theme_dimensions\output\report_competency_renderer` draws the class mode when the request names no
+  `user` and `local\competency\classreport::may_view()` passes: `render_report()` the system report
+  `reportbuilder\local\systemreports\class_ratings` instead of core's export (which inserts rows),
+  `context_header()` nothing instead of the first learner's heading index.php prints, and the navigation with
+  "All learners" chosen (`user=0`) and its group selector on the class address. With `?user=` every call is core's,
+  through the untouched copy of `report_competency/report`. The report: `{user}` restricted by core's
+  enrolled-with-capability join (`coursecompetencygradable`) as a subquery, in the viewer's groups
+  (`classreport::groups()`: separate groups without `accessallgroups` read their own groups, none in no group, decided
+  before the join); the learner's name linked to the breakdown, core's identity columns and filters; one column per
+  course competency, at most `classreport::MAX_COLUMNS` (30) in the course's order, keyed `comp:<competencyid>`
+  (`class_ratings::active_keys()`), each two correlated subqueries on the unique `(userid, courseid, competencyid)`
+  index of the entity `reportbuilder\local\entities\coursecompetency`, shown as the rating's name on that
+  competency's scale (scales read once per request), sortable, with a select filter per competency (the scale and
+  "Not rated"); the grading dialogue's hooks on the cells of a viewer holding `competencygrade`; Report Builder's
+  download. `amd/src/classratings.js` opens core's dialogue from a cell and dispatches Report Builder's `tableReload`
+  on close. The stored filter values are the theme's personal data (D146, `local\competency\reportpersistents`).
+  Statements per page: constant in the learners, nothing per column beyond the subqueries (measured by
+  `class_ratings_test::test_the_statements_of_a_page_are_bounded`).
+- **Part two (next): the data-report client** of `moodle-dev/docs/design-system/components/data-report.md` over
+  part one's report: the rows and summary web services (built from `class_ratings`, which keeps every rule), the
+  Columns menu choosing among the competencies (a preference read in `initialise()`, replacing the fixed first 30),
+  the band of figures, and core's table as the "Table view" and noscript fallback.
+
 ## Phases
 
 | Phase | Content | Repos | Tier |
@@ -249,7 +276,7 @@ competency and a long form (one row per learner and competency). Core's grading 
 | 3 | Evidence page (done, 2026100649) | theme | 3 |
 | 4 | Course competencies, teacher and learner; done (2026100647) | theme | 3 |
 | 5 | A learner's competency in a course; done | theme | 2 |
-| 6 | Class report: spike, then the report | theme | 3 |
+| 6 | Class report: spike, then the report. Part one (the server, core's table) done in 2026100650; part two (the data-report client, Columns, the band) next | theme | 3 |
 | C | "Journey" view of the plan overview | local_dimensions | 2 |
 
 Phase 0 carries only what stands on its own. The settings tab, the derived renderer and pattern E1 were

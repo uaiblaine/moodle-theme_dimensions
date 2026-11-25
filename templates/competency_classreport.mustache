@@ -1,0 +1,64 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/competency_classreport
+
+    The class report of report/competency/index.php: one row per learner, one column per course competency, drawn
+    by Report Builder (theme_dimensions\reportbuilder\local\systemreports\class_ratings) and handed in whole.
+
+    Above it, what the page must say: that a viewer in no group of a separate-groups course reads no learner, that
+    the course has no competency, or that the columns are the first of more. The module theme_dimensions/classratings
+    opens core's grading dialogue from a rating cell carrying the hooks and reloads the report's rows when it
+    closes; it is armed once per page, from the js block, and finds the report through this root.
+
+    Context variables required for this template:
+    * courseid - The course.
+    * nogroup - Whether the group rule leaves the viewer no row.
+    * nocompetency - Whether the course (or the chosen activity) has no competency.
+    * nocompetencynotice - What to say then, plain.
+    * capped - Whether the course has more competencies than columns.
+    * capnotice - What to say then, plain.
+    * report - The report, Report Builder's own markup.
+
+    Example context (json):
+    {
+        "courseid": 2,
+        "nogroup": false,
+        "nocompetency": false,
+        "nocompetencynotice": "No competency is linked to this course yet.",
+        "capped": true,
+        "capnotice": "The report shows the first 30 of the course's 32 competencies.",
+        "report": "<div class=\"reportbuilder-report\"></div>"
+    }
+}}
+<div class="dim-comp-classreport" data-region="dim-comp-classreport" data-courseid="{{courseid}}">
+    {{#nogroup}}
+    <div class="alert alert-info" role="status">{{#str}}competency_classreport_nogroup, theme_dimensions{{/str}}</div>
+    {{/nogroup}}
+    {{#nocompetency}}
+    <div class="alert alert-info" role="status">{{nocompetencynotice}}</div>
+    {{/nocompetency}}
+    {{#capped}}
+    <p class="dim-comp-classreport__cap">{{capnotice}}</p>
+    {{/capped}}
+    {{{report}}}
+</div>
+{{#js}}
+require(['theme_dimensions/classratings'], function(Classratings) {
+    Classratings.init();
+});
+{{/js}}

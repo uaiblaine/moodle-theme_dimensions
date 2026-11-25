@@ -257,6 +257,34 @@ nothing else.
 - Light and dark colour modes alike, from the theme's tokens and Bootstrap's own: a Boost Union
   flavour's brand colour reaches these pages too.
 
+### The class report
+
+The competency breakdown report of a course (`report/competency/index.php`), opened without a learner (from the
+course's *Reports* menu, or *All learners* in its learner selector), shows the whole class: one row per learner
+(the course's users holding `moodle/competency:coursecompetencygradable`, as Moodle's page lists them) and one
+column per course competency, in the course's order. Each cell is the learner's rating by name on that competency's
+own scale, in the status label of *Proficient*, *Not proficient* or *Not rated*; a learner's name opens their
+breakdown (`index.php?id=<course>&user=<learner>`), which is Moodle's one-learner page as before. It is a Report
+Builder report: sort by the name or by any competency, filters on the name (and the identity fields a viewer may
+see) and one per competency (a rating of its scale, or *Not rated*), pages, and download in Report Builder's formats.
+The activity selector keeps the columns of one activity's competencies.
+
+- **Who sees it**: whoever Moodle's page admits for a whole class, asked again by the report itself on every request
+  and download: access to the course, `moodle/competency:coursecompetencyview` or
+  `moodle/competency:coursecompetencymanage`, and `moodle/competency:usercompetencyview` in the course context.
+  Someone who reads learners only through a grant on each learner (a mentor, a parent) keeps Moodle's one-learner
+  page.
+- **Groups**: in a course with separate groups, a teacher without `moodle/site:accessallgroups` sees the learners of
+  the group chosen in the page's group selector, among their own groups, and **none when they are in no group**
+  (Moodle's page shows everybody to such a teacher); otherwise the chosen group, or everybody.
+- **Rating**: a teacher holding `moodle/competency:competencygrade` in the course opens Moodle's rating dialogue
+  from a cell; when it closes, the report reads its rows again. Without JavaScript a cell links to Moodle's page of
+  that learner's competency in the course.
+- **At most 30 competency columns** are built per page, the first in the course's order; the page says so when the
+  course has more, and a learner's breakdown lists every one.
+- Reading the report writes nothing (Moodle's own page creates a rating row for every competency of the learner it
+  shows). The filter values a reader sets are kept by Moodle's report builder, below.
+
 
 More features
 -------------
@@ -753,6 +781,13 @@ subsystem, which the theme's metadata links): a data request exports the seven p
 in each category whose branding the person last saved, that they saved it and when; a deletion
 request clears that stamp (`usermodified` becomes 0) and keeps the branding, which is the
 category's institutional content.
+
+The filter values a reader sets on the class report of competency ratings are kept by Moodle's report builder in its
+table `reportbuilder_user_filter`, one row per reader and course, until the reader clears them, the account is
+deleted or the theme is uninstalled. Moodle's own privacy provider covers its custom reports only, so the theme's
+provider declares these rows: a data request exports them in the reader's user context, naming the course where the
+reader may still open its class report, and a deletion request removes them; deleting the account removes them too,
+and uninstalling the theme deletes its report builder reports with every reader's values.
 
 
 Capabilities
