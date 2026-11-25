@@ -248,9 +248,12 @@ final class evidencelist {
             $total = (int) $DB->count_records_sql("SELECT COUNT(1) {$from} WHERE {$where}{$own}", $params);
         }
 
+        // The first page's fold counts back from now, read from core's clock so a test can hold it still.
+        $anchor = $beforetime > 0 ? $beforetime : \core\di::get(\core\clock::class)->time();
+
         return [
             'records' => self::records($rows),
-            'folds' => self::folds($from, $where, $cursor, $params, $last, $beforetime > 0 ? $beforetime : time()),
+            'folds' => self::folds($from, $where, $cursor, $params, $last, $anchor),
             'hasmore' => $hasmore,
             'nexttime' => $last ? (int) $last->timecreated : 0,
             'nextid' => $last ? (int) $last->id : 0,

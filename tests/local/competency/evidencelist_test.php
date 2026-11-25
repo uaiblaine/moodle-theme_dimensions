@@ -50,6 +50,17 @@ final class evidencelist_test extends \advanced_testcase {
     private const DAY = 86400;
 
     /**
+     * The fold's months are counted back from now: freeze now a few weeks after the fixtures' instant, so the
+     * fixtures stay inside the fold's window whenever the suite runs.
+     *
+     * @return void
+     */
+    protected function setUp(): void {
+        parent::setUp();
+        $this->mock_clock_with_frozen(self::NOON + 20 * self::DAY);
+    }
+
+    /**
      * A learner with two competencies of one framework, each with its user competency.
      *
      * @return array [learner, competency 1, competency 2, user competency 1, user competency 2].

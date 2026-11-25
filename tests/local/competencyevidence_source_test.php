@@ -120,7 +120,11 @@ final class competencyevidence_source_test extends \basic_testcase {
         $this->assertStringContainsString("if (!PROXIES.includes(action) || !state.selected.startsWith('p')) {", $source);
         $this->assertStringContainsString('entry.click();', $source);
         $this->assertStringNotContainsString('core_competency_delete_user_evidence', $source);
-        $this->assertStringNotContainsString('tool_lp/user_evidence_actions', $source);
+        // Named in the module's docblock; what must not happen is the module loading core's module itself.
+        $this->assertDoesNotMatchRegularExpression(
+            "~(from|require\\(\\[?)\\s*['\"]tool_lp/user_evidence_actions['\"]~",
+            $source
+        );
     }
 
     /**
