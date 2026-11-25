@@ -35,9 +35,10 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * framework, competencies, a user competency, a piece of evidence and a course with the
  * core_competency generator, hand core's renderables to core's renderers under this theme, and read
  * the hooks and the stated proficiency off the result. The theme's tool_lp renderer
- * ({@see tool_lp_renderer}) overrides render_plans_page() alone, which these pages never reach, so
- * core's rendering answers for each of them and the template finder hands it the theme's copies. The
- * learning plans page has its own tests (tool_lp_renderer_test).
+ * ({@see tool_lp_renderer}) overrides render_plans_page(), which these pages never reach, and
+ * render_user_competency_summary_in_course(), which adds the band's two counts to core's export; elsewhere core's
+ * rendering answers and the template finder hands it the theme's copies. The learning plans page has its own tests
+ * (tool_lp_renderer_test).
  *
  * @package    theme_dimensions
  * @category   test
@@ -184,5 +185,177 @@ final class competency_render_test extends \advanced_testcase {
         $this->assertSame('Not rated', self::text_of($xpath, $cell((int) $unrated->get('id'))));
         $painted = $xpath->query("//td[contains(@class, 'alert-success')]")->length;
         $this->assertSame(0, $painted, 'A proficient rating is painted, not said: core\'s green cell came back.');
+    }
+
+    /**
+     * A learner with a rated competency in a course, three pieces of evidence and an active plan holding it.
+     *
+     * Two pieces of evidence are of the course; the third is of the system context, which core's list of the course
+     * leaves out, so a table listing it would be listing more than core does. A teacher of the course may rate.
+     *
+     * @return array The course, the learner, the teacher, the competency, and the evidence of the course and elsewhere.
+     */
+    private function learner_in_course(): array {
+        $generator = $this->getDataGenerator();
+        $lpg = $generator->get_plugin_generator('core_competency');
+        $course = $generator->create_course();
+        $learner = $generator->create_user();
+        $teacher = $generator->create_user();
+        $generator->enrol_user($learner->id, $course->id, 'student');
+        $generator->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $framework = $lpg->create_framework();
+        $competency = $lpg->create_competency(['competencyframeworkid' => $framework->get('id')]);
+        $lpg->create_course_competency(['courseid' => $course->id, 'competencyid' => $competency->get('id')]);
+        $lpg->create_user_competency_course([
+            'userid' => $learner->id,
+            'competencyid' => $competency->get('id'),
+            'courseid' => $course->id,
+            'grade' => 2,
+            'proficiency' => 0,
+        ]);
+        $usercompetency = $lpg->create_user_competency(['userid' => $learner->id, 'competencyid' => $competency->get('id')]);
+        $coursecontextid = \context_course::instance($course->id)->id;
+        $incourse = [];
+        foreach (['Presented the essay.', null] as $note) {
+            $incourse[] = (int) $lpg->create_evidence([
+                'usercompetencyid' => $usercompetency->get('id'),
+                'contextid' => $coursecontextid,
+                'note' => $note,
+            ])->get('id');
+        }
+        $elsewhere = (int) $lpg->create_evidence(['usercompetencyid' => $usercompetency->get('id')])->get('id');
+        $plan = $lpg->create_plan(['userid' => $learner->id, 'status' => \core_competency\plan::STATUS_ACTIVE]);
+        $lpg->create_plan_competency(['planid' => $plan->get('id'), 'competencyid' => $competency->get('id')]);
+
+        return [$course, $learner, $teacher, $competency, $incourse, $elsewhere];
+    }
+
+    /**
+     * The page of a learner's competency in a course, rendered by tool_lp's renderer for the session user.
+     *
+     * @param \stdClass $course The course.
+     * @param \stdClass $learner The learner.
+     * @param \core_competency\competency $competency The competency.
+     * @return array Core's own export for the same viewer, and the parsed render.
+     */
+    private function render_in_course(\stdClass $course, \stdClass $learner, \core_competency\competency $competency): array {
+        global $PAGE;
+        $this->under_theme('/admin/tool/lp/user_competency_in_course.php');
+        $renderer = $PAGE->get_renderer('tool_lp');
+        $renderable = new \tool_lp\output\user_competency_summary_in_course($learner->id, $competency->get('id'), $course->id);
+        $export = $renderable->export_for_template($renderer);
+
+        return [$export, self::parse($renderer->render($renderable))];
+    }
+
+    /**
+     * The ids of the evidence rows, in the order drawn.
+     *
+     * @param \DOMXPath $xpath The parsed render.
+     * @return array The ids.
+     */
+    private static function evidence_rows(\DOMXPath $xpath): array {
+        $ids = [];
+        foreach ($xpath->query("//tbody[@data-region='dim-comp-ucc-rows']/tr[@data-region='evidence']") as $row) {
+            $ids[] = (int) $row->getAttribute('data-id');
+        }
+        return $ids;
+    }
+
+    /**
+     * A teacher who may rate gets Rate as the one primary action, and the band says what core's export says.
+     *
+     * The four figures are read off the page and compared with core's export for the same viewer: the rating's and
+     * proficiency's names, the number of pieces of evidence (two: the system context's is not the course's) with the
+     * most recent one's date, and the number of plans core lists to this viewer. The rows are core's evidence, in
+     * core's order.
+     *
+     * @return void
+     */
+    public function test_a_learners_competency_in_a_course_for_a_teacher_who_may_rate(): void {
+        $this->resetAfterTest();
+        [$course, $learner, $teacher, $competency, $incourse, $elsewhere] = $this->learner_in_course();
+        $this->setUser($teacher);
+        [$export, $xpath] = $this->render_in_course($course, $learner, $competency);
+        $summary = $export->usercompetencysummary;
+
+        $this->assertTrue($summary->cangrade, 'The teacher may not rate: the fixture proves nothing.');
+        $root = "//div[@data-region='user-competency-full-info'][@data-region-id][contains(@class, 'dim-comp-ucc')]";
+        $this->assertSame(1, $xpath->query($root)->length, 'The theme\'s copy did not answer.');
+        $rate = "//*[contains(@class, 'dim-comp-ucc-primary')]/button[starts-with(@id, 'rate_')][contains(@class, 'btn-primary')]";
+        $this->assertSame(1, $xpath->query($rate)->length);
+        $this->assertSame(1, $xpath->query("//*[contains(concat(' ', @class, ' '), ' btn-primary ')]")->length);
+
+        $rating = self::text_of($xpath, "//dt[contains(., 'Rating')]/following-sibling::dd[1]");
+        $this->assertSame($summary->usercompetencycourse->gradename, $rating);
+        $proficiency = self::text_of($xpath, "//dt[contains(., 'Proficient')]/following-sibling::dd[1]");
+        $this->assertSame($summary->usercompetencycourse->proficiencyname, $proficiency);
+        $this->assertCount(2, $summary->evidence);
+        $this->assertSame((string) count($summary->evidence), self::text_of($xpath, "//dd[@data-dim-figure='evidence']"));
+        $this->assertSame($summary->evidence[0]->userdate, self::text_of($xpath, "//span[@data-dim-figure='latest']"));
+        $this->assertSame((string) count($export->plans), self::text_of($xpath, "//dd[@data-dim-figure='plans']"));
+
+        $exported = array_map(static fn($evidence): int => (int) $evidence->id, $summary->evidence);
+        $this->assertSame($exported, self::evidence_rows($xpath));
+        sort($exported);
+        $this->assertSame($incourse, $exported);
+        $this->assertNotContains($elsewhere, self::evidence_rows($xpath));
+    }
+
+    /**
+     * The learner reading their own competency gets the band and the table, and no Rate.
+     *
+     * The learner is the control of the teacher's Rate: same page, same record, core's cangrade false. Their own
+     * active plan is listed to them, so the plans figure is one, as core's export says.
+     *
+     * @return void
+     */
+    public function test_a_learners_competency_in_a_course_for_the_learner(): void {
+        $this->resetAfterTest();
+        [$course, $learner, , $competency] = $this->learner_in_course();
+        $this->setUser($learner);
+        [$export, $xpath] = $this->render_in_course($course, $learner, $competency);
+
+        $this->assertFalse($export->usercompetencysummary->cangrade);
+        $this->assertSame(0, $xpath->query("//button[starts-with(@id, 'rate_')]")->length, 'The learner is offered Rate.');
+        $this->assertSame(0, $xpath->query("//*[contains(concat(' ', @class, ' '), ' btn-primary ')]")->length);
+        $this->assertSame(4, $xpath->query("//*[@data-region='dim-comp-ucc-band']//dt")->length);
+        $this->assertCount(1, $export->plans);
+        $this->assertSame('1', self::text_of($xpath, "//dd[@data-dim-figure='plans']"));
+        $this->assertSame(1, $xpath->query("//li[@data-dim-plan]/a[contains(@href, '/admin/tool/lp/plan.php?id=')]")->length);
+        $exported = array_map(static fn($evidence): int => (int) $evidence->id, $export->usercompetencysummary->evidence);
+        $this->assertSame($exported, self::evidence_rows($xpath));
+    }
+
+    /**
+     * Core's context alone, as the client re-render receives it, draws the band and the table.
+     *
+     * The export is cleaned through the return structure of tool_lp_data_for_user_competency_summary_in_course, as
+     * the web service does before tool_lp/user_competency_info renders it, and rendered through the theme's template
+     * with no decoration: every row is there and the two counts are left for the template's JavaScript.
+     *
+     * @return void
+     */
+    public function test_a_learners_competency_in_a_course_from_cores_context_alone(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        [$course, $learner, $teacher, $competency] = $this->learner_in_course();
+        $this->setUser($teacher);
+        $this->under_theme('/admin/tool/lp/user_competency_in_course.php');
+        $renderer = $PAGE->get_renderer('tool_lp');
+        $renderable = new \tool_lp\output\user_competency_summary_in_course($learner->id, $competency->get('id'), $course->id);
+        $context = \core_external\external_api::clean_returnvalue(
+            \tool_lp\external::data_for_user_competency_summary_in_course_returns(),
+            $renderable->export_for_template($renderer)
+        );
+        $this->assertArrayNotHasKey('dimband', $context);
+        $xpath = self::parse($renderer->render_from_template('tool_lp/user_competency_summary_in_course', $context));
+
+        $this->assertSame(1, $xpath->query("//button[starts-with(@id, 'rate_')]")->length);
+        $this->assertSame(4, $xpath->query("//*[@data-region='dim-comp-ucc-band']//dt")->length);
+        $this->assertSame('', self::text_of($xpath, "//dd[@data-dim-figure='evidence']"));
+        $evidence = $context['usercompetencysummary']['evidence'];
+        $this->assertSame($evidence[0]['userdate'], self::text_of($xpath, "//span[@data-dim-figure='latest']"));
+        $this->assertSame(array_map(static fn(array $row): int => (int) $row['id'], $evidence), self::evidence_rows($xpath));
     }
 }

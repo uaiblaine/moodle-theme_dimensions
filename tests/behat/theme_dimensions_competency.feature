@@ -90,9 +90,10 @@ Feature: The competency pages and dialogues wear the theme and keep core's actio
     And ".dim-comp-grader" "css_element" should exist in the "Rate" "dialogue"
     And I set the field "Rating" to "Great"
     And I click on "Rate" "button" in the ".competency-grader" "css_element"
-    # Core's grade_dialogue fired on data-action="rate": the rating is stored, its evidence listed in the theme's card.
+    # Core's grade_dialogue fired on data-action="rate": the rating is stored, its evidence a row of the theme's table
+    # (the dialogue is core's grading popup rendering tool_lp/user_competency_summary_in_course).
     Then "Great" "tool_lp > competency page rating" should exist
-    And ".dim-comp-evidence" "css_element" should exist in the "User competency summary" "dialogue"
+    And "[data-region='dim-comp-ucc-rows'] [data-region='evidence']" "css_element" should exist in the "User competency summary" "dialogue"
     And I click on "Close" "button" in the "User competency summary" "dialogue"
     # The grading popup re-rendered the theme's report through core/templates.
     And "Great" "report_competency > breakdown rating" should exist in the "Desserts" "report_competency > breakdown"

@@ -195,6 +195,24 @@ A template copy (`user_competency_summary_in_course`): who and what first, with 
 action; a band of four figures; the evidence of this course as a bounded table; linked activities and plans
 below. The list is a page's worth, so it is server-drawn in the data report's look, without its engine.
 
+**Done (phase 5, 2026100648).** `templates/tool_lp/user_competency_summary_in_course` (with its `.upstream`) draws, from
+core's export alone: the learner's picture and name and the competency summary, *Rate* as the one `btn-primary` under
+core's `cangrade` (core's `#rate_<uniqid>` and inline grader); a band of four tiles, a `dl` that keeps core's Behat
+pairs: the rating (`usercompetencycourse.gradename`), proficiency (`proficiencyname`, the status label with its icon),
+the evidence of this course (a count, and `evidence.0.userdate` as "Most recent") and the learning plans core lists
+(a count); the evidence as a table in a 34rem frame, newest first as core lists it (`description` with `url`,
+`userdate`, the rating badge, `actionuser` through `tool_lp/user_summary`, `note`, the delete trigger under
+`candelete`), each row carrying the evidence partial's hooks; the linked activities and the plans as two panels. The
+two counts need a length, which Mustache lacks: `tool_lp_renderer::render_user_competency_summary_in_course()` writes
+`dimband` from the export (no query) for the first paint, and the template's js block counts the rows again on every
+render (core's `tool_lp/user_competency_info` replaces the root and runs the block again) and on each removal by
+`tool_lp/evidence_delete` (a `MutationObserver` on the rows). No web service, no SQL, nothing shown beyond what core's
+page shows the same viewer (the learner's identity fields are left out of the head).
+Left out: the mockup's "Activities completed" (core exports no completion state for the linked modules), who rated
+and when under the rating (not in the course record core exports), each plan's status label (core's page does not
+show it), the course navigation's "11 of 24 learners" (core's navigation template is unchanged), sorting the table
+(no engine; core's order is newest first) and the scale strip of the mockup.
+
 ### 7. Class (`report/competency/index.php`)
 
 A data report (`moodle-dev/docs/design-system/components/data-report.md`): one row per learner, one column per
@@ -214,7 +232,7 @@ competency and a long form (one row per learner and competency). Core's grading 
 | 2b | The owner's redirects; done | theme | 3 |
 | 3 | Evidence page | theme | 3 |
 | 4 | Course competencies, teacher and learner; done (2026100647) | theme | 3 |
-| 5 | A learner's competency in a course | theme | 2 |
+| 5 | A learner's competency in a course; done | theme | 2 |
 | 6 | Class report: spike, then the report | theme | 3 |
 | C | "Journey" view of the plan overview | local_dimensions | 2 |
 
