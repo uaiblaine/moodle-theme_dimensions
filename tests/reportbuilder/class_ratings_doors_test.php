@@ -383,15 +383,22 @@ final class class_ratings_doors_test extends \advanced_testcase {
         if (!$systemreport->can_be_downloaded()) {
             throw new report_access_exception();
         }
-        $table = system_report_table::create($reportid, $parameters + ['download' => 'csv']);
-        $table->define_baseurl(new \moodle_url('/reportbuilder/download.php'));
-        $table->setup();
-        $table->query_db(0, false);
-        $ids = [];
-        foreach ($table->rawdata as $record) {
-            $ids[] = (int) $record->id;
+        // The export writer prints the file's byte order mark as the table is set up, and core refuses to build a
+        // second export while output is buffered: each download gets a buffer of its own, thrown away.
+        ob_start();
+        try {
+            $table = system_report_table::create($reportid, $parameters + ['download' => 'csv']);
+            $table->define_baseurl(new \moodle_url('/reportbuilder/download.php'));
+            $table->setup();
+            $table->query_db(0, false);
+            $ids = [];
+            foreach ($table->rawdata as $record) {
+                $ids[] = (int) $record->id;
+            }
+            $table->close_recordset();
+        } finally {
+            ob_end_clean();
         }
-        $table->close_recordset();
         sort($ids);
 
         return $ids;
