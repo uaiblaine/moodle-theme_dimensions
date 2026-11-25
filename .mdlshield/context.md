@@ -12,7 +12,15 @@ activities. It depends on `theme_boost_union`, `local_unlistedcourses`, `local_d
 `core_competency\api::list_user_plans()`'s access rule before building; from 2026100645 (block_dimensions 2026100508)
 the service also passes through each card's favourite flag, which the block offers only on the session user's own
 list, and the plan templates' tag values, and the page loads the block's `favourite_star` module, the theme writing no
-favourite itself; `local_dimensions` (2026100543) is the destination of the plan owner's redirect below); `customfield_picture` (the badges' and
+favourite itself; from 2026100648 the same renderer draws core's course competencies page,
+`admin/tool/lp/coursecompetencies.php`, with extras the read service `theme_dimensions_get_course_competency_extras`
+gives back after core's client re-render: it logs into the course as core's `tool_lp_data_for_course_competencies_page`
+does and calls `core_competency\api::list_course_competencies()` for core's capability check, refuses the site course,
+returns the class distribution only to a viewer holding `moodle/competency:competencygrade` or
+`moodle/competency:coursecompetencymanage` in the course, and a learner's figures only for the session user (no user id
+is a parameter); the distribution is counts per competency over the enrolled users with
+`moodle/competency:coursecompetencygradable`, kept in the application cache `coursecompetencyclass` under revisions
+minted by event observers; `local_dimensions` (2026100543) is the destination of the plan owner's redirect below); `customfield_picture` (the badges' and
 the share picture's field type) is optional, asked for at run time. It owns one
 table, `theme_dimensions_cat` (the branding of a category; its one personal datum is the
 `usermodified` authorship stamp, which the privacy provider exports and clears to 0 on deletion).
@@ -78,6 +86,10 @@ table, `theme_dimensions_cat` (the branding of a category; its one personal datu
   answer per case would be an existence oracle.
 - **`publicaccess::is_public()` fails closed; `redirector::is_ghosted()` fails open.** Opposite on purpose: one
   withholds a page from the internet, the other must not strand a user who is entitled.
+- **The course competencies page shows every viewer each listed activity's outcome** (`competency_modulecomp`), which
+  core shows only in the activity's settings: it is how the course works, the same for everybody, for the activities
+  core's page already lists to that viewer. The class distribution counts a suspended enrolment, as core rates one;
+  it differs from core's own statistics, which count every row of the course, enrolled or not.
 - **The profile callback can only prevent** (`theme_dimensions_control_view_profile()` never returns
   force-allow); its memo key carries the viewer.
 - **The theme carries no username mask.** A CPF mask on the login form, if any, is `auth_loginsteps`' (with its own

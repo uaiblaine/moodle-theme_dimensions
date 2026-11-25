@@ -2130,7 +2130,8 @@ or in `scss/competency.scss`, except the learning plans page's cards (below).
 - **One renderer is derived: `theme_dimensions\output\tool_lp_renderer extends \tool_lp\output\renderer`.**
   The name is the one `theme_overridden_renderer_factory` derives for `$PAGE->get_renderer('tool_lp')`
   (`theme_<name>\output\<component>_renderer`; a namespace `output\tool_lp\renderer` is never looked up, and a
-  wrong name fails silently, core's renderer answering). It overrides `render_plans_page()` alone; held by
+  wrong name fails silently, core's renderer answering). It overrides `render_plans_page()` and
+  `render_course_competencies_page()`; held by
   `tool_lp_renderer_test::test_the_theme_renderer_is_the_one_the_factory_returns`.
 - **The learning plans page has three layers.** (1) `templates/tool_lp/plans_page` renders from core's context
   alone, because `tool_lp/planactions` re-renders it on the client from `tool_lp_data_for_plans_page` after
@@ -2168,17 +2169,44 @@ or in `scss/competency.scss`, except the learning plans page's cards (below).
   `editplan.php` returns to `plan.php` without it, so the owner lands on the overview after editing (intended). The
   Behat page type "theme_dimensions > learning plan" is core's page WITH `noredirect=1`; "learning plan address" is the
   bare address the redirect scenario opens. Gates `ownerredirect_*`.
-- **Twenty-one templates are copies of Moodle 5.3 (2026100500) and must be re-diffed against core on every
-  core upgrade**; each docblock names its core file. `templates/tool_lp/`: `plans_page`, `progress_bar`,
+- **Twenty-two templates are copies of Moodle 5.3 (2026100500) and must be re-diffed against core on every
+  core upgrade**; each docblock names its core file. `templates/tool_lp/`: `plans_page`, `course_competencies_page`,
+  `progress_bar`,
   `competency_summary`, `competency_path`, `evidence_summary`, `user_summary`, `linked_courses_summary`,
   `module_navigation`, `competency_plan_navigation`, `user_competency_course_navigation`,
   `related_competencies`, `course_competency_statistics`, `template_statistics`, `competency_grader` (the
   rating dialogue), `user_competency_summary`. `templates/report_competency/`: `report`,
   `user_competency_summary`, `user_course_navigation`. `templates/block_lp/`: `summary`,
   `competencies_to_review_page`, `plans_to_review_page`. **Not** copied, on purpose (large, inline JS, drag
-  and drop): `plan_page`, `course_competencies_page`, the `manage_*` pages, the trees and
+  and drop): `plan_page`, the `manage_*` pages, the trees and
   pickers, the rule configuration, and `user_competency_summary_in_plan` / `_in_course` (the next
   candidates). Those are styled by the stylesheet alone.
+- **The course competencies page (phase 4) has the plans page's three layers**, over core's export of
+  `tool_lp\output\course_competencies_page`: the copy renders from core's context alone (core's add, delete, course
+  outcome and ratings setting replace `[data-region="coursecompetenciespage"]` and run its js block again, always with
+  `moduleid: 0`; reordering moves rows in place), `local\competency\coursecompetencies::decorate()` writes the first
+  paint's `dimfirstpaint`/`dimextra`/`dimcm`, and `amd/src/coursecompetencies.js` puts them back from
+  `theme_dimensions_get_course_competency_extras`. The slots are keyed by `data-competencyid` and `data-cmid`, never
+  `data-id` (core reads the delete link's id through `closest('[data-id]')`). Invariants:
+  - **Never `api::list_user_competencies_in_course()` for the extras**: it inserts a `competency_usercompcourse` row per
+    missing competency on a read. Core's export does it for the session user; the class figures read the table as it
+    is (`test_a_learners_page_inserts_no_row_beyond_cores`).
+  - **The class is `get_enrolled_with_capabilities_join()` with `moodle/competency:coursecompetencygradable`**, the set
+    core's grading and report_competency read, suspended enrolments included (core's `$onlyactive = false`), COUNT
+    DISTINCT per user (two enrolment methods are one learner). Core's own statistics count every row of the course; the
+    theme's do not. The site course gets no extras (every user is enrolled there): `for_viewer()`, the renderer and the
+    service each refuse it (gates `coursecomp_site_course`, `coursecomp_renderer_site`, `coursecomp_ws_site`).
+  - **The distribution goes to staff only, decided on the server** from core's page flags (`competencygrade` or
+    `coursecompetencymanage` in the course); a learner's figures are the session user's (`is_enrolled()` with the
+    gradable capability and `user_competency::can_read_user_in_course()`); the service takes no user id. An activity is
+    listed only where `cm_info::uservisible` admits it, as core lists it.
+  - **The cache is `local\competency\courseclass`**: `coursecompetencyclass` keyed by course id, its value carrying the
+    course's and the site's revisions (cache `coursecompetencyrev`, random, read BEFORE the build), the course's
+    competency ids (a competency added or removed fires no event) and the time built (rebuilt after an hour). Observers
+    (db/events.php, `'internal' => false`, one cache write each, wrapped so they never throw): rated in course, evidence
+    created, enrolment created and deleted, course reset ended (the course); role assigned or unassigned and capability
+    assigned or unassigned (the course in its context, every course from a category or the system); role deleted and
+    user deleted (every course). A completion rates through its evidence. Counts only: not personal data.
 - **The hooks, by reader.** `tool_lp/planactions`: the root `data-region="plans"` (replaced whole, so it is the
   template's root), exactly ONE `data-region="plan-node"` ancestor of each action with `data-id`/`data-userid`
   (`_findPlanData`), the menu `ul.planactions > li > a + ul > li > a[data-action]` that `tool_lp/menubar` enhances.

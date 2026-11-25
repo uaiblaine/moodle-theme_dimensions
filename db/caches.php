@@ -89,6 +89,22 @@ $definitions = [
         'staticacceleration' => true,
         'staticaccelerationsize' => 1,
     ],
+    // The class distribution of the course competencies page (local\competency\courseclass::counts()): per course id,
+    // how many enrolled learners are proficient, rated and counted per competency, with the revisions, the competency
+    // ids and the time it was built for. Counts only: no user id, no name; not personal data. The same for every staff
+    // viewer of the course, so one node pays for it; a value whose revisions or competencies no longer match is rebuilt.
+    'coursecompetencyclass' => [
+        'mode' => \core_cache\store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => false,
+    ],
+    // The revisions of those values, one per course and one for the site (local\competency\courseclass::revision()):
+    // shared by every node, minted anew by the observers of db/events.php.
+    'coursecompetencyrev' => [
+        'mode' => \core_cache\store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => true,
+    ],
     // The public calendar's two halves (local\calendar\publiccache::half()): what a visitor is shown, the same for
     // everybody, keyed by the half, its token, the language and the window. A bump of a token makes the entries under
     // the old one unreachable and purges them.

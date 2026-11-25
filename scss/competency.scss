@@ -1491,6 +1491,183 @@ body.path-admin-tool-lp table.managecompetencies {
     }
 }
 
+/* ---- The course competencies page (phase 4) ------------------------------------ */
+/* The theme's copy of tool_lp/course_competencies_page (root .dim-comp-course) and the two templates drawn into it,
+   theme_dimensions/competency_course_extra and theme_dimensions/competency_course_cm. Each competency is a card-like row
+   of core's managecompetencies table; the class distribution is the progress bar above (.dim-comp-progress, with its
+   dark pairing at the foot) on the inset ground; an activity's outcome is a status label (.dim-comp-pill, its tone a
+   modifier the server picks). This block sits last in the light half: the dark half stays at the foot of the file
+   (competency_scss_test). */
+.dim-comp-course {
+    .dim-comp-course-actions {
+        margin-bottom: var(--dim-ds-space-sm);
+    }
+
+    .dim-comp-course-push {
+        > a {
+            margin-inline-start: auto;
+            color: var(--dimensions-info-ink);
+        }
+    }
+
+    .dim-comp-course-cell {
+        padding: var(--dim-ds-space-md);
+    }
+
+    .dim-comp-course-name {
+        margin: 0 0 var(--dim-ds-space-xxs);
+        color: var(--dimensions-ink-strong);
+        font-size: 1.25rem;
+        font-weight: 600;
+        line-height: 1.3;
+
+        > a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        > a:hover,
+        > a:focus {
+            text-decoration: underline;
+        }
+    }
+
+    .dim-comp-course-description {
+        margin-bottom: var(--dim-ds-space-xs);
+        color: var(--dimensions-ink);
+        line-height: var(--dim-ds-leading-relaxed);
+    }
+
+    .dim-comp-course-rating {
+        margin-top: var(--dim-ds-space-xs);
+    }
+
+    .dim-comp-course-outcome {
+        margin-top: var(--dim-ds-space-sm);
+
+        label {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--dim-ds-space-xxs) var(--dim-ds-space-xs);
+            margin: 0;
+            color: var(--dimensions-ink-muted);
+            font-size: .875rem;
+            font-weight: 600;
+        }
+
+        .form-select {
+            width: auto;
+            max-width: 100%;
+        }
+    }
+
+    .dim-comp-course-cms,
+    .dim-comp-course-plans {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dim-comp-course-cmrow {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--dim-ds-space-xxs) var(--dim-ds-space-sm);
+        padding: var(--dim-ds-space-xs) 0;
+        border-top: 1px solid var(--dimensions-line);
+
+        &:first-child {
+            border-top: 0;
+        }
+    }
+
+    .dim-comp-course-plans > li {
+        padding: var(--dim-ds-space-xxs) 0;
+    }
+
+    .dim-comp-course-cm {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--dim-ds-space-xxs) var(--dim-ds-space-xs);
+    }
+
+    .dim-comp-course-cmstate {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--dim-ds-space-xxs);
+        color: var(--dimensions-ink-muted);
+        font-size: .8125rem;
+    }
+
+    .dim-comp-course-cmstate--done {
+        color: var(--dimensions-success-ink);
+    }
+
+    .dim-comp-course-class {
+        margin-top: var(--dim-ds-space-sm);
+        padding: var(--dim-ds-space-sm) var(--dim-ds-space-md);
+        border-radius: var(--dim-ds-radius-md);
+        background-color: var(--dimensions-surface-alt);
+        color: var(--dimensions-ink);
+
+        .dim-comp-progress {
+            margin: var(--dim-ds-space-xxs) 0;
+        }
+    }
+
+    .dim-comp-course-class-counts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 var(--dim-ds-space-sm);
+        margin: 0;
+        color: var(--dimensions-ink);
+        font-size: .875rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dim-comp-course-class-none {
+        margin: 0;
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-course-class-note {
+        margin: var(--dim-ds-space-xxs) 0 0;
+        color: var(--dimensions-ink-muted);
+        font-size: .8125rem;
+    }
+
+    .dim-comp-course-mine {
+        display: flex;
+        align-items: center;
+        gap: var(--dim-ds-space-xs);
+        margin: var(--dim-ds-space-sm) 0 0;
+        color: var(--dimensions-ink);
+        font-size: .875rem;
+    }
+
+    .dim-comp-course-empty {
+        margin: 0;
+        color: var(--dimensions-ink-muted);
+    }
+}
+
+/* A phone: the activity's label wraps under its link. */
+@media (max-width: 575.98px) {
+    .dim-comp-course {
+        .dim-comp-course-cell {
+            padding: var(--dim-ds-space-sm);
+        }
+
+        .dim-comp-course-cmrow {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+}
+
 /* ---- Dark mode ------------------------------------------------------------ */
 /* The family tokens already flip with the colour mode; what is restated here is a pairing that is
    not the same token in both modes. The bar's fill: the brand fill (Bootstrap's primary) is a navy
