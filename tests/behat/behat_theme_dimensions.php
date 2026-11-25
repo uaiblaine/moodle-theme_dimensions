@@ -61,6 +61,9 @@ class behat_theme_dimensions extends behat_base {
      * - 'Learning plan address' (plan name): core's page of one learning plan at its bare address, from which the
      *   plan's owner is sent to local_dimensions' overview (local\competency\ownerredirect).
      * - 'Learning plans' (username): core's list of one user's learning plans, the theme's plan cards.
+     * - 'Competency breakdown' (course shortname, a bar and a username, e.g. "C1|student1"): core's breakdown report of
+     *   one learner, report/competency/index.php with `user`; core's own page type "report_competency > breakdown"
+     *   names no learner, which the theme draws as the class report.
      *
      * @param string $type The page type.
      * @param string $identifier The page identifier.
@@ -120,6 +123,12 @@ class behat_theme_dimensions extends behat_base {
             case 'evidence':
                 $userid = $DB->get_field('user', 'id', ['username' => $identifier], MUST_EXIST);
                 return new moodle_url('/admin/tool/lp/user_evidence_list.php', ['userid' => $userid]);
+            case 'competency breakdown':
+                [$shortname, $username] = array_pad(explode('|', $identifier, 2), 2, '');
+                return new moodle_url('/report/competency/index.php', [
+                    'id' => $DB->get_field('course', 'id', ['shortname' => $shortname], MUST_EXIST),
+                    'user' => $DB->get_field('user', 'id', ['username' => $username], MUST_EXIST),
+                ]);
             case 'activity with focus mode off':
                 $cm = $this->get_cm_by_activity_name('page', $identifier);
                 return new moodle_url('/mod/page/view.php', [

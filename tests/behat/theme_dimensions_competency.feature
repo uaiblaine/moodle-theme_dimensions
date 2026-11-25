@@ -76,7 +76,7 @@ Feature: The competency pages and dialogues wear the theme and keep core's actio
     And "#local-dimensions-viewplan-accordion" "css_element" should not exist
 
   Scenario: A teacher rates a competency from the breakdown report in the theme's dialogues
-    Given I am on the "C1" "report_competency > breakdown" page logged in as "teacher1"
+    Given I am on the "C1|student1" "theme_dimensions > competency breakdown" page logged in as "teacher1"
     Then ".dim-comp-report" "css_element" should exist
     And "Good" "report_competency > breakdown rating" should exist in the "Salads" "report_competency > breakdown"
     And "Not rated" "report_competency > breakdown rating" should exist in the "Desserts" "report_competency > breakdown"
@@ -98,6 +98,35 @@ Feature: The competency pages and dialogues wear the theme and keep core's actio
     # The grading popup re-rendered the theme's report through core/templates.
     And "Great" "report_competency > breakdown rating" should exist in the "Desserts" "report_competency > breakdown"
     And ".dim-comp-report" "css_element" should exist
+
+  Scenario: A teacher rates a learner from the class report and the cell shows the new rating
+    Given the following "users" exist:
+      | username | firstname | lastname |
+      | student2 | Student   | second   |
+    And the following "course enrolments" exist:
+      | user     | course | role    |
+      | student2 | C1     | student |
+    When I am on the "C1" "report_competency > breakdown" page logged in as "teacher1"
+    # No learner named: the class report, one row per learner, one column per competency.
+    Then ".dim-comp-classreport" "css_element" should exist
+    And I should see "Student first" in the ".dim-comp-classreport" "css_element"
+    And I should see "Student second" in the ".dim-comp-classreport" "css_element"
+    And I should see "Salads" in the ".dim-comp-classreport" "css_element"
+    And I should see "Good" in the "Student first" "table_row"
+    # The first "Not rated" of the second learner's row is Salads, the course's first competency.
+    When I click on "Not rated" "link" in the "Student second" "table_row"
+    Then "User competency summary" "dialogue" should be visible
+    When I click on "Rate" "button" in the "User competency summary" "dialogue"
+    # Core fills the grader's ratings after the dialogue opens: wait for it, as the breakdown scenario does.
+    Then "Rate" "dialogue" should be visible
+    And ".dim-comp-grader" "css_element" should exist in the "Rate" "dialogue"
+    # The report's own filters are selects too: name the dialogue's field.
+    And I set the field "Rating" in the "Rate" "dialogue" to "Great"
+    And I click on "Rate" "button" in the ".competency-grader" "css_element"
+    Then "Great" "tool_lp > competency page rating" should exist
+    And I click on "Close" "button" in the "User competency summary" "dialogue"
+    # Report Builder read the rows again: the cell names the new rating.
+    And I should see "Great" in the "Student second" "table_row"
 
   Scenario: A manager completes a learner's plan from its card and the card follows the plan
     Given the following "users" exist:

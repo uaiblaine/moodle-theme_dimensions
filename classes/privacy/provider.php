@@ -26,6 +26,8 @@
 namespace theme_dimensions\privacy;
 
 use core_privacy\local\metadata\collection;
+use core_reportbuilder\local\models\report;
+use core_reportbuilder\local\models\user_filter;
 use core_privacy\local\request\approved_contextlist;
 use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\contextlist;
@@ -36,6 +38,8 @@ use core_privacy\local\request\writer;
 use theme_dimensions\local\calendar\state as calendar_state;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\remembered;
+use theme_dimensions\local\competency\classreport;
+use theme_dimensions\local\competency\reportpersistents;
 use theme_dimensions\local\flavourchoice;
 use theme_dimensions\local\focusmode;
 use theme_dimensions\output\category_hero;
@@ -60,6 +64,12 @@ use theme_dimensions\output\course_notice;
  * category's page as a side effect of somebody leaving the site (the shape of
  * local_unlistedcourses' provider). usermodified is not in the cached payload
  * ({@see branding::CACHED_KEYS}), so a detach needs no cache purge.
+ *
+ * The filter values a reader stores on the class report of competency ratings are rows core writes
+ * (`reportbuilder_user_filter`) under the theme's system report, which core's own provider leaves out (it covers
+ * custom reports only; the fleet's decision D146): they are the reader's data, found in their user context, exported
+ * with the course each report is of, deleted on request and when the account is deleted
+ * ({@see reportpersistents::user_deleted()}).
  *
  * Everything else the theme shows or writes about a person belongs to core's own subsystems,
  * which describe and delete it themselves: the courses they starred are core_course's own
@@ -122,15 +132,24 @@ class provider implements
             'privacy:metadata:preference:calendar_state'
         );
         $collection->add_subsystem_link('core_cohort', [], 'privacy:metadata:core_cohort');
+        $collection->add_database_table(user_filter::TABLE, [
+            'reportid' => 'privacy:metadata:reportbuilder_user_filter:reportid',
+            'filterdata' => 'privacy:metadata:reportbuilder_user_filter:filterdata',
+            'usercreated' => 'privacy:metadata:reportbuilder_user_filter:usercreated',
+            'usermodified' => 'privacy:metadata:reportbuilder_user_filter:usermodified',
+            'timecreated' => 'privacy:metadata:reportbuilder_user_filter:timecreated',
+            'timemodified' => 'privacy:metadata:reportbuilder_user_filter:timemodified',
+        ], 'privacy:metadata:reportbuilder_user_filter');
 
         return $collection;
     }
 
     /**
-     * The category contexts whose branding this person last saved.
+     * The category contexts whose branding this person last saved, and their own user context while they keep filter
+     * values on the theme's reports.
      *
      * @param int $userid The user id.
-     * @return contextlist The category contexts.
+     * @return contextlist The contexts.
      */
     public static function get_contexts_for_userid(int $userid): contextlist {
         $contextlist = new contextlist();
@@ -140,6 +159,17 @@ class provider implements
                  WHERE ctx.contextlevel = :categorylevel
                    AND b.usermodified = :userid";
         $contextlist->add_from_sql($sql, ['categorylevel' => CONTEXT_COURSECAT, 'userid' => $userid]);
+
+        [$isthemes, $params] = reportpersistents::is_themes('r');
+        $contextlist->add_from_sql(
+            "SELECT ctx.id
+               FROM {" . user_filter::TABLE . "} f
+               JOIN {" . report::TABLE . "} r ON r.id = f.reportid AND {$isthemes}
+               JOIN {context} ctx ON ctx.instanceid = f.usercreated AND ctx.contextlevel = :userlevel
+              WHERE f.usercreated = :userid",
+            $params + ['userlevel' => CONTEXT_USER, 'userid' => $userid]
+        );
+
         return $contextlist;
     }
 
@@ -151,6 +181,18 @@ class provider implements
      */
     public static function get_users_in_context(userlist $userlist): void {
         $context = $userlist->get_context();
+        if ($context->contextlevel == CONTEXT_USER) {
+            [$isthemes, $params] = reportpersistents::is_themes('r');
+            $userlist->add_from_sql(
+                'usercreated',
+                'SELECT f.usercreated
+                   FROM {' . user_filter::TABLE . '} f
+                   JOIN {' . report::TABLE . "} r ON r.id = f.reportid AND {$isthemes}
+                  WHERE f.usercreated = :subject",
+                $params + ['subject' => (int) $context->instanceid]
+            );
+            return;
+        }
         if ($context->contextlevel != CONTEXT_COURSECAT) {
             return;
         }
@@ -175,6 +217,10 @@ class provider implements
 
         $userid = (int) $contextlist->get_user()->id;
         foreach ($contextlist->get_contexts() as $context) {
+            if ($context->contextlevel == CONTEXT_USER && (int) $context->instanceid === $userid) {
+                static::export_report_filters($context, $userid);
+                continue;
+            }
             if ($context->contextlevel != CONTEXT_COURSECAT) {
                 continue;
             }
@@ -201,6 +247,10 @@ class provider implements
     public static function delete_data_for_all_users_in_context(\context $context): void {
         global $DB;
 
+        if ($context->contextlevel == CONTEXT_USER) {
+            reportpersistents::delete_user_filters((int) $context->instanceid);
+            return;
+        }
         if ($context->contextlevel != CONTEXT_COURSECAT) {
             return;
         }
@@ -218,6 +268,10 @@ class provider implements
 
         $userid = (int) $contextlist->get_user()->id;
         foreach ($contextlist->get_contexts() as $context) {
+            if ($context->contextlevel == CONTEXT_USER && (int) $context->instanceid === $userid) {
+                reportpersistents::delete_user_filters($userid);
+                continue;
+            }
             if ($context->contextlevel != CONTEXT_COURSECAT) {
                 continue;
             }
@@ -239,12 +293,53 @@ class provider implements
 
         $context = $userlist->get_context();
         $userids = $userlist->get_userids();
+        if ($context->contextlevel == CONTEXT_USER) {
+            if (in_array((int) $context->instanceid, array_map('intval', $userids), true)) {
+                reportpersistents::delete_user_filters((int) $context->instanceid);
+            }
+            return;
+        }
         if ($context->contextlevel != CONTEXT_COURSECAT || !$userids) {
             return;
         }
         [$insql, $params] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
         $params['categoryid'] = $context->instanceid;
         $DB->set_field_select(branding::TABLE, 'usermodified', 0, "categoryid = :categoryid AND usermodified $insql", $params);
+    }
+
+    /**
+     * The person's stored filter values of the theme's reports, each with the course its report is of.
+     *
+     * A report persistent's context is whatever a client named to core's services, which create it before the
+     * report's can_view(); so the course is named only where the subject could open its class report (a course
+     * context where they hold the report's capability at course level), judged for the subject, never for the user
+     * the export runs as.
+     *
+     * @param \context $context The person's own context.
+     * @param int $userid The person.
+     * @return void
+     */
+    protected static function export_report_filters(\context $context, int $userid): void {
+        $entries = [];
+        foreach (reportpersistents::user_filters($userid) as $record) {
+            $course = '';
+            $reportcontext = \context::instance_by_id((int) $record->contextid, IGNORE_MISSING);
+            if ($reportcontext instanceof \context_course && has_capability(classreport::USERVIEW, $reportcontext, $userid)) {
+                $course = $reportcontext->get_context_name(false, false, false);
+            }
+            $entries[] = (object) [
+                'course' => $course,
+                'filters' => json_decode((string) $record->filterdata),
+                'timecreated' => transform::datetime((int) $record->timecreated),
+                'timemodified' => transform::datetime((int) $record->timemodified),
+            ];
+        }
+        if ($entries) {
+            writer::with_context($context)->export_data(
+                [get_string('privacy:path:reportfilters', 'theme_dimensions')],
+                (object) ['filters' => $entries]
+            );
+        }
     }
 
     /**
