@@ -1072,6 +1072,28 @@ body.path-admin-tool-lp table.managecompetencies {
     }
 }
 
+/* The bar's narrow step (filter-bar.md, Folding): the scope takes a row of its own and its cells share it, centred.
+   The cells grow from their own width rather than from zero, and wrap to a second line inside the ground, so
+   four labels with their counts never run past the page's edge in a longer language. */
+@media (max-width: 575.98px) {
+    .dim-comp-plans {
+        .dim-comp-seg {
+            display: flex;
+            flex: 1 0 100%;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+
+        .dim-comp-seg-cell {
+            flex: 1 1 auto;
+            justify-content: center;
+            gap: .25rem;
+            padding: 0 .25rem;
+            white-space: nowrap;
+        }
+    }
+}
+
 /* A coarse pointer gets the bar's taller step (filter-bar.md, D26): 36px controls, a 44px bar. */
 @media (pointer: coarse) {
     .dim-comp-plans {
