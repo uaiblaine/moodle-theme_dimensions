@@ -440,12 +440,18 @@ final class evidencelist_test extends \advanced_testcase {
         $this->assertSame(clean_param($third['actor'], PARAM_TEXT), $third['actor'], 'The name is its own PARAM_TEXT cleaning.');
         $this->assertStringNotContainsString('<', $third['actor']);
         $this->assertStringContainsString('Teacher', $third['actor']);
+        // Called as core/ajax calls it: with the session key, which resetAfterTest() does not take back out.
+        $_POST['sesskey'] = sesskey();
         $answer = \core_external\external_api::call_external_function(
             'theme_dimensions_get_user_evidence_feed',
             ['userid' => $learner->id],
             true
         );
-        $this->assertFalse($answer['error'], 'A name with markup does not fail the whole response.');
+        unset($_POST['sesskey']);
+        $this->assertFalse(
+            $answer['error'],
+            'A name with markup does not fail the whole response: ' . json_encode($answer['exception'] ?? null)
+        );
     }
 
     /**
