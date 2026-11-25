@@ -144,6 +144,22 @@ One mechanism for the three redrawn pages that have actions:
 - Filters: scope (all, mine, from the platform), competency, plan, course, period, search.
 - Core's actions stay (add, edit, link, send for review, delete); the selected evidence opens beside the list.
 - Validity ("Valid until") comes from local_evidencehub when installed.
+- Phase 3 (done, 2026100649): the theme's copy of `tool_lp/user_evidence_list_page` draws core's evidence as dated items
+  (core's `timecreated`), keeping every hook of `tool_lp/user_evidence_actions` and the menu inside core's structure;
+  the derived renderer puts the first paint newest first and heads it by month, reading nothing more than core's page.
+  The platform's records need JavaScript: `theme_dimensions/competencyevidence` asks
+  `theme_dimensions_get_user_evidence_feed` (read class `local\competency\evidencelist`), which repeats
+  `api::list_evidence()`'s rule (`user_competency::can_read_user()`, once), reads `competency_evidence` joined to
+  `competency_usercomp` with keyset paging on (timecreated, id), leaves out core_competency's
+  `evidence_evidenceofpriorlearninglinked` rows and folds every other component's rows per month. The re-arm point is
+  the template's js block, as on the plans page: `user_evidence_actions` replaces the region through
+  `templates.replaceNode()`, which runs it again. The detail beside the list is copied from each item's template
+  element; its buttons press the item's own menu entry, so core's handlers stay the only ones.
+  Left out: validity (local_evidencehub keeps it per user competency, and its one door, local_dimensions'
+  `competency_status_badges` hook, is dispatched by local_dimensions for its own pages), the date button's month
+  grids (the layer has quick options and two native day fields), the skeleton's shimmer, a search beyond the titles
+  shown (descriptions are composed strings, not searchable in SQL), and a source filter beyond the course (the
+  context path).
 
 ### 5. Course competencies (`admin/tool/lp/coursecompetencies.php`)
 
@@ -230,7 +246,7 @@ competency and a long form (one row per learner and competency). Core's grading 
 | 1c | Filters by the template's tags, favourites on one's own list, Organise (sort only); done | theme, plus the star outside the block in block_dimensions | 3 |
 | 2a | Competency from a parameter, plan review actions, link back | local_dimensions | 3 |
 | 2b | The owner's redirects; done | theme | 3 |
-| 3 | Evidence page | theme | 3 |
+| 3 | Evidence page (done, 2026100649) | theme | 3 |
 | 4 | Course competencies, teacher and learner; done (2026100647) | theme | 3 |
 | 5 | A learner's competency in a course; done | theme | 2 |
 | 6 | Class report: spike, then the report | theme | 3 |

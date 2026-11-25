@@ -2131,7 +2131,8 @@ or in `scss/competency.scss`, except the learning plans page's cards (below).
   The name is the one `theme_overridden_renderer_factory` derives for `$PAGE->get_renderer('tool_lp')`
   (`theme_<name>\output\<component>_renderer`; a namespace `output\tool_lp\renderer` is never looked up, and a
   wrong name fails silently, core's renderer answering). It overrides `render_plans_page()`,
-  `render_course_competencies_page()` and `render_user_competency_summary_in_course()`; held by
+  `render_course_competencies_page()`, `render_user_competency_summary_in_course()` and
+  `render_user_evidence_list_page()`; held by
   `tool_lp_renderer_test::test_the_theme_renderer_is_the_one_the_factory_returns`.
 - **The learning plans page has three layers.** (1) `templates/tool_lp/plans_page` renders from core's context
   alone, because `tool_lp/planactions` re-renders it on the client from `tool_lp_data_for_plans_page` after
@@ -2169,8 +2170,19 @@ or in `scss/competency.scss`, except the learning plans page's cards (below).
   `editplan.php` returns to `plan.php` without it, so the owner lands on the overview after editing (intended). The
   Behat page type "theme_dimensions > learning plan" is core's page WITH `noredirect=1`; "learning plan address" is the
   bare address the redirect scenario opens. Gates `ownerredirect_*`.
-- **Twenty-three templates are copies of Moodle 5.3 (2026100500) and must be re-diffed against core on every
-  core upgrade**; each docblock names its core file. `templates/tool_lp/`: `plans_page`, `course_competencies_page`,
+- **The evidence page (phase 3) has the same three layers.** `templates/tool_lp/user_evidence_list_page` renders from
+  core's context alone (`tool_lp/user_evidence_actions` replaces `[data-region="user-evidence-list"]` with
+  `templates.replaceNode()`, which runs the js block again: the re-arm point); every node is
+  `data-region='user-evidence-node'` with core's menu inside, and the detail's buttons only `click()` that menu's
+  entries (`PROXIES`), so no handler of the theme's acts on an evidence. `evidencelist::decorate()` dates the first
+  paint and reads nothing; the platform's records come only from `theme_dimensions_get_user_evidence_feed`, whose rule
+  is `user_competency::can_read_user()` (core's `api::list_evidence()`), asked in the service before the arguments are
+  read and again in `evidencelist::page()`. Link rows (core_competency, `evidencelist::LINKED`) never become records,
+  other components' rows are only counted per month, and a page's folded rows are those between its cursor and its
+  last record, so each is counted once. The module keeps the records' nodes across core's re-renders and asks again;
+  the latest ticket wins.
+- **Twenty-four templates are copies of Moodle 5.3 (2026100500) and must be re-diffed against core on every
+  core upgrade**; each docblock names its core file. `templates/tool_lp/`: `plans_page`, `course_competencies_page`, `user_evidence_list_page`,
   `progress_bar`,
   `competency_summary`, `competency_path`, `evidence_summary`, `user_summary`, `linked_courses_summary`,
   `module_navigation`, `competency_plan_navigation`, `user_competency_course_navigation`,

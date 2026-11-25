@@ -36,7 +36,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * one of core's AMD modules (tool_lp/evidence_delete, tool_lp/competencyactions,
  * tool_lp/competencydialogue, tool_lp/grade_dialogue, tool_lp/user_competency_workflow,
  * tool_lp/user_competency_info, the three navigation modules, report_competency/grading_popup,
- * tool_lp/planactions with tool_lp/menubar), by a
+ * tool_lp/planactions and tool_lp/user_evidence_actions with tool_lp/menubar), by a
  * core Behat selector (tool_lp's and report_competency's named selectors), or are a literal core's own
  * template hands to one of those modules; the few no reader reads (class hooks core styles, the
  * statistics, summary and grader regions, block_lp's page regions) are kept to mirror core's markup.
@@ -88,6 +88,7 @@ final class competency_templates_test extends \advanced_testcase {
             'tool_lp/course_competencies_page' => 'admin/tool/lp/templates/course_competencies_page.mustache',
             'tool_lp/user_competency_summary_in_course' =>
                 'admin/tool/lp/templates/user_competency_summary_in_course.mustache',
+            'tool_lp/user_evidence_list_page' => 'admin/tool/lp/templates/user_evidence_list_page.mustache',
             'report_competency/report' => 'report/competency/templates/report.mustache',
             'report_competency/user_competency_summary' => 'report/competency/templates/user_competency_summary.mustache',
             'report_competency/user_course_navigation' => 'report/competency/templates/user_course_navigation.mustache',
@@ -386,6 +387,43 @@ final class competency_templates_test extends \advanced_testcase {
                     "//li[@data-dim-plan='4']/a[@href='https://example.com/admin/tool/lp/plan.php?id=4']" .
                         "[normalize-space(.)='Writing plan']",
                     "//p[@data-region='dim-comp-ucc-empty'][@hidden]",
+                ],
+            ],
+            'tool_lp/user_evidence_list_page' => [
+                ['data-region="user-evidence-list"', "data-region='user-evidence-node'", 'data-id="{{id}}"',
+                    'data-userid="{{userid}}"', 'class="user-evidence-actions"', 'class="dropdown dropdown-menu"',
+                    'class="dropdown-item"', 'data-action="link-competency"', 'data-action="send-competencies-review"',
+                    'data-action="user-evidence-delete"', '{{#canmanage}}', '{{#userhasplan}}',
+                    '{{pluginbaseurl}}/user_evidence_edit.php?id={{id}}&amp;userid={{userid}}&amp;return=list',
+                    '{{pluginbaseurl}}/user_evidence.php?id={{id}}', '{{{name}}}', '{{#navigation}}', '{{{.}}}',
+                    '{{#usercompetencies}}', '{{usercompetency.statusname}}', '{{#files}}', '{{filenameshort}}', '{{urlshort}}',
+                    'listofevidence, tool_lp', 'nouserevidence, tool_lp', "'tool_lp/user_evidence_actions'",
+                    "new UserEvidenceActions('list')", "uea.enhanceMenubar('.user-evidence-actions')"],
+                [
+                    "//div[@data-region='user-evidence-list'][contains(@class, 'dim-comp-ev')]" .
+                        "[@data-dim-firstpaint='1'][@data-dim-platform='1']",
+                    "//*[@data-region='user-evidence-list']//ol[@data-region='dim-comp-ev-list']" .
+                        "/li[@data-region='user-evidence-node'][@data-id='7'][@data-userid='3'][@data-dim-time='1792065600']" .
+                        "[@data-dim-comps='12 ']",
+                    "//ol[@data-region='dim-comp-ev-list']/li[@data-region='dim-comp-ev-month']" .
+                        "/h3[normalize-space(.)='October 2026']",
+                    "//li[@data-id='7']//h4/a[@href='https://example.com/admin/tool/lp/user_evidence.php?id=7']" .
+                        "[normalize-space(.)='Data protection certificate']",
+                    "//li[@data-id='7']//ul[@class='user-evidence-actions']/li/a[@href='#']/following-sibling::ul" .
+                        "[@class='dropdown dropdown-menu']/li[@class='dropdown-item']/a[@data-action='user-evidence-delete']",
+                    "//li[@data-id='7']//a[@data-action='link-competency']",
+                    "//li[@data-id='8']//a[@data-action='send-competencies-review']",
+                    "//li[@data-id='7']//a" .
+                        "[@href='https://example.com/admin/tool/lp/user_evidence_edit.php?id=7&userid=3&return=list']",
+                    "//li[@data-id='8']//*[contains(@class, 'dim-comp-pill--status')]",
+                    "//*[@data-region='user-evidence-list']" .
+                        "//a[@href='https://example.com/admin/tool/lp/user_evidence_edit.php?userid=3']",
+                    "//*[@data-region='dim-comp-bar'][@hidden]//*[@role='radiogroup']" .
+                        "/button[@role='radio'][@data-value='platform']",
+                    "//*[@data-region='dim-comp-total'][@aria-live='polite']",
+                    "//*[@data-region='dim-comp-ev-nomatch'][@hidden]",
+                    "//aside[@data-region='dim-comp-ev-detail'][@hidden]//*[@data-region='dim-comp-ev-detailbody']",
+                    "//button[@data-action='dim-comp-ev-more'][@hidden]",
                 ],
             ],
             'report_competency/report' => [

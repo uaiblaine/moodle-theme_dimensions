@@ -733,7 +733,8 @@ body.path-admin-tool-lp table.managecompetencies {
    (tool_lp/menubar) restyled as a kebab
    in a small capsule at the card's top end corner, above the card's stretched link (the block's
    .stretched-link overlay is z 1); core's menubar positions the open list itself, under the kebab here. */
-.dim-comp-plans {
+.dim-comp-plans,
+.dim-comp-ev {
     .dim-comp-plans-head {
         display: flex;
         flex-wrap: wrap;
@@ -1391,11 +1392,403 @@ body.path-admin-tool-lp table.managecompetencies {
     }
 }
 
+/* ---- The evidence page (templates/tool_lp/user_evidence_list_page) ------------ */
+/* One dated list of core's prior-learning evidence and the platform's records (amd/src/competencyevidence.js), under the
+   learning plans page's bar, whose rules above serve both roots (.dim-comp-plans and .dim-comp-ev): the scope, the
+   count, Filters and its panel (filter-panel.md), the period's button and layer (date-button.md: the quick options
+   and two native day fields; the month grids are not drawn here), the chips and the search. Each item is a row of
+   three columns: its day, a rail with a dot (filled for a rating, the timeline's milestone), and a panel (radius lg)
+   with the kind's icon, its source line, its title and what it feeds; core's menu is the kebab at the panel's top end
+   corner, the plans page's. Another component's rows are one quiet line per month on the inset ground. The selected
+   item's detail is a panel beside the list from md up (in flow, sticky under the navbar) and a bottom sheet below
+   (panel-popover-sheet.md: radius xl at the top, elevation lg, z 1050, at most 80% of the height). */
+.dim-comp-ev {
+    .dim-comp-ev-layout {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 1.25rem;
+    }
+
+    .dim-comp-ev-main {
+        flex: 999 1 35rem;
+        min-width: 0;
+    }
+
+    .dim-comp-ev-list {
+        display: flex;
+        flex-direction: column;
+        gap: .5rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dim-comp-ev-month {
+        margin: .75rem 0 0;
+    }
+
+    .dim-comp-ev-month:first-child {
+        margin-top: 0;
+    }
+
+    .dim-comp-ev-monthtitle {
+        margin: 0;
+        font-size: .875rem;
+        font-weight: 600;
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-ev-item {
+        display: grid;
+        grid-template-columns: 4.5rem 1rem minmax(0, 1fr);
+        column-gap: .75rem;
+        align-items: start;
+    }
+
+    .dim-comp-ev-when {
+        padding-top: .75rem;
+        font-size: .8125rem;
+        font-variant-numeric: tabular-nums;
+        text-align: end;
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-ev-rail {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-self: stretch;
+    }
+
+    .dim-comp-ev-rail::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: -.5rem;
+        inset-inline-start: calc(50% - 1px);
+        width: 2px;
+        background: var(--dimensions-line);
+        color: var(--dimensions-ink);
+    }
+
+    .dim-comp-ev-dot {
+        position: relative;
+        width: .75rem;
+        height: .75rem;
+        margin-top: 1rem;
+        border: 2px solid var(--dimensions-brand-fill);
+        border-radius: 50%;
+        background: var(--dimensions-surface);
+        color: var(--dimensions-ink);
+    }
+
+    .dim-comp-ev-dot--mile {
+        background: var(--dimensions-brand-fill);
+        color: var(--dimensions-on-brand-fill);
+    }
+
+    .dim-comp-ev-card {
+        position: relative;
+        display: flex;
+        gap: .75rem;
+        padding: .75rem 2rem .75rem .75rem;
+        border: 1px solid var(--dimensions-line);
+        border-radius: var(--dim-ds-radius-lg);
+        background: var(--dimensions-surface);
+        color: var(--dimensions-ink);
+    }
+
+    .dim-comp-ev-item[aria-current="true"] .dim-comp-ev-card {
+        border-color: var(--dimensions-brand-edge);
+        box-shadow: var(--dimensions-elevation-sm);
+    }
+
+    .dim-comp-ev-kind {
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: var(--dim-ds-radius-md);
+        background: var(--dimensions-surface-inset);
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-ev-kind--prior {
+        background: var(--dimensions-brand-tint);
+        color: var(--dimensions-brand-ink);
+    }
+
+    .dim-comp-ev-text {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        gap: .25rem;
+        min-width: 0;
+    }
+
+    .dim-comp-ev-top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .375rem .75rem;
+    }
+
+    .dim-comp-ev-src {
+        font-size: .8125rem;
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-ev-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+
+        a {
+            color: var(--dimensions-ink);
+        }
+
+        a:hover {
+            color: var(--dimensions-brand-ink);
+        }
+    }
+
+    .dim-comp-ev-feeds {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: .875rem;
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-ev-quiet {
+        margin: 0;
+        padding: .5rem .75rem;
+        border-radius: var(--dim-ds-radius-md);
+        background: var(--dimensions-surface-inset);
+        color: var(--dimensions-ink-muted);
+        font-size: .8125rem;
+    }
+
+    .dim-comp-plan-menu .user-evidence-actions {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dim-comp-plan-menu .user-evidence-actions > li {
+        float: none;
+        position: relative;
+        border-radius: var(--dim-ds-radius-sm);
+    }
+
+    .dim-comp-ev-loading {
+        display: flex;
+        flex-direction: column;
+        gap: .5rem;
+        margin-top: .5rem;
+    }
+
+    // The skeleton (skeleton.md): a card's height on the inset ground, still; its shimmer is left out here.
+    .dim-comp-ev-skeleton {
+        display: block;
+        height: 4rem;
+        border-radius: var(--dim-ds-radius-lg);
+        background: var(--dimensions-surface-inset);
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-ev-morerow {
+        display: flex;
+        justify-content: center;
+        padding-top: .75rem;
+    }
+
+    .dim-comp-ev-perioddot {
+        position: absolute;
+        top: -2px;
+        inset-inline-end: -2px;
+        width: .5rem;
+        height: .5rem;
+        border-radius: 50%;
+        background: var(--dimensions-brand-fill);
+        color: var(--dimensions-on-brand-fill);
+    }
+
+    .dim-comp-ev-boxes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .375rem;
+        margin-top: .75rem;
+    }
+
+    .dim-comp-ev-box {
+        display: flex;
+        flex: 1 1 8rem;
+        flex-direction: column;
+        gap: .25rem;
+        margin: 0;
+        font-size: .8125rem;
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-ev-date {
+        height: 2rem;
+        padding: 0 .5rem;
+        border: 1px solid var(--dimensions-line);
+        border-radius: var(--dim-ds-radius-md);
+        background: var(--dimensions-surface-inset);
+        color: var(--dimensions-ink);
+        font-size: .8125rem;
+    }
+
+    .dim-comp-ev-date:focus-visible {
+        outline: var(--dimensions-focus-width) solid var(--dimensions-focus-ring);
+        outline-offset: 2px;
+    }
+
+    .dim-comp-ev-detail {
+        position: sticky;
+        top: 5rem;
+        display: flex;
+        flex: 1 1 20rem;
+        flex-direction: column;
+        gap: .75rem;
+        max-width: 26rem;
+        padding: 1rem;
+        border: 1px solid var(--dimensions-line);
+        border-radius: var(--dim-ds-radius-lg);
+        background: var(--dimensions-surface);
+        color: var(--dimensions-ink);
+        box-shadow: var(--dimensions-elevation-sm);
+    }
+
+    .dim-comp-ev-detail:focus-visible {
+        outline: var(--dimensions-focus-width) solid var(--dimensions-focus-ring);
+        outline-offset: 2px;
+    }
+
+    .dim-comp-ev-detail-head {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .dim-comp-ev-detail-body {
+        display: flex;
+        flex-direction: column;
+        gap: .75rem;
+        min-width: 0;
+    }
+
+    .dim-comp-ev-detail-meta {
+        margin: 0;
+        font-size: .8125rem;
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-ev-detail-title {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .dim-comp-ev-detail-desc {
+        font-size: .875rem;
+
+        p:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    .dim-comp-ev-detail-sub {
+        margin: 0;
+        font-size: .875rem;
+        font-weight: 600;
+    }
+
+    .dim-comp-ev-detail-note {
+        margin: 0;
+        padding-inline-start: .75rem;
+        border-inline-start: 3px solid var(--dimensions-line);
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-ev-facts {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: .25rem .75rem;
+        margin: 0;
+        font-size: .875rem;
+
+        dt {
+            font-weight: 600;
+            color: var(--dimensions-ink-muted);
+        }
+
+        dd {
+            margin: 0;
+            overflow-wrap: anywhere;
+        }
+    }
+
+    .dim-comp-ev-files,
+    .dim-comp-ev-detail-comps {
+        display: flex;
+        flex-direction: column;
+        gap: .375rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: .875rem;
+    }
+
+    .dim-comp-ev-detail-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+}
+
+/* The evidence page below md: the day goes above the panel and the rail away, and the detail is a bottom sheet. */
+@media (max-width: 767.98px) {
+    .dim-comp-ev {
+        .dim-comp-ev-item {
+            grid-template-columns: minmax(0, 1fr);
+            row-gap: .25rem;
+        }
+
+        .dim-comp-ev-when {
+            padding-top: 0;
+            text-align: start;
+        }
+
+        .dim-comp-ev-rail {
+            display: none;
+        }
+
+        .dim-comp-ev-detail {
+            position: fixed;
+            inset: auto 0 0;
+            z-index: 1050;
+            max-width: none;
+            max-height: 80vh;
+            overflow: auto;
+            border-radius: var(--dim-ds-radius-xl) var(--dim-ds-radius-xl) 0 0;
+            box-shadow: var(--dimensions-elevation-lg);
+        }
+    }
+}
+
 /* The bar's narrow step (filter-bar.md, Folding): the scope takes a row of its own and its cells share it, centred.
    The cells grow from their own width rather than from zero, and wrap to a second line inside the ground, so
    four labels with their counts never run past the page's edge in a longer language. */
 @media (max-width: 575.98px) {
-    .dim-comp-plans {
+    .dim-comp-plans,
+    .dim-comp-ev {
         .dim-comp-seg {
             display: flex;
             flex: 1 0 100%;
@@ -1425,7 +1818,8 @@ body.path-admin-tool-lp table.managecompetencies {
 
 /* A coarse pointer gets the bar's taller step (filter-bar.md, D26): 36px controls, a 44px bar. */
 @media (pointer: coarse) {
-    .dim-comp-plans {
+    .dim-comp-plans,
+    .dim-comp-ev {
         .dim-comp-seg-cell,
         .dim-comp-iconbtn,
         .dim-comp-search-field,
@@ -1447,7 +1841,8 @@ body.path-admin-tool-lp table.managecompetencies {
 /* Motion only where the reader has not asked for less: the controls' grounds at the fast step, and the
    tooltip after its 100ms of rest (tooltip.md, D51), off the motion scale by decision. */
 @media (prefers-reduced-motion: no-preference) {
-    .dim-comp-plans {
+    .dim-comp-plans,
+    .dim-comp-ev {
         .dim-comp-iconbtn,
         .dim-comp-eraser,
         .dim-comp-plan-menu-trigger {

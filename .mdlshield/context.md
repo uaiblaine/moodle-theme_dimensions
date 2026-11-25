@@ -21,7 +21,14 @@ in the course, or `moodle/competency:competencygrade` there when the course is n
 viewer holds `moodle/site:accessallgroups`; a grader limited to their groups gets none), and a learner's figures only for the session user (no user id
 is a parameter); the distribution is counts per competency over the enrolled users with
 `moodle/competency:coursecompetencygradable`, kept in the application cache `coursecompetencyclass` under revisions
-minted by event observers; `local_dimensions` (2026100543) is the destination of the plan owner's redirect below); `customfield_picture` (the badges' and
+minted by event observers; from 2026100649 the same renderer also dates the evidence page,
+`admin/tool/lp/user_evidence_list.php`, and the read service `theme_dimensions_get_user_evidence_feed` reads
+`competency_evidence` across all of a user's competencies through `theme_dimensions\local\competency\evidencelist`,
+under core's rule for a user competency's evidence, `user_competency::can_read_user()` (the rule of
+`core_competency\api::list_evidence()`), asked once per request before anything is read and again by the read class
+itself; it returns what core's `evidence_exporter` shows the same viewer on the user competency page (core's description,
+the rating's name, the acting user's full name, the note, an http(s) address) and folds other components' rows into
+counts per month; `local_dimensions` (2026100543) is the destination of the plan owner's redirect below); `customfield_picture` (the badges' and
 the share picture's field type) is optional, asked for at run time. It owns one
 table, `theme_dimensions_cat` (the branding of a category; its one personal datum is the
 `usermodified` authorship stamp, which the privacy provider exports and clears to 0 on deletion).
