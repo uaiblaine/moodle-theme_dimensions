@@ -12,7 +12,7 @@ activities. It depends on `theme_boost_union`, `local_unlistedcourses`, `local_d
 `core_competency\api::list_user_plans()`'s access rule before building; from 2026100645 (block_dimensions 2026100508)
 the service also passes through each card's favourite flag, which the block offers only on the session user's own
 list, and the plan templates' tag values, and the page loads the block's `favourite_star` module, the theme writing no
-favourite itself; `local_dimensions` is declared, not called yet); `customfield_picture` (the badges' and
+favourite itself; `local_dimensions` (2026100543) is the destination of the plan owner's redirect below); `customfield_picture` (the badges' and
 the share picture's field type) is optional, asked for at run time. It owns one
 table, `theme_dimensions_cat` (the branding of a category; its one personal datum is the
 `usermodified` authorship stamp, which the privacy provider exports and clears to 0 on deletion).
@@ -50,7 +50,11 @@ table, `theme_dimensions_cat` (the branding of a category; its one personal datu
 - Page scripts: `categoryhero.php` (`moodle/category:manage`), `focus.php` (`require_login`, `require_sesskey`),
   `unavailable.php`, `landing.php`, `category.php`. An `after_config` hook redirects a user who may not discover a
   course or category (on `/enrol/index.php`, `/course/info.php`, `/course/index.php`); it skips CLI, AJAX and web
-  service requests. Other hooks: head tags for share previews, the course form (three callbacks), and an observer
+  service requests. On `/admin/tool/lp/plan.php` and `/admin/tool/lp/user_competency_in_plan.php` the same hook reads
+  `competency_plan.userid` by id BEFORE core's checks, only to send the plan's owner (a logged-in non-guest account
+  equal to that row's `userid`, holding `local/dimensions:view`, on a GET without `noredirect`) to
+  `/local/dimensions/view-plan.php`; anything else, a missing plan included, is left to core's page unchanged
+  (`local\competency\ownerredirect`). Other hooks: head tags for share previews, the course form (three callbacks), and an observer
   that drops a deleted category's branding row. One adhoc task, `materialise_focusmode_default`, which never throws.
 - File serving, which differs by area. Category areas (`categoryhero`, `categorycover`, `categoryogimage`, three
   badges, `categorycovervideo`) go through `branding::resolve()`: category context, id in the path, content hash

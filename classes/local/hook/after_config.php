@@ -27,6 +27,7 @@ namespace theme_dimensions\local\hook;
 use theme_dimensions\local\calendar\coreview;
 use theme_dimensions\local\calendar\ical;
 use theme_dimensions\local\category\request;
+use theme_dimensions\local\competency\ownerredirect;
 use theme_dimensions\local\guesthome;
 use theme_dimensions\local\landing\redirector;
 
@@ -52,13 +53,16 @@ use theme_dimensions\local\landing\redirector;
  * - /calendar/view.php: forwarded to the theme's calendar page ({@see coreview});
  * - /calendar/export_execute.php: core's iCal feed, answered by the theme's copy ({@see ical})
  *   so the feed withholds what the page withholds. That script defines NO_MOODLE_COOKIES, but
- *   lib/setup.php still dispatches after_config for it.
+ *   lib/setup.php still dispatches after_config for it;
+ * - /admin/tool/lp/plan.php and /admin/tool/lp/user_competency_in_plan.php: the plan's owner
+ *   alone is forwarded to local_dimensions' plan overview ({@see ownerredirect}).
  *
- * The category and calendar branches read $SCRIPT and end the request with redirect(), so they
+ * The category, calendar and plan branches read $SCRIPT and end the request with redirect(), so they
  * have no unit test. Their guards are Behat scenarios: "Guessing the URL of an unlisted category
  * reveals nothing about it" (theme_dimensions_unlisted.feature), the visitor forward
- * (theme_dimensions_category.feature) and the calendar redirect
- * (theme_dimensions_calendar.feature); the calendar decision itself is coreview_test's.
+ * (theme_dimensions_category.feature), the calendar redirect (theme_dimensions_calendar.feature)
+ * and the plan owner's (theme_dimensions_competency.feature); the calendar decision itself is
+ * coreview_test's, the plan's ownerredirect_test's.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -66,8 +70,9 @@ use theme_dimensions\local\landing\redirector;
  */
 class after_config {
     /**
-     * Point the guest home, ghost an unreachable course or category, forward /enrol/index.php to the landing page and
-     * core's calendar to the theme's, and serve core's iCal feed with the theme's withholding.
+     * Point the guest home, ghost an unreachable course or category, forward /enrol/index.php to the landing page,
+     * core's calendar to the theme's and a plan's owner to the plan overview, and serve core's iCal feed with the
+     * theme's withholding.
      *
      * @param \core\hook\after_config $hook The hook.
      */
@@ -88,6 +93,19 @@ class after_config {
         // Reads two cached settings and the session: nothing here can fail a page that loaded config.
         guesthome::apply();
         $script = (string) ($SCRIPT ?? '');
+        if ($script === ownerredirect::PLAN_SCRIPT || $script === ownerredirect::COMPETENCY_SCRIPT) {
+            // Decide inside the try and redirect outside it, as in the branches below.
+            try {
+                $target = ownerredirect::for_request($script);
+            } catch (\Throwable $exception) {
+                // A forwarding convenience must never take core's plan pages down.
+                return;
+            }
+            if ($target !== null) {
+                redirect($target);
+            }
+            return;
+        }
         if ($script === '/course/index.php') {
             $categoryid = optional_param('categoryid', 0, PARAM_INT);
             /* The id 0 (the root of the course index) goes through the same two calls: the
