@@ -5,6 +5,19 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The class report's columns are a reader's choice, and its client has its web services** (2026100651). On a
+  course's class report of competency ratings a reader may choose which competencies are the columns (at most 30, in
+  the order chosen) and their widths; the choice is kept per reader and course in the user preference
+  `theme_dimensions_classreport_<course id>`, and the page, its sorts, pages, filters (one per shown competency) and
+  download follow it. A competency the course no longer has, or an id of another course, is ignored. New web services
+  for the report's client: `theme_dimensions_class_report_rows` (a page of learners in two statements, with the column
+  catalogue, the report's own cells, the filters and their counts), `theme_dimensions_class_report_summary` (the
+  figures over the same rows) and `theme_dimensions_set_class_report_preference`. Each asks the class report's own rule
+  first (the course, no guest, competencies enabled, the report's capabilities) and then builds the report, so it
+  lists what the page lists to that reader, group rule included; a group or a search it is given can only narrow, and
+  the download holds the search too. The two reads keep the session read-only. The class report refuses the site
+  course. The preference is removed with the course and on uninstall, exported on a data request, and Moodle's
+  preference services cannot write it.
 - **The competency breakdown report shows the class** (2026100650). Moodle's competency breakdown of a course
   (`report/competency/index.php`), opened without a learner, is now one row per learner and one column per course
   competency (the first 30, in the course's order), each cell the learner's rating by name on that competency's scale

@@ -63,6 +63,8 @@ require_once(__DIR__ . '/../local/category/fixture.php');
 #[CoversClass(get_plan_cards::class)]
 #[CoversClass(get_course_competency_extras::class)]
 #[CoversClass(get_user_evidence_feed::class)]
+#[CoversClass(class_report_rows::class)]
+#[CoversClass(class_report_summary::class)]
 final class readonly_session_test extends \advanced_testcase {
     use \theme_dimensions\local\category\fixture;
 
@@ -90,7 +92,8 @@ final class readonly_session_test extends \advanced_testcase {
      * @param int $categoryid The fixture's category.
      * @param int $courseid The fixture's course.
      * @param int $userid The reader, whose own learning plans the plan cards are asked for.
-     * @param int $competencycourseid A course with competencies, of which another user is a learner.
+     * @param int $competencycourseid A course with competencies, of which another user is a learner and a third the
+     *     teacher who reads its class report.
      * @return array Service name => arguments.
      */
     private static function read_only_calls(int $categoryid, int $courseid, int $userid, int $competencycourseid): array {
@@ -102,6 +105,8 @@ final class readonly_session_test extends \advanced_testcase {
             'theme_dimensions_get_plan_cards' => ['userid' => $userid],
             'theme_dimensions_get_course_competency_extras' => ['courseid' => $competencycourseid],
             'theme_dimensions_get_user_evidence_feed' => ['userid' => $userid],
+            'theme_dimensions_class_report_rows' => ['courseid' => $competencycourseid],
+            'theme_dimensions_class_report_summary' => ['courseid' => $competencycourseid],
             'theme_dimensions_get_calendar_range' => ['from' => '2026-11-01', 'to' => '2026-11-30'],
             // Three months, the most one answer covers: the read-only session holds for the longest window too.
             'theme_dimensions_get_calendar_trails' => ['month' => '2026-11', 'months' => 3],
@@ -231,12 +236,19 @@ final class readonly_session_test extends \advanced_testcase {
         $competency = $lpg->create_competency(['competencyframeworkid' => $framework->get('id')]);
         $lpg->create_course_competency(['courseid' => $competencycourse->id, 'competencyid' => $competency->get('id')]);
         $generator->enrol_user($learner->id, $competencycourse->id, 'student');
+        // The class report's reader: a teacher of that course only, so the viewer above stays enrolled nowhere.
+        $teacher = $generator->create_user();
+        $generator->enrol_user($teacher->id, $competencycourse->id, 'teacher');
         $CFG->enable_read_only_sessions = true;
 
         $calls = self::read_only_calls((int) $category->id, (int) $course->id, (int) $viewer->id, (int) $competencycourse->id);
         foreach ($calls as $name => $args) {
             \core\session\manager::init_empty_session();
-            $this->become($name === 'theme_dimensions_get_course_competency_extras' ? $learner : $viewer);
+            $this->become(match ($name) {
+                'theme_dimensions_get_course_competency_extras' => $learner,
+                'theme_dimensions_class_report_rows', 'theme_dimensions_class_report_summary' => $teacher,
+                default => $viewer,
+            });
             $PAGE = new \moodle_page();
             require_login();
             $_POST['sesskey'] = sesskey();
@@ -267,6 +279,12 @@ final class readonly_session_test extends \advanced_testcase {
             } else if ($name === 'theme_dimensions_get_user_evidence_feed') {
                 // Past the refusals to the counted first page: the reader's own, empty list.
                 $this->assertSame(0, $result['data']['total'], $name);
+            } else if ($name === 'theme_dimensions_class_report_rows') {
+                // Past the class report's door to its rows: the course's one learner, through core's table.
+                $this->assertSame([(int) $learner->id], array_column($result['data']['rows'], 'userid'), $name);
+            } else if ($name === 'theme_dimensions_class_report_summary') {
+                // Past the door to the figures: the one learner, unrated in the one competency.
+                $this->assertSame([1, 1], [$result['data']['learners'], $result['data']['unrated']], $name);
             } else if ($name === 'theme_dimensions_get_course_dialogue') {
                 // Admitted and built: the labels come only past the refusals.
                 $this->assertNotSame('', $result['data']['learnlabel'], $name);

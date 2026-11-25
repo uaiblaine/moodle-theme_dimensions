@@ -195,8 +195,9 @@ final class reportpersistents {
 
     /**
      * A course was deleted: the class report's persistents of its context, and so every reader's stored filter
-     * values, go. The context row is gone by then, so the persistents are found by the context id the event carries.
-     * Runs after the deletion commits; a failure here must not undo or hide the course's deletion.
+     * values, go, and every reader's columns on it ({@see classreportpreference::delete_for_course()}). The context row
+     * is gone by then, so the persistents are found by the context id the event carries. Runs after the deletion
+     * commits; a failure here must not undo or hide the course's deletion, and one cut failing leaves the other done.
      *
      * @param \core\event\course_deleted $event The event.
      * @return void
@@ -206,6 +207,12 @@ final class reportpersistents {
             self::delete_for_context((int) $event->contextid);
         } catch (\Throwable $exception) {
             debugging('theme_dimensions: the class report of a deleted course was not removed: '
+                . $exception->getMessage(), DEBUG_DEVELOPER);
+        }
+        try {
+            classreportpreference::delete_for_course((int) $event->objectid);
+        } catch (\Throwable $exception) {
+            debugging('theme_dimensions: the class report columns of a deleted course were not removed: '
                 . $exception->getMessage(), DEBUG_DEVELOPER);
         }
     }

@@ -23,8 +23,8 @@
  */
 
 /**
- * Remove what is the theme's own and not user-authored: its seven user preferences and its report persistents;
- * release the look cohorts.
+ * Remove what is the theme's own and not user-authored: its seven user preferences, the class report's columns per
+ * course and its report persistents; release the look cohorts.
  *
  * Core's uninstall_plugin() already drops the theme's table and every file of the theme's
  * component, the category hero images and the site-wide fallback among them. The landing page
@@ -51,6 +51,9 @@ function xmldb_theme_dimensions_uninstall() {
 
     // The class report's persistents, with every reader's stored filter values (core's uninstall leaves them).
     \theme_dimensions\local\competency\reportpersistents::delete_all();
+
+    // Every reader's columns on the class report of every course: one preference per course, named by pattern.
+    \theme_dimensions\local\competency\classreportpreference::delete_all();
 
     // Released, not deleted: a smart menu restricted by a look cohort keeps its audience.
     \theme_dimensions\local\lookcohorts::release();

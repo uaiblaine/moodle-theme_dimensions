@@ -26,12 +26,14 @@ namespace theme_dimensions\reportbuilder\local\systemreports;
 
 use context_course;
 use core_reportbuilder\local\entities\user;
+use core_reportbuilder\local\helpers\database;
 use core_reportbuilder\system_report;
 use core_reportbuilder\system_report_factory;
 use core_user\fields;
 use moodle_url;
 use stdClass;
 use theme_dimensions\local\competency\classreport;
+use theme_dimensions\local\competency\classreportpreference;
 use theme_dimensions\local\competency\reportpersistents;
 use theme_dimensions\reportbuilder\local\entities\coursecompetency;
 
@@ -39,11 +41,14 @@ use theme_dimensions\reportbuilder\local\entities\coursecompetency;
  * One row per learner of a course, one column per course competency: the rating of each.
  *
  * The rows are the course's gradable learners ({@see classreport::learners()}), in the viewer's groups
- * ({@see classreport::groups()}); the columns the course's competencies in its order, at most
- * {@see classreport::MAX_COLUMNS}, each keyed `comp:<competencyid>` ({@see active_keys()}). Every rule is applied
- * in {@see initialise()} from the report's context and the current user, so the page, every sort, filter and page
- * turn (core_table_get_dynamic_table_content builds the report again) and the download (core's download.php builds
- * it again) list the same rows. The one parameter, the activity, is a client's to set and only narrows the columns.
+ * ({@see classreport::groups()}); the columns the course's competencies the reader chose
+ * ({@see classreportpreference}), else the first {@see classreport::MAX_COLUMNS} in the course's order, each keyed
+ * `comp:<competencyid>` ({@see active_keys()}), with a filter for each shown column only. Every rule is applied in
+ * {@see initialise()} from the report's context and the current user, so the page, every sort, filter and page turn
+ * (core_table_get_dynamic_table_content builds the report again), the web services and the download (core's
+ * download.php builds it again) list the same rows. Three parameters are a client's to set, and each can only narrow:
+ * the activity ({@see PARAM_MODULE}, the columns), the group ({@see PARAM_GROUP}, through the group rule itself) and
+ * the search ({@see PARAM_SEARCH}, through {@see search_condition()}, the one definition the web services use).
  *
  * Reading the report writes nothing: the ratings are read in SQL from `competency_usercompcourse`, where core's own
  * export inserts a row for every competency a learner has none for.
@@ -59,6 +64,15 @@ class class_ratings extends system_report {
     /** @var string The parameter naming an activity whose competencies are the columns. */
     public const PARAM_MODULE = 'moduleid';
 
+    /** @var string The parameter naming the group a client asks for, in place of the session's choice. */
+    public const PARAM_GROUP = 'groupid';
+
+    /** @var string The parameter holding a search of the learner's full name. */
+    public const PARAM_SEARCH = 'search';
+
+    /** @var string The filter whose field the search reads: the learner's full name. */
+    public const SEARCH_FILTER = 'user:fullname';
+
     /** @var array Catalogue key => column unique identifier, in display order. */
     protected $activekeys = [];
 
@@ -67,6 +81,24 @@ class class_ratings extends system_report {
 
     /** @var bool Whether the group rule leaves this viewer no row. */
     protected $nogroup = false;
+
+    /** @var array Competency id => record, every competency the reader may choose as a column, in the course's order. */
+    protected $catalogue = [];
+
+    /** @var array Competency id => record (with its escaped `title`), the shown columns, in display order. */
+    protected $shown = [];
+
+    /** @var array The reader's choice, as {@see classreportpreference::read()} returned it. */
+    protected $preference = ['columns' => null, 'widths' => []];
+
+    /** @var string The user table's alias. */
+    protected $useralias = '';
+
+    /** @var coursecompetency|null The ratings entity. */
+    protected $ratings = null;
+
+    /** @var string The search applied, cleaned, '' for none. */
+    protected $search = '';
 
     /**
      * Whether the current user may read this report: {@see classreport::may_view()} on the report's context.
@@ -86,12 +118,30 @@ class class_ratings extends system_report {
      * A duplicate persistent of the course (two first views racing) is removed first, keeping the oldest
      * ({@see reportpersistents::keep_oldest()}).
      *
+     * The page names the activity alone, so its group is the session's and it searches nothing; the web services
+     * name the group and the search as well, and the parameters travel with the report to its table and its download.
+     *
      * @param context_course $context The course's context.
      * @param int $moduleid A course module whose competencies are the columns, or 0.
+     * @param int|null $groupid A group a client asked for (0 for all participants), or null for the session's choice.
+     * @param string $search A search of the learner's name, '' for none.
      * @return self The report.
      */
-    public static function for_course(context_course $context, int $moduleid = 0): self {
+    public static function for_course(
+        context_course $context,
+        int $moduleid = 0,
+        ?int $groupid = null,
+        string $search = ''
+    ): self {
         reportpersistents::keep_oldest((int) $context->id, self::class, 'theme_dimensions', self::AREA, 0);
+        $parameters = [self::PARAM_MODULE => max(0, $moduleid)];
+        if ($groupid !== null && $groupid >= 0) {
+            $parameters[self::PARAM_GROUP] = $groupid;
+        }
+        $search = classreport::search($search);
+        if ($search !== '') {
+            $parameters[self::PARAM_SEARCH] = $search;
+        }
 
         return system_report_factory::create(
             self::class,
@@ -99,7 +149,7 @@ class class_ratings extends system_report {
             'theme_dimensions',
             self::AREA,
             0,
-            [self::PARAM_MODULE => max(0, $moduleid)]
+            $parameters
         );
     }
 
@@ -114,9 +164,11 @@ class class_ratings extends system_report {
     protected function initialise(): void {
         $user = new user();
         $useralias = $user->get_table_alias('user');
+        $this->useralias = $useralias;
         $this->set_main_table('user', $useralias);
         $this->add_entity($user);
         $ratings = new coursecompetency();
+        $this->ratings = $ratings;
         $this->add_entity($ratings);
         $this->add_base_fields("{$useralias}.id");
 
@@ -131,8 +183,8 @@ class class_ratings extends system_report {
 
         /* The group rule and the gradable capability, as one base condition, so every door of the report
            applies them. The no-group case is decided before the join is built: see classreport::groups(). */
-        $this->nogroup = classreport::groups(get_course($courseid)) === [];
-        [$where, $params] = classreport::learners($context, "{$useralias}.id");
+        $this->nogroup = classreport::groups(get_course($courseid), $this->requested_group()) === [];
+        [$where, $params] = classreport::learners($context, "{$useralias}.id", $this->requested_group());
         $this->add_base_condition_sql($where, $params);
 
         $learner->set_callback([self::class, 'learner_link'], [
@@ -148,10 +200,15 @@ class class_ratings extends system_report {
             $this->activekeys['identity:' . $added->get_name()] = $added->get_unique_identifier();
         }
 
-        [$competencies, $this->total] = classreport::competencies($courseid, $this->moduleid());
+        // The columns: the reader's choice among the catalogue, read again on every build, so a forged or stale id
+        // matches nothing; filters exist for the shown columns only.
+        $this->catalogue = classreport::catalogue($courseid, $this->moduleid());
+        $this->total = count($this->catalogue);
+        $this->preference = classreportpreference::read($courseid);
+        $competencies = classreport::chosen($this->catalogue, $this->preference['columns']);
         $scales = classreport::scales($competencies, $context);
         $hooks = has_capability(classreport::GRADE, $context);
-        $this->add_filter_from_entity('user:fullname');
+        $this->add_filter_from_entity(self::SEARCH_FILTER);
         foreach ($user->get_identity_filters($context) as $filter) {
             $this->add_filter($filter);
         }
@@ -163,6 +220,14 @@ class class_ratings extends system_report {
             );
             $this->activekeys['comp:' . $competency->id] = $column->get_unique_identifier();
             $this->add_filter($ratings->rating_filter("{$useralias}.id", $courseid, $competency, $scale['escaped']));
+            $this->shown[(int) $competency->id] = $competency;
+        }
+
+        // The search, from the report's own parameter, through the one definition the web services use.
+        $this->search = classreport::search((string) $this->get_parameter(self::PARAM_SEARCH, '', PARAM_TEXT));
+        if ($this->search !== '') {
+            [$searchsql, $searchparams] = $this->search_condition($this->search);
+            $this->add_base_condition_sql("({$searchsql})", $searchparams);
         }
 
         $this->add_attributes(['data-dim-classreport' => $courseid]);
@@ -190,6 +255,115 @@ class class_ratings extends system_report {
     }
 
     /**
+     * The group a client asked for through the report's parameters, or null for the session's choice.
+     *
+     * @return int|null
+     */
+    public function requested_group(): ?int {
+        $group = $this->get_parameter(self::PARAM_GROUP, null, PARAM_INT);
+
+        return $group === null || (int) $group < 0 ? null : (int) $group;
+    }
+
+    /**
+     * The search applied to this report's rows, cleaned, '' for none.
+     *
+     * @return string
+     */
+    public function search(): string {
+        return $this->search;
+    }
+
+    /**
+     * The condition a search adds: the learner's full name as the report's own full-name filter reads it, ignoring
+     * case and accents, the search a substring.
+     *
+     * The one definition of the search, added as a base condition in {@see initialise()} from the report's own
+     * parameter, so the page's table, the web services and the download read the same rows. The full name is a field
+     * every reader of the report is shown; the identity fields are not searched. The filter's parameters are renamed
+     * to names core generates, so they cannot meet the same filter's own when the reader also applied it.
+     *
+     * @param string $search A cleaned search ({@see classreport::search()}).
+     * @return array [the condition, its named parameters].
+     */
+    public function search_condition(string $search): array {
+        global $DB;
+
+        $filter = $this->get_filter(self::SEARCH_FILTER);
+        // Core calls the callback twice per name (the SQL, then the parameters): one new name for each.
+        $names = [];
+        [$fieldsql, $fieldparams] = database::sql_replace_parameters(
+            $filter->get_field_sql(),
+            $filter->get_field_params(),
+            static function (string $name) use (&$names): string {
+                return $names[$name] ??= database::generate_param_name('_cs');
+            }
+        );
+        $param = database::generate_param_name();
+
+        return [
+            $DB->sql_like($fieldsql, ":{$param}", false, false),
+            $fieldparams + [$param => '%' . $DB->sql_like_escape($search) . '%'],
+        ];
+    }
+
+    /**
+     * The SQL of one learner's rating and proficiency in one competency of this report's course, with parameters of
+     * their own on every call: the summary's figures read the cells with them.
+     *
+     * @param int $competencyid The competency.
+     * @return array [the rating SQL, 0 when none; the proficiency SQL, null when none; their named parameters].
+     */
+    public function rating_sql(int $competencyid): array {
+        $courseid = (int) $this->get_context()->instanceid;
+        [$grade, $gradeparams] = $this->ratings->grade_sql("{$this->useralias}.id", $courseid, $competencyid);
+        [$proficiency, $proficiencyparams] = $this->ratings->rating_sql(
+            "{$this->useralias}.id",
+            $courseid,
+            $competencyid,
+            'proficiency'
+        );
+
+        return [$grade, $proficiency, $gradeparams + $proficiencyparams];
+    }
+
+    /**
+     * The alias of the report's main table, the user.
+     *
+     * @return string
+     */
+    public function user_alias(): string {
+        return $this->useralias;
+    }
+
+    /**
+     * Every competency the reader may choose as a column, in the course's order (the activity's, with one).
+     *
+     * @return array Competency id => record (id, shortname, idnumber, scaleid).
+     */
+    public function catalogue(): array {
+        return $this->catalogue;
+    }
+
+    /**
+     * The competencies shown as columns, in display order.
+     *
+     * @return array Competency id => record (id, shortname, idnumber, scaleid, and the escaped `title`).
+     */
+    public function shown(): array {
+        return $this->shown;
+    }
+
+    /**
+     * The reader's choice this report was built from.
+     *
+     * @return array As {@see classreportpreference::read()} returns it.
+     */
+    public function preference(): array {
+        return $this->preference;
+    }
+
+    /**
      * The columns this report shows, by catalogue key: `learner`, `identity:<name>` and `comp:<competencyid>`.
      *
      * The keys are the same on every instance of the report, so a later reader (part two's client) finds a column
@@ -202,7 +376,8 @@ class class_ratings extends system_report {
     }
 
     /**
-     * How many competencies the course (or the activity) has; the columns are the first {@see classreport::MAX_COLUMNS}.
+     * How many competencies the course (or the activity) has; the columns are at most {@see classreport::MAX_COLUMNS}
+     * of them.
      *
      * @return int
      */

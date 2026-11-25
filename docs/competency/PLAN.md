@@ -258,10 +258,27 @@ columns are. Phase 6 is split in two pull requests:
   on close. The stored filter values are the theme's personal data (D146, `local\competency\reportpersistents`).
   Statements per page: constant in the learners, nothing per column beyond the subqueries (measured by
   `class_ratings_test::test_the_statements_of_a_page_are_bounded`).
-- **Part two (next): the data-report client** of `moodle-dev/docs/design-system/components/data-report.md` over
-  part one's report: the rows and summary web services (built from `class_ratings`, which keeps every rule), the
-  Columns menu choosing among the competencies (a preference read in `initialise()`, replacing the fixed first 30),
-  the band of figures, and core's table as the "Table view" and noscript fallback.
+- **Part two, server half (done, 2026100651): the services and the column preference.** The Columns choice is
+  `local\competency\classreportpreference`, one user preference per course (`theme_dimensions_classreport_<id>`,
+  JSON `{"c": [competency ids], "w": {key: px}}`), read in `class_ratings::initialise()` and re-validated against
+  the course's competencies on every read; `classreport::chosen()` keeps the catalogue's ids in the order chosen, the
+  first 30 when none is left, and filters exist for the shown columns only. Three services over
+  `local\competency\classreportengine` (copied from local_evidencehub's `reportengine`): `class_report_rows`
+  (courseid, moduleid, groupid with -1 for the page's choice, search, page, perpage 30/50/100, sort, dir,
+  countfacets), `class_report_summary` (courseid, moduleid, groupid, search) and `set_class_report_preference`
+  (courseid, usedefault, columns as `comp:<id>` keys, widths). Each runs `classreportengine::locate()` (the course,
+  `validate_context()`, no guest, competencies enabled, `classreport::may_view()`), then builds the report with the
+  group and the search as its own parameters (`class_ratings::PARAM_GROUP`, `PARAM_SEARCH`), so the group rule and
+  the search are the report's base conditions on every door, the download included. The page is two statements
+  (`reportbuilder\local\systemreports\class_ratings_table`), the facet counts and the summary conditional sums of
+  one statement each.
+- **Part two, client half (next): the data-report client** of `moodle-dev/docs/design-system/components/data-report.md`
+  over those services: the grid (rows answer's `columns`, `rows[].cells`, `rows[].ratings` for the band's colours),
+  the Columns menu (catalogue keys, written through `set_class_report_preference`, then the rows read again), the
+  band (`class_report_summary`), the filters panel (the rows answer's `filters`, written through core's
+  `core_reportbuilder_set_filters`), the search (two characters, 300 ms), the page's group sent as `groupid`, and
+  core's table as the "Table view" and noscript fallback; the download through core's `reportbuilder/download.php`
+  with the report's parameters, search included. Behat scenario with it.
 
 ## Phases
 
@@ -276,7 +293,7 @@ columns are. Phase 6 is split in two pull requests:
 | 3 | Evidence page (done, 2026100649) | theme | 3 |
 | 4 | Course competencies, teacher and learner; done (2026100647) | theme | 3 |
 | 5 | A learner's competency in a course; done | theme | 2 |
-| 6 | Class report: spike, then the report. Part one (the server, core's table) done in 2026100650; part two (the data-report client, Columns, the band) next | theme | 3 |
+| 6 | Class report: spike, then the report. Part one (the server, core's table) done in 2026100650; part two's server half (the services, the column preference) in 2026100651; its client half (the data-report client, Columns, the band) next | theme | 3 |
 | C | "Journey" view of the plan overview | local_dimensions | 2 |
 
 Phase 0 carries only what stands on its own. The settings tab, the derived renderer and pattern E1 were

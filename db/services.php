@@ -31,6 +31,10 @@
  * the site opens it (publicaccess::client_enabled()). The public calendar has no service: its visitor reads the route
  * of route\controller\calendar_public, which a CDN may cache.
  *
+ * The class report's three services (rows, summary, the column preference) decide inside the function too, through
+ * local\competency\classreportengine::locate(), the class report's own access rule; the two reads declare
+ * readonlysession.
+ *
  * Registered on upgrade, so any change here ships with a version bump.
  *
  * @package    theme_dimensions
@@ -168,6 +172,32 @@ $functions = [
     'theme_dimensions_choose_flavour' => [
         'classname' => 'theme_dimensions\external\choose_flavour',
         'description' => 'Record the look the caller chose among the offered Boost Union flavours.',
+        'type' => 'write',
+        'ajax' => true,
+        'loginrequired' => true,
+        'capabilities' => '',
+    ],
+    'theme_dimensions_class_report_rows' => [
+        'classname' => 'theme_dimensions\external\class_report_rows',
+        'description' => 'A page of the class report of competency ratings: the columns, the rows, the filters and their counts.',
+        'type' => 'read',
+        'ajax' => true,
+        'readonlysession' => true,
+        'loginrequired' => true,
+        'capabilities' => '',
+    ],
+    'theme_dimensions_class_report_summary' => [
+        'classname' => 'theme_dimensions\external\class_report_summary',
+        'description' => 'The figures of the class report of competency ratings, over the rows it lists.',
+        'type' => 'read',
+        'ajax' => true,
+        'readonlysession' => true,
+        'loginrequired' => true,
+        'capabilities' => '',
+    ],
+    'theme_dimensions_set_class_report_preference' => [
+        'classname' => 'theme_dimensions\external\set_class_report_preference',
+        'description' => 'Store the reader\'s columns and widths on the class report of a course.',
         'type' => 'write',
         'ajax' => true,
         'loginrequired' => true,

@@ -67,8 +67,8 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
 
     /**
      * The metadata names the seven preferences, the one table (its authorship stamp and when it was saved),
-     * the cohort subsystem, which keeps the look cohorts' memberships, and core's table of the filter values
-     * stored on the theme's class report.
+     * the cohort subsystem, which keeps the look cohorts' memberships, core's table of the filter values
+     * stored on the theme's class report, and the class report's columns, one preference per course.
      *
      * @return void
      */
@@ -76,7 +76,10 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $collection = provider::get_metadata(new collection('theme_dimensions'));
 
         $items = $collection->get_collection();
-        $this->assertCount(10, $items);
+        $this->assertCount(11, $items);
+        $this->assertInstanceOf(user_preference::class, $items[10]);
+        $this->assertEquals('theme_dimensions_classreport', $items[10]->get_name());
+        $this->assertEquals('privacy:metadata:preference:classreport', $items[10]->get_summary());
         $this->assertInstanceOf(database_table::class, $items[9]);
         $this->assertEquals('reportbuilder_user_filter', $items[9]->get_name());
         $this->assertEquals('privacy:metadata:reportbuilder_user_filter', $items[9]->get_summary());

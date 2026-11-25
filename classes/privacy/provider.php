@@ -39,6 +39,7 @@ use theme_dimensions\local\calendar\state as calendar_state;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\remembered;
 use theme_dimensions\local\competency\classreport;
+use theme_dimensions\local\competency\classreportpreference;
 use theme_dimensions\local\competency\reportpersistents;
 use theme_dimensions\local\flavourchoice;
 use theme_dimensions\local\focusmode;
@@ -64,6 +65,10 @@ use theme_dimensions\output\course_notice;
  * category's page as a side effect of somebody leaving the site (the shape of
  * local_unlistedcourses' provider). usermodified is not in the cached payload
  * ({@see branding::CACHED_KEYS}), so a detach needs no cache purge.
+ *
+ * The columns and widths a reader chooses on the class report of one course are an eighth kind of preference, one
+ * per course ({@see classreportpreference}), exported as stored; core deletes them with the account and the theme
+ * with the course and on uninstall.
  *
  * The filter values a reader stores on the class report of competency ratings are rows core writes
  * (`reportbuilder_user_filter`) under the theme's system report, which core's own provider leaves out (it covers
@@ -140,6 +145,11 @@ class provider implements
             'timecreated' => 'privacy:metadata:reportbuilder_user_filter:timecreated',
             'timemodified' => 'privacy:metadata:reportbuilder_user_filter:timemodified',
         ], 'privacy:metadata:reportbuilder_user_filter');
+        // One preference per course, theme_dimensions_classreport_<courseid>: declared under the name's stem.
+        $collection->add_user_preference(
+            rtrim(classreportpreference::PREFIX, '_'),
+            'privacy:metadata:preference:classreport'
+        );
 
         return $collection;
     }
@@ -412,6 +422,17 @@ class provider implements
                 course_notice::PREFERENCE_COLLAPSED,
                 $collapsed ? get_string('yes') : get_string('no'),
                 get_string('privacy:metadata:preference:coursenotice_collapsed', 'theme_dimensions')
+            );
+        }
+
+        /* The class report's columns, one preference per course, exported as stored (the competency ids in order and
+           the widths, JSON) under the preference's own name, which carries the course id. */
+        foreach (classreportpreference::stored_for_user($userid) as $courseid => $value) {
+            writer::export_user_preference(
+                'theme_dimensions',
+                classreportpreference::name($courseid),
+                $value,
+                get_string('privacy:metadata:preference:classreport', 'theme_dimensions')
             );
         }
 

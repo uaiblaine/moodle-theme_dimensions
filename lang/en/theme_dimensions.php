@@ -985,6 +985,7 @@ $string['privacy:metadata:preference:calendar_state'] = 'How the person left the
 $string['privacy:metadata:preference:category_herofolded'] = 'Whether the person collapsed the header of the category pages.';
 $string['privacy:metadata:preference:category_state'] = 'How the person left each of their most recent category pages: the organisation, the view and the filters, by category.';
 $string['privacy:metadata:preference:category_view'] = 'Whether the person prefers cards or a list on a category page.';
+$string['privacy:metadata:preference:classreport'] = 'The competencies a person chose as the columns of a course\'s class report of competency ratings, in order, and the widths they gave the columns, one preference per course (theme_dimensions_classreport_<course id>), kept until they choose the default columns, the course is deleted or the theme is uninstalled.';
 $string['privacy:metadata:preference:coursenotice_collapsed'] = 'Whether the person folded the course notice of the course pages to its one line.';
 $string['privacy:metadata:preference:flavour'] = 'The Boost Union flavour the person chose as their look, or the site default.';
 $string['privacy:metadata:preference:focus_expanded'] = 'Whether the person widened the reading column in focus mode.';
