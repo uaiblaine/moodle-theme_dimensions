@@ -358,4 +358,56 @@ final class competency_render_test extends \advanced_testcase {
         $this->assertSame($evidence[0]['userdate'], self::text_of($xpath, "//span[@data-dim-figure='latest']"));
         $this->assertSame(array_map(static fn(array $row): int => (int) $row['id'], $evidence), self::evidence_rows($xpath));
     }
+
+    /**
+     * The evidence page says the status of a competency waiting for review and says nothing for an idle one.
+     *
+     * Core's exporter names an idle user competency "-"; the item's line and the detail's list print the status
+     * only when it is a review state. One evidence is linked to a waiting competency (the control: its status is
+     * in the line and in the pill) and to an idle one (no muted status and no pill).
+     *
+     * @return void
+     */
+    public function test_the_evidence_page_prints_no_status_for_an_idle_competency(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $generator = $this->getDataGenerator();
+        $lpg = $generator->get_plugin_generator('core_competency');
+        $user = $generator->create_user();
+        $framework = $lpg->create_framework();
+        $evidence = $lpg->create_user_evidence(['userid' => $user->id]);
+        $statuses = [
+            'Waiting competency' => \core_competency\user_competency::STATUS_WAITING_FOR_REVIEW,
+            'Idle competency' => \core_competency\user_competency::STATUS_IDLE,
+        ];
+        foreach ($statuses as $shortname => $status) {
+            $competency = $lpg->create_competency([
+                'competencyframeworkid' => $framework->get('id'),
+                'shortname' => $shortname,
+            ]);
+            $lpg->create_user_competency([
+                'userid' => $user->id,
+                'competencyid' => $competency->get('id'),
+                'status' => $status,
+            ]);
+            $lpg->create_user_evidence_competency([
+                'userevidenceid' => $evidence->get('id'),
+                'competencyid' => $competency->get('id'),
+            ]);
+        }
+
+        $this->under_theme('/admin/tool/lp/user_evidence_list.php');
+        $xpath = self::parse($PAGE->get_renderer('tool_lp')->render(new \tool_lp\output\user_evidence_list_page($user->id)));
+        $waiting = \core_competency\user_competency::get_status_name(\core_competency\user_competency::STATUS_WAITING_FOR_REVIEW);
+
+        $line = "//ul[contains(@class, 'user-evidence-competencies')]/li[contains(., '%s')]";
+        $pill = "//ul[contains(@class, 'dim-comp-ev-detail-comps')]/li[contains(., '%s')]" .
+            "//span[contains(@class, 'dim-comp-pill--status')]";
+        $this->assertSame($waiting, self::text_of($xpath, sprintf($line, 'Waiting competency') . "/span[@class='dim-comp-muted']"));
+        $this->assertSame($waiting, self::text_of($xpath, sprintf($pill, 'Waiting competency')));
+        $this->assertSame(1, $xpath->query(sprintf($line, 'Idle competency'))->length, 'The idle competency is still listed.');
+        $this->assertSame(0, $xpath->query(sprintf($line, 'Idle competency') . '/span')->length, 'A status is printed for it.');
+        $this->assertSame(0, $xpath->query(sprintf($pill, 'Idle competency'))->length, 'A status pill is printed for it.');
+    }
 }

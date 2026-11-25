@@ -5,6 +5,8 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Evidence page polish**: an idle competency no longer prints a lone "-" for a status, the detail sits beside the list
+  on a desktop, and the row's menu no longer covers the end of a long title.
 - **The evidence page is one dated list** (2026100649). Core's *Evidence of prior learning* page
   (`admin/tool/lp/user_evidence_list.php`) lists the user's evidence of prior learning and what the platform recorded
   of their competencies (an activity or a course completed, a rating, a rule met) together, newest first and headed by
