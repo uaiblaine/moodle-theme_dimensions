@@ -35,6 +35,7 @@ use theme_dimensions\local\category\filterfields_setting;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\category\publicaccess;
 use theme_dimensions\local\compactnav;
+use theme_dimensions\local\competency\ownerredirect;
 use theme_dimensions\local\competency\plancards;
 use theme_dimensions\local\darklogo;
 use theme_dimensions\local\drawernav;
@@ -812,6 +813,15 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             plancards::VERTICAL => get_string('planscardlayout_vertical', 'theme_dimensions', null, true),
         ];
         $setting = new admin_setting_configselect($name, $title, $description, plancards::HORIZONTAL, $choices);
+        $tab->add($setting);
+
+        // Setting: A plan's owner is sent from core's plan page and competency-in-plan page to local_dimensions' plan
+        // overview. Default on, and read as on unless an explicit 0 was stored ({@see ownerredirect::enabled()}), so no
+        // upgrade step writes it; the decision is read per request, so a change needs no callback.
+        $name = 'theme_dimensions/' . ownerredirect::SETTING;
+        $title = get_string('planownerredirect', 'theme_dimensions', null, true);
+        $description = get_string('planownerredirect_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configselect($name, $title, $description, yesno::YES, $yesnooption);
         $tab->add($setting);
 
         // Add tab to settings page.

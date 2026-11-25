@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A learner's own plan opens in the plan overview** (2026100646). Moodle's page of a learning plan
+  (`admin/tool/lp/plan.php`) and of a competency in a plan (`admin/tool/lp/user_competency_in_plan.php`) send the
+  plan's owner to local_dimensions' plan overview, with the competency open when one was named. Only the owner is
+  sent, decided from the plan row and not from the address's `userid`, a logged-in account other than the guest
+  holding `local/dimensions:view`; staff opening somebody else's plan, a plan that is not the viewer's, a missing
+  one, competencies disabled, a POST and an address with `noredirect=1` all keep Moodle's page as it was. New setting
+  *Open a learner's own plan in the Dimensions plan overview* on the *Competencies* tab, on by default.
+  local_dimensions 2026100543 is required (the overview's competency parameter and its link back).
 - **The learning plans page filters, keeps favourites and sorts** (2026100645). The bar above the plan cards gains,
   after its count: a star that keeps only one's favourite plans (on one's own list, where the Dimensions block's
   favourites are on; the star on each card is the block's own), *Filters* over the plan templates' tags that the

@@ -2155,6 +2155,19 @@ or in `scss/competency.scss`, except the learning plans page's cards (below).
   every paint reorders, each render stamps core's order first. The star module is loaded by the name the server
   writes (`plan_cards::STAR_MODULE`), and its event is heard once, on the document; its literal must equal the
   block's `EVENT` (`plancards_source_test`).
+- **A plan's owner is sent from core's plan page and competency-in-plan page to local_dimensions' overview (phase 2b,
+  `local\competency\ownerredirect`, from `after_config`).** Owner only: a logged-in account other than the guest
+  whose id equals `competency_plan.userid` of the plan the script reads (`id` on `plan.php`, `planid` on
+  `user_competency_in_plan.php`); the competency page's `userid` is never read, so the row alone decides. One read,
+  `$DB->get_field()` by id, after every guard that needs no table (script, GET only, account, the switch
+  `planownerredirect` read as on unless a stored 0, `noredirect`, a positive id, `api::is_enabled()`, the overview's
+  capability `local/dimensions:view` at the system context): the guest and a visitor cost nothing, and a plan of
+  somebody else, a missing id or a throw all leave core's page answering as before, which is the only reason the
+  read may precede core's checks. Never redirect where the overview would refuse: a new gate before view-plan.php's
+  `read_plan()` is mirrored in `target()` the same day. The overview's link back carries `noredirect=1`; core's
+  `editplan.php` returns to `plan.php` without it, so the owner lands on the overview after editing (intended). The
+  Behat page type "theme_dimensions > learning plan" is core's page WITH `noredirect=1`; "learning plan address" is the
+  bare address the redirect scenario opens. Gates `ownerredirect_*`.
 - **Twenty-one templates are copies of Moodle 5.3 (2026100500) and must be re-diffed against core on every
   core upgrade**; each docblock names its core file. `templates/tool_lp/`: `plans_page`, `progress_bar`,
   `competency_summary`, `competency_path`, `evidence_summary`, `user_summary`, `linked_courses_summary`,

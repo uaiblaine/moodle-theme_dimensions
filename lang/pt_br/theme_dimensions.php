@@ -879,6 +879,8 @@ $string['navgroup_access'] = 'Usuários e acesso';
 $string['navgroup_competencies'] = 'Competências';
 $string['navgroup_courses'] = 'Cursos e conteúdo';
 $string['navgroup_settings'] = 'Configurações';
+$string['planownerredirect'] = 'Abrir o próprio plano do estudante na visão geral de plano do Dimensions';
+$string['planownerredirect_desc'] = 'Quando um estudante abre um dos seus próprios planos de aprendizagem na página de plano do Moodle, ou uma competência desse plano, ele é levado à visão geral de plano do plugin Dimensions, com essa competência aberta. Só o dono do plano é levado para lá, e só quando tem "local/dimensions:view": professores, gerentes e administradores que abrem o plano de outra pessoa mantêm as páginas do Moodle, onde estão a avaliação e o fluxo de revisão. Um endereço com noredirect=1 mantém a página do Moodle também para o dono; o link da visão geral para a página de plano do Moodle o leva.';
 $string['planscardlayout'] = 'Layout do cartão de plano';
 $string['planscardlayout_desc'] = 'O layout dos cartões de plano na página de planos de aprendizagem (Competências > Planos de aprendizagem): "Horizontal" põe a imagem ao lado do texto, "Vertical" acima dele. O bloco Dimensions mantém a sua própria configuração para os seus cartões.';
 $string['planscardlayout_horizontal'] = 'Horizontal';

@@ -54,7 +54,10 @@ class behat_theme_dimensions extends behat_base {
      *   site whose router is configured and the script elsewhere - exact either way.
      * - 'Category appearance' (category idnumber): the editor of the category's hero.
      * - 'Learning plan' (plan name): core's page of one learning plan, which the theme's plan cards no longer link
-     *   to (they open local_dimensions' overview).
+     *   to (they open local_dimensions' overview), with noredirect=1, so its owner stays on it too: the page type
+     *   exists to test the theme's redraw of core's page.
+     * - 'Learning plan address' (plan name): core's page of one learning plan at its bare address, from which the
+     *   plan's owner is sent to local_dimensions' overview (local\competency\ownerredirect).
      * - 'Learning plans' (username): core's list of one user's learning plans, the theme's plan cards.
      *
      * @param string $type The page type.
@@ -101,6 +104,12 @@ class behat_theme_dimensions extends behat_base {
                 $categoryid = $DB->get_field('course_categories', 'id', ['idnumber' => $identifier], MUST_EXIST);
                 return new moodle_url('/theme/dimensions/categoryhero.php', ['id' => $categoryid]);
             case 'learning plan':
+                $planid = $DB->get_field('competency_plan', 'id', ['name' => $identifier], MUST_EXIST);
+                return new moodle_url('/admin/tool/lp/plan.php', [
+                    'id' => $planid,
+                    \theme_dimensions\local\competency\ownerredirect::PARAM_STAY => 1,
+                ]);
+            case 'learning plan address':
                 $planid = $DB->get_field('competency_plan', 'id', ['name' => $identifier], MUST_EXIST);
                 return new moodle_url('/admin/tool/lp/plan.php', ['id' => $planid]);
             case 'learning plans':

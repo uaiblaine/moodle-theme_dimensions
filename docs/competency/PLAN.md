@@ -123,6 +123,13 @@ One mechanism for the three redrawn pages that have actions:
 - Companion change in local_dimensions before the redirect ships: open a competency from a parameter; request
   and cancel a plan review; the link back.
 - Core's and the theme's own Behat features that open a plan as its owner change with it.
+- Phase 2b (done, 2026100646 with local_dimensions 2026100543): `local\competency\ownerredirect`, called from
+  `after_config` on the two scripts. A GET from a logged-in account other than the guest, with the switch
+  `planownerredirect` on (the "Competencies" tab, default on) and no `noredirect`, competencies enabled and
+  `local/dimensions:view` at the system context (the overview's own gate), reads `competency_plan.userid` by id once
+  and redirects only when it is the session user's; the competency page's `competencyid` is carried, its `userid`
+  is never read. Everything else is core's page, untouched. The theme's Behat page type "learning plan" opens core's
+  page with `noredirect=1`; one scenario holds the redirect for the owner and core's page for a manager.
 
 ### 4. Evidence (`admin/tool/lp/user_evidence_list.php`)
 
@@ -175,7 +182,7 @@ competency and a long form (one row per learner and competency). Core's grading 
 | 1b | Learning plans page: cards, scope by status, count, search, with what it is the first reader of: the "Competencies" settings tab and its card layout setting, the derived renderer with its factory test, pattern E1 (a web service) | theme | 3 |
 | 1c | Filters by the template's tags, favourites on one's own list, Organise (sort only); done | theme, plus the star outside the block in block_dimensions | 3 |
 | 2a | Competency from a parameter, plan review actions, link back | local_dimensions | 3 |
-| 2b | The owner's redirects | theme | 3 |
+| 2b | The owner's redirects; done | theme | 3 |
 | 3 | Evidence page | theme | 3 |
 | 4 | Course competencies, teacher and learner | theme | 3 |
 | 5 | A learner's competency in a course | theme | 2 |

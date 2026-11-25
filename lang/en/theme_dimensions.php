@@ -879,6 +879,8 @@ $string['navgroup_access'] = 'User and access';
 $string['navgroup_competencies'] = 'Competencies';
 $string['navgroup_courses'] = 'Courses and content';
 $string['navgroup_settings'] = 'Settings';
+$string['planownerredirect'] = 'Open a learner\'s own plan in the Dimensions plan overview';
+$string['planownerredirect_desc'] = 'When a learner opens one of their own learning plans on Moodle\'s plan page, or a competency of that plan, they are taken to the plan overview of the Dimensions plugin instead, with that competency open. Only the plan\'s owner is taken there, and only when they hold "local/dimensions:view": teachers, managers and administrators opening somebody else\'s plan keep Moodle\'s pages, where rating and the review workflow are. An address carrying noredirect=1 keeps Moodle\'s page for the owner too; the overview\'s link to Moodle\'s plan page carries it.';
 $string['planscardlayout'] = 'Plan card layout';
 $string['planscardlayout_desc'] = 'The layout of the plan cards on the learning plans page (Competencies > Learning plans): "Horizontal" puts the image beside the text, "Vertical" above it. The Dimensions block keeps its own setting for its cards.';
 $string['planscardlayout_horizontal'] = 'Horizontal';

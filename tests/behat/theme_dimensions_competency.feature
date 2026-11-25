@@ -43,7 +43,8 @@ Feature: The competency pages and dialogues wear the theme and keep core's actio
       | C1     | salads     | student1 | Good  |
 
   Scenario: A learner opens a user competency of their learning plan and requests its review
-    # The plan cards open local_dimensions' overview, so core's plan page is opened by its address.
+    # The plan cards open local_dimensions' overview, so core's plan page is opened by its address, with noredirect=1,
+    # which keeps the owner on it.
     Given I am on the "Kitchen plan" "theme_dimensions > learning plan" page logged in as "student1"
     Then I should see "Cookery is important"
     # The plan's progress is core's plan page around the theme's copy of tool_lp/progress_bar.
@@ -59,6 +60,20 @@ Feature: The competency pages and dialogues wear the theme and keep core's actio
     When I click on "Request review" "button" in the "User competency summary" "dialogue"
     Then I should see "Waiting for review" in the "User competency summary" "dialogue"
     And ".dim-comp-summary" "css_element" should exist in the "User competency summary" "dialogue"
+
+  Scenario: The owner of a plan is taken from core's plan page to the plan overview, and a manager is not
+    Given the following "users" exist:
+      | username | firstname | lastname |
+      | manager1 | Manager   | first    |
+    And the following "role assigns" exist:
+      | user     | role    | contextlevel | reference |
+      | manager1 | manager | System       |           |
+    When I am on the "Kitchen plan" "theme_dimensions > learning plan address" page logged in as "student1"
+    Then "#local-dimensions-viewplan-accordion" "css_element" should exist
+    And "body#page-admin-tool-lp-plan" "css_element" should not exist
+    When I am on the "Kitchen plan" "theme_dimensions > learning plan address" page logged in as "manager1"
+    Then "body#page-admin-tool-lp-plan" "css_element" should exist
+    And "#local-dimensions-viewplan-accordion" "css_element" should not exist
 
   Scenario: A teacher rates a competency from the breakdown report in the theme's dialogues
     Given I am on the "C1" "report_competency > breakdown" page logged in as "teacher1"

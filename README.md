@@ -534,6 +534,20 @@ viewer sees is Moodle's own decision: after each action the page asks the web se
 `theme_dimensions_get_plan_cards` for the cards again, which applies the same rule as the page and keeps
 nothing; it says which plans are favourites only on the viewer's own list.
 
+### A learner's own plan opens in the plan overview
+
+Moodle's page of one learning plan (`/admin/tool/lp/plan.php`) and of one competency in a plan
+(`/admin/tool/lp/user_competency_in_plan.php`) send the plan's owner to local_dimensions' plan overview
+(`/local/dimensions/view-plan.php`), with that competency open when one was named. Only the owner is sent
+there: a logged-in account (never the guest) whose plan it is, decided from the plan itself and never from the
+address's `userid`, and holding `local/dimensions:view`, which the overview requires. Teachers, managers and
+administrators opening somebody else's plan keep Moodle's pages, where rating and the review workflow are, and
+so does everybody for a plan that is not theirs or does not exist: the theme reads the plan's owner before
+Moodle's own checks, and the only thing that changes the answer is "the plan is yours". A form posted to either
+page, and an address carrying `noredirect=1` (the overview's link to Moodle's plan page carries it), keep Moodle's
+page. The setting *Open a learner's own plan in the Dimensions plan overview*
+(`theme_dimensions/planownerredirect`, on the *Competencies* tab; on by default) switches it off.
+
 
 Requirements
 ------------
@@ -548,7 +562,7 @@ Requirements
 |---|---|---|
 | [theme_boost_union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union) | 2026100503 or later, its Moodle 5.3 version (`MOODLE_503_STABLE`, v5.3-r3 or later) | The parent theme. |
 | [local_unlistedcourses](https://github.com/uaiblaine/moodle-local_unlistedcourses) | 2026100506 or later | Decides which courses and categories are listed, unlisted or public; the category showcase, the public pages and the listings ask it. |
-| [local_dimensions](https://github.com/uaiblaine/moodle-local_dimensions) | 2026100532 or later, its Moodle 5.3 version (`main`) | Competency Dimensions: the custom fields of competencies and learning plan templates, and the learner's plan overview. The theme's competency pages are being rebuilt over it; required from 2026100643, before the first of those pages arrives. |
+| [local_dimensions](https://github.com/uaiblaine/moodle-local_dimensions) | 2026100543 or later, its Moodle 5.3 version (`main`) | Competency Dimensions: the custom fields of competencies and learning plan templates, and the learner's plan overview, where the theme sends a plan's owner (the overview opening a competency named in its address, and its link back to Moodle's plan page, from 2026100543). The theme's competency pages are being rebuilt over it; required from 2026100643, before the first of those pages arrives. |
 | [block_dimensions](https://github.com/uaiblaine/moodle-block_dimensions) | 2026100508 or later, its Moodle 5.3 version (`main`) | The learning plan card the theme's learning plans page draws (`block_dimensions\plan_cards`, from 2026100644), its favourite star and plan tag filters (from 2026100645). Required from 2026100643 with local_dimensions, which it depends on. |
 
 ### Optional plugins
