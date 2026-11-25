@@ -2106,6 +2106,19 @@ a-f, the flows and the mockup); local_unlistedcourses 5a owns the rule. What the
   in the stage 5b block of `mutations/gates.conf`. GitHub's CI installs none of enrol_apply,
   enrol_autoenrol, enrol_coursecompleted and auth_loginsteps, so those tests skip there; `.mdl-ci.yml`
   installs all four in `mdl ci` and `mdl mutate --fast`, without which their ten gates read green.
+- **enrol_conditional is decided from its cheap facts on both sides; only its own widget judges its conditions.**
+  The classifier opens an instance inside its window, with `customint6` non-zero (the method's own `!customint6`,
+  not self's `=== 1`), a place left under `customint3` (statement 3 counts it with self and apply) and no row of
+  the viewer's on it; never `customint5` (the method has no cohort), the capability or the tree in `customtext2`.
+  The resolver lists `method::for_fallback()` only where `is_self_enrol_available()` is strictly true and the
+  viewer holds `enrol/conditional:enrolself`; it never calls `can_self_enrol()` (it renders the unmet conditions)
+  and names no class of the method or its engine (optional plugins, `is_callable()`). The widget then draws the
+  button or the conditions the viewer misses: the one method shown to a viewer it may still refuse, because its
+  listing paths leave the conditions to its enrolment page and the landing page stands in for it. A visitor's
+  login button reads an instance as enrol_self's (`open_to_anybody()`, the tree like a self cohort); it has no
+  line in the visitor's offers (`offer::DEADLINE_PLUGINS` does not name it). The pure classifier test writes rows
+  (`conditional_row()`); the resolver's tests and the superset test's conditional shapes need the plugin, which
+  `.mdl-ci.yml` installs at the fork's audited commit (gates: the `*_enrolconditional_*` block).
 
 ## Competency pages
 

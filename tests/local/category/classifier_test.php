@@ -117,7 +117,8 @@ final class classifier_test extends \advanced_testcase {
         $this->enable_enrol('fee');
         $generator = self::getDataGenerator();
         $root = $generator->create_category();
-        $viewer = $generator->create_user();
+        // An explicit lowercase username: enrol_conditional's userlist condition names the viewer by it.
+        $viewer = $generator->create_user(['username' => 'meets']);
         $other = $generator->create_user();
         $cohort = $generator->create_cohort();
         $foreign = $generator->create_cohort();
@@ -250,10 +251,56 @@ final class classifier_test extends \advanced_testcase {
                 $this->completed_instance($c, (int) $elsewhere->id);
             });
         }
+        $met = null;
+        $unmet = null;
+        $condplugin = enrol_get_plugin('conditional');
+        if ($condplugin) {
+            /* Both sides read the method's cheap facts and neither judges the conditions, so a viewer who does not
+               meet them still reads open and is still listed: the method's widget on the landing page names what
+               they miss. The method checks a tree against what the acting user may name: built as an administrator. */
+            $this->enable_enrol('conditional');
+            $this->setAdminUser();
+            $tree = fn(string $username): string => json_encode(['op' => 'and', 'children' => [
+                ['type' => 'userlist', 'config' => ['usernames' => [$username]]],
+            ]]);
+            $conditional = fn(\stdClass $c, array $fields = []): \stdClass => $this->add_instance(
+                $c,
+                'conditional',
+                $fields + ['customint6' => 1, 'customtext2' => $tree('meets')]
+            );
+            $make('conditional, conditions met', classifier::STATE_OPEN, function ($c) use ($conditional, &$met) {
+                $met = $conditional($c);
+            });
+            $make('conditional, conditions not met', classifier::STATE_OPEN, function ($c) use ($conditional, $tree, &$unmet) {
+                $unmet = $conditional($c, ['customtext2' => $tree('misses')]);
+            });
+            $make('conditional window shut', classifier::STATE_NONE, function ($c) use ($conditional) {
+                $conditional($c, ['enrolenddate' => time() - DAYSECS]);
+            });
+            $make('conditional new enrolments off', classifier::STATE_NONE, function ($c) use ($conditional) {
+                $conditional($c, ['customint6' => 0]);
+            });
+            $make('conditional own row', classifier::STATE_SUSPENDED, function ($c) use ($conditional, $condplugin, $viewer) {
+                $condplugin->enrol_user($conditional($c), (int) $viewer->id, null, 0, 0, ENROL_USER_SUSPENDED);
+            });
+            $make('conditional full', classifier::STATE_NONE, function ($c) use ($conditional, $condplugin, $other) {
+                $condplugin->enrol_user($conditional($c, ['customint3' => 1]), (int) $other->id);
+            });
+        }
         set_config('cost', 0, 'enrol_fee');
         set_config('cost', 0, 'enrol_paypal');
 
         $this->become($viewer);
+        if ($condplugin) {
+            $this->assertTrue(
+                $condplugin->evaluate_conditions($met, (int) $viewer->id)->is_met(),
+                'Precondition: the viewer meets the first conditional instance\'s conditions.'
+            );
+            $this->assertFalse(
+                $condplugin->evaluate_conditions($unmet, (int) $viewer->id)->is_met(),
+                'Precondition: the viewer does not meet the second one\'s.'
+            );
+        }
         $verdicts = $this->classify((int) $root->id, array_keys($expected));
         $batch = access::get_next_actions(array_keys($expected));
         foreach ($expected as $courseid => [$label, $state]) {
@@ -471,6 +518,115 @@ final class classifier_test extends \advanced_testcase {
         $this->setGuestUser();
         $verdicts = $this->classify((int) $root->id, [(int) $conditional->id]);
         $this->assertSame(classifier::STATE_NONE, $verdicts[(int) $conditional->id]['state'], 'Never the guest account\'s.');
+    }
+
+    /**
+     * Give a course an enabled enrol_conditional instance, written as a row with the plugin's name switched on.
+     *
+     * Written as a row, like {@see completed_instance()}, so the classifier's rule is tested on a site without
+     * enrol_conditional too: the classifier reads the instance and the list of enabled plugins, never the plugin.
+     *
+     * @param \stdClass $course The course.
+     * @param array $fields Instance fields over the defaults (new enrolments on, no cap, a tree nobody meets).
+     * @return int The instance id.
+     */
+    private function conditional_row(\stdClass $course, array $fields = []): int {
+        global $DB, $CFG;
+
+        $enabled = array_filter(explode(',', (string) $CFG->enrol_plugins_enabled));
+        if (!in_array('conditional', $enabled, true)) {
+            $enabled[] = 'conditional';
+            set_config('enrol_plugins_enabled', implode(',', $enabled));
+        }
+        return (int) $DB->insert_record('enrol', (object) ($fields + [
+            'enrol' => 'conditional',
+            'courseid' => (int) $course->id,
+            'status' => ENROL_INSTANCE_ENABLED,
+            'sortorder' => 5,
+            'roleid' => (int) $DB->get_field('role', 'id', ['shortname' => 'student'], MUST_EXIST),
+            'customint3' => 0,
+            'customint6' => 1,
+            'customtext2' => '{"op":"and","children":[{"type":"userlist","config":{"usernames":["nobody"]}}]}',
+            'enrolstartdate' => 0,
+            'enrolenddate' => 0,
+            'timecreated' => time(),
+            'timemodified' => time(),
+        ]));
+    }
+
+    /**
+     * Hold a place on an instance for somebody else, as a row of {user_enrolments}.
+     *
+     * @param int $enrolid The instance.
+     * @param int $userid The holder.
+     * @return void
+     */
+    private function hold_place(int $enrolid, int $userid): void {
+        global $DB;
+        $DB->insert_record('user_enrolments', (object) [
+            'enrolid' => $enrolid,
+            'userid' => $userid,
+            'status' => ENROL_USER_ACTIVE,
+            'timestart' => 0,
+            'timeend' => 0,
+            'timecreated' => time(),
+            'timemodified' => time(),
+        ]);
+    }
+
+    /**
+     * An enrol_conditional instance reads its cheap facts, never its conditions, cohort or capability.
+     *
+     * Every instance carries a tree the viewer does not meet, and the open ones still read open: the conditions are
+     * judged on the landing page. Each refusal stands beside a control that differs in the one field it reads: new
+     * enrolments off against on (and any other non-zero value, the plugin's own "!customint6"), a shut window, a
+     * full cap against one with a place left - the only capped instances of the page, so the grouped count must be
+     * asked for this method alone - and the method switched off site-wide. customint5 names a cohort the viewer is
+     * not in and changes nothing: the method has no cohort. The guest account is offered nothing.
+     */
+    public function test_a_conditional_instance_reads_its_cheap_facts_and_never_its_conditions(): void {
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $root = $generator->create_category();
+        $other = $generator->create_user();
+        $another = $generator->create_user();
+        $course = fn(): \stdClass => $generator->create_course(['category' => $root->id]);
+        $open = $course();
+        $this->conditional_row($open);
+        $off = $course();
+        $this->conditional_row($off, ['customint6' => 0]);
+        $anyvalue = $course();
+        $this->conditional_row($anyvalue, ['customint6' => 2]);
+        $shut = $course();
+        $this->conditional_row($shut, ['enrolenddate' => time() - DAYSECS]);
+        $full = $course();
+        $fullid = $this->conditional_row($full, ['customint3' => 2]);
+        $this->hold_place($fullid, (int) $other->id);
+        $this->hold_place($fullid, (int) $another->id);
+        $left = $course();
+        $this->hold_place($this->conditional_row($left, ['customint3' => 2]), (int) $other->id);
+        $cohort = $course();
+        $this->conditional_row($cohort, ['customint5' => (int) $generator->create_cohort()->id]);
+        $ids = array_map(fn($c) => (int) $c->id, [$open, $off, $anyvalue, $shut, $full, $left, $cohort]);
+
+        $this->become($generator->create_user());
+        $verdicts = $this->classify((int) $root->id, $ids);
+        $this->assertSame(classifier::STATE_OPEN, $verdicts[(int) $open->id]['state'], 'The conditions are not judged here.');
+        $this->assertSame(classifier::STATE_NONE, $verdicts[(int) $off->id]['state'], 'New enrolments off.');
+        $this->assertSame(classifier::STATE_OPEN, $verdicts[(int) $anyvalue->id]['state'], 'Any non-zero value allows them.');
+        $this->assertSame(classifier::STATE_NONE, $verdicts[(int) $shut->id]['state'], 'The window has closed.');
+        $this->assertSame(classifier::STATE_NONE, $verdicts[(int) $full->id]['state'], 'Two places, both taken.');
+        $this->assertSame(classifier::STATE_OPEN, $verdicts[(int) $left->id]['state'], 'Control: one place of two left.');
+        $this->assertSame(classifier::STATE_OPEN, $verdicts[(int) $cohort->id]['state'], 'The method has no cohort.');
+
+        set_config('enrol_plugins_enabled', 'manual');
+        $verdicts = $this->classify((int) $root->id, [(int) $open->id]);
+        $this->assertSame(classifier::STATE_NONE, $verdicts[(int) $open->id]['state'], 'The method switched off site-wide.');
+
+        set_config('enrol_plugins_enabled', 'manual,conditional');
+        $this->setGuestUser();
+        $verdicts = $this->classify((int) $root->id, [(int) $open->id]);
+        $this->assertSame(classifier::STATE_NONE, $verdicts[(int) $open->id]['state'], 'Never the guest account\'s.');
     }
 
     /**

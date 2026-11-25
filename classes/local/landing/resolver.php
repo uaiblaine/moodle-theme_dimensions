@@ -42,7 +42,17 @@ use local_unlistedcourses\access;
  * can be held against this class for them as for the others.
  *
  * A method the user cannot use right now is hidden, never shown with a
- * reason or a teaser.
+ * reason or a teaser. One exception, enrol_conditional: it is listed when the
+ * cheap facts admit the viewer (its is_self_enrol_available() and its
+ * enrol/conditional:enrolself capability), and its condition tree is not asked
+ * here. The method's own listing paths (get_info_icons(), show_enrolme_link())
+ * leave the explanation of the conditions to its enrolment page, and the
+ * landing page stands in for that page: the method's widget shows the enrol
+ * button to a viewer who meets the conditions and the list of the unmet ones to
+ * a viewer who does not. The category card
+ * ({@see \theme_dimensions\local\category\classifier}) reads the same cheap
+ * facts, so it reads open where this page lists the method; it drops only the
+ * capability, the direction of error the card is allowed.
  *
  * The viewer's relationship is decided beside the methods, not instead of
  * them: a viewer enrolled from a later date, with an application, suspended or
@@ -152,6 +162,23 @@ final class resolver {
                     $method = self::resolve_apply($instance, $plugin);
                     if ($method) {
                         $methods[] = $method;
+                    }
+                    break;
+
+                case 'conditional':
+                    /* The cheap facts the method's own listing reads (status, window, new enrolments, the
+                       viewer's row, the places), then its capability; never can_self_enrol(), which renders the
+                       unmet conditions. Those the method's widget explains, see the class docblock. A build
+                       without is_self_enrol_available() keeps the fallback rule. */
+                    if (!is_callable([$plugin, 'is_self_enrol_available'])) {
+                        $listed = self::overrides_enrol_page_hook($plugin);
+                    } else if ($plugin->is_self_enrol_available($instance) !== true) {
+                        $listed = false;
+                    } else {
+                        $listed = has_capability('enrol/conditional:enrolself', $context);
+                    }
+                    if ($listed) {
+                        $methods[] = method::for_fallback($instance);
                     }
                     break;
 
@@ -338,6 +365,9 @@ final class resolver {
      * - its plugin is one of {@see offer::DEADLINE_PLUGINS} and it passes the filters the
      *   visitor's offers pass, {@see open_to_anybody()} - one predicate, so the button and the
      *   seats above it can never disagree about a closed window, a switched-off method or a full one;
+     * - or it is an enrol_conditional instance passing the same predicate, read as an enrol_self
+     *   one: its conditions, like a self method's cohort, depend on who logs in, so a tree that is
+     *   not empty is no reason to drop the button, and an empty one is a self method's rule;
      * - or its plugin overrides enrol_page_hook(), the resolver's fallback rule, which is also what
      *   carries enrol_coursecompleted (its hook names the prerequisite after the login).
      * Never guest access, which needs no login and is offered beside the button anyway, and never a
@@ -354,7 +384,7 @@ final class resolver {
             if (!isset($plugins[$type]) || $type === 'guest') {
                 continue;
             }
-            if (in_array($type, offer::DEADLINE_PLUGINS, true)) {
+            if (in_array($type, offer::DEADLINE_PLUGINS, true) || $type === 'conditional') {
                 if (self::open_to_anybody($instance, $plugins[$type], $now)) {
                     return true;
                 }
@@ -368,9 +398,10 @@ final class resolver {
     }
 
     /**
-     * Whether an instance of one of {@see offer::DEADLINE_PLUGINS} is open to anybody who logs in.
+     * Whether an instance of one of {@see offer::DEADLINE_PLUGINS}, or of enrol_conditional, is open to anybody who logs in.
      *
-     * Its window is open, it takes new enrolments, its cap is not reached and, for an apply method,
+     * Its window is open, it takes new enrolments, its cap is not reached (an enrol_conditional
+     * instance reads its customint6 and customint3 as an enrol_self one does) and, for an apply method,
      * its card is not hidden from visitors ({@see apply_hides_card_from_visitors()}); who logs in may still
      * be refused (a cohort, an application already sent), which a visitor cannot be told. Shared by
      * {@see visitor_offers()} and {@see login_way_in()} so the two cannot drift.
@@ -383,8 +414,8 @@ final class resolver {
     private static function open_to_anybody(\stdClass $instance, \enrol_plugin $plugin, int $now): bool {
         global $DB;
 
-        $newenrols = ['self' => 'customint6', 'autoenrol' => 'customint4', 'apply' => 'customint6'];
-        $caps = ['self' => 'customint3', 'autoenrol' => 'customint5'];
+        $newenrols = ['self' => 'customint6', 'autoenrol' => 'customint4', 'apply' => 'customint6', 'conditional' => 'customint6'];
+        $caps = ['self' => 'customint3', 'autoenrol' => 'customint5', 'conditional' => 'customint3'];
         $type = $instance->enrol;
         if ($instance->enrolstartdate && $instance->enrolstartdate > $now) {
             return false;
