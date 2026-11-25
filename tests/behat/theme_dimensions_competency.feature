@@ -43,9 +43,8 @@ Feature: The competency pages and dialogues wear the theme and keep core's actio
       | C1     | salads     | student1 | Good  |
 
   Scenario: A learner opens a user competency of their learning plan and requests its review
-    Given I log in as "student1"
-    And I visit "/admin/tool/lp/plans.php"
-    When I click on "Kitchen plan" "link" in the "region-main" "region"
+    # The plan cards open local_dimensions' overview, so core's plan page is opened by its address.
+    Given I am on the "Kitchen plan" "theme_dimensions > learning plan" page logged in as "student1"
     Then I should see "Cookery is important"
     # The plan's progress is core's plan page around the theme's copy of tool_lp/progress_bar.
     And ".dim-comp-progress progress" "css_element" should exist in the "region-main" "region"
@@ -83,3 +82,32 @@ Feature: The competency pages and dialogues wear the theme and keep core's actio
     # The grading popup re-rendered the theme's report through core/templates.
     And "Great" "report_competency > breakdown rating" should exist in the "Desserts" "report_competency > breakdown"
     And ".dim-comp-report" "css_element" should exist
+
+  Scenario: A manager completes a learner's plan from its card and the card follows the plan
+    Given the following "users" exist:
+      | username | firstname | lastname |
+      | manager1 | Manager   | first    |
+    And the following "role assigns" exist:
+      | user     | role    | contextlevel | reference |
+      | manager1 | manager | System       |           |
+    And the following "core_competency > plans" exist:
+      | name        | user     | status   |
+      | Garden plan | student1 | complete |
+      | Herb plan   | student1 | draft    |
+    When I am on the "student1" "theme_dimensions > learning plans" page logged in as "manager1"
+    # The first paint: block_dimensions' card, under the scope the page opens on, the first with plans.
+    Then ".plan-card" "css_element" should exist in the "//li[@data-region='plan-node'][contains(., 'Kitchen plan')]" "xpath_element"
+    And the "aria-checked" attribute of "//*[@data-region='dim-comp-scope']/button[@data-value='active']" "xpath_element" should contain "true"
+    And "Kitchen plan" "link" should be visible
+    And "Garden plan" "link" should not be visible
+    # Core's own menu and confirmation, from the card's kebab.
+    When I click on "Actions for Kitchen plan" "link"
+    And I click on "Complete this learning plan" "link" in the "//li[@data-region='plan-node'][contains(., 'Kitchen plan')]" "xpath_element"
+    And I click on "Complete this learning plan" "button" in the "Confirm" "dialogue"
+    # Core re-rendered the region from its own context; the module put the cards back and refilled them, so the
+    # completed plan's card carries the block's completion chip, and the scope moved to the one left with plans.
+    Then the "aria-checked" attribute of "//*[@data-region='dim-comp-scope']/button[@data-value='complete']" "xpath_element" should contain "true"
+    And I should see "Completed on" in the "//li[@data-region='plan-node'][contains(., 'Kitchen plan')]" "xpath_element"
+    And ".plan-card" "css_element" should exist in the "//li[@data-region='plan-node'][contains(., 'Kitchen plan')]" "xpath_element"
+    And "Garden plan" "link" should be visible
+    And "Herb plan" "link" should not be visible

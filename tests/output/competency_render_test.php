@@ -34,9 +34,10 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * example can carry a key the exporter never sends, or miss one it always does. These tests build a
  * framework, competencies, a user competency, a piece of evidence and a course with the
  * core_competency generator, hand core's renderables to core's renderers under this theme, and read
- * the hooks and the stated proficiency off the result. No renderer of the theme's is involved: the
- * theme overrides templates only, so core's tool_lp and report_competency renderers answer, and the
- * template finder hands them the theme's copies.
+ * the hooks and the stated proficiency off the result. The theme's tool_lp renderer
+ * ({@see tool_lp_renderer}) overrides render_plans_page() alone, which these pages never reach, so
+ * core's rendering answers for each of them and the template finder hands it the theme's copies. The
+ * learning plans page has its own tests (tool_lp_renderer_test).
  *
  * @package    theme_dimensions
  * @category   test

@@ -723,6 +723,402 @@ body.path-admin-tool-lp table.managecompetencies {
     }
 }
 
+/* ---- The learning plans page (templates/tool_lp/plans_page) ------------------ */
+/* The plans as block_dimensions' cards in a grid of the block's own column classes, under the Design
+   System's filter bar (moodle-dev/docs/design-system/components/filter-bar.md): the scope as a segmented
+   control, the count on the inset cluster, the search in place. The bar is printed hidden and shown by
+   theme_dimensions/plancards. Each card's actions are core's menubar (tool_lp/menubar) restyled as a kebab
+   in a small capsule at the card's top end corner, above the card's stretched link (the block's
+   .stretched-link overlay is z 1); core's menubar positions the open list itself, under the kebab here. */
+.dim-comp-plans {
+    .dim-comp-plans-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--dim-ds-space-xs);
+        margin-bottom: var(--dim-ds-space-md);
+
+        .singlebutton,
+        form {
+            margin: 0;
+        }
+    }
+
+    .dim-comp-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .5rem;
+        margin-bottom: var(--dim-ds-space-md);
+    }
+
+    .dim-comp-bar-spacer {
+        flex: 1 1 0;
+    }
+
+    .dim-comp-bar-cluster {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.5rem;
+        border-radius: var(--dim-ds-radius-lg);
+        background: var(--dimensions-surface-inset);
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-bar-count {
+        padding: 0 .75rem;
+        font-size: .875rem;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-seg {
+        display: inline-flex;
+        gap: .125rem;
+        padding: .1875rem;
+        border: 1px solid transparent;
+        border-radius: var(--dim-ds-radius-lg);
+        background: var(--dimensions-surface-inset);
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-seg-cell {
+        display: inline-flex;
+        align-items: center;
+        gap: .375rem;
+        height: 2rem;
+        padding: 0 .75rem;
+        border: 0;
+        border-radius: var(--dim-ds-radius-md);
+        background: transparent;
+        color: var(--dimensions-ink-muted);
+        font-size: .875rem;
+        font-weight: 500;
+
+        small {
+            font-size: .75rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: var(--dimensions-ink-muted);
+        }
+    }
+
+    .dim-comp-seg-cell[aria-checked="true"] {
+        background: var(--dimensions-surface);
+        color: var(--dimensions-ink);
+        font-weight: 600;
+        box-shadow: var(--dimensions-elevation-sm);
+    }
+
+    .dim-comp-capsule {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: .125rem;
+        padding: .1875rem;
+        border: 1px solid var(--dimensions-line);
+        border-radius: var(--dim-ds-radius-lg);
+        background: var(--dimensions-surface);
+        color: var(--dimensions-ink);
+        box-shadow: var(--dimensions-elevation-sm);
+    }
+
+    .dim-comp-iconbtn {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2rem;
+        height: 2rem;
+        padding: 0 .375rem;
+        border: 0;
+        border-radius: var(--dim-ds-radius-md);
+        background: transparent;
+        color: var(--dimensions-ink-muted);
+
+        .icon {
+            margin: 0;
+        }
+    }
+
+    .dim-comp-iconbtn:hover {
+        background: var(--dimensions-surface-alt);
+        color: var(--dimensions-ink);
+    }
+
+    // A text in force while the field is closed: the search button says so in the pressed look.
+    .dim-comp-iconbtn--active {
+        background: var(--dimensions-brand-tint);
+        color: var(--dimensions-brand-ink);
+    }
+
+    .dim-comp-search-field {
+        display: inline-flex;
+        align-items: center;
+        gap: .375rem;
+        height: 2rem;
+        padding: 0 .5rem;
+        border-radius: var(--dim-ds-radius-md);
+        background: var(--dimensions-surface-inset);
+        color: var(--dimensions-ink-muted);
+
+        .icon {
+            margin: 0;
+        }
+    }
+
+    .dim-comp-search-field:focus-within {
+        outline: var(--dimensions-focus-width) solid var(--dimensions-focus-ring);
+        outline-offset: .125rem;
+    }
+
+    .dim-comp-search-input {
+        width: 11.875rem;
+        min-width: 3.75rem;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--dimensions-ink);
+        font-size: .875rem;
+        outline: 0;
+    }
+
+    .dim-comp-search-input::-webkit-search-cancel-button {
+        display: none;
+    }
+
+    .dim-comp-eraser {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        padding: 0;
+        border: 0;
+        border-radius: var(--dim-ds-radius-xs);
+        background: transparent;
+        color: var(--dimensions-ink-muted);
+
+        .icon {
+            margin: 0;
+        }
+    }
+
+    .dim-comp-eraser:hover {
+        background: var(--dimensions-surface-alt);
+        color: var(--dimensions-ink);
+    }
+
+    .dim-comp-seg-cell:focus-visible,
+    .dim-comp-iconbtn:focus-visible,
+    .dim-comp-eraser:focus-visible,
+    .dim-comp-plan-menu-trigger:focus-visible,
+    .dim-comp-plan-menu .tool-lp-root-menu:focus-visible {
+        outline: var(--dimensions-focus-width) solid var(--dimensions-focus-ring);
+        outline-offset: .125rem;
+    }
+
+    // The tooltip (tooltip.md): the control keeps its own name and this repeats it. It opens below its
+    // control and towards the start, as every host here sits at the end of the bar or of a card, so a long
+    // name never leaves the viewport; the arrow stays on the control's centre.
+    .dim-comp-tip {
+        position: relative;
+    }
+
+    .dim-comp-tip::after,
+    .dim-comp-tip::before {
+        position: absolute;
+        z-index: 5;
+        display: block;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .dim-comp-tip::after {
+        content: attr(data-dim-comp-tip);
+        top: calc(100% + .5rem);
+        right: 0;
+        width: max-content;
+        max-width: 16.25rem;
+        padding: .25rem .5rem;
+        border-radius: var(--dim-ds-radius-sm);
+        background: var(--dimensions-ink);
+        color: var(--dimensions-surface);
+        font-size: .75rem;
+        font-weight: 400;
+        line-height: 1.35;
+        text-align: start;
+        white-space: normal;
+    }
+
+    .dim-comp-tip::before {
+        content: "";
+        top: calc(100% - 2px);
+        right: calc(1rem - 5px);
+        width: 0;
+        height: 0;
+        border: 5px solid transparent;
+        border-bottom-color: var(--dimensions-ink);
+    }
+
+    .dim-comp-tip:hover::after,
+    .dim-comp-tip:hover::before,
+    .dim-comp-tip:focus-visible::after,
+    .dim-comp-tip:focus-visible::before {
+        opacity: 1;
+    }
+
+    // While a card's menu is open its kebab names nothing: the open list is under it.
+    .dim-comp-plan-menu .tool-lp-root-menu:has(> .tool-lp-sub-menu[aria-hidden="false"]) .dim-comp-tip::after,
+    .dim-comp-plan-menu .tool-lp-root-menu:has(> .tool-lp-sub-menu[aria-hidden="false"]) .dim-comp-tip::before {
+        visibility: hidden;
+    }
+
+    .dim-comp-plans-grid {
+        margin-bottom: 0;
+    }
+
+    .dim-comp-plan-inner {
+        position: relative;
+        height: 100%;
+    }
+
+    .dim-comp-plan-extra {
+        height: 100%;
+    }
+
+    .dim-comp-plan-fallback {
+        border: 1px solid var(--dimensions-line);
+        border-radius: var(--dim-ds-radius-lg);
+        background: var(--dimensions-surface);
+        color: var(--dimensions-ink);
+
+        .card-body {
+            padding-inline-end: 2rem;
+        }
+    }
+
+    .dim-comp-plan-fallback-title {
+        margin: 0 0 .5rem;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .dim-comp-plan-fallback-template {
+        margin: .5rem 0 0;
+        font-size: .875rem;
+        color: var(--dimensions-ink-muted);
+    }
+
+    .dim-comp-plan-menu {
+        position: absolute;
+        top: .5rem;
+        inset-inline-end: .5rem;
+        z-index: 2;
+        padding: .125rem;
+        border: 1px solid var(--dimensions-line);
+        border-radius: var(--dim-ds-radius-md);
+        background: var(--dimensions-surface);
+        color: var(--dimensions-ink);
+        box-shadow: var(--dimensions-elevation-sm);
+
+        .planactions {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .planactions > li {
+            float: none;
+            position: relative;
+            border-radius: var(--dim-ds-radius-sm);
+        }
+
+        .tool-lp-sub-menu {
+            top: calc(100% + .25rem);
+            right: 0;
+            left: auto;
+            z-index: 3;
+            min-width: 14rem;
+        }
+    }
+
+    .dim-comp-plan-menu-trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: var(--dim-ds-radius-sm);
+        background: transparent;
+        color: var(--dimensions-ink-muted);
+        text-decoration: none;
+
+        .icon {
+            margin: 0;
+        }
+    }
+
+    .dim-comp-plan-menu-trigger:hover {
+        background: var(--dimensions-surface-alt);
+        color: var(--dimensions-ink);
+    }
+
+    .dim-comp-plans-empty {
+        margin: 0;
+        color: var(--dimensions-ink-muted);
+    }
+}
+
+/* A coarse pointer gets the bar's taller step (filter-bar.md, D26): 36px controls, a 44px bar. */
+@media (pointer: coarse) {
+    .dim-comp-plans {
+        .dim-comp-seg-cell,
+        .dim-comp-iconbtn,
+        .dim-comp-search-field,
+        .dim-comp-plan-menu-trigger {
+            height: 2.25rem;
+        }
+
+        .dim-comp-iconbtn,
+        .dim-comp-plan-menu-trigger {
+            min-width: 2.25rem;
+        }
+
+        .dim-comp-bar-cluster {
+            min-height: 2.75rem;
+        }
+    }
+}
+
+/* Motion only where the reader has not asked for less: the controls' grounds at the fast step, and the
+   tooltip after its 100ms of rest (tooltip.md, D51), off the motion scale by decision. */
+@media (prefers-reduced-motion: no-preference) {
+    .dim-comp-plans {
+        .dim-comp-iconbtn,
+        .dim-comp-eraser,
+        .dim-comp-plan-menu-trigger {
+            transition:
+                background-color var(--dimensions-motion-fast) var(--dimensions-motion-ease),
+                color var(--dimensions-motion-fast) var(--dimensions-motion-ease);
+        }
+
+        .dim-comp-tip::after,
+        .dim-comp-tip::before {
+            transition: opacity var(--dimensions-motion-fast) ease;
+        }
+
+        .dim-comp-tip:hover::after,
+        .dim-comp-tip:hover::before,
+        .dim-comp-tip:focus-visible::after,
+        .dim-comp-tip:focus-visible::before {
+            transition-delay: 100ms;
+        }
+    }
+}
+
 /* ---- Dark mode ------------------------------------------------------------ */
 /* The family tokens already flip with the colour mode; what is restated here is a pairing that is
    not the same token in both modes. The bar's fill: the brand fill (Bootstrap's primary) is a navy
