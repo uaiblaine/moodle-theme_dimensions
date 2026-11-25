@@ -167,7 +167,7 @@ final class class_report_view_test extends \advanced_testcase {
 
         // Core's own default for a viewer of every group is 0; the props agree with it and not with a group.
         $this->setUser($editor);
-        $this->assertSame(0, groups_get_course_group($this->course));
+        $this->assertSame(0, (int) groups_get_course_group($this->course));
         $this->assertSame(0, $this->props($this->render_page(null))['groupid']);
 
         // As index.php does: the selector's choice is read into the session before the page renders.
@@ -178,7 +178,7 @@ final class class_report_view_test extends \advanced_testcase {
 
         // The control: core opens the page of a viewer without accessallgroups on the one group, so the props do.
         $this->setUser($this->teacher);
-        $this->assertSame((int) $group->id, groups_get_course_group($this->course));
+        $this->assertSame((int) $group->id, (int) groups_get_course_group($this->course));
         $this->assertSame((int) $group->id, $this->props($this->render_page(null))['groupid']);
     }
 
