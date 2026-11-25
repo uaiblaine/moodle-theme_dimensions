@@ -82,7 +82,7 @@ final class coursecompetencies {
     public const STATE_DONE = 'done';
 
     /** @var string An activity with completion tracking the learner has not completed. */
-    public const STATE_TODO = 'todo';
+    public const STATE_PENDING = 'todo';
 
     /** @var string An activity without completion tracking: no state is shown. */
     public const STATE_NONE = 'none';
@@ -249,7 +249,7 @@ final class coursecompetencies {
         if ($state !== null && $state[0] !== self::STATE_NONE) {
             $entry['hasstate'] = true;
             $entry['isdone'] = $state[0] === self::STATE_DONE;
-            $entry['istodo'] = $state[0] === self::STATE_TODO;
+            $entry['istodo'] = $state[0] === self::STATE_PENDING;
             $entry['statetext'] = $entry['isdone']
                 ? get_string('competency_coursecmdone', 'theme_dimensions', self::date((int) $state[1]))
                 : get_string('competency_coursecmtodo', 'theme_dimensions');
@@ -341,7 +341,7 @@ final class coursecompetencies {
      *
      * @param \stdClass $course The course.
      * @param int[] $cmids The activities.
-     * @return array cmid => [state, time]: {@see STATE_DONE} with the completion's time, {@see STATE_TODO} or
+     * @return array cmid => [state, time]: {@see STATE_DONE} with the completion's time, {@see STATE_PENDING} or
      *     {@see STATE_NONE} with 0.
      */
     public static function activities(\stdClass $course, array $cmids): array {
@@ -365,7 +365,7 @@ final class coursecompetencies {
             }
             $data = $completion->get_data($cm, true);
             $done = in_array((int) $data->completionstate, [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS], true);
-            $states[(int) $cmid] = $done ? [self::STATE_DONE, (int) $data->timemodified] : [self::STATE_TODO, 0];
+            $states[(int) $cmid] = $done ? [self::STATE_DONE, (int) $data->timemodified] : [self::STATE_PENDING, 0];
         }
 
         return $states;
