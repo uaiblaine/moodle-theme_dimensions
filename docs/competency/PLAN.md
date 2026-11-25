@@ -150,7 +150,7 @@ One mechanism for the three redrawn pages that have actions:
 | Element | Source | Cost |
 |---|---|---|
 | Name, description, path, linked activities, course outcome select, push-ratings setting | core's export | as core |
-| Each activity's outcome | `competency_modulecomp.ruleoutcome`, one statement for the course; read-only here, edited in the activity's form (core has no web service for it) | 1 |
+| Each activity's outcome | `competency_modulecomp.ruleoutcome`, one statement for the course; read-only here, edited in the activity's form; core's `core_competency_list_course_module_competencies` already returns `ruleoutcome` to any viewer of the activity holding `coursecompetencyview`, so showing it beside the activity is parity | 1 |
 | Class distribution per competency | one aggregate over `competency_usercompcourse` joined to the enrolled set (`get_enrolled_with_capabilities_join`) | 1, cached |
 | Learner: own rating | core's export | as core |
 | Learner: state of each activity | `completion_info` for the course, `cm_info` availability | 1 |
@@ -172,7 +172,7 @@ Phase 4 (done, 2026100648). What it has:
   rows in place. `theme_dimensions/coursecompetencies` puts the remembered extras back and refills them from
   `theme_dimensions_get_course_competency_extras`. No `MutationObserver`.
 - The activity outcome is shown to every viewer, for the activities core's page lists to that viewer (`uservisible`).
-- The class distribution goes to staff (core's flags `cangradecompetencies` or `canmanagecoursecompetencies`): three
+- The class distribution goes only to a viewer who may see the whole class (`coursecompetencymanage`, or `competencygrade` in a course not in separate groups mode or with `moodle/site:accessallgroups`; a grader limited to their groups gets none): three
   counts, drawn as the proficient share on the progress bar and the other two as a line (the Design System decides no
   stacked bar). The enrolled set is `get_enrolled_with_capabilities_join()` with
   `moodle/competency:coursecompetencygradable`, suspended enrolments included (core rates them), counted once per user.

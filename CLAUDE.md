@@ -2196,8 +2196,11 @@ or in `scss/competency.scss`, except the learning plans page's cards (below).
     DISTINCT per user (two enrolment methods are one learner). Core's own statistics count every row of the course; the
     theme's do not. The site course gets no extras (every user is enrolled there): `for_viewer()`, the renderer and the
     service each refuse it (gates `coursecomp_site_course`, `coursecomp_renderer_site`, `coursecomp_ws_site`).
-  - **The distribution goes to staff only, decided on the server** from core's page flags (`competencygrade` or
-    `coursecompetencymanage` in the course); a learner's figures are the session user's (`is_enrolled()` with the
+  - **The distribution goes only to a viewer who may see the whole class, decided on the server** by
+    `coursecompetencies::sees_class()`: `coursecompetencymanage` in the course, or `competencygrade` there when
+    `groups_get_course_groupmode()` is not `SEPARATEGROUPS` or the viewer holds `moodle/site:accessallgroups` (the
+    figures are course-wide; a grader limited to their groups gets none, not a partial count; gates
+    `coursecomp_staff_rule`, `coursecomp_class_groupmode`, `coursecomp_class_allgroups`); a learner's figures are the session user's (`is_enrolled()` with the
     gradable capability and `user_competency::can_read_user_in_course()`); the service takes no user id. An activity is
     listed only where `cm_info::uservisible` admits it, as core lists it.
   - **The cache is `local\competency\courseclass`**: `coursecompetencyclass` keyed by course id, its value carrying the

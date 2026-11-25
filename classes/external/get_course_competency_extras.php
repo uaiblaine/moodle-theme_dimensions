@@ -46,7 +46,8 @@ use theme_dimensions\local\competency\coursecompetencies;
  * `api::list_course_competencies()` itself, which refuses a hidden course to a viewer without
  * `moodle/course:viewhiddencourses` and a viewer holding neither `moodle/competency:coursecompetencyview` nor
  * `moodle/competency:coursecompetencymanage` (the guest role holds neither), with core's own exceptions. Which extras
- * come back is decided on the server: the class distribution only to staff (core's page flags, recomputed), the
+ * come back is decided on the server: the class distribution only to a viewer who may see the whole class
+ * ({@see \theme_dimensions\local\competency\coursecompetencies::sees_class()}), the
  * learner's figures only for the session user; no user id is a parameter.
  *
  * Read-only, so it raises no event.

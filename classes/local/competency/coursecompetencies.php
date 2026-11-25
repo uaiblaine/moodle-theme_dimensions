@@ -34,14 +34,14 @@ use core_competency\user_competency;
  * Both doors go through {@see for_viewer()}: the first paint
  * ({@see \theme_dimensions\output\tool_lp_renderer::render_course_competencies_page()}, through {@see decorate()}) and
  * the refill after each of core's re-renders ({@see \theme_dimensions\external\get_course_competency_extras}). Who sees
- * which extra is decided here, from the same facts core's page reads, recomputed on the server for the session user:
+ * which extra is decided here, from facts recomputed on the server for the session user:
  *
  * - every viewer: each linked activity's own outcome (`competency_modulecomp.ruleoutcome`), for the activities core's
  *   page lists to that viewer ({@see \core_competency\api::list_course_modules_using_competency()} keeps the ones
  *   `cm_info::uservisible` admits; so does {@see outcomes()}), one statement for the course;
- * - staff, a viewer for whom core's page shows grading or management (its flags `cangradecompetencies` and
- *   `canmanagecoursecompetencies`, the capabilities {@see GRADE} and {@see MANAGE} in the course): the class
- *   distribution per competency, {@see courseclass::counts()}, counts only;
+ * - a viewer who may see the whole class ({@see sees_class()}: {@see MANAGE} in the course, or {@see GRADE} where the
+ *   course is not in separate groups mode or the viewer holds `moodle/site:accessallgroups`): the class distribution
+ *   per competency, {@see courseclass::counts()}, counts only; a grader limited to their groups gets none;
  * - a learner, the session user when core's page treats them as gradable (`is_enrolled()` with {@see GRADABLE}, core's
  *   `$gradable`) and may read their own course competencies (`user_competency::can_read_user_in_course()`, the rule
  *   `api::list_user_competencies_in_course()` applies before core's page inserts its rows): the state of each listed
@@ -88,13 +88,29 @@ final class coursecompetencies {
     public const STATE_NONE = 'none';
 
     /**
-     * Whether core's page shows the viewer grading or management: its two flags, recomputed.
+     * Whether the viewer may be shown the class distribution: the figures of the whole enrolled class.
      *
+     * The figures are course-wide, so they go only to a viewer who may see the whole class: whoever holds
+     * {@see MANAGE} in the course, or {@see GRADE} there and either a course whose effective group mode is not
+     * separate groups or `moodle/site:accessallgroups`. A grader limited to their own groups sees only those groups'
+     * learners everywhere else in Moodle, and a count over the whole class (small, in a small class) would name a
+     * person outside them; such a grader gets no figures at all, not a partial one. Core's page shows no counts.
+     *
+     * Activity-level group restrictions are not read: the figures are per competency, over the enrolled set.
+     *
+     * @param \stdClass $course The course, as the database holds it (its `groupmode` is read).
      * @param \core\context\course $context The course's context.
      * @return bool
      */
-    public static function is_staff(\core\context\course $context): bool {
-        return has_capability(self::GRADE, $context) || has_capability(self::MANAGE, $context);
+    public static function sees_class(\stdClass $course, \core\context\course $context): bool {
+        if (has_capability(self::MANAGE, $context)) {
+            return true;
+        }
+        if (!has_capability(self::GRADE, $context)) {
+            return false;
+        }
+        return (int) groups_get_course_groupmode($course) !== SEPARATEGROUPS
+            || has_capability('moodle/site:accessallgroups', $context);
     }
 
     /**
@@ -131,7 +147,7 @@ final class coursecompetencies {
         }
 
         $context = \core\context\course::instance($courseid);
-        $staff = self::is_staff($context);
+        $staff = self::sees_class($course, $context);
         $learner = self::is_learner($context);
         $outcomes = self::outcomes($course);
         $counts = $staff ? courseclass::counts($courseid) : [];

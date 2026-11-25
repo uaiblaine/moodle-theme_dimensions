@@ -10,7 +10,8 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   kept: adding, removing and reordering competencies, the course outcome of each, the "push ratings to plans" setting,
   the statistics, the learner's own rating and the links to each competency in the course. Each linked activity shows
   what completing it does for the competency (its outcome, as Moodle names it; it is still changed in the activity's
-  settings). Whoever may rate or manage the course's competencies sees, per competency, how many of the enrolled
+  settings). Whoever may see the whole class (a manager of the course's competencies, or a grader in a course that is not in
+  separate groups mode or who may access all groups; a grader limited to their groups sees none) sees, per competency, how many of the enrolled
   learners are proficient, rated but not proficient, and not rated; a learner sees whether they completed each linked
   activity and how much of their evidence comes from this course. The figures are kept in a new shared cache,
   `coursecompetencyclass` (counts only), renewed by the ratings, evidence, enrolment and role events that change them

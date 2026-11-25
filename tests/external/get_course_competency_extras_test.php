@@ -277,4 +277,41 @@ final class get_course_competency_extras_test extends \advanced_testcase {
         $text = $this->ask($courseid)['data']['competencies'][0]['evidencetext'];
         $this->assertSame(get_string('competency_courseevidencenone', 'theme_dimensions'), $text);
     }
+
+    /**
+     * A grader limited to their groups, in a course in separate groups mode, gets no distribution through the
+     * service either; the same teacher holding accessallgroups is the control, and the editing teacher is too.
+     *
+     * @return void
+     */
+    public function test_a_grader_limited_to_their_groups_gets_no_distribution(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $fixture = $this->course();
+        $courseid = (int) $fixture['course']->id;
+        $generator = self::getDataGenerator();
+        $grader = $generator->create_and_enrol($fixture['course'], 'teacher');
+        $group = $generator->create_group(['courseid' => $courseid]);
+        $generator->create_group_member(['groupid' => $group->id, 'userid' => $grader->id]);
+        $DB->set_field('course', 'groupmode', SEPARATEGROUPS, ['id' => $courseid]);
+
+        $this->setUser($grader);
+        $result = $this->ask($courseid);
+        $this->assertFalse($result['error'], json_encode($result['exception'] ?? null));
+        $this->assertFalse($result['data']['staff']);
+        foreach ($result['data']['competencies'] as $entry) {
+            $this->assertFalse($entry['hasdistribution']);
+            $this->assertSame('', $entry['progresstextvalue']);
+        }
+        // The activity's outcome is still given.
+        $this->assertSame([$fixture['cmid']], array_column($result['data']['competencies'][0]['activities'], 'cmid'));
+
+        $this->setUser($fixture['teacher']);
+        $this->assertTrue($this->ask($courseid)['data']['competencies'][0]['hasdistribution']);
+
+        $roleid = (int) $DB->get_field('role', 'id', ['shortname' => 'teacher'], MUST_EXIST);
+        assign_capability('moodle/site:accessallgroups', CAP_ALLOW, $roleid, \core\context\course::instance($courseid)->id, true);
+        $this->setUser($grader);
+        $this->assertTrue($this->ask($courseid)['data']['competencies'][0]['hasdistribution']);
+    }
 }

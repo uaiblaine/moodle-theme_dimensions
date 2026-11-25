@@ -377,6 +377,168 @@ final class coursecompetencies_test extends \advanced_testcase {
     }
 
     /**
+     * A course in separate groups mode with a non-editing teacher who is in one group, and a learner of that group
+     * rated proficient.
+     *
+     * @return array The fixture of {@see course_with_competencies()}, 'course' read again from the database, plus
+     *     'grader' (the non-editing teacher).
+     */
+    private function separate_groups_course(): array {
+        global $DB;
+        $fixture = $this->course_with_competencies(3, 1);
+        $generator = self::getDataGenerator();
+        $courseid = (int) $fixture['course']->id;
+        $grader = $generator->create_and_enrol($fixture['course'], 'teacher');
+        $group = $generator->create_group(['courseid' => $courseid]);
+        $generator->create_group_member(['groupid' => $group->id, 'userid' => $grader->id]);
+        $generator->create_group_member(['groupid' => $group->id, 'userid' => $fixture['learners'][0]->id]);
+        $this->rate((int) $fixture['learners'][0]->id, $courseid, $fixture['competencies'][0], 2, true);
+        $this->set_groupmode($courseid, SEPARATEGROUPS);
+        $fixture['course'] = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
+        $fixture['grader'] = $grader;
+
+        return $fixture;
+    }
+
+    /**
+     * Set a course's group mode and return the course as the database now holds it.
+     *
+     * @param int $courseid The course.
+     * @param int $mode NOGROUPS, SEPARATEGROUPS or VISIBLEGROUPS.
+     * @return \stdClass The course.
+     */
+    private function set_groupmode(int $courseid, int $mode): \stdClass {
+        global $DB;
+        $DB->set_field('course', 'groupmode', $mode, ['id' => $courseid]);
+
+        return $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
+    }
+
+    /**
+     * Whether the shared class cache holds a value for the course.
+     *
+     * @param int $courseid The course.
+     * @return bool
+     */
+    private function class_cache_holds(int $courseid): bool {
+        return \cache::make('theme_dimensions', 'coursecompetencyclass')->get($courseid) !== false;
+    }
+
+    /**
+     * A grader limited to their groups gets no class figures, and the aggregate does not run for them: the class
+     * cache stays empty. The same teacher in a course without groups, or holding accessallgroups, gets them.
+     *
+     * @return void
+     */
+    public function test_a_grader_limited_to_their_groups_gets_no_class_figures(): void {
+        $this->resetAfterTest();
+        $fixture = $this->separate_groups_course();
+        $course = $fixture['course'];
+        $courseid = (int) $course->id;
+        $competencyid = $fixture['competencies'][0];
+        \cache::make('theme_dimensions', 'coursecompetencyclass')->purge();
+
+        $this->setUser($fixture['grader']);
+        $result = coursecompetencies::for_viewer($course, [$competencyid]);
+        $this->assertFalse($result['staff']);
+        $this->assertFalse($result['competencies'][0]['hasdistribution']);
+        $this->assertSame('', $result['competencies'][0]['progresstextvalue']);
+        $this->assertFalse($this->class_cache_holds($courseid), 'The aggregate must not run for this viewer.');
+
+        // Control 1: the same teacher once the course has no groups.
+        $nogroups = $this->set_groupmode($courseid, NOGROUPS);
+        $result = coursecompetencies::for_viewer($nogroups, [$competencyid]);
+        $this->assertTrue($result['staff']);
+        $this->assertTrue($result['competencies'][0]['hasdistribution']);
+        $this->assertSame('1 of 3 proficient', $result['competencies'][0]['progresstextvalue']);
+        $this->assertTrue($this->class_cache_holds($courseid));
+
+        // Control 1b: visible groups.
+        \cache::make('theme_dimensions', 'coursecompetencyclass')->purge();
+        $visible = $this->set_groupmode($courseid, VISIBLEGROUPS);
+        $this->assertTrue(coursecompetencies::for_viewer($visible, [$competencyid])['staff']);
+    }
+
+    /**
+     * The control that differs by the capability alone: separate groups, and accessallgroups on the teacher's role.
+     *
+     * @return void
+     */
+    public function test_a_grader_with_accessallgroups_gets_the_class_figures(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $fixture = $this->separate_groups_course();
+        $course = $fixture['course'];
+        $competencyid = $fixture['competencies'][0];
+        $context = \core\context\course::instance((int) $course->id);
+
+        $this->setUser($fixture['grader']);
+        $this->assertFalse(coursecompetencies::for_viewer($course, [$competencyid])['staff']);
+
+        $roleid = (int) $DB->get_field('role', 'id', ['shortname' => 'teacher'], MUST_EXIST);
+        assign_capability('moodle/site:accessallgroups', CAP_ALLOW, $roleid, $context->id, true);
+        $context->mark_dirty();
+        $result = coursecompetencies::for_viewer($course, [$competencyid]);
+        $this->assertTrue($result['staff']);
+        $this->assertSame('1 of 3 proficient', $result['competencies'][0]['progresstextvalue']);
+    }
+
+    /**
+     * Whoever manages the course's competencies gets the figures in separate groups mode, a learner never does.
+     *
+     * @return void
+     */
+    public function test_a_manager_gets_the_class_figures_in_separate_groups_and_a_learner_none(): void {
+        $this->resetAfterTest();
+        $fixture = $this->separate_groups_course();
+        $course = $fixture['course'];
+        $competencyid = $fixture['competencies'][0];
+
+        $this->setUser($fixture['teacher']);
+        $result = coursecompetencies::for_viewer($course, [$competencyid]);
+        $this->assertTrue($result['staff']);
+        $this->assertTrue($result['competencies'][0]['hasdistribution']);
+
+        $this->setUser($fixture['learners'][0]);
+        $result = coursecompetencies::for_viewer($course, [$competencyid]);
+        $this->assertFalse($result['staff']);
+        $this->assertFalse($result['competencies'][0]['hasdistribution']);
+    }
+
+    /**
+     * The theme's learner flag is core's: for a learner, a teacher and a user not enrolled, it equals whether core's
+     * own page exports a gradable user for the same viewer.
+     *
+     * @return void
+     */
+    public function test_the_learner_flag_is_cores_gradable_rule(): void {
+        global $DB, $PAGE;
+        $this->resetAfterTest();
+        $fixture = $this->course_with_competencies(1, 1);
+        $course = $fixture['course'];
+        $context = \core\context\course::instance((int) $course->id);
+        $outsider = self::getDataGenerator()->create_user();
+        $roleid = create_role('Viewer', 'dimviewer', 'Views course competencies');
+        set_role_contextlevels($roleid, [CONTEXT_SYSTEM]);
+        assign_capability('moodle/competency:coursecompetencyview', CAP_ALLOW, $roleid, \core\context\system::instance()->id);
+        role_assign($roleid, $outsider->id, \core\context\system::instance()->id);
+        $PAGE->set_url('/admin/tool/lp/coursecompetencies.php', ['courseid' => $course->id]);
+        $PAGE->set_context($context);
+        $PAGE->force_theme('dimensions');
+        $output = $PAGE->get_renderer('tool_lp');
+
+        $expected = ['learner' => true, 'teacher' => false, 'outsider' => false];
+        $viewers = ['learner' => $fixture['learners'][0], 'teacher' => $fixture['teacher'], 'outsider' => $outsider];
+        foreach ($viewers as $name => $user) {
+            $this->setUser($user);
+            $page = new \tool_lp\output\course_competencies_page((int) $course->id, 0);
+            $core = isset($page->export_for_template($output)->gradableuserid);
+            $this->assertSame($expected[$name], $core, "Core's flag for the {$name}");
+            $this->assertSame($core, coursecompetencies::is_learner($context), "The theme's flag for the {$name}");
+        }
+    }
+
+    /**
      * The manual enrolment instance of a course.
      *
      * @param int $courseid The course.
