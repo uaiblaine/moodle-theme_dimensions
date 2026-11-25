@@ -2144,6 +2144,17 @@ or in `scss/competency.scss`, except the learning plans page's cards (below).
   equal to `plan_cards::HOST_CLASS`, held by `tool_lp_renderer_test`. The plan's name is formatted HTML that does
   not escape quotes: the template never writes it into an attribute (the module copies it into the tooltip as
   text).
+- **The learning plans bar's favourites and tags (phase 1c) are the block's.** `plancards::for_user()` asks
+  `plan_cards::for_user(..., true)` and passes the star through: a card's favourite is null unless the block offered
+  the star (its rule: the session user's own list, favourites on), so the theme never decides who sees a favourite
+  (gate `plancards_favourite_passthrough`); the service types it as -1/0/1 (`get_plan_cards::FAVOURITE_*`). Tag
+  values and labels are plain (`format_string`, no escaping) in both doors; the first paint writes them as
+  attributes (`data-dim-fav`, `data-dim-tag1`, the filters as JSON in `data-dim-tagfilters`), the module reads them
+  with `getAttribute` into `state.meta`, which carries them through core's re-renders until the refill answers. The
+  sort reads core's own `duedate`/`timemodified` (`data-dim-due`, `data-dim-modified`), so it needs no theme key;
+  every paint reorders, each render stamps core's order first. The star module is loaded by the name the server
+  writes (`plan_cards::STAR_MODULE`), and its event is heard once, on the document; its literal must equal the
+  block's `EVENT` (`plancards_source_test`).
 - **Twenty-one templates are copies of Moodle 5.3 (2026100500) and must be re-diffed against core on every
   core upgrade**; each docblock names its core file. `templates/tool_lp/`: `plans_page`, `progress_bar`,
   `competency_summary`, `competency_path`, `evidence_summary`, `user_summary`, `linked_courses_summary`,

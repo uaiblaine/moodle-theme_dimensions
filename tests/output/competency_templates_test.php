@@ -280,6 +280,27 @@ final class competency_templates_test extends \advanced_testcase {
                     "//*[@data-region='dim-comp-bar'][@hidden]//*[@role='radiogroup']/button[@role='radio'][@data-value='draft']",
                     "//*[@data-region='dim-comp-total'][@aria-live='polite']",
                     "//*[@data-region='dim-comp-nomatch'][@hidden]",
+                    // Phase 1c: the sort's dates from core's keys, the first paint's favourites and tags.
+                    "//li[@data-id='4'][@data-dim-due='1798761600'][@data-dim-modified='1767225600']" .
+                        "[@data-dim-fav='1'][@data-dim-tag1='2026']",
+                    "//li[@data-id='5'][@data-dim-due='0'][@data-dim-fav='0'][not(@data-dim-tag1)]",
+                    "//div[@data-region='plans'][@data-dim-favourites='1']" .
+                        "[@data-dim-starmodule='block_dimensions/favourite_star'][@data-dim-tagfilters]",
+                    // The cluster: the count, then the capsule with the star, Filters and Organise, the star and
+                    // Filters hidden until the module knows they apply.
+                    "//*[@data-region='dim-comp-cluster']/span[@data-region='dim-comp-total']" .
+                        "/following-sibling::div[@data-region='dim-comp-tools']" .
+                        "[button[1][@data-action='dim-comp-fav'][@aria-pressed='false'][@hidden]]" .
+                        "[button[2][@data-action='dim-comp-filters'][@aria-expanded='false'][@hidden]" .
+                        "//*[@data-region='dim-comp-badge'][@aria-hidden='true'][@hidden]]" .
+                        "[button[3][@data-action='dim-comp-organise'][@aria-expanded='false']]",
+                    "//*[@data-region='dim-comp-organise-menu'][@role='menu'][@hidden]//*[@role='group']" .
+                        "[button[@role='menuitemradio'][@data-value='name'][@aria-checked='true']]" .
+                        "[button[@role='menuitemradio'][@data-value='due'][@aria-checked='false']]" .
+                        "[button[@role='menuitemradio'][@data-value='modified'][@aria-checked='false']]",
+                    "//*[@data-region='dim-comp-fpanel'][@hidden]//*[@data-action='dim-comp-clearfilters']" .
+                        "/following-sibling::button[@data-action='dim-comp-show']",
+                    "//*[@data-region='dim-comp-bar']//*[@data-region='dim-comp-chips'][@hidden]",
                 ],
             ],
             'report_competency/report' => [

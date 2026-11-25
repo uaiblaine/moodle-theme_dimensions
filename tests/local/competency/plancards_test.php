@@ -31,7 +31,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Tests for {@see plancards}: the layout setting, the shape of the cards, and the decoration of core's export.
+ * Tests for {@see plancards}: the layout setting, the shape of the cards, the favourites and tags passed through from
+ * block_dimensions, and the decoration of core's export.
  *
  * @package    theme_dimensions
  * @category   test
@@ -105,12 +106,109 @@ final class plancards_test extends \advanced_testcase {
 
         $extras = plancards::for_user((int) $owner->id, $PAGE->get_renderer('core'));
 
-        $this->assertSame(['layout', 'itemclasses', 'cards'], array_keys($extras));
+        $this->assertSame(['layout', 'itemclasses', 'cards', 'meta', 'favourites', 'tagfilters'], array_keys($extras));
         $this->assertSame(plan_cards::LAYOUT_VERTICAL, $extras['layout']);
         $this->assertSame(plan_cards::item_classes(plan_cards::LAYOUT_VERTICAL), $extras['itemclasses']);
         $this->assertSame([(int) $first->get('id'), (int) $second->get('id')], array_keys($extras['cards']));
         $this->assertStringContainsString('A plan', $extras['cards'][(int) $first->get('id')]);
         $this->assertStringContainsString('plan-card', $extras['cards'][(int) $first->get('id')]);
+        $this->assertSame(array_keys($extras['cards']), array_keys($extras['meta']), 'One meta per card, in order.');
+    }
+
+    /**
+     * Select one option of a plan template's tag field, as the admin, the way local_dimensions' form saves it.
+     *
+     * @param int $templateid The plan template.
+     * @param string $shortname The tag field's short name.
+     * @param int $option The 1-based position of the option chosen.
+     * @return void
+     */
+    private function tag_template(int $templateid, string $shortname, int $option): void {
+        global $USER;
+
+        $previous = $USER;
+        $this->setAdminUser();
+        \local_dimensions\helper::ensure_custom_fields_exist(\local_dimensions\helper::AREA_LP);
+        \local_dimensions\customfield\lp_handler::create()->instance_form_save((object) [
+            'id' => $templateid,
+            'customfield_' . $shortname => $option,
+        ], true);
+        $this->setUser($previous);
+    }
+
+    /**
+     * A learner with a plan whose template is tagged (tag 1, first option) and a plain one, the tagged plan one of
+     * the learner's favourites, favourites on and both of the block's plan tag filters offered.
+     *
+     * @return array [the owner, the tagged plan's id, the plain plan's id].
+     */
+    private function owner_with_a_favourite(): array {
+        $generator = self::getDataGenerator();
+        $lpg = $generator->get_plugin_generator('core_competency');
+        $owner = $generator->create_user();
+        $template = $lpg->create_template(['shortname' => 'Garden']);
+        $this->tag_template((int) $template->get('id'), \local_dimensions\constants::CFIELD_TAG1, 1);
+        $tagged = $lpg->create_plan([
+            'userid' => $owner->id,
+            'name' => 'A tagged plan',
+            'templateid' => $template->get('id'),
+            'status' => plan::STATUS_ACTIVE,
+        ]);
+        $plain = $lpg->create_plan(['userid' => $owner->id, 'name' => 'B plain plan', 'status' => plan::STATUS_COMPLETE]);
+        set_config('enable_favourites', 1, 'block_dimensions');
+        set_config('enable_plan_tag1_filter', 1, 'block_dimensions');
+        set_config('enable_plan_tag2_filter', 1, 'block_dimensions');
+        $usercontext = \context_user::instance($owner->id);
+        \core_favourites\service_factory::get_service_for_user_context($usercontext)
+            ->create_favourite('block_dimensions', 'plan', (int) $tagged->get('id'), $usercontext);
+
+        return [$owner, (int) $tagged->get('id'), (int) $plain->get('id')];
+    }
+
+    /**
+     * On the owner's own list each card says whether it is a favourite, its tags are the template's, and the tag
+     * filters are the block's that a listed plan has a value for.
+     *
+     * @return void
+     */
+    public function test_the_owners_list_carries_favourites_and_tags(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        [$owner, $taggedid, $plainid] = $this->owner_with_a_favourite();
+        $this->setUser($owner);
+
+        $extras = plancards::for_user((int) $owner->id, $PAGE->get_renderer('core'));
+
+        $this->assertTrue($extras['favourites']);
+        $this->assertSame(
+            ['favourite' => true, 'tags' => [['key' => 'tag1', 'value' => 'Edit me 1']]],
+            $extras['meta'][$taggedid]
+        );
+        $this->assertSame(['favourite' => false, 'tags' => []], $extras['meta'][$plainid]);
+        $offered = plan_cards::tag_filters();
+        $this->assertSame(['tag1', 'tag2'], array_column($offered, 'key'), 'Control: the block offers both filters.');
+        $this->assertSame([['key' => 'tag1', 'label' => $offered[0]['label']]], $extras['tagfilters']);
+    }
+
+    /**
+     * On another person's list no card carries a favourite, and nothing says favourites are offered; the tags stay.
+     *
+     * @return void
+     */
+    public function test_another_persons_list_carries_no_favourite(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        [$owner, $taggedid, $plainid] = $this->owner_with_a_favourite();
+
+        $this->setAdminUser();
+        $extras = plancards::for_user((int) $owner->id, $PAGE->get_renderer('core'));
+
+        $this->assertSame([$taggedid, $plainid], array_keys($extras['meta']), 'The admin must read both plans.');
+        $this->assertFalse($extras['favourites']);
+        foreach ($extras['meta'] as $planid => $meta) {
+            $this->assertNull($meta['favourite'], "Plan {$planid} carries a favourite flag.");
+        }
+        $this->assertSame([['key' => 'tag1', 'value' => 'Edit me 1']], $extras['meta'][$taggedid]['tags']);
     }
 
     /**
@@ -130,7 +228,14 @@ final class plancards_test extends \advanced_testcase {
             ],
         ];
         $core = json_decode(json_encode($data), true);
-        $extras = ['layout' => 'vertical', 'itemclasses' => 'col-12', 'cards' => [4 => '<article>card</article>']];
+        $extras = [
+            'layout' => 'vertical',
+            'itemclasses' => 'col-12',
+            'cards' => [4 => '<article>card</article>'],
+            'meta' => [4 => ['favourite' => true, 'tags' => [['key' => 'tag1', 'value' => 'R&D "A"']]]],
+            'favourites' => true,
+            'tagfilters' => [['key' => 'tag1', 'label' => 'Year']],
+        ];
 
         $decorated = plancards::decorate($data, $extras);
 
@@ -141,6 +246,14 @@ final class plancards_test extends \advanced_testcase {
         $this->assertSame('<article>card</article>', $decorated->plans[0]->dimcard);
         $this->assertFalse($decorated->plans[1]->hasdimcard);
         $this->assertSame('', $decorated->plans[1]->dimcard);
+        $this->assertTrue($decorated->dimfavourites);
+        $this->assertSame([['key' => 'tag1', 'label' => 'Year']], json_decode($decorated->dimtagfilters, true));
+        $this->assertSame(plan_cards::STAR_MODULE, $decorated->dimstarmodule);
+        $this->assertTrue($decorated->plans[0]->hasdimfav);
+        $this->assertSame('1', $decorated->plans[0]->dimfav);
+        $this->assertSame([['key' => 'tag1', 'value' => 'R&D "A"']], $decorated->plans[0]->dimtags);
+        $this->assertFalse($decorated->plans[1]->hasdimfav, 'A plan with no meta offers no star.');
+        $this->assertSame([], $decorated->plans[1]->dimtags);
 
         $after = json_decode(json_encode($decorated), true);
         foreach ($core as $key => $value) {
@@ -155,10 +268,39 @@ final class plancards_test extends \advanced_testcase {
             }
             $added = array_diff(array_keys($after['plans'][$index]), array_keys($plan));
             sort($added);
-            $this->assertSame(['dimcard', 'hasdimcard'], $added);
+            $this->assertSame(['dimcard', 'dimfav', 'dimtags', 'hasdimcard', 'hasdimfav'], $added);
         }
         $added = array_diff(array_keys($after), array_keys($core));
         sort($added);
-        $this->assertSame(['dimfirstpaint', 'dimitemclasses', 'dimlayout'], $added);
+        $this->assertSame(
+            ['dimfavourites', 'dimfirstpaint', 'dimitemclasses', 'dimlayout', 'dimstarmodule', 'dimtagfilters'],
+            $added
+        );
+    }
+
+    /**
+     * A tag's text comes out as its own PARAM_TEXT cleaning, the type the web service returns it under, even
+     * where the site keeps tags in format_string(); a bare ampersand and a bare less-than sign stay as typed.
+     *
+     * @return void
+     */
+    public function test_a_plain_string_survives_the_services_return_type(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $context = \core\context\system::instance();
+
+        $CFG->formatstringstriptags = false;
+        $this->assertStringContainsString(
+            '<b>',
+            format_string('<b>Year</b> one', true, ['context' => $context, 'escape' => false]),
+            'Control: with the setting off format_string() keeps the tag.'
+        );
+        $plain = plancards::plain(' <b>Year</b> one ', $context);
+        $this->assertSame('Year one', $plain);
+        $this->assertSame($plain, clean_param($plain, PARAM_TEXT));
+
+        $CFG->formatstringstriptags = true;
+        $this->assertSame('R & D, a < b', plancards::plain('R & D, a < b', $context));
+        $this->assertSame('', plancards::plain('   ', $context));
     }
 }

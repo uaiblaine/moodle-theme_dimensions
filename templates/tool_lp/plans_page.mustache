@@ -17,16 +17,19 @@
 {{!
     @template tool_lp/plans_page
 
-    A user's learning plans as cards, with a bar of scope, count and search, overridden by Dimensions.
+    A user's learning plans as cards, with a bar of scope, count, favourites, Filters, Organise and search,
+    overridden by Dimensions.
 
     Mirrors tool_lp/plans_page of Moodle 5.3 (2026100500), admin/tool/lp/templates/plans_page.mustache.
     Re-diff it against that file on every core upgrade.
 
     It renders from core's context alone: that is what tool_lp/planactions hands it on the client after
     every row action, when it replaces the region whole and runs this template's js block again. The
-    theme's first paint adds keys of its own (dimfirstpaint, dimlayout, dimitemclasses, and per plan
-    hasdimcard and dimcard, from theme_dimensions\local\competency\plancards); theme_dimensions/plancards,
-    started from the js block, puts the cards back after each re-render and runs the bar.
+    theme's first paint adds keys of its own (dimfirstpaint, dimlayout, dimitemclasses, dimfavourites,
+    dimtagfilters, dimstarmodule, and per plan hasdimcard, dimcard, hasdimfav, dimfav and dimtags, from
+    theme_dimensions\local\competency\plancards); theme_dimensions/plancards, started from the js block, puts
+    the cards, favourites and tags back after each re-render and runs the bar. Each plan's due date and last
+    change are core's own keys (duedate, timemodified), so the sort needs nothing of the theme's.
 
     Kept from core: the root data-region="plans" (replaced whole by tool_lp/planactions), one
     data-region="plan-node" per plan with data-id and data-userid (the one ancestor _findPlanData reads),
@@ -40,8 +43,9 @@
     card's kebab, named "Actions for" the plan in visually hidden text, with the ul's title dropped (the
     module copies the name into the CSS tooltip's attribute as text: the plan's name is formatted HTML,
     never written into an attribute by the template); the evidence link is an outline button beside the navigation; the empty message is the
-    Design System's compact line; a scope by status, a count and a search, printed hidden and revealed by
-    the module, with a second hidden line for a search that leaves nothing.
+    Design System's compact line; a scope by status, a count, the favourites star, Filters (the plan
+    template's tags) with its panel and chips row, Organise (sort only) with its menu, and a search, printed
+    hidden and revealed by the module, with a second hidden line for criteria that leave nothing.
 
     Context variables required for this template:
     * userid - The plan user id
@@ -49,6 +53,7 @@
     * plans - The list of learning plans
     * navigation - array of strings containing buttons for navigation
     * canreaduserevidence - whether the viewer may read the user's evidence of prior learning
+    * plans[].duedate, plans[].timemodified - core's plan fields, read by the sort
 
     Example context (json):
     {
@@ -60,6 +65,9 @@
             "<a class=\"btn btn-secondary\" href=\"https://example.com/admin/tool/lp/editplan.php?userid=3\">Add new learning plan</a>"
         ],
         "dimfirstpaint": true,
+        "dimfavourites": true,
+        "dimtagfilters": "[{\"key\":\"tag1\",\"label\":\"Year\"}]",
+        "dimstarmodule": "block_dimensions/favourite_star",
         "dimlayout": "horizontal",
         "dimitemclasses": "dims-plan-item mb-3 dims-card-item dims-plan-item-horizontal col-12 col-lg-6 col-xl-4",
         "plans": [
@@ -67,6 +75,8 @@
                 "id": 4,
                 "userid": 3,
                 "name": "Kitchen plan",
+                "duedate": 1798761600,
+                "timemodified": 1767225600,
                 "statusname": "Active",
                 "isactive": true,
                 "isdraft": false,
@@ -78,6 +88,11 @@
                 "canbeedited": true,
                 "iscompleteallowed": true,
                 "isunlinkallowed": true,
+                "hasdimfav": true,
+                "dimfav": "1",
+                "dimtags": [
+                    {"key": "tag1", "value": "2026"}
+                ],
                 "hasdimcard": true,
                 "dimcard": "<article class=\"card plan-card plan-card-horizontal h-100\"><div class=\"card-body\"><h4 class=\"card-title\"><a href=\"https://example.com/local/dimensions/view-plan.php?id=4\" class=\"plan-card-link stretched-link\">Kitchen plan</a></h4></div></article>"
             },
@@ -85,6 +100,8 @@
                 "id": 5,
                 "userid": 3,
                 "name": "Garden plan",
+                "duedate": 0,
+                "timemodified": 1767312000,
                 "statusname": "Draft",
                 "isactive": false,
                 "isdraft": true,
@@ -96,13 +113,18 @@
                 "canbeedited": true,
                 "isrequestreviewallowed": true,
                 "isapproveallowed": true,
+                "hasdimfav": true,
+                "dimfav": "0",
+                "dimtags": [],
                 "hasdimcard": false,
                 "dimcard": ""
             }
         ]
     }
 }}
-<div data-region="plans" class="dim-comp-plans"{{#dimfirstpaint}} data-dim-layout="{{dimlayout}}" data-dim-itemclasses="{{dimitemclasses}}"{{/dimfirstpaint}}>
+<div data-region="plans" class="dim-comp-plans"{{#dimfirstpaint}} data-dim-layout="{{dimlayout}}" data-dim-itemclasses="{{dimitemclasses}}"{{!
+    }} data-dim-favourites="{{#dimfavourites}}1{{/dimfavourites}}{{^dimfavourites}}0{{/dimfavourites}}"{{!
+    }} data-dim-tagfilters="{{dimtagfilters}}" data-dim-starmodule="{{dimstarmodule}}"{{/dimfirstpaint}}>
     <div class="dim-comp-plans-head">
         {{#navigation}}
         {{{.}}}
@@ -128,8 +150,26 @@
             </button>
         </div>
         <span class="dim-comp-bar-spacer"></span>
-        <div class="dim-comp-bar-cluster">
+        <div class="dim-comp-bar-cluster" data-region="dim-comp-cluster">
             <span class="dim-comp-bar-count" data-region="dim-comp-total" aria-live="polite"></span>
+            <div class="dim-comp-capsule dim-comp-tools" data-region="dim-comp-tools">
+                <button type="button" class="dim-comp-iconbtn dim-comp-tip dim-comp-fav" data-action="dim-comp-fav" aria-pressed="false"
+                        aria-label="{{#str}} competency_planfavourites, theme_dimensions {{/str}}"
+                        data-dim-comp-tip="{{#str}} competency_planfavourites, theme_dimensions {{/str}}" hidden>
+                    <span class="dim-comp-fav-off">{{#pix}} i/star-o, core {{/pix}}</span>{{!
+                    }}<span class="dim-comp-fav-on">{{#pix}} i/star, core {{/pix}}</span>
+                </button>
+                <button type="button" class="dim-comp-iconbtn dim-comp-tip" data-action="dim-comp-filters" aria-expanded="false"
+                        aria-controls="{{uniqid}}-dim-filters" aria-label="{{#str}} competency_planfilters, theme_dimensions {{/str}}"
+                        data-dim-comp-tip="{{#str}} competency_planfilters, theme_dimensions {{/str}}" hidden>
+                    {{#pix}} i/filter, core {{/pix}}<span class="dim-comp-badge" data-region="dim-comp-badge" aria-hidden="true" hidden></span>
+                </button>
+                <button type="button" class="dim-comp-iconbtn dim-comp-tip" data-action="dim-comp-organise" aria-expanded="false"
+                        aria-controls="{{uniqid}}-dim-organise" aria-label="{{#str}} competency_planorganise, theme_dimensions {{/str}}"
+                        data-dim-comp-tip="{{#str}} competency_planorganise, theme_dimensions {{/str}}">
+                    {{#pix}} t/sort_by, core {{/pix}}{{#pix}} t/expanded, core {{/pix}}
+                </button>
+            </div>
         </div>
         <div class="dim-comp-capsule dim-comp-search" data-region="dim-comp-search">
             <button type="button" class="dim-comp-iconbtn dim-comp-tip" data-action="dim-comp-search-open"
@@ -149,6 +189,39 @@
                 </button>
             </span>
         </div>
+        <div class="dim-comp-menu" id="{{uniqid}}-dim-organise" role="menu" data-region="dim-comp-organise-menu"
+             aria-label="{{#str}} competency_planorganise, theme_dimensions {{/str}}" hidden>
+            <div class="dim-comp-menu-head" id="{{uniqid}}-dim-sorthead">{{#str}} competency_plansort, theme_dimensions {{/str}}</div>
+            <div role="group" aria-labelledby="{{uniqid}}-dim-sorthead">
+                <button type="button" class="dim-comp-menu-item" role="menuitemradio" aria-checked="true" tabindex="0" data-value="name">
+                    <i class="fa fa-arrow-down-a-z dim-comp-menu-icon" aria-hidden="true"></i>{{!
+                    }}<span class="dim-comp-menu-label">{{#str}} competency_plansort_name, theme_dimensions {{/str}}</span>{{!
+                    }}<i class="fa fa-check dim-comp-menu-tick" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="dim-comp-menu-item" role="menuitemradio" aria-checked="false" tabindex="-1" data-value="due">
+                    <i class="fa-regular fa-calendar dim-comp-menu-icon" aria-hidden="true"></i>{{!
+                    }}<span class="dim-comp-menu-label">{{#str}} competency_plansort_due, theme_dimensions {{/str}}</span>{{!
+                    }}<i class="fa fa-check dim-comp-menu-tick" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="dim-comp-menu-item" role="menuitemradio" aria-checked="false" tabindex="-1" data-value="modified">
+                    <i class="fa fa-clock-rotate-left dim-comp-menu-icon" aria-hidden="true"></i>{{!
+                    }}<span class="dim-comp-menu-label">{{#str}} competency_plansort_modified, theme_dimensions {{/str}}</span>{{!
+                    }}<i class="fa fa-check dim-comp-menu-tick" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+        <div class="dim-comp-fpanel" id="{{uniqid}}-dim-filters" data-region="dim-comp-fpanel" hidden>
+            <div class="dim-comp-fpanel-body" data-region="dim-comp-fpanel-body"></div>
+            <div class="dim-comp-fpanel-foot">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-action="dim-comp-clearfilters">
+                    {{#str}} competency_planclearfilters, theme_dimensions {{/str}}
+                </button>
+                <button type="button" class="btn btn-sm btn-primary" data-action="dim-comp-show">
+                    {{#str}} competency_planshow, theme_dimensions {{/str}}
+                </button>
+            </div>
+        </div>
+        <div class="dim-comp-chips" data-region="dim-comp-chips" hidden></div>
     </div>
 
     <ul class="block_dimensions dim-comp-plans-grid row list-unstyled">
@@ -156,7 +229,8 @@
         <li data-region="plan-node" data-id="{{id}}" data-userid="{{userid}}" class="dim-comp-plan {{dimitemclasses}}"
             data-dim-status="{{#isactive}}active{{/isactive}}{{#isinreview}}review{{/isinreview}}{{!
             }}{{#iswaitingforreview}}review{{/iswaitingforreview}}{{#iscompleted}}complete{{/iscompleted}}{{!
-            }}{{#isdraft}}draft{{/isdraft}}">
+            }}{{#isdraft}}draft{{/isdraft}}" data-dim-due="{{duedate}}" data-dim-modified="{{timemodified}}"{{!
+            }}{{#hasdimfav}} data-dim-fav="{{dimfav}}"{{/hasdimfav}}{{#dimtags}} data-dim-{{key}}="{{value}}"{{/dimtags}}>
             <div class="dim-comp-plan-inner">
                 <div class="dim-comp-plan-extra" data-region="dim-comp-extra" data-planid="{{id}}">
                     {{#hasdimcard}}
