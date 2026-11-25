@@ -117,7 +117,11 @@ Feature: The competency pages and dialogues wear the theme and keep core's actio
     When I click on "Not rated" "link" in the "Student second" "table_row"
     Then "User competency summary" "dialogue" should be visible
     When I click on "Rate" "button" in the "User competency summary" "dialogue"
-    And I set the field "Rating" to "Great"
+    # Core fills the grader's ratings after the dialogue opens: wait for it, as the breakdown scenario does.
+    Then "Rate" "dialogue" should be visible
+    And ".dim-comp-grader" "css_element" should exist in the "Rate" "dialogue"
+    # The report's own filters are selects too: name the dialogue's field.
+    And I set the field "Rating" in the "Rate" "dialogue" to "Great"
     And I click on "Rate" "button" in the ".competency-grader" "css_element"
     Then "Great" "tool_lp > competency page rating" should exist
     And I click on "Close" "button" in the "User competency summary" "dialogue"
