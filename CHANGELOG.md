@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A learner's competency in a course in the data report's look** (2026100648). Moodle's page of one learner's
+  competency in a course (`admin/tool/lp/user_competency_in_course.php`) leads with the learner and the competency,
+  *Rate* as its one primary button where Moodle lets the viewer rate (Moodle's own rating dialogue), then a band of
+  four figures (the rating in this course, proficiency, the evidence of this course with the most recent date, the
+  learning plans holding the competency), the course's evidence as a bounded table (what happened, when, the rating,
+  by whom, the note, Moodle's delete action) and the linked activities and plans as two panels. A theme copy of
+  `tool_lp/user_competency_summary_in_course` with every hook kept; it renders from Moodle's own export, again after
+  each rating, and reads nothing Moodle's page does not.
 - **The course competencies page, for the teacher and the learner** (2026100647). Core's page of a course's
   competencies (`admin/tool/lp/coursecompetencies.php`) is drawn in the theme's design, with everything Moodle offers
   kept: adding, removing and reordering competencies, the course outcome of each, the "push ratings to plans" setting,

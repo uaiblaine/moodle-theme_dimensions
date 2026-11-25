@@ -200,8 +200,8 @@ body.path-report-competency [data-region="competency-summary"] > dl:not([data-re
     }
 }
 
-/* Core's proficiency badges, where the theme does not own the template (user_competency_summary_in_plan
-   and _in_course, course_competencies_page): Bootstrap's bg-* utilities are !important, so the
+/* Core's proficiency badges, where the theme does not own the template (user_competency_summary_in_plan,
+   course_competencies_page): Bootstrap's bg-* utilities are !important, so the
    colour stays core's pair (white on success or danger) and the theme gives the badge the state
    label's shape, its tone's edge and an icon, so the state is not carried by the colour alone. The edge
    is the family's success or danger edge, lighter than core's solid fill on the light page and darker on
@@ -1664,6 +1664,244 @@ body.path-admin-tool-lp table.managecompetencies {
         .dim-comp-course-cmrow {
             flex-direction: column;
             align-items: flex-start;
+        }
+    }
+}
+
+/* ---- A learner's competency in a course (user_competency_in_course.php) ---------------- */
+/* templates/tool_lp/user_competency_summary_in_course: who and what first with Rate as the one primary
+   action, a band of four figures and the evidence of the course as a bounded grid, in the data report's
+   look (moodle-dev/docs/design-system/components/data-report.md) without its engine: no sort, no columns,
+   no pager, no card view, the page's own list drawn whole. The linked activities and the plans are two
+   panels below, capped at two columns (flex: 1 1 45% over a 17.5rem floor). */
+.dim-comp-ucc {
+    .dim-comp-ucc-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: var(--dim-ds-space-sm) var(--dim-ds-space-md);
+    }
+
+    .dim-comp-ucc-what {
+        flex: 1 1 20rem;
+        min-width: 0;
+    }
+
+    .dim-comp-ucc-primary {
+        flex: none;
+    }
+
+    .dim-comp-ucc-who {
+        display: flex;
+        align-items: center;
+        gap: var(--dim-ds-space-xs);
+        margin: 0 0 var(--dim-ds-space-xs);
+        color: var(--dimensions-ink-muted);
+        font-size: .8125rem;
+        font-weight: 600;
+    }
+
+    .dim-comp-ucc-who__avatar {
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    // The band: a tile per figure, its label, the figure and a muted sub-line (data-report.md, Band).
+    .dim-comp-ucc-band {
+        margin: var(--dim-ds-space-md) 0 0;
+    }
+
+    .dim-comp-ucc-tiles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+        gap: var(--dim-ds-space-xs);
+        margin: 0;
+    }
+
+    .dim-comp-ucc-tile {
+        display: flex;
+        flex-direction: column;
+        gap: .125rem;
+        min-width: 0;
+        padding: var(--dim-ds-space-sm) var(--dim-ds-space-md);
+        border: 1px solid var(--dimensions-line);
+        border-radius: var(--dim-ds-radius-lg);
+        background-color: var(--dimensions-surface);
+        color: var(--dimensions-ink);
+    }
+
+    .dim-comp-ucc-tile__label {
+        margin: 0;
+        color: var(--dimensions-ink-muted);
+        font-size: .8125rem;
+        font-weight: 600;
+    }
+
+    .dim-comp-ucc-tile__value {
+        margin: 0;
+        color: var(--dimensions-ink-strong);
+        font-size: 1.25rem;
+        font-weight: 600;
+        line-height: 1.3;
+        font-variant-numeric: tabular-nums;
+        overflow-wrap: anywhere;
+    }
+
+    .dim-comp-ucc-tile__sub {
+        margin: 0;
+        color: var(--dimensions-ink-muted);
+        font-size: .8125rem;
+    }
+
+    .dim-comp-ucc-none {
+        color: var(--dimensions-ink-muted);
+        font-weight: 400;
+    }
+
+    // A section title (section-title.md): 1rem / 600, the sections 2rem apart. The section carries core's
+    // data-region="evidence-listing", whose page-scoped rule above sets a 16px margin at (0,2,1): the region
+    // in this selector outranks it on classes.
+    .dim-comp-ucc-title {
+        margin: 0 0 var(--dim-ds-space-xs);
+        color: var(--dimensions-ink);
+        font-size: 1rem;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    [data-region="competency-summary"] > .dim-comp-ucc-section,
+    [data-region="competency-summary"] > .dim-comp-ucc-panels {
+        margin-top: var(--dim-ds-space-xl);
+    }
+
+    // The grid: a real table in a frame of its own, at most 34rem tall, scrolling both ways, never the page.
+    .dim-comp-ucc-gridframe {
+        max-height: 34rem;
+        overflow: auto;
+        overscroll-behavior-x: contain;
+        border: 1px solid var(--dimensions-line);
+        border-radius: var(--dim-ds-radius-lg);
+    }
+
+    .dim-comp-ucc-grid {
+        width: 100%;
+        min-width: 48rem;
+        margin: 0;
+        table-layout: fixed;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: .875rem;
+
+        .dim-comp-ucc-col--what {
+            width: 28%;
+        }
+
+        .dim-comp-ucc-col--when {
+            width: 12rem;
+        }
+
+        .dim-comp-ucc-col--rating {
+            width: 9rem;
+        }
+
+        .dim-comp-ucc-col--by {
+            width: 12rem;
+        }
+
+        .dim-comp-ucc-col--actions {
+            width: 3rem;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            padding: var(--dim-ds-space-xs) var(--dim-ds-space-sm);
+            border-bottom: 1px solid var(--dimensions-line);
+            background-color: var(--dimensions-surface-alt);
+            color: var(--dimensions-ink-muted);
+            font-size: .8125rem;
+            font-weight: 600;
+            text-align: start;
+            white-space: nowrap;
+        }
+
+        tbody th,
+        tbody td {
+            padding: var(--dim-ds-space-xs) var(--dim-ds-space-sm);
+            border-top: 1px solid var(--dimensions-line);
+            background-color: var(--dimensions-surface);
+            color: var(--dimensions-ink);
+            text-align: start;
+            vertical-align: top;
+            overflow-wrap: anywhere;
+        }
+
+        tbody tr:first-child th,
+        tbody tr:first-child td {
+            border-top: 0;
+        }
+
+        tbody th {
+            font-weight: 600;
+        }
+
+        .dim-comp-ucc-cell__main {
+            display: block;
+        }
+
+        .dim-comp-ucc-cell__sub {
+            display: block;
+            color: var(--dimensions-accent);
+            font-size: .8125rem;
+            font-weight: 400;
+        }
+
+        .dim-comp-ucc-cell--when {
+            color: var(--dimensions-ink-muted);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .dim-comp-ucc-cell--actions {
+            text-align: end;
+        }
+    }
+
+    // The two panels below the grid.
+    .dim-comp-ucc-panels {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--dim-ds-space-md);
+    }
+
+    .dim-comp-ucc-panel {
+        flex: 1 1 45%;
+        min-width: 17.5rem;
+        padding: var(--dim-ds-space-md);
+        border: 1px solid var(--dimensions-line);
+        border-radius: var(--dim-ds-radius-lg);
+        background-color: var(--dimensions-surface);
+        color: var(--dimensions-ink);
+    }
+
+    .dim-comp-ucc-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        > li {
+            padding: var(--dim-ds-space-xs) 0;
+            border-top: 1px solid var(--dimensions-line);
+        }
+
+        > li:first-child {
+            border-top: 0;
+        }
+
+        .icon {
+            margin-inline-end: .375rem;
         }
     }
 }

@@ -1,0 +1,338 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template tool_lp/user_competency_summary_in_course
+
+    A learner's competency in a course (admin/tool/lp/user_competency_in_course.php), overridden by Dimensions.
+
+    Mirrors tool_lp/user_competency_summary_in_course of Moodle 5.3 (2026100500),
+    admin/tool/lp/templates/user_competency_summary_in_course.mustache. Re-diff it against that file on every
+    core upgrade. tool_lp/renderer renders it (the theme's tool_lp_renderer adds dimband to the first paint);
+    report_competency/grading_popup renders it in the breakdown report's "User competency summary" dialogue, with
+    displayuser; and tool_lp/user_competency_info re-renders it through core/templates from
+    tool_lp_data_for_user_competency_summary_in_course after a rating and replaces the root element with the answer:
+    everything below renders from core's context alone, except the two counts of the band, which the JavaScript
+    counts again from the rows on every render and after every deletion.
+
+    Kept from core, because tool_lp's modules read them: the root's data-region-id="<uniqid>" (the reloader's root,
+    replaced whole), with core's data-region="user-competency-full-info", data-node="user-competency",
+    data-competencyid and data-userid; data-region="competency-summary"; the rate button's id rate_<uniqid>, which
+    tool_lp/grade_user_competency_inline binds, drawn under the same cangrade as core's; the JavaScript, statement for
+    statement, with the callback's parameters capitalised, four lines wrapped and displayuser written
+    by a section where core compared two string literals, which eslint refuses as a constant condition (core's copy
+    has no example context, so the lint never read it), followed by the band's count; the partial tool_lp/competency_summary and core's comment area. From
+    tool_lp/evidence_summary, which core includes once per piece of evidence: each row carries
+    data-region="evidence" with data-id (tool_lp/evidence_delete reads the id off exactly one such ancestor and
+    removes it), the trigger data-action="delete-evidence" drawn only where the exporter says candelete, and the
+    registration of the two selectors; the rating is a span with the class badge (tool_lp's "competency grade"
+    selector). Kept for Behat: a dt "Proficient" followed by a dd holding the proficiency's name ("Yes", "No") and a
+    dt "Rating" followed by a dd holding the rating's name. Every context key keeps core's escaping: the plans' names
+    stay triple-stashed as in core, everything else is double-stashed.
+
+    Changed: the head says who (the learner's picture and name, which core's page header already shows the same
+    viewer, without the identity fields) and what (the competency summary) first, with "Rate" as the page's one
+    primary button; a band of four figures (the rating in this course, proficiency, the number of pieces of evidence
+    of this course with the most recent one's date, the number of learning plans core lists) in the data report's
+    look; the evidence of this course is a table in a bounded frame, newest first as core lists it (what happened,
+    when, the rating, by whom, the note, core's delete action); the linked activities and the learning plans are two
+    panels below. Core's "displayuser" branch (the user block, identity fields included, that the grading popup
+    asks for) gives way to the head, which names the learner in both places, by picture and name alone.
+
+    Context variables required for this template:
+    * usercompetencysummary - competency (a competency_summary record), user (a user_summary record), cangrade,
+      usercompetencycourse (grade, gradename, proficiency, proficiencyname), evidence (evidence records), commentarea
+    * course - id
+    * coursemodules - the course modules linked to the competency (url, iconurl, name)
+    * plans - the learning plans containing the competency the viewer may read (id, name)
+    * pluginbaseurl - the address of admin/tool/lp
+    * dimband - first paint only: evidencecount and plancount
+
+    Example context (json):
+    {
+        "usercompetencysummary": {
+            "cangrade": true,
+            "competency": {
+                "competency": {
+                    "id": 1,
+                    "shortname": "Communicate clearly",
+                    "idnumber": "COMM-1"
+                },
+                "framework": {
+                    "shortname": "Professional skills"
+                },
+                "taxonomyterm": "Competency",
+                "scaleid": 2
+            },
+            "user": {
+                "id": 3,
+                "fullname": "Lea Learner",
+                "profileimageurlsmall": "https://example.com/pix/u/f2.png"
+            },
+            "usercompetencycourse": {
+                "grade": 2,
+                "gradename": "Competent",
+                "proficiency": true,
+                "proficiencyname": "Yes"
+            },
+            "evidence": [
+                {
+                    "id": 1,
+                    "userdate": "Tuesday, 13 October 2026, 10:04",
+                    "grade": 2,
+                    "gradename": "Competent",
+                    "description": "The competency was rated in the course Writing for the web.",
+                    "note": "Clear structure in the final essay.",
+                    "actionuser": {
+                        "id": 2,
+                        "fullname": "Tess Teacher",
+                        "profileurl": "https://example.com/user/profile.php?id=2",
+                        "profileimageurlsmall": "https://example.com/pix/u/f2.png"
+                    },
+                    "candelete": true
+                },
+                {
+                    "id": 2,
+                    "userdate": "Friday, 2 October 2026, 16:20",
+                    "grade": null,
+                    "gradename": "-",
+                    "description": "The activity Essay was completed.",
+                    "url": "https://example.com/mod/assign/view.php?id=7",
+                    "candelete": true
+                }
+            ]
+        },
+        "course": {
+            "id": 2
+        },
+        "coursemodules": [
+            {
+                "url": "https://example.com/mod/assign/view.php?id=7",
+                "iconurl": "https://example.com/theme/image.php/dimensions/assign/1/monologo",
+                "name": "Essay"
+            }
+        ],
+        "plans": [
+            {
+                "id": 4,
+                "name": "Writing plan"
+            }
+        ],
+        "pluginbaseurl": "https://example.com/admin/tool/lp",
+        "dimband": {
+            "evidencecount": 2,
+            "plancount": 1
+        }
+    }
+}}
+{{#usercompetencysummary}}
+<div data-region="user-competency-full-info" class="dim-comp-ucc" data-node="user-competency" data-competencyid="{{usercompetency.competencyid}}" data-userid="{{usercompetency.userid}}" data-region-id="{{uniqid}}">
+<div data-region="competency-summary">
+    <div class="dim-comp-ucc-head">
+        <div class="dim-comp-ucc-what">
+            {{#user}}
+            <p class="dim-comp-ucc-who">
+                <img class="dim-comp-ucc-who__avatar" height="24" width="24" src="{{profileimageurlsmall}}" alt="">
+                <span>{{fullname}}</span>
+            </p>
+            {{/user}}
+            {{#competency}}
+                {{> tool_lp/competency_summary }}
+            {{/competency}}
+        </div>
+        {{#cangrade}}
+        <div class="dim-comp-ucc-primary">
+            <button type="button" class="btn btn-primary" id="rate_{{uniqid}}">{{#str}}rate, tool_lp{{/str}}</button>
+        </div>
+        {{/cangrade}}
+    </div>
+    <section class="dim-comp-ucc-band" data-region="dim-comp-ucc-band" aria-label="{{#str}}competency_usercourse_band, theme_dimensions{{/str}}">
+        <dl class="dim-comp-ucc-tiles">
+            {{#usercompetencycourse}}
+            <div class="dim-comp-ucc-tile">
+                <dt class="dim-comp-ucc-tile__label">{{#str}}rating, tool_lp{{/str}}</dt>
+                <dd class="dim-comp-ucc-tile__value">
+                    {{#grade}}{{gradename}}{{/grade}}
+                    {{^grade}}<span class="dim-comp-ucc-none">{{#str}}notrated, report_competency{{/str}}</span>{{/grade}}
+                </dd>
+            </div>
+            <div class="dim-comp-ucc-tile">
+                <dt class="dim-comp-ucc-tile__label">{{#str}}proficient, tool_lp{{/str}}</dt>
+                <dd class="dim-comp-ucc-tile__value">
+                    {{#proficiency}}
+                    <span class="dim-comp-pill dim-comp-pill--proficient">
+                        <i class="fa-solid fa-circle-check dim-comp-pill__icon" aria-hidden="true"></i>
+                        {{proficiencyname}}
+                    </span>
+                    {{/proficiency}}
+                    {{^proficiency}}
+                    {{#grade}}
+                    <span class="dim-comp-pill dim-comp-pill--notproficient">
+                        <i class="fa-solid fa-circle-exclamation dim-comp-pill__icon" aria-hidden="true"></i>
+                        {{proficiencyname}}
+                    </span>
+                    {{/grade}}
+                    {{^grade}}
+                    <span class="dim-comp-pill dim-comp-pill--notrated">
+                        <i class="fa-solid fa-circle-minus dim-comp-pill__icon" aria-hidden="true"></i>
+                        {{proficiencyname}}
+                    </span>
+                    {{/grade}}
+                    {{/proficiency}}
+                </dd>
+            </div>
+            {{/usercompetencycourse}}
+            <div class="dim-comp-ucc-tile">
+                <dt class="dim-comp-ucc-tile__label">{{#str}}competency_usercourse_evidence, theme_dimensions{{/str}}</dt>
+                <dd class="dim-comp-ucc-tile__value" data-dim-figure="evidence">{{#dimband}}{{evidencecount}}{{/dimband}}</dd>
+                <dd class="dim-comp-ucc-tile__sub" data-region="dim-comp-ucc-latest"{{^evidence.0}} hidden{{/evidence.0}}>{{#str}}competency_usercourse_latest, theme_dimensions{{/str}} <span data-dim-figure="latest">{{#evidence.0}}{{userdate}}{{/evidence.0}}</span></dd>
+            </div>
+            <div class="dim-comp-ucc-tile">
+                <dt class="dim-comp-ucc-tile__label">{{#str}}competency_usercourse_plans, theme_dimensions{{/str}}</dt>
+                <dd class="dim-comp-ucc-tile__value" data-dim-figure="plans">{{#dimband}}{{plancount}}{{/dimband}}</dd>
+            </div>
+        </dl>
+    </section>
+    {{#js}}
+    require(['jquery', 'tool_lp/grade_user_competency_inline', 'tool_lp/user_competency_info', 'tool_lp/evidence_delete'],
+            function($, Mod, Info, EvidenceDelete) {
+
+        var competencyElement = $('[data-region-id="{{uniqid}}"]');
+
+        var displayuser = {{#displayuser}}true{{/displayuser}}{{^displayuser}}false{{/displayuser}};
+        var infoReloader = new Info(competencyElement, '{{competency.competency.id}}', '{{user.id}}', '', '{{course.id}}',
+            displayuser);
+        {{#cangrade}}
+            var inlineGrader = new Mod('#rate_{{uniqid}}', '{{competency.scaleid}}', '{{competency.competency.id}}', '{{user.id}}',
+                '', '{{course.id}}', '{{#str}}chooserating, tool_lp{{/str}}');
+            inlineGrader.on('competencyupdated', infoReloader.reload.bind(infoReloader));
+        {{/cangrade}}
+
+        EvidenceDelete.register('[data-action="delete-evidence"]', '[data-region="evidence"]');
+
+        // The band's two counts come from the rows this render drew: core's re-render brings no dimband, and
+        // tool_lp/evidence_delete removes a row without re-rendering.
+        var rows = competencyElement.find('[data-region="dim-comp-ucc-rows"]');
+        var paint = function() {
+            var evidence = rows.find('[data-region="evidence"]');
+            var latest = evidence.first().find('[data-dim-cell="when"]').text().trim();
+            competencyElement.find('[data-dim-figure="evidence"]').text(evidence.length);
+            competencyElement.find('[data-dim-figure="plans"]').text(competencyElement.find('[data-dim-plan]').length);
+            competencyElement.find('[data-dim-figure="latest"]').text(latest);
+            competencyElement.find('[data-region="dim-comp-ucc-latest"]').prop('hidden', evidence.length === 0);
+            competencyElement.find('[data-region="dim-comp-ucc-frame"]').prop('hidden', evidence.length === 0);
+            competencyElement.find('[data-region="dim-comp-ucc-empty"]').prop('hidden', evidence.length > 0);
+        };
+        paint();
+        if (rows.length && typeof window.MutationObserver === 'function') {
+            new window.MutationObserver(paint).observe(rows.get(0), {childList: true});
+        }
+    });
+    {{/js}}
+    {{#commentarea}}
+        {{#canpostorhascomments}}
+            {{>tool_lp/comment_area}}
+        {{/canpostorhascomments}}
+    {{/commentarea}}
+    <section class="dim-comp-ucc-section" data-region="evidence-listing" aria-labelledby="dim-comp-ucc-evidence-{{uniqid}}">
+        <h4 class="dim-comp-ucc-title" id="dim-comp-ucc-evidence-{{uniqid}}">{{#str}}competency_usercourse_evidence, theme_dimensions{{/str}}</h4>
+        <div class="dim-comp-ucc-gridframe" data-region="dim-comp-ucc-frame"{{^evidence.0}} hidden{{/evidence.0}}>
+            <table class="dim-comp-ucc-grid">
+                <caption class="visually-hidden">{{#str}}competency_usercourse_caption, theme_dimensions{{/str}}</caption>
+                <colgroup>
+                    <col class="dim-comp-ucc-col--what">
+                    <col class="dim-comp-ucc-col--when">
+                    <col class="dim-comp-ucc-col--rating">
+                    <col class="dim-comp-ucc-col--by">
+                    <col class="dim-comp-ucc-col--note">
+                    {{#evidence.0.candelete}}<col class="dim-comp-ucc-col--actions">{{/evidence.0.candelete}}
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th scope="col">{{#str}}competency_usercourse_what, theme_dimensions{{/str}}</th>
+                        <th scope="col">{{#str}}competency_usercourse_when, theme_dimensions{{/str}}</th>
+                        <th scope="col">{{#str}}rating, tool_lp{{/str}}</th>
+                        <th scope="col">{{#str}}competency_usercourse_by, theme_dimensions{{/str}}</th>
+                        <th scope="col">{{#str}}competency_usercourse_note, theme_dimensions{{/str}}</th>
+                        {{#evidence.0.candelete}}
+                        <th scope="col"><span class="visually-hidden">{{#str}}competency_usercourse_actions, theme_dimensions{{/str}}</span></th>
+                        {{/evidence.0.candelete}}
+                    </tr>
+                </thead>
+                <tbody data-region="dim-comp-ucc-rows">
+                    {{#evidence}}
+                    <tr class="evidence" data-region="evidence" data-id="{{id}}">
+                        <th scope="row">
+                            <span class="dim-comp-ucc-cell__main">{{description}}</span>
+                            {{#url}}<a class="dim-comp-ucc-cell__sub" href="{{url}}" target="_blank" rel="noreferrer">{{url}}</a>{{/url}}
+                        </th>
+                        <td class="dim-comp-ucc-cell--when" data-dim-cell="when">{{userdate}}</td>
+                        <td>
+                            {{#grade}}
+                            <span class="badge dim-comp-pill dim-comp-pill--rated">
+                                <i class="fa-solid fa-star dim-comp-pill__icon" aria-hidden="true"></i>
+                                {{gradename}}
+                            </span>
+                            {{/grade}}
+                            {{^grade}}<span class="dim-comp-ucc-none">–</span>{{/grade}}
+                        </td>
+                        <td>
+                            {{#actionuser}}{{> tool_lp/user_summary }}{{/actionuser}}
+                            {{^actionuser}}<span class="dim-comp-ucc-none">–</span>{{/actionuser}}
+                        </td>
+                        <td class="dim-comp-ucc-cell--note">
+                            {{#note}}{{note}}{{/note}}
+                            {{^note}}<span class="dim-comp-ucc-none">–</span>{{/note}}
+                        </td>
+                        {{#candelete}}
+                        <td class="dim-comp-ucc-cell--actions">
+                            <a href="#" class="btn btn-link btn-sm" data-action="delete-evidence">{{#pix}}t/delete, core, {{#str}}delete{{/str}}{{/pix}}</a>
+                        </td>
+                        {{/candelete}}
+                    </tr>
+                    {{/evidence}}
+                </tbody>
+            </table>
+        </div>
+        <p class="dim-comp-evidence-empty" data-region="dim-comp-ucc-empty"{{#evidence.0}} hidden{{/evidence.0}}>{{#str}}noevidence, tool_lp{{/str}}</p>
+    </section>
+    <div class="dim-comp-ucc-panels">
+        <section class="dim-comp-ucc-panel" aria-labelledby="dim-comp-ucc-activities-{{uniqid}}">
+            <h4 class="dim-comp-ucc-title" id="dim-comp-ucc-activities-{{uniqid}}">{{#str}}competency_usercourse_activities, theme_dimensions{{/str}}</h4>
+            <ul class="dim-comp-ucc-list" data-region="coursecompetencyactivities">
+            {{#coursemodules}}
+                <li><a href="{{url}}"><img class="icon" src="{{iconurl}}" alt=""> {{name}}</a></li>
+            {{/coursemodules}}
+            {{^coursemodules}}
+                <li class="dim-comp-ucc-none">{{#str}}noactivities, tool_lp{{/str}}</li>
+            {{/coursemodules}}
+            </ul>
+        </section>
+        <section class="dim-comp-ucc-panel" aria-labelledby="dim-comp-ucc-plans-{{uniqid}}">
+            <h4 class="dim-comp-ucc-title" id="dim-comp-ucc-plans-{{uniqid}}">{{#str}}competency_usercourse_planslist, theme_dimensions{{/str}}</h4>
+            <ul class="dim-comp-ucc-list">
+            {{#plans}}
+                <li data-dim-plan="{{id}}"><a href="{{pluginbaseurl}}/plan.php?id={{id}}">{{{name}}}</a></li>
+            {{/plans}}
+            {{^plans}}
+                <li class="dim-comp-ucc-none">{{#str}}nouserplanswithcompetency, competency{{/str}}</li>
+            {{/plans}}
+            </ul>
+        </section>
+    </div>
+</div>
+</div>
+{{/usercompetencysummary}}

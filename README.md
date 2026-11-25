@@ -244,6 +244,13 @@ nothing else.
   competencies as chips, the statistics of a course or a learning plan template, the rating dialogue
   and the navigation panels are restyled copies of core's templates; every hook core's scripts and
   tests read is kept.
+- A learner's competency in a course (`admin/tool/lp/user_competency_in_course.php`) shows the learner and
+  the competency first, with *Rate* as the page's one main button where Moodle lets the viewer rate; then a band
+  of four figures (the rating in this course, proficiency, the number of pieces of evidence of this course with the
+  most recent one's date, the learning plans holding the competency), the course's evidence as a table (what
+  happened, when, the rating, by whom, the note, Moodle's delete action where it offers one), and the linked
+  activities and learning plans. Everything shown is what Moodle's page exports for the same viewer; nothing more
+  is read.
 - The larger pages (the learning plan's own page, the course competencies page, the frameworks,
   the competency trees and pickers, the rule configuration) keep core's templates and are styled
   by the stylesheet alone.

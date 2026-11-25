@@ -86,6 +86,8 @@ final class competency_templates_test extends \advanced_testcase {
             'tool_lp/user_competency_summary' => 'admin/tool/lp/templates/user_competency_summary.mustache',
             'tool_lp/plans_page' => 'admin/tool/lp/templates/plans_page.mustache',
             'tool_lp/course_competencies_page' => 'admin/tool/lp/templates/course_competencies_page.mustache',
+            'tool_lp/user_competency_summary_in_course' =>
+                'admin/tool/lp/templates/user_competency_summary_in_course.mustache',
             'report_competency/report' => 'report/competency/templates/report.mustache',
             'report_competency/user_competency_summary' => 'report/competency/templates/user_competency_summary.mustache',
             'report_competency/user_course_navigation' => 'report/competency/templates/user_course_navigation.mustache',
@@ -347,6 +349,43 @@ final class competency_templates_test extends \advanced_testcase {
                     "//*[@data-region='dim-comp-cm'][@data-cmid='31']//span[contains(@class, 'dim-comp-pill--rated')]",
                     "//*[@data-region='learningplans']//a[@href='https://example.com/admin/tool/lp/plan.php?id=4']",
                     "//tr[@data-id='7']//*[@data-region='dim-comp-extra'][@data-competencyid='7']//progress[@value='58']",
+                ],
+            ],
+            'tool_lp/user_competency_summary_in_course' => [
+                ['data-region="user-competency-full-info"', 'data-node="user-competency"',
+                    'data-competencyid="{{usercompetency.competencyid}}"', 'data-userid="{{usercompetency.userid}}"',
+                    'data-region-id="{{uniqid}}"', 'data-region="competency-summary"', '{{> tool_lp/competency_summary }}',
+                    '{{#cangrade}}', 'id="rate_{{uniqid}}"', 'rate, tool_lp', 'data-region="coursecompetencyactivities"',
+                    'noactivities, tool_lp', '{{pluginbaseurl}}/plan.php?id={{id}}', '{{{name}}}',
+                    'nouserplanswithcompetency, competency', 'proficient, tool_lp', 'rating, tool_lp', '{{proficiencyname}}',
+                    '{{>tool_lp/comment_area}}', 'data-region="evidence-listing"', 'noevidence, tool_lp',
+                    'tool_lp/grade_user_competency_inline', 'tool_lp/user_competency_info', "'{{competency.competency.id}}'",
+                    "'{{user.id}}'", "'{{course.id}}'", "'{{competency.scaleid}}'", '{{#str}}chooserating, tool_lp{{/str}}',
+                    "inlineGrader.on('competencyupdated', infoReloader.reload.bind(infoReloader));"],
+                [
+                    "//div[@data-region='user-competency-full-info'][@data-node='user-competency'][@data-region-id]" .
+                        "[contains(@class, 'dim-comp-ucc')]/div[@data-region='competency-summary']",
+                    "//*[@data-region='competency-summary']//*[contains(@class, 'dim-comp-summary')]" .
+                        "//h4[@id='competency_link_1']",
+                    "//*[contains(@class, 'dim-comp-ucc-primary')]/button[starts-with(@id, 'rate_')]" .
+                        "[contains(@class, 'btn-primary')][normalize-space(.)='Rate']",
+                    "//dt[contains(., 'Proficient')]/following-sibling::dd[1][contains(., 'Yes')]",
+                    "//dt[contains(., 'Rating')]/following-sibling::dd[1][contains(., 'Competent')]",
+                    "//*[@data-region='dim-comp-ucc-band']//dd[@data-dim-figure='evidence'][normalize-space(.)='2']",
+                    "//*[@data-region='dim-comp-ucc-band']//dd[@data-dim-figure='plans'][normalize-space(.)='1']",
+                    "//dd[@data-region='dim-comp-ucc-latest'][not(@hidden)]/span[@data-dim-figure='latest']" .
+                        "[normalize-space(.)='Tuesday, 13 October 2026, 10:04']",
+                    "//*[@data-region='evidence-listing']//table/tbody[@data-region='dim-comp-ucc-rows']" .
+                        "/tr[@data-region='evidence'][@data-id='1']//a[@data-action='delete-evidence']",
+                    "//tr[@data-region='evidence'][@data-id='1']/td[@data-dim-cell='when']" .
+                        "[normalize-space(.)='Tuesday, 13 October 2026, 10:04']",
+                    "//tr[@data-id='1']//span[contains(concat(' ', @class, ' '), ' badge ')][contains(., 'Competent')]",
+                    "//tr[@data-id='1']//a[contains(@class, 'dim-comp-user')][contains(., 'Tess Teacher')]",
+                    "//tr[@data-id='2']/th[@scope='row']//a[@href='https://example.com/mod/assign/view.php?id=7']",
+                    "//*[@data-region='coursecompetencyactivities']/li/a[@href='https://example.com/mod/assign/view.php?id=7']",
+                    "//li[@data-dim-plan='4']/a[@href='https://example.com/admin/tool/lp/plan.php?id=4']" .
+                        "[normalize-space(.)='Writing plan']",
+                    "//p[@data-region='dim-comp-ucc-empty'][@hidden]",
                 ],
             ],
             'report_competency/report' => [
@@ -722,5 +761,126 @@ final class competency_templates_test extends \advanced_testcase {
         }
 
         $this->assertCount(3, array_unique($icons));
+    }
+
+    /**
+     * The course summary draws its evidence rows itself, with the hooks core's evidence partial carries.
+     *
+     * Core's tool_lp/user_competency_summary_in_course includes tool_lp/evidence_summary once per piece of evidence; the
+     * theme's copy draws a table row instead, so the partial's hooks are read from core's partial: the container with
+     * its id, the trigger under core's candelete, and the JavaScript registering the two selectors.
+     *
+     * @return void
+     */
+    public function test_the_course_summary_keeps_the_evidence_partials_hooks(): void {
+        global $CFG;
+        $core = self::without_comments(file_get_contents($CFG->dirroot . '/admin/tool/lp/templates/evidence_summary.mustache'));
+        $copy = self::without_comments(file_get_contents($this->theme_file('tool_lp/user_competency_summary_in_course')));
+        $literals = ['data-region="evidence"', 'data-id="{{id}}"', '{{#candelete}}', 'data-action="delete-evidence"',
+            'tool_lp/evidence_delete', "register('[data-action=\"delete-evidence\"]', '[data-region=\"evidence\"]');"];
+
+        foreach ($literals as $literal) {
+            $this->assertStringContainsString($literal, $core, "{$literal} is not in core's evidence partial: the list is wrong.");
+            $this->assertStringContainsString($literal, $copy, "The course summary lost the evidence partial's {$literal}.");
+        }
+    }
+
+    /**
+     * Each evidence row of the course summary is the one element carrying data-region="evidence" above its trigger.
+     *
+     * tool_lp/evidence_delete takes the id from the ancestors of the trigger with that region and refuses two.
+     *
+     * @return void
+     */
+    public function test_the_course_summary_evidence_region_is_not_nested(): void {
+        $this->resetAfterTest();
+        $name = 'tool_lp/user_competency_summary_in_course';
+        $xpath = $this->render_under_theme($name, $this->example_context($name));
+
+        $this->assertSame(2, $xpath->query("//*[@data-region='evidence']")->length);
+        $triggers = $xpath->query("//a[@data-action='delete-evidence']");
+        $this->assertSame(2, $triggers->length);
+        foreach ($triggers as $trigger) {
+            $this->assertSame(1, $xpath->query("ancestor::*[@data-region='evidence']", $trigger)->length);
+        }
+        $this->assertSame(1, $xpath->query("//*[@data-node='user-competency']")->length);
+    }
+
+    /**
+     * Rate is the page's one primary action, drawn only where core says the viewer may rate.
+     *
+     * The control is the same context with cangrade on: the button is there, and it is the only solid button.
+     *
+     * @return void
+     */
+    public function test_the_course_summary_offers_rate_only_with_cangrade(): void {
+        $this->resetAfterTest();
+        $name = 'tool_lp/user_competency_summary_in_course';
+        $context = $this->example_context($name);
+
+        $xpath = $this->render_under_theme($name, $context);
+        $this->assertSame(1, $xpath->query("//button[starts-with(@id, 'rate_')]")->length, 'The control lost its Rate.');
+        $this->assertSame(1, $xpath->query("//*[contains(concat(' ', @class, ' '), ' btn-primary ')]")->length);
+
+        $context['usercompetencysummary']['cangrade'] = false;
+        $xpath = $this->render_under_theme($name, $context);
+        $this->assertSame(0, $xpath->query("//button[starts-with(@id, 'rate_')]")->length, 'Rate is offered without cangrade.');
+        $this->assertSame(0, $xpath->query("//*[contains(concat(' ', @class, ' '), ' btn-primary ')]")->length);
+        $this->assertSame(4, $xpath->query("//*[@data-region='dim-comp-ucc-band']//dt")->length, 'The band went with Rate.');
+    }
+
+    /**
+     * Core's context alone, as tool_lp/user_competency_info re-renders it, still draws the band and the table.
+     *
+     * Without the renderer's dimband the two counts are empty until the template's JavaScript counts the rows it drew;
+     * everything else is drawn from core's keys: the rating, proficiency, the most recent date and every row.
+     *
+     * @return void
+     */
+    public function test_the_course_summary_draws_from_cores_context_alone(): void {
+        $this->resetAfterTest();
+        $name = 'tool_lp/user_competency_summary_in_course';
+        $context = $this->example_context($name);
+        unset($context['dimband']);
+        $xpath = $this->render_under_theme($name, $context);
+
+        $tiles = "//*[@data-region='dim-comp-ucc-band']//div[contains(@class, 'dim-comp-ucc-tile')]";
+        $this->assertSame(4, $xpath->query($tiles)->length);
+        $this->assertSame('', self::text_of($xpath, "//dd[@data-dim-figure='evidence']"));
+        $this->assertSame('', self::text_of($xpath, "//dd[@data-dim-figure='plans']"));
+        $this->assertSame('Competent', self::text_of($xpath, "//dt[contains(., 'Rating')]/following-sibling::dd[1]"));
+        $this->assertSame('Tuesday, 13 October 2026, 10:04', self::text_of($xpath, "//span[@data-dim-figure='latest']"));
+        $this->assertSame(2, $xpath->query("//tbody[@data-region='dim-comp-ucc-rows']/tr[@data-region='evidence']")->length);
+
+        // No evidence: the frame is hidden, the empty line shown, the most recent date hidden.
+        $context['usercompetencysummary']['evidence'] = [];
+        $xpath = $this->render_under_theme($name, $context);
+        $this->assertSame(1, $xpath->query("//div[@data-region='dim-comp-ucc-frame'][@hidden]")->length);
+        $this->assertSame(1, $xpath->query("//p[@data-region='dim-comp-ucc-empty'][not(@hidden)]")->length);
+        $this->assertSame(1, $xpath->query("//dd[@data-region='dim-comp-ucc-latest'][@hidden]")->length);
+    }
+
+    /**
+     * The template's JavaScript counts the band again on every render and after every deletion.
+     *
+     * Core's re-render carries no dimband and tool_lp/evidence_delete removes a row without re-rendering, so the counts
+     * come from the rows: painted once per render (the js block runs again after each replace) and on each change of
+     * the rows' list. PHPUnit runs no JavaScript; this reads the source.
+     *
+     * @return void
+     */
+    public function test_the_course_summary_recounts_its_band_in_the_browser(): void {
+        $source = self::without_comments(file_get_contents($this->theme_file('tool_lp/user_competency_summary_in_course')));
+        $js = preg_match('~\{\{#js\}\}(.*?)\{\{/js\}\}~s', $source, $matches) ? $matches[1] : '';
+
+        $this->assertStringContainsString("var rows = competencyElement.find('[data-region=\"dim-comp-ucc-rows\"]');", $js);
+        $this->assertStringContainsString("var evidence = rows.find('[data-region=\"evidence\"]');", $js);
+        $this->assertStringContainsString("find('[data-dim-figure=\"evidence\"]').text(evidence.length);", $js);
+        $plans = "find('[data-dim-figure=\"plans\"]').text(competencyElement.find('[data-dim-plan]').length);";
+        $this->assertStringContainsString($plans, $js);
+        $this->assertMatchesRegularExpression('~\n\s*paint\(\);\n~', $js, 'The band is not painted on each render.');
+        $this->assertStringContainsString('new window.MutationObserver(paint).observe(rows.get(0), {childList: true});', $js);
+        $this->assertStringContainsString('data-region="dim-comp-ucc-rows"', $source);
+        $this->assertStringContainsString('data-dim-plan="{{id}}"', $source);
     }
 }

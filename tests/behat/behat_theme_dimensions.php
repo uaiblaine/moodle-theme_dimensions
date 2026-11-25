@@ -46,6 +46,8 @@ class behat_theme_dimensions extends behat_base {
      * - 'Activity with focus mode off' (activity name): a mod_page view carrying the support
      *   parameter, which is the only way a scenario can reach a URL built from a course module
      *   id it does not know.
+     * - 'User competency in course' (username, competency idnumber and course shortname joined by
+     *   bars, e.g. "student1|salads|C1"): core's page of one learner's competency in a course.
      * - 'Category showcase' (category idnumber, optionally followed by a bar and a query string,
      *   e.g. "TESTCAT|perpage=1"): the category page with the showcase's own parameters, which is
      *   how a scenario reaches a second page without seeding two dozen courses.
@@ -120,6 +122,13 @@ class behat_theme_dimensions extends behat_base {
                 return new moodle_url('/mod/page/view.php', [
                     'id' => $cm->id,
                     \theme_dimensions\local\focusmode::PARAM_OFF => 1,
+                ]);
+            case 'user competency in course':
+                [$username, $idnumber, $shortname] = array_pad(explode('|', $identifier, 3), 3, '');
+                return new moodle_url('/admin/tool/lp/user_competency_in_course.php', [
+                    'userid' => $DB->get_field('user', 'id', ['username' => $username], MUST_EXIST),
+                    'competencyid' => $DB->get_field('competency', 'id', ['idnumber' => $idnumber], MUST_EXIST),
+                    'courseid' => $DB->get_field('course', 'id', ['shortname' => $shortname], MUST_EXIST),
                 ]);
             default:
                 throw new Exception('Unrecognised theme_dimensions page type "' . $type . '"');

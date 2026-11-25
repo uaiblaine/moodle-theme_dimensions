@@ -2130,8 +2130,8 @@ or in `scss/competency.scss`, except the learning plans page's cards (below).
 - **One renderer is derived: `theme_dimensions\output\tool_lp_renderer extends \tool_lp\output\renderer`.**
   The name is the one `theme_overridden_renderer_factory` derives for `$PAGE->get_renderer('tool_lp')`
   (`theme_<name>\output\<component>_renderer`; a namespace `output\tool_lp\renderer` is never looked up, and a
-  wrong name fails silently, core's renderer answering). It overrides `render_plans_page()` and
-  `render_course_competencies_page()`; held by
+  wrong name fails silently, core's renderer answering). It overrides `render_plans_page()`,
+  `render_course_competencies_page()` and `render_user_competency_summary_in_course()`; held by
   `tool_lp_renderer_test::test_the_theme_renderer_is_the_one_the_factory_returns`.
 - **The learning plans page has three layers.** (1) `templates/tool_lp/plans_page` renders from core's context
   alone, because `tool_lp/planactions` re-renders it on the client from `tool_lp_data_for_plans_page` after
@@ -2169,18 +2169,18 @@ or in `scss/competency.scss`, except the learning plans page's cards (below).
   `editplan.php` returns to `plan.php` without it, so the owner lands on the overview after editing (intended). The
   Behat page type "theme_dimensions > learning plan" is core's page WITH `noredirect=1`; "learning plan address" is the
   bare address the redirect scenario opens. Gates `ownerredirect_*`.
-- **Twenty-two templates are copies of Moodle 5.3 (2026100500) and must be re-diffed against core on every
+- **Twenty-three templates are copies of Moodle 5.3 (2026100500) and must be re-diffed against core on every
   core upgrade**; each docblock names its core file. `templates/tool_lp/`: `plans_page`, `course_competencies_page`,
   `progress_bar`,
   `competency_summary`, `competency_path`, `evidence_summary`, `user_summary`, `linked_courses_summary`,
   `module_navigation`, `competency_plan_navigation`, `user_competency_course_navigation`,
   `related_competencies`, `course_competency_statistics`, `template_statistics`, `competency_grader` (the
-  rating dialogue), `user_competency_summary`. `templates/report_competency/`: `report`,
-  `user_competency_summary`, `user_course_navigation`. `templates/block_lp/`: `summary`,
-  `competencies_to_review_page`, `plans_to_review_page`. **Not** copied, on purpose (large, inline JS, drag
+  rating dialogue), `user_competency_summary`, `user_competency_summary_in_course`.
+  `templates/report_competency/`: `report`, `user_competency_summary`, `user_course_navigation`.
+  `templates/block_lp/`: `summary`, `competencies_to_review_page`, `plans_to_review_page`. **Not** copied, on purpose (large, inline JS, drag
   and drop): `plan_page`, the `manage_*` pages, the trees and
-  pickers, the rule configuration, and `user_competency_summary_in_plan` / `_in_course` (the next
-  candidates). Those are styled by the stylesheet alone.
+  pickers, the rule configuration, and `user_competency_summary_in_plan` (the next
+  candidate). Those are styled by the stylesheet alone.
 - **The course competencies page (phase 4) has the plans page's three layers**, over core's export of
   `tool_lp\output\course_competencies_page`: the copy renders from core's context alone (core's add, delete, course
   outcome and ratings setting replace `[data-region="coursecompetenciespage"]` and run its js block again, always with
@@ -2263,7 +2263,16 @@ or in `scss/competency.scss`, except the learning plans page's cards (below).
   `moodle_page` derives for the scripts.
 - The Behat feature `theme_dimensions_competency.feature` (`@theme_dimensions_competency`) rates through
   the breakdown report's dialogues and requests a review from the learning plan's: the only gate that runs
-  core's JavaScript against the copies.
+  core's JavaScript against the copies. `theme_dimensions_competency_usercourse.feature` (same tag) rates on a
+  learner's competency in a course.
+- **A learner's competency in a course (phase 5) is one template, `user_competency_summary_in_course`.** It renders
+  on core's page and in the breakdown report's grading dialogue (`report_competency/grading_popup`, with
+  `displayuser`), from core's export alone, because `tool_lp/user_competency_info` re-renders it from
+  `tool_lp_data_for_user_competency_summary_in_course` after a rating and replaces the root (`data-region-id`); the
+  evidence rows carry `tool_lp/evidence_summary`'s hooks themselves (a `tr` per piece, not the shared card partial).
+  The band's two counts are the only decoration (`dimband`, from the export, no query) and the template's js block
+  counts the rows again on every render and on each deletion (`MutationObserver`): that block is the re-arm point.
+  Gates `ucc_*`.
 
 ## Focus mode
 
