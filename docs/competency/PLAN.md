@@ -293,17 +293,19 @@ columns are. Phase 6 is split in two pull requests:
 
 | Phase | Content | Repos | Tier |
 |---|---|---|---|
-| 0 | Commit `docs/competency/`; dependencies in `version.php`, `ci.yml` and the README | theme | 3 |
-| 1a | Public plan-card builder; the Design System bar on the block | block_dimensions (local_dimensions if the builder moves there) | 2 |
-| 1b | Learning plans page: cards, scope by status, count, search, with what it is the first reader of: the "Competencies" settings tab and its card layout setting, the derived renderer with its factory test, pattern E1 (a web service) | theme | 3 |
+| 0 | Commit `docs/competency/`; dependencies in `version.php`, `ci.yml` and the README; done | theme | 3 |
+| 1a | Public plan-card builder; the Design System bar on the block; done | block_dimensions (local_dimensions if the builder moves there) | 2 |
+| 1b | Learning plans page: cards, scope by status, count, search, with what it is the first reader of: the "Competencies" settings tab and its card layout setting, the derived renderer with its factory test, pattern E1 (a web service); done | theme | 3 |
 | 1c | Filters by the template's tags, favourites on one's own list, Organise (sort only); done | theme, plus the star outside the block in block_dimensions | 3 |
-| 2a | Competency from a parameter, plan review actions, link back | local_dimensions | 3 |
+| 2a | Competency from a parameter, plan review actions, link back; done | local_dimensions | 3 |
 | 2b | The owner's redirects; done | theme | 3 |
 | 3 | Evidence page (done, 2026100649) | theme | 3 |
 | 4 | Course competencies, teacher and learner; done (2026100647) | theme | 3 |
 | 5 | A learner's competency in a course; done | theme | 2 |
 | 6 | Class report: spike, then the report. Part one (the server, core's table) done in 2026100650; part two (the services, the column preference, and the data-report client with Columns and the band) done in 2026100651 | theme | 3 |
-| C | "Journey" view of the plan overview | local_dimensions | 2 |
+| C | "Journey" view of the plan overview; done | local_dimensions | 2 |
+
+Every phase is merged as of 2026-11-26.
 
 Phase 0 carries only what stands on its own. The settings tab, the derived renderer and pattern E1 were
 first planned there and moved to 1b: a setting nothing reads, a renderer that renders nothing new and a

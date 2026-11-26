@@ -355,7 +355,8 @@ final class classreportengine {
 
     /**
      * The columns the reader sees and those they may choose, in display order: the learner and the identity fields
-     * (fixed), then every competency of the catalogue. Titles in the plain spelling.
+     * (fixed), then every competency of the catalogue. Titles in the plain spelling; the learner column carries the
+     * theme's own title, not core's "Full name with link".
      *
      * @param class_ratings $report The table's report.
      * @return array Each: key, title, sortable, default, active, fixed.
@@ -371,7 +372,9 @@ final class classreportengine {
             }
             $columns[] = [
                 'key' => $key,
-                'title' => html_entity_decode((string) $active[$identifier]->get_title(), ENT_QUOTES | ENT_HTML401, 'UTF-8'),
+                'title' => $key === 'learner'
+                    ? get_string('competency_classreport_learner', 'theme_dimensions')
+                    : html_entity_decode((string) $active[$identifier]->get_title(), ENT_QUOTES | ENT_HTML401, 'UTF-8'),
                 'sortable' => $active[$identifier]->get_is_sortable(),
                 'default' => true,
                 'active' => true,

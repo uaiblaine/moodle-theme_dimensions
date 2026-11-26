@@ -1140,10 +1140,11 @@
     .dim-comp-rview-card-item {
         display: grid;
         gap: 0.25rem 0.5rem;
-        grid-template-columns: minmax(0, 7rem) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) auto;
     }
 
     .dim-comp-rview-card-item dt {
+        overflow-wrap: break-word;
         color: var(--dimensions-ink-muted);
         font-weight: 400;
     }
@@ -1252,6 +1253,12 @@
     .dim-comp-rview-grid .dim-comp-classreport__cell {
         display: inline-flex;
         max-width: 100%;
+    }
+
+    // Core's dark mode underlines every link of #region-main but its own controls, at (1,6,1): the pill inside the cell's
+    // link would read underlined, at rest and on hover. The selector's own weight wins, (1,6,2); the focus ring stays.
+    :root[data-bs-theme="dark"] body.path-report-competency #region-main & a[href].dim-comp-classreport__cell {
+        text-decoration: none;
     }
 
     // RTLCSS mirrors the progress line's left but not its transform (data-report.md, "CSS"): it travels the other way.

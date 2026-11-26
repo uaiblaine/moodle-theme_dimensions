@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Class report and evidence page polish** (2026100652). The class report's first column is titled "Learner", as in
+  the page's own labels, not core's "Full name with link"; a competency card gives the competency's name the free width
+  with the rating at the end of the line; the rating pill is no longer underlined in dark mode; the navigation box
+  above a learner's page fits a phone instead of running off its left edge; and a competency's name on the evidence
+  page wraps at its words instead of in the middle of one.
+  The evidence page's Filters panel draws a group of more than eight options (a learner with many competencies) as a
+  searched list instead of a wall of buttons: a search field, then at most 50 rows in a scrolling list with the chosen
+  option pinned on top; pressing the chosen row releases the filter.
 - **The class report's columns are a reader's choice, and its client has its web services** (2026100651). On a
   course's class report of competency ratings a reader may choose which competencies are the columns (at most 30, shown
   in the course's order) and their widths; the choice is kept per reader and course in the user preference
