@@ -554,6 +554,25 @@ body.path-report-competency [data-region="evidence-listing"] {
         .dim-comp-nav__group input {
             width: 100%;
         }
+
+        /* Core's autocomplete wrapper is an inline-block with an end margin from 768 px up: here it takes the box's
+           width and the input the wrapper's. Core's script also gives the input an inline min-width of its
+           placeholder's length in ch, which no rule of a sheet can undo: an input whose placeholder is longer than
+           the box (the activity filter's) still ends at the wrapper's edge, without its end border. */
+        .dim-comp-nav__group .form-autocomplete-input {
+            display: block;
+            margin-inline-end: 0;
+            max-width: 100%;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .dim-comp-nav__group .form-autocomplete-input input {
+            box-sizing: border-box;
+            max-width: 100%;
+            min-width: 0;
+            width: 100%;
+        }
     }
 
     form {

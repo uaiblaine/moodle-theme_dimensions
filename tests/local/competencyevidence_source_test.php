@@ -182,6 +182,22 @@ final class competencyevidence_source_test extends \basic_testcase {
     }
 
     /**
+     * The scope's prior-learning count is the nodes the filters and the period leave, the same rule items() shows them
+     * by, so the three cells add up to what the count line says; the page's every node would overstate it.
+     *
+     * @return void
+     */
+    public function test_the_scope_counts_prior_learning_under_the_filters(): void {
+        $source = $this->source();
+        $this->assertStringContainsString(
+            'const prior = [...root.querySelectorAll(SELECTORS.NODE)].filter(priorPasses).length;',
+            $source
+        );
+        $this->assertStringNotContainsString('const prior = root.querySelectorAll(SELECTORS.NODE).length;', $source);
+        $this->assertStringContainsString('const counts = {all: prior + platform, prior, platform};', $source);
+    }
+
+    /**
      * Values reach the page as text and attributes are read as text; the module uses no jQuery and opens no dialogue of
      * its own on a failure.
      *
