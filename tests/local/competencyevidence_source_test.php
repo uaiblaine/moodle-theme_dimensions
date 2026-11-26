@@ -128,6 +128,60 @@ final class competencyevidence_source_test extends \basic_testcase {
     }
 
     /**
+     * A group with more than eight options (not eight) is a searched list, drawn with a search field and a list.
+     *
+     * @return void
+     */
+    public function test_a_group_of_more_than_eight_options_is_a_searched_list(): void {
+        $source = $this->source();
+        $this->assertStringContainsString('const LISTED = 8;', $source);
+        $this->assertStringContainsString('if (options.length > LISTED) {', $source);
+        $this->assertStringContainsString("make('input', 'form-control form-control-sm dim-comp-fpanel-find')", $source);
+        $this->assertStringContainsString("make('div', 'dim-comp-fpanel-list')", $source);
+        // A smaller group keeps its option buttons.
+        $this->assertStringContainsString("make('div', 'dim-comp-fpanel-opts')", $source);
+    }
+
+    /**
+     * A searched list draws at most fifty rows, and says so when more match.
+     *
+     * @return void
+     */
+    public function test_a_searched_list_draws_at_most_fifty_rows(): void {
+        $source = $this->source();
+        $this->assertStringContainsString('const ROWS = 50;', $source);
+        $this->assertStringContainsString('.slice(0, ROWS);', $source);
+        $this->assertStringContainsString("getString('competency_planfindmore'", $source);
+    }
+
+    /**
+     * The option in force leads the rows whatever the search holds, and the matches never repeat it.
+     *
+     * @return void
+     */
+    public function test_the_option_in_force_is_pinned_on_top(): void {
+        $source = $this->source();
+        $this->assertStringContainsString('const pinned = options.filter((option) => option.id === chosen);', $source);
+        $this->assertStringContainsString('option.id !== chosen && (folded', $source);
+        $this->assertStringContainsString('const shown = [...pinned, ...rest].slice(0, ROWS);', $source);
+    }
+
+    /**
+     * Groups are single-value: a press on the chosen option releases the filter, a press on another replaces it;
+     * a row and an option button both go through the one rule.
+     *
+     * @return void
+     */
+    public function test_a_second_press_releases_the_filter(): void {
+        $source = $this->source();
+        $this->assertStringContainsString(
+            'state.filters[group.key] = state.filters[group.key] === id ? 0 : id;',
+            $source
+        );
+        $this->assertSame(2, substr_count($source, 'choose(root, group, option.id);'));
+    }
+
+    /**
      * Values reach the page as text and attributes are read as text; the module uses no jQuery and opens no dialogue of
      * its own on a failure.
      *

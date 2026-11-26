@@ -59,10 +59,25 @@ const KINDS = ['activity', 'course', 'rule', 'rating', 'restore', 'unlinked', 'r
 
 /** The Filters panel's groups, in order: the filter's key, the facet list, the group's string. */
 const GROUPS = [
-    {key: 'competencyid', facet: 'competencies', label: 'competency_evidencefilter_competency'},
-    {key: 'planid', facet: 'plans', label: 'competency_evidencefilter_plan'},
-    {key: 'courseid', facet: 'courses', label: 'competency_evidencefilter_course'},
+    {
+        key: 'competencyid', facet: 'competencies', label: 'competency_evidencefilter_competency',
+        find: 'competency_evidencefind_competency', none: 'competency_evidencenone_competency',
+    },
+    {
+        key: 'planid', facet: 'plans', label: 'competency_evidencefilter_plan',
+        find: 'competency_evidencefind_plan', none: 'competency_evidencenone_plan',
+    },
+    {
+        key: 'courseid', facet: 'courses', label: 'competency_evidencefilter_course',
+        find: 'competency_evidencefind_course', none: 'competency_evidencenone_course',
+    },
 ];
+
+/** A group with more options than this is a searched list (filter-panel.md, D115). */
+const LISTED = 8;
+
+/** The rows a searched list draws at most. */
+const ROWS = 50;
 
 /** The bar's narrow step (filter-bar.md): the panels are bottom sheets. */
 const NARROW = '(max-width: 575.98px)';
@@ -846,8 +861,89 @@ const openLayer = (root, name) => {
 };
 
 /**
+ * Apply a press on an option of a group: a press on the chosen one releases it, any other replaces the choice.
+ *
+ * @param {HTMLElement} root The region.
+ * @param {object} group The group of GROUPS.
+ * @param {number} id The pressed option's id.
+ */
+const choose = (root, group, id) => {
+    state.filters[group.key] = state.filters[group.key] === id ? 0 : id;
+    fetchPage(true);
+    paint(root);
+};
+
+/**
+ * A row of a searched list: a pressed toggle with a decorative check box, its name as text.
+ *
+ * @param {HTMLElement} root The region.
+ * @param {object} group The group of GROUPS.
+ * @param {object} option The facet's option.
+ * @param {Function} redraw Draws the list's rows again.
+ * @returns {HTMLElement}
+ */
+const listRow = (root, group, option, redraw) => {
+    const row = make('button', 'dim-comp-fpanel-row');
+    row.type = 'button';
+    row.setAttribute('data-value', String(option.id));
+    row.setAttribute('aria-pressed', state.filters[group.key] === option.id ? 'true' : 'false');
+    const box = make('span', 'dim-comp-menu-box');
+    box.setAttribute('aria-hidden', 'true');
+    box.append(make('i', 'fa fa-check'));
+    row.append(box, make('span', '', option.name));
+    row.addEventListener('click', async() => {
+        choose(root, group, option.id);
+        await redraw();
+        const again = [...row.parentNode.querySelectorAll('button')]
+            .find((other) => other.getAttribute('data-value') === String(option.id));
+        if (again) {
+            again.focus();
+        }
+    });
+    return row;
+};
+
+/**
+ * Draw a searched list's rows: the option in force pinned on top whatever the search holds, then the matches, at
+ * most ROWS of them, with a note when more match or when none does.
+ *
+ * @param {HTMLElement} root The region.
+ * @param {HTMLElement} list The list.
+ * @param {object} group The group of GROUPS.
+ * @param {object[]} options The group's facet.
+ * @param {string} find The search's text.
+ * @returns {Promise<void>}
+ */
+const writeRows = async(root, list, group, options, find) => {
+    const pending = new Pending('theme_dimensions/competencyevidence:rows');
+    const ticket = (list.dimTicket = (list.dimTicket || 0) + 1);
+    try {
+        const folded = fold(find);
+        const chosen = state.filters[group.key];
+        const pinned = options.filter((option) => option.id === chosen);
+        const rest = options.filter((option) => option.id !== chosen && (folded === '' || fold(option.name).includes(folded)));
+        const shown = [...pinned, ...rest].slice(0, ROWS);
+        const redraw = () => writeRows(root, list, group, options, find);
+        const rows = shown.map((option) => listRow(root, group, option, redraw));
+        const more = pinned.length + rest.length - shown.length;
+        if (more > 0) {
+            rows.push(make('p', 'dim-comp-fpanel-note', await getString('competency_planfindmore', 'theme_dimensions', more)));
+        } else if (shown.length === 0) {
+            rows.push(make('p', 'dim-comp-fpanel-note', await getString(group.none, 'theme_dimensions')));
+        }
+        if (ticket === list.dimTicket) {
+            list.replaceChildren(...rows);
+        }
+    } catch (error) {
+        window.console.error(error);
+    } finally {
+        pending.resolve();
+    }
+};
+
+/**
  * Build the Filters panel from the facets: a group per filter with options, its label on a line of its own, each
- * option a pressed toggle, one choice per group, applied on press.
+ * option a pressed toggle (a searched list past LISTED), one choice per group, applied on press.
  *
  * @param {HTMLElement} root The region.
  * @returns {Promise<void>}
@@ -863,6 +959,21 @@ const buildPanel = async(root) => {
         }
         const head = make('div', 'dim-comp-fpanel-head', await getString(group.label, 'theme_dimensions'));
         head.id = `${uid}-g${index}`;
+        if (options.length > LISTED) {
+            const label = await getString(group.find, 'theme_dimensions', options.length);
+            const find = make('input', 'form-control form-control-sm dim-comp-fpanel-find');
+            find.type = 'search';
+            find.autocomplete = 'off';
+            find.setAttribute('aria-label', label);
+            find.placeholder = label;
+            const rows = make('div', 'dim-comp-fpanel-list');
+            rows.setAttribute('role', 'group');
+            rows.setAttribute('aria-labelledby', head.id);
+            find.addEventListener('input', () => writeRows(root, rows, group, options, find.value));
+            parts.push(head, find, rows);
+            await writeRows(root, rows, group, options, '');
+            continue;
+        }
         const list = make('div', 'dim-comp-fpanel-opts');
         list.setAttribute('role', 'group');
         list.setAttribute('aria-labelledby', head.id);
@@ -871,12 +982,10 @@ const buildPanel = async(root) => {
             button.type = 'button';
             button.setAttribute('aria-pressed', state.filters[group.key] === option.id ? 'true' : 'false');
             button.addEventListener('click', () => {
-                state.filters[group.key] = state.filters[group.key] === option.id ? 0 : option.id;
+                choose(root, group, option.id);
                 list.querySelectorAll('button').forEach((other) => {
                     other.setAttribute('aria-pressed', other === button && state.filters[group.key] ? 'true' : 'false');
                 });
-                fetchPage(true);
-                paint(root);
             });
             list.append(button);
         });
