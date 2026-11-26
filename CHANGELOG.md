@@ -7,6 +7,18 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 - **Evidence page polish**: an idle competency no longer prints a lone "-" for a status, the detail sits beside the list
   on a desktop, and the row's menu no longer covers the end of a long title.
+- **The competency breakdown report shows the class** (2026100650). Moodle's competency breakdown of a course
+  (`report/competency/index.php`), opened without a learner, is now one row per learner and one column per course
+  competency (the first 30, in the course's order), each cell the learner's rating by name on that competency's scale
+  with *Proficient*, *Not proficient* or *Not rated*. It is a Report Builder report: sort, filters (the learner's name
+  and one per competency), pages and download. A learner's name opens their breakdown, which is Moodle's page as
+  before; a teacher who may rate opens Moodle's rating dialogue from a cell, and the row shows the new rating when it
+  closes. Who sees it is Moodle's own rule for the page, at course level (`moodle/competency:coursecompetencyview` or
+  `coursecompetencymanage`, and `moodle/competency:usercompetencyview` in the course); someone who reads learners only
+  through a grant on each learner keeps Moodle's one-learner page. In a course with separate groups a teacher without
+  `moodle/site:accessallgroups` sees the learners of their own groups, and none when they are in no group (Moodle's
+  page showed everybody then). Reading the report writes nothing. The filter values a reader keeps on it are personal
+  data of the theme's privacy provider, deleted with the account and on uninstall.
 - **The evidence page is one dated list** (2026100649). Core's *Evidence of prior learning* page
   (`admin/tool/lp/user_evidence_list.php`) lists the user's evidence of prior learning and what the platform recorded
   of their competencies (an activity or a course completed, a rating, a rule met) together, newest first and headed by

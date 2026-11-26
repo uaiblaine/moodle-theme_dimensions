@@ -350,6 +350,10 @@ scss/pre.scss, scss/post.scss  The design system's tokens, all under --dim-ds-; 
 scss/competency.scss           The competency pages and dialogues, scoped to core's page classes and dim-comp-.
 templates/tool_lp/, templates/report_competency/, templates/block_lp/  Copies of core 5.3's competency
                                templates, restyled with every hook kept. See "Competency pages".
+classes/output/report_competency_renderer.php  report/competency/index.php: the class report without `user`.
+classes/local/competency/classreport.php  The class report's rules (access, groups, learners, columns, scales).
+classes/reportbuilder/local/   Its Report Builder entity (coursecompetency), system report (class_ratings) and rating
+                               filter; templates/competency_classreport*.mustache, amd/src/classratings.js.
 ```
 
 ## Architecture gotchas
@@ -2127,7 +2131,8 @@ block_lp in the theme's design (phase 5B, 2026-10-15). **The decision lives in c
 and re-renders and never changes what a page decides or shows to whom.** Every change is in a template copy
 or in `scss/competency.scss`, except the learning plans page's cards (below).
 
-- **One renderer is derived: `theme_dimensions\output\tool_lp_renderer extends \tool_lp\output\renderer`.**
+- **Two renderers are derived: `theme_dimensions\output\tool_lp_renderer extends \tool_lp\output\renderer`** (and
+  `report_competency_renderer`, the class report, below).
   The name is the one `theme_overridden_renderer_factory` derives for `$PAGE->get_renderer('tool_lp')`
   (`theme_<name>\output\<component>_renderer`; a namespace `output\tool_lp\renderer` is never looked up, and a
   wrong name fails silently, core's renderer answering). It overrides `render_plans_page()`,
@@ -2273,10 +2278,42 @@ or in `scss/competency.scss`, except the learning plans page's cards (below).
   `:root[data-bs-theme="dark"]` first, at the foot of the file); no literal colour; a colour is read only
   from `--dimensions-*` or `--bs-*`; every ground states its ink; the page classes are the ones
   `moodle_page` derives for the scripts.
+- **report/competency/index.php without a learner is the class report (phase 6 part one, 2026100650).** The second
+  derived renderer, `theme_dimensions\output\report_competency_renderer` (the factory's name for
+  `$PAGE->get_renderer('report_competency')`, held by `report_competency_renderer_test`), decides the mode once per
+  course in `draws_class()`: the REQUEST's `user` absent or 0 (index.php fills its page URL's `user` with the first
+  gradable learner, so the URL cannot tell) and `classreport::may_view()`. Class mode overrides the three things
+  index.php renders through it: `render_report()` (the system report, NEVER core's export, which inserts a
+  `competency_usercompcourse` row per missing competency), `context_header()` (empty: no first learner's heading)
+  and `render_user_course_navigation()` ("All learners", value 0, chosen; the group selector on the class address).
+  With `?user=` all three are core's. Invariants: **the capability check lives in `classreport::may_view()`**, which
+  `class_ratings::can_view()` asks on every door (page, table requests, download), because core's check lived in the
+  export the class mode no longer calls; a viewer with per-user grants only gets core's page. **The group rule is a
+  base condition built in `initialise()`** (`classreport::learners()`): separate groups without `accessallgroups`
+  read the chosen group among their own, and **a viewer in no group reads no row, decided before
+  `get_enrolled_with_capabilities_join()`**, where an empty list means every group (core's page shows everybody
+  there). **Cell hooks** (`data-user-competency="true"`, `data-userid/competencyid/courseid`) are written only for
+  `competencygrade`; `amd/src/classratings.js` mirrors core's `grading_popup` (`classratings_source_test` reads core's
+  module) and reloads Report Builder's table (`tableReload`) on close, never core's single-learner `_refresh`.
+  Columns are keyed `comp:<competencyid>` (`class_ratings::active_keys()`), capped at `classreport::MAX_COLUMNS`.
+  The rating filter is `reportbuilder\local\filters\rating`, core's select without its static options cache (keyed
+  by name, it would serve another scale's items for the same competency id). The stored filter values are the
+  theme's personal data (`local\competency\reportpersistents`, D146); the persistents and their stored filters go with
+  the course (`course_deleted` observer, found by the event's `contextid`, the context row being gone), and
+  `class_ratings::for_course()` keeps the oldest persistent of a course and deletes a duplicate, no lock (core's own
+  services create persistents without it). **In class mode the learner selector lists `classreport::learner_ids()`**,
+  the report's own group rule, not core's active-group list (a viewer in no group gets only "All learners"); with
+  `?user=` core's list stays. **Every Report Builder door rebuilds the report and re-asks `can_view()` and the group
+  condition**: `core_reportbuilder_retrieve_system_report`, `core_table_get_dynamic_table_content`,
+  `core_reportbuilder_set_filters`, `core_reportbuilder_filters_reset` and `download.php`
+  (`class_ratings_doors_test`). Core's own Behat for report_competency
+  opens index.php without `user`: under this theme that page is the class report, so the theme's scenarios open a
+  breakdown through the page type "theme_dimensions > competency breakdown" (`C1|student1`). Gates `classreport_*`,
+  `class_ratings_hooks`, `reportcompetency_*`, `js_classratings_reload`.
 - The Behat feature `theme_dimensions_competency.feature` (`@theme_dimensions_competency`) rates through
-  the breakdown report's dialogues and requests a review from the learning plan's: the only gate that runs
-  core's JavaScript against the copies. `theme_dimensions_competency_usercourse.feature` (same tag) rates on a
-  learner's competency in a course.
+  the breakdown report's dialogues (opened from the class report's cells) and requests a review from the learning
+  plan's: the only gate that runs core's JavaScript against the copies.
+  `theme_dimensions_competency_usercourse.feature` (same tag) rates on a learner's competency in a course.
 - **A learner's competency in a course (phase 5) is one template, `user_competency_summary_in_course`.** It renders
   on core's page and in the breakdown report's grading dialogue (`report_competency/grading_popup`, with
   `displayuser`), from core's export alone, because `tool_lp/user_competency_info` re-renders it from

@@ -168,6 +168,9 @@ final class competency_render_test extends \advanced_testcase {
             'proficiency' => 1,
         ]);
 
+        // The learner named in the request: without it the theme draws the class report instead
+        // (report_competency_renderer_test).
+        $_GET['user'] = $user->id;
         $this->under_theme('/report/competency/index.php');
         $renderable = new \report_competency\output\report($course->id, $user->id, 0);
         $xpath = self::parse($PAGE->get_renderer('report_competency')->render($renderable));

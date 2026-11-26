@@ -1,0 +1,59 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/competency_classreport_cell
+
+    One cell of the class report: a learner's rating in one competency, linked to core's page of that learner's
+    competency in the course (admin/tool/lp/user_competency_in_course.php), which is also where the cell leads
+    without JavaScript.
+
+    The rating's name sits in the status label of its proficiency (dim-comp-pill, as on the breakdown); the words
+    carry the meaning: the proficiency follows in visually hidden text, which a screen reader and the download read;
+    "Not rated" alone where there is no rating. The icon is decoration.
+
+    The grading dialogue's hooks, the ones core's report_competency/grading_popup reads on its breakdown
+    (data-user-competency="true", data-userid, data-competencyid, data-courseid), are written only for a viewer who
+    may rate (hooks); theme_dimensions/classratings opens the dialogue from them. One line, so the download, which
+    keeps the text and drops the tags, reads "Good Proficient".
+
+    Context variables required for this template:
+    * url - Core's page of the learner's competency in the course.
+    * title - The link's title, core's "User competency summary".
+    * hooks - Whether the viewer may rate here.
+    * userid, competencyid, courseid - The hooks' values.
+    * rated - Whether the learner has a rating.
+    * tone - proficient or notproficient when rated.
+    * icon - The Font Awesome glyph of the state.
+    * label - The rating's name, or "Not rated"; plain.
+    * state - Proficient or Not proficient, when rated; plain.
+
+    Example context (json):
+    {
+        "url": "https://example.com/admin/tool/lp/user_competency_in_course.php?courseid=2&competencyid=4&userid=3",
+        "title": "User competency summary",
+        "hooks": true,
+        "userid": 3,
+        "competencyid": 4,
+        "courseid": 2,
+        "rated": true,
+        "tone": "proficient",
+        "icon": "circle-check",
+        "label": "Good",
+        "state": "Proficient"
+    }
+}}
+<a class="dim-comp-classreport__cell" href="{{url}}" title="{{title}}"{{#hooks}} data-user-competency="true" data-userid="{{userid}}" data-competencyid="{{competencyid}}" data-courseid="{{courseid}}"{{/hooks}}><span class="dim-comp-pill{{#rated}} dim-comp-pill--{{tone}}{{/rated}}"><i class="fa-solid fa-{{icon}} dim-comp-pill__icon" aria-hidden="true"></i>{{label}}</span>{{#rated}} <span class="visually-hidden">{{state}}</span>{{/rated}}</a>
