@@ -5,6 +5,8 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Evidence page polish**: an idle competency no longer prints a lone "-" for a status, the detail sits beside the list
+  on a desktop, and the row's menu no longer covers the end of a long title.
 - **The competency breakdown report shows the class** (2026100650). Moodle's competency breakdown of a course
   (`report/competency/index.php`), opened without a learner, is now one row per learner and one column per course
   competency (the first 30, in the course's order), each cell the learner's rating by name on that competency's scale

@@ -1411,7 +1411,7 @@ body.path-admin-tool-lp table.managecompetencies {
     }
 
     .dim-comp-ev-main {
-        flex: 999 1 35rem;
+        flex: 999 1 22rem;
         min-width: 0;
     }
 
@@ -1527,6 +1527,12 @@ body.path-admin-tool-lp table.managecompetencies {
         flex-direction: column;
         gap: .25rem;
         min-width: 0;
+    }
+
+    // A prior learning record carries core's menu at the card's top end corner: its text stops short of it, so a
+    // long title never runs under the trigger (the card's own end padding is the other 2rem).
+    .dim-comp-ev-item[data-dim-kind="prior"] .dim-comp-ev-text {
+        margin-inline-end: 1rem;
     }
 
     .dim-comp-ev-top {

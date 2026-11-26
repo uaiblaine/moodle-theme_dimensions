@@ -44,7 +44,9 @@
     ids and its month as attributes; the menu is the item's kebab, named "Actions for" the evidence in visually
     hidden text; the detail beside the list is copied by the script from a template element of each item, whose
     buttons press the item's own menu entries, so core's handlers stay the only ones; a hidden bar, a hidden
-    side panel, a loading line and the button that loads older records, all revealed by the script.
+    side panel, a loading line and the button that loads older records, all revealed by the script; an idle
+    competency (usercompetency.status 0, whose statusname core sets to "-") prints no status and no
+    reviewer in the item's line and no status pill in the detail, where core prints "(-)".
 
     Context variables required for this template:
     * userid - The ID of the user whose page we're viewing
@@ -85,7 +87,7 @@
                         "url": "https://example.com/pluginfile.php/5/core_competency/userevidence/7/certificate.pdf"
                     }
                 ],
-                "competencycount": 1,
+                "competencycount": 2,
                 "usercompetencies": [
                     {
                         "competency": {
@@ -95,11 +97,25 @@
                         },
                         "usercompetency": {
                             "id": 40,
+                            "status": 1,
                             "statusname": "Waiting for review",
                             "url": "https://example.com/admin/tool/lp/user_competency.php?id=40",
                             "reviewer": {
                                 "fullname": "Renato Dias"
                             }
+                        }
+                    },
+                    {
+                        "competency": {
+                            "id": 13,
+                            "shortname": "Records management",
+                            "idnumber": "2.4"
+                        },
+                        "usercompetency": {
+                            "id": 41,
+                            "status": 0,
+                            "statusname": "-",
+                            "url": "https://example.com/admin/tool/lp/user_competency.php?id=41"
                         }
                     }
                 ],
@@ -256,7 +272,7 @@
                             {{#competencycount}}
                             <ul class="dim-comp-ev-feeds user-evidence-competencies">
                                 {{#usercompetencies}}
-                                <li>{{{competency.shortname}}} <span class="dim-comp-muted">{{usercompetency.statusname}}{{#usercompetency.reviewer.fullname}} / {{usercompetency.reviewer.fullname}}{{/usercompetency.reviewer.fullname}}</span></li>
+                                <li>{{{competency.shortname}}}{{#usercompetency.status}} <span class="dim-comp-muted">{{usercompetency.statusname}}{{#usercompetency.reviewer.fullname}} / {{usercompetency.reviewer.fullname}}{{/usercompetency.reviewer.fullname}}</span>{{/usercompetency.status}}</li>
                                 {{/usercompetencies}}
                             </ul>
                             {{/competencycount}}
@@ -321,7 +337,7 @@
                             {{#usercompetencies}}
                             <li>
                                 <a href="{{usercompetency.url}}">{{{competency.shortname}}}</a>
-                                <span class="badge dim-comp-pill dim-comp-pill--status">{{usercompetency.statusname}}</span>
+                                {{#usercompetency.status}}<span class="badge dim-comp-pill dim-comp-pill--status">{{usercompetency.statusname}}</span>{{/usercompetency.status}}
                                 {{#usercompetency.reviewer.fullname}}<span class="dim-comp-muted">{{usercompetency.reviewer.fullname}}</span>{{/usercompetency.reviewer.fullname}}
                             </li>
                             {{/usercompetencies}}
