@@ -654,9 +654,13 @@ final class class_report_services_test extends \advanced_testcase {
 
         foreach ([self::ROWS, self::SUMMARY] as $function) {
             foreach ([-1, -5] as $negative) {
-                $this->assert_refused(
-                    $this->call($function, ['courseid' => $this->course->id, 'groupid' => $negative]),
-                    'invalidparameter',
+                $result = $this->call($function, ['courseid' => $this->course->id, 'groupid' => $negative]);
+                $this->assert_refused($result, 'invalidparameter', $function . ' with group ' . $negative);
+                // Refused as a negative group, before a report is built: the engine's check of one report per
+                // request answers with the same code, so the message is what tells the two apart.
+                $this->assertStringContainsString(
+                    'The group is 0 for every group',
+                    (string) ($result['exception']->debuginfo ?? ''),
                     $function . ' with group ' . $negative
                 );
             }
