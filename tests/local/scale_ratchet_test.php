@@ -88,8 +88,9 @@ final class scale_ratchet_test extends \basic_testcase {
     /** @var array Every stylesheet under scss/, by its path there: a sheet not named here fails the test. */
     private const SHEETS = [
         'calendar.scss', 'category.scss', 'categoryhero.scss', 'compactnav.scss', 'competency.scss',
-        'coursenotice.scss', 'drawer.scss', 'focusmode.scss', 'keycolour.scss', 'landing.scss', 'loginshell.scss',
-        'look.scss', 'phonenav.scss', 'post.scss', 'pre.scss', 'profilelayer.scss', 'readingbar.scss', 'sheets.scss',
+        'competencyreport.scss', 'coursenotice.scss', 'drawer.scss', 'focusmode.scss', 'keycolour.scss', 'landing.scss',
+        'loginshell.scss', 'look.scss', 'phonenav.scss', 'post.scss', 'pre.scss', 'profilelayer.scss', 'readingbar.scss',
+        'sheets.scss',
     ];
 
     /**
@@ -331,6 +332,17 @@ final class scale_ratchet_test extends \basic_testcase {
         'competency.scss' => [
             // The learning plans bar's tooltip delay, the same decided exception as the category bar's (D51).
             '100ms' => 1,
+        ],
+        'competencyreport.scss' => [
+            // The class report's tooltip delay (D51), and the shell's first paint swapping its skeleton for its
+            // sentence after 10 s, in a 100 ms step (local_evidencehub's preload, copied).
+            '100ms' => 3,
+            '10s' => 2,
+            // The data report's progress line (data-report.md, 1.1 s), the skeleton's pulse (skeleton.md, 1.3 s) and
+            // the search's spinner, the reference's values.
+            '1100ms' => 1,
+            '1300ms' => 1,
+            '700ms' => 1,
         ],
         'drawer.scss' => [
             '0s' => 2,

@@ -74,6 +74,9 @@ final class class_ratings_doors_test extends \advanced_testcase {
     /** @var \stdClass A teacher of the other course only. */
     private $outsider;
 
+    /** @var \stdClass[] The course's groups: a (zelda, the teacher) and b (yuri). */
+    private $groups = [];
+
     /** @var int The course's report persistent. */
     private $reportid;
 
@@ -110,6 +113,7 @@ final class class_ratings_doors_test extends \advanced_testcase {
         $generator->create_group_member(['groupid' => $a->id, 'userid' => $this->learners['zelda']->id]);
         $generator->create_group_member(['groupid' => $b->id, 'userid' => $this->learners['yuri']->id]);
         $generator->create_group_member(['groupid' => $a->id, 'userid' => $this->teacher->id]);
+        $this->groups = ['a' => $a, 'b' => $b];
 
         $this->setAdminUser();
         manager::reset_caches();
@@ -152,16 +156,22 @@ final class class_ratings_doors_test extends \advanced_testcase {
      *
      * @param int $courseid The course.
      * @param int $moduleid The posted activity.
+     * @param int|null $groupid The posted group, or null for none.
      * @return array
      */
-    private static function retrieve_args(int $courseid, int $moduleid = 0): array {
+    private static function retrieve_args(int $courseid, int $moduleid = 0, ?int $groupid = null): array {
+        $parameters = [['name' => class_ratings::PARAM_MODULE, 'value' => (string) $moduleid]];
+        if ($groupid !== null) {
+            $parameters[] = ['name' => class_ratings::PARAM_GROUP, 'value' => (string) $groupid];
+        }
+
         return [
             'source' => class_ratings::class,
             'context' => ['contextid' => context_course::instance($courseid)->id],
             'component' => 'theme_dimensions',
             'area' => class_ratings::AREA,
             'itemid' => 0,
-            'parameters' => [['name' => class_ratings::PARAM_MODULE, 'value' => (string) $moduleid]],
+            'parameters' => $parameters,
             'page' => 0,
             'perpage' => 30,
         ];
@@ -365,13 +375,14 @@ final class class_ratings_doors_test extends \advanced_testcase {
      * can_view()), ask can_be_downloaded(), and read the table's rows.
      *
      * @param int $reportid The persistent's id.
+     * @param array $extra More of the report's parameters, as the download's URL carries them.
      * @return int[] The user ids of the downloaded rows, sorted.
      * @throws report_access_exception When the report is refused.
      */
-    private function downloaded(int $reportid): array {
+    private function downloaded(int $reportid, array $extra = []): array {
         manager::reset_caches();
         $persistent = new report($reportid);
-        $parameters = [class_ratings::PARAM_MODULE => 0];
+        $parameters = [class_ratings::PARAM_MODULE => 0] + $extra;
         $systemreport = system_report_factory::create(
             $persistent->get('source'),
             $persistent->get_context(),
@@ -443,5 +454,44 @@ final class class_ratings_doors_test extends \advanced_testcase {
                 $this->assertSame('errorreportview', $exception->errorcode);
             }
         }
+    }
+
+    /**
+     * A group posted through core's own doors: a grader in group A who names group B is listed nobody by the retrieve
+     * service and by the download, a group of nobody (however large) the same; naming A lists A, the control. A
+     * negative group is the session's choice, which is the grader's own group, never everybody.
+     *
+     * @return void
+     */
+    public function test_a_posted_group_through_cores_doors_follows_the_group_rule(): void {
+        $this->fixture(SEPARATEGROUPS);
+        $a = (int) $this->groups['a']->id;
+        $b = (int) $this->groups['b']->id;
+        $course = (int) $this->course->id;
+        $retrieve = fn(?int $group): array => $this->call(
+            'core_reportbuilder_retrieve_system_report',
+            self::retrieve_args($course, 0, $group),
+            false
+        );
+
+        $this->as_user($this->teacher);
+        $answer = $retrieve($a);
+        $this->assertFalse($answer['error'], 'The control: naming the grader\'s own group.');
+        $this->assertSame(1, $answer['data']['data']['totalrowcount']);
+        $this->assertStringContainsString('Zelda', json_encode($answer['data']['data']['rows']));
+        $this->assertSame($this->ids('zelda'), $this->downloaded($this->reportid, [class_ratings::PARAM_GROUP => $a]));
+
+        foreach ([$b, 2147483647] as $group) {
+            $answer = $retrieve($group);
+            $this->assertFalse($answer['error'], 'A group the rule does not admit is no error, only no row.');
+            $this->assertSame(0, $answer['data']['data']['totalrowcount'], 'Retrieve, group ' . $group);
+            $this->assertStringNotContainsString('Yuri', json_encode($answer));
+            $downloaded = $this->downloaded($this->reportid, [class_ratings::PARAM_GROUP => $group]);
+            $this->assertSame([], $downloaded, 'Download, group ' . $group);
+        }
+
+        $answer = $retrieve(-1);
+        $this->assertSame(1, $answer['data']['data']['totalrowcount'], 'A negative group is the session\'s: the grader\'s group.');
+        $this->assertSame($this->ids('zelda'), $this->downloaded($this->reportid, [class_ratings::PARAM_GROUP => -1]));
     }
 }

@@ -118,6 +118,10 @@ function theme_dimensions_get_main_scss_content($theme) {
     // $fa-var-* from the Boost SCSS compiled above it.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/competency.scss');
 
+    // And the class competency report's React view (js/esm/src/classreport), every rule nested under the root class
+    // only its shell writes; it reads the family tokens post.scss declares.
+    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/competencyreport.scss');
+
     return $scss;
 }
 
@@ -239,8 +243,8 @@ function theme_dimensions_get_settings_extra_scss() {
  *
  * Core collects them through get_plugins_with_function('user_preferences'), and only a declared
  * preference can be written through core's preference services, such as the REST route the AMD
- * modules reach with core_user/repository's setUserPreference(). Every entry but the look uses
- * core's "only the person themselves" permission callback.
+ * modules reach with core_user/repository's setUserPreference(). Every entry but the look and the class
+ * report's columns uses core's "only the person themselves" permission callback; those two refuse core's services.
  *
  * @return array[]
  */
@@ -291,6 +295,16 @@ function theme_dimensions_user_preferences(): array {
             'null' => NULL_NOT_ALLOWED,
             'default' => \theme_dimensions\local\flavourchoice::SITE_DEFAULT,
             'permissioncallback' => [\theme_dimensions\local\flavourchoice::class, 'preference_editable'],
+        ],
+        // The columns and widths a reader chose on the class report of one course, one preference per course. Declared
+        // by pattern so core's preference services find a definition that refuses: the one writer is the theme's
+        // set_class_report_preference service, behind the class report's access rule and its cleaning.
+        \theme_dimensions\local\competency\classreportpreference::PATTERN => [
+            'isregex' => true,
+            'type' => PARAM_RAW,
+            'null' => NULL_ALLOWED,
+            'default' => null,
+            'permissioncallback' => [\theme_dimensions\local\competency\classreportpreference::class, 'preference_editable'],
         ],
     ];
 }

@@ -22,7 +22,10 @@
  * tool_lp/user_competency_summary_in_course template with the user shown, in core's tool_lp/dialogue. Core's module
  * cannot be armed on the class report: when its dialogue closes it re-renders ONE learner's breakdown into its
  * region (_refresh). Here the dialogue's close dispatches Report Builder's tableReload event on the report, which
- * core_reportbuilder/report answers by reading the rows again, the page and sort kept.
+ * core_reportbuilder/report answers by reading the rows again, the page and sort kept. Inside the class report's
+ * React view (js/esm/src/classreport/ClassReportView.tsx), where no Report Builder table holds the cell, the close
+ * dispatches RATED on the class report's root instead, and the view reads its rows and its band again; the event
+ * is dispatched inside the dialogue's close, so the view takes its Pending hold before the close has returned.
  *
  * tests/local/classratings_source_test.php reads core's module for every name this one mirrors.
  *
@@ -47,6 +50,7 @@ const CELL = '[data-user-competency="true"]';
 const SUMMARY = 'tool_lp_data_for_user_competency_summary_in_course';
 const VIEWED = 'core_competency_user_competency_viewed_in_course';
 const TEMPLATE = 'tool_lp/user_competency_summary_in_course';
+const RATED = 'theme_dimensions/classratings:rated';
 
 let armed = false;
 
@@ -63,12 +67,18 @@ const cellArgs = (cell) => ({
 });
 
 /**
- * Read the report's rows again, keeping the page, under a Pending token until the table is painted.
+ * Read the report's rows again, keeping the page, under a Pending token until the table is painted; inside the
+ * React view, tell the view, which reads its own regions again under its own holds.
  *
- * @param {HTMLElement|null} report The report's root (core_reportbuilder/report).
+ * @param {HTMLElement|null} report The report's root (core_reportbuilder/report), or null in the React view.
+ * @param {HTMLElement|null} root The class report's root, the shell's in the React view.
+ * @param {Object} args The learner, the competency and the course the dialogue rated.
  */
-const reload = (report) => {
+const reload = (report, root, args) => {
     if (!report) {
+        if (root) {
+            root.dispatchEvent(new CustomEvent(RATED, {bubbles: true, detail: args}));
+        }
         return;
     }
     const pending = new Pending('theme_dimensions/classratings:reload');
@@ -85,6 +95,7 @@ const reload = (report) => {
 const open = async(cell) => {
     const pending = new Pending('theme_dimensions/classratings:open');
     const report = cell.closest(reportSelectors.regions.report);
+    const root = cell.closest(ROOT);
     const args = cellArgs(cell);
     try {
         const [context] = await Promise.all(Ajax.call([
@@ -103,7 +114,7 @@ const open = async(cell) => {
                 Templates.runTemplateJS(js);
                 pending.resolve();
             },
-            () => reload(report),
+            () => reload(report, root, args),
             true
         );
     } catch (error) {

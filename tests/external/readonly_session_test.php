@@ -24,8 +24,13 @@
 
 namespace theme_dimensions\external;
 
+use context_course;
 use core_external\external_api;
+use core_reportbuilder\manager;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use theme_dimensions\local\competency\classreportengine;
+use theme_dimensions\reportbuilder\local\systemreports\class_ratings;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -63,6 +68,10 @@ require_once(__DIR__ . '/../local/category/fixture.php');
 #[CoversClass(get_plan_cards::class)]
 #[CoversClass(get_course_competency_extras::class)]
 #[CoversClass(get_user_evidence_feed::class)]
+#[CoversClass(class_report_rows::class)]
+#[CoversClass(class_report_summary::class)]
+#[CoversClass(classreportengine::class)]
+#[CoversClass(class_ratings::class)]
 final class readonly_session_test extends \advanced_testcase {
     use \theme_dimensions\local\category\fixture;
 
@@ -90,7 +99,8 @@ final class readonly_session_test extends \advanced_testcase {
      * @param int $categoryid The fixture's category.
      * @param int $courseid The fixture's course.
      * @param int $userid The reader, whose own learning plans the plan cards are asked for.
-     * @param int $competencycourseid A course with competencies, of which another user is a learner.
+     * @param int $competencycourseid A course with competencies, of which another user is a learner and a third the
+     *     teacher who reads its class report.
      * @return array Service name => arguments.
      */
     private static function read_only_calls(int $categoryid, int $courseid, int $userid, int $competencycourseid): array {
@@ -102,6 +112,8 @@ final class readonly_session_test extends \advanced_testcase {
             'theme_dimensions_get_plan_cards' => ['userid' => $userid],
             'theme_dimensions_get_course_competency_extras' => ['courseid' => $competencycourseid],
             'theme_dimensions_get_user_evidence_feed' => ['userid' => $userid],
+            'theme_dimensions_class_report_rows' => ['courseid' => $competencycourseid],
+            'theme_dimensions_class_report_summary' => ['courseid' => $competencycourseid],
             'theme_dimensions_get_calendar_range' => ['from' => '2026-11-01', 'to' => '2026-11-30'],
             // Three months, the most one answer covers: the read-only session holds for the longest window too.
             'theme_dimensions_get_calendar_trails' => ['month' => '2026-11', 'months' => 3],
@@ -231,12 +243,19 @@ final class readonly_session_test extends \advanced_testcase {
         $competency = $lpg->create_competency(['competencyframeworkid' => $framework->get('id')]);
         $lpg->create_course_competency(['courseid' => $competencycourse->id, 'competencyid' => $competency->get('id')]);
         $generator->enrol_user($learner->id, $competencycourse->id, 'student');
+        // The class report's reader: a teacher of that course only, so the viewer above stays enrolled nowhere.
+        $teacher = $generator->create_user();
+        $generator->enrol_user($teacher->id, $competencycourse->id, 'teacher');
         $CFG->enable_read_only_sessions = true;
 
         $calls = self::read_only_calls((int) $category->id, (int) $course->id, (int) $viewer->id, (int) $competencycourse->id);
         foreach ($calls as $name => $args) {
             \core\session\manager::init_empty_session();
-            $this->become($name === 'theme_dimensions_get_course_competency_extras' ? $learner : $viewer);
+            $this->become(match ($name) {
+                'theme_dimensions_get_course_competency_extras' => $learner,
+                'theme_dimensions_class_report_rows', 'theme_dimensions_class_report_summary' => $teacher,
+                default => $viewer,
+            });
             $PAGE = new \moodle_page();
             require_login();
             $_POST['sesskey'] = sesskey();
@@ -267,6 +286,12 @@ final class readonly_session_test extends \advanced_testcase {
             } else if ($name === 'theme_dimensions_get_user_evidence_feed') {
                 // Past the refusals to the counted first page: the reader's own, empty list.
                 $this->assertSame(0, $result['data']['total'], $name);
+            } else if ($name === 'theme_dimensions_class_report_rows') {
+                // Past the class report's door to its rows: the course's one learner, through core's table.
+                $this->assertSame([(int) $learner->id], array_column($result['data']['rows'], 'userid'), $name);
+            } else if ($name === 'theme_dimensions_class_report_summary') {
+                // Past the door to the figures: the one learner, unrated in the one competency.
+                $this->assertSame([1, 1], [$result['data']['learners'], $result['data']['unrated']], $name);
             } else if ($name === 'theme_dimensions_get_course_dialogue') {
                 // Admitted and built: the labels come only past the refusals.
                 $this->assertNotSame('', $result['data']['learnlabel'], $name);
@@ -275,5 +300,83 @@ final class readonly_session_test extends \advanced_testcase {
             }
             $this->assertSame([], self::changed_keys($before, $after), "$name changed \$SESSION");
         }
+    }
+
+    /**
+     * The group modes the class report's reads are run in.
+     *
+     * @return array Name => [the mode's name].
+     */
+    public static function group_modes(): array {
+        return ['separate groups' => ['separate'], 'visible groups' => ['visible']];
+    }
+
+    /**
+     * The class report's two reads leave $SESSION alone where the group rule has work: a course in separate groups
+     * and one in visible groups, a grader in a group, the group posted or not. A service reaches no session path
+     * (`groups_get_course_group()` writes $SESSION->activegroup on first use); the control is the page's own path,
+     * which builds the report with no posted group and does write it.
+     *
+     * @param string $mode 'separate' or 'visible'.
+     * @return void
+     */
+    #[DataProvider('group_modes')]
+    public function test_the_class_report_reads_leave_the_session_alone_in_a_grouped_course(string $mode): void {
+        global $CFG, $PAGE;
+
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $lpg = $generator->get_plugin_generator('core_competency');
+        $course = $generator->create_course([
+            'groupmode' => $mode === 'separate' ? SEPARATEGROUPS : VISIBLEGROUPS,
+            'groupmodeforce' => 1,
+        ]);
+        $framework = $lpg->create_framework();
+        $competency = $lpg->create_competency(['competencyframeworkid' => $framework->get('id')]);
+        $lpg->create_course_competency(['courseid' => $course->id, 'competencyid' => $competency->get('id')]);
+        $learner = $generator->create_and_enrol($course, 'student');
+        $teacher = $generator->create_and_enrol($course, 'teacher');
+        $group = $generator->create_group(['courseid' => $course->id]);
+        $generator->create_group_member(['groupid' => $group->id, 'userid' => $learner->id]);
+        $generator->create_group_member(['groupid' => $group->id, 'userid' => $teacher->id]);
+        $CFG->enable_read_only_sessions = true;
+        $context = context_course::instance($course->id);
+
+        $calls = [
+            'no group posted' => ['courseid' => (int) $course->id],
+            'a group posted' => ['courseid' => (int) $course->id, 'groupid' => (int) $group->id],
+        ];
+        $services = ['theme_dimensions_class_report_rows', 'theme_dimensions_class_report_summary'];
+        foreach ($services as $name) {
+            foreach ($calls as $label => $args) {
+                \core\session\manager::init_empty_session();
+                $this->become($teacher);
+                manager::reset_caches();
+                $PAGE = new \moodle_page();
+                require_login();
+                $_POST['sesskey'] = sesskey();
+
+                $before = self::session_snapshot();
+                $result = external_api::call_external_function($name, $args, false);
+                $after = self::session_snapshot();
+
+                $this->assertFalse($result['error'], "$name, $label: " . json_encode($result['exception'] ?? null));
+                // The control: the whole path ran, to the group's one learner.
+                if ($name === 'theme_dimensions_class_report_rows') {
+                    $this->assertSame([(int) $learner->id], array_column($result['data']['rows'], 'userid'), "$name, $label");
+                } else {
+                    $this->assertSame(1, $result['data']['learners'], "$name, $label");
+                }
+                $this->assertSame([], self::changed_keys($before, $after), "$name, $label changed \$SESSION");
+            }
+        }
+
+        // The control: the page's path, with no posted group, reads the session's choice and sets it.
+        \core\session\manager::init_empty_session();
+        $this->become($teacher);
+        manager::reset_caches();
+        $before = self::session_snapshot();
+        class_ratings::for_course($context);
+        $this->assertContains('activegroup', self::changed_keys($before, self::session_snapshot()));
     }
 }

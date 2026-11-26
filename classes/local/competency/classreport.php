@@ -75,6 +75,12 @@ final class classreport {
     /** @var string[] Either of them lets the viewer read the course's competencies, as core asks. */
     public const COURSEVIEW = ['moodle/competency:coursecompetencyview', 'moodle/competency:coursecompetencymanage'];
 
+    /** @var int A search shorter than this many characters searches nothing. */
+    public const SEARCH_MIN = 2;
+
+    /** @var int The longest search kept, in characters. */
+    public const SEARCH_MAX = 100;
+
     /**
      * Whether the request asks for the class rather than one learner: report/competency/index.php without a
      * positive `user` parameter.
@@ -97,13 +103,17 @@ final class classreport {
      * viewer who reads learners only through per-user grants (a parent, a mentor, a plan reviewer) does not pass
      * and keeps core's one-learner page. Self-sufficient, because core's download.php calls only the site-level
      * require_login() before the report's can_view(): the course gate is `can_access_course()` with only active
-     * enrolments, as require_login($course) would answer.
+     * enrolments, as require_login($course) would answer. The site course is no class: every user is enrolled there,
+     * so it is refused before anything is read.
      *
      * @param context $context The report's context.
      * @return bool True when the class report may be shown.
      */
     public static function may_view(context $context): bool {
         if (!$context instanceof context_course || !api::is_enabled()) {
+            return false;
+        }
+        if ((int) $context->instanceid === (int) SITEID) {
             return false;
         }
         if (!can_access_course(get_course((int) $context->instanceid), null, '', true)) {
@@ -131,22 +141,34 @@ final class classreport {
      *
      * The choice is read from the session (`groups_get_course_group()` without update): the page's selector writes
      * it in index.php, and the table's own requests and the download, which carry no `group` parameter, read it.
-     * The viewer's groups are those of the course's default grouping, as core's selector offers them.
+     * A report built with the group parameter (`class_ratings::PARAM_GROUP`, which the class report's web services
+     * pass) hands it here in place of the session's choice, and it goes through the same rule: a client posts it, so
+     * it can only choose among what the rule already admits. The viewer's groups, and the
+     * groups a viewer who reads every group may choose, are those of the course's default grouping, as core's selector
+     * offers them; any other group lists nobody.
      *
      * @param \stdClass $course The course.
+     * @param int|null $requested A group a client asked for (0 for all participants), or null for the session's choice.
      * @return array|null Group ids; null for no narrowing; an empty array for no row.
      */
-    public static function groups(\stdClass $course): ?array {
+    public static function groups(\stdClass $course, ?int $requested = null): ?array {
         global $USER;
 
         $mode = (int) groups_get_course_groupmode($course);
         if ($mode === NOGROUPS) {
             return null;
         }
-        $chosen = (int) groups_get_course_group($course, false);
+        $chosen = $requested ?? (int) groups_get_course_group($course, false);
         $context = context_course::instance((int) $course->id);
         if ($mode !== SEPARATEGROUPS || has_capability('moodle/site:accessallgroups', $context)) {
-            return $chosen > 0 ? [$chosen] : null;
+            if ($chosen <= 0) {
+                return null;
+            }
+            $offered = array_map('intval', array_keys(
+                groups_get_all_groups((int) $course->id, 0, (int) $course->defaultgroupingid, 'g.id')
+            ));
+
+            return in_array($chosen, $offered, true) ? [$chosen] : [];
         }
 
         $own = array_map('intval', array_keys(
@@ -173,12 +195,13 @@ final class classreport {
      *
      * @param context_course $context The course's context.
      * @param string $useridsql The SQL of the report's user id, the main table's `id`.
+     * @param int|null $requested A group a client asked for, or null for the session's choice ({@see groups()}).
      * @return array [the SQL condition, its named parameters].
      */
-    public static function learners(context_course $context, string $useridsql): array {
+    public static function learners(context_course $context, string $useridsql, ?int $requested = null): array {
         global $CFG;
 
-        $groups = self::groups(get_course((int) $context->instanceid));
+        $groups = self::groups(get_course((int) $context->instanceid), $requested);
         if ($groups === []) {
             return ['1 = 0', []];
         }
@@ -225,23 +248,62 @@ final class classreport {
     }
 
     /**
-     * The course's competencies, in the course's order, and the scale each is rated on.
+     * The competencies the class report shows as columns: the viewer's choice, else the first {@see MAX_COLUMNS}.
+     *
+     * The choice is a list of competency ids ({@see classreportpreference}); only those of the catalogue are kept, in
+     * the course's order whatever order they were chosen in, at most {@see MAX_COLUMNS}, so a forged id, one of another
+     * course or one the course no longer has matches nothing. A choice of which nothing is left reads as no choice.
+     *
+     * @param array $catalogue Competency id => record, as {@see catalogue()} returns them.
+     * @param array|null $chosen The chosen competency ids, or null for no choice.
+     * @return array Competency id => record, in display order.
+     */
+    public static function chosen(array $catalogue, ?array $chosen): array {
+        $wanted = array_flip(array_map('intval', $chosen ?? []));
+        $shown = array_intersect_key($catalogue, $wanted);
+        if ($shown === []) {
+            return array_slice($catalogue, 0, self::MAX_COLUMNS, true);
+        }
+
+        return array_slice($shown, 0, self::MAX_COLUMNS, true);
+    }
+
+    /**
+     * The search a client asked for, as the class report applies it: cleaned, trimmed, at most {@see SEARCH_MAX}
+     * characters, and empty when shorter than {@see SEARCH_MIN}.
+     *
+     * @param string $search The requested search.
+     * @return string The search, or ''.
+     */
+    public static function search(string $search): string {
+        $search = \core_text::substr(trim(clean_param($search, PARAM_TEXT)), 0, self::SEARCH_MAX);
+
+        return \core_text::strlen($search) >= self::SEARCH_MIN ? $search : '';
+    }
+
+    /**
+     * Every competency of the course, in the course's order, and the scale each is rated on.
      *
      * One statement. The scale is the competency's own or, without one, its framework's
      * (`competency::get_scale()`). With an activity, only the competencies linked to it, and only when the
      * activity is the course's (a module id is a parameter a client sends).
      *
      * @param int $courseid The course.
-     * @param int $moduleid A course module of the course, or 0.
-     * @return array [the first {@see MAX_COLUMNS} competencies by id (each id, shortname, idnumber, scaleid),
-     *     how many the course has in all].
+     * @param int $moduleid A course module of the course the current user can see, or 0; any other reads as unknown.
+     * @return array Competency id => record (id, shortname, idnumber, scaleid), in the course's order.
      */
-    public static function competencies(int $courseid, int $moduleid): array {
+    public static function catalogue(int $courseid, int $moduleid): array {
         global $DB;
 
         $params = ['courseid' => $courseid];
         $modulesql = '';
         if ($moduleid > 0) {
+            /* An activity the viewer cannot see, or one the course does not have, is an unknown activity: no
+               competency matches, so it adds no column and answers nothing about itself. */
+            $cm = get_fast_modinfo($courseid)->cms[$moduleid] ?? null;
+            if ($cm === null || !$cm->uservisible) {
+                return [];
+            }
             $modulesql = "AND cc.competencyid IN (
                               SELECT mc.competencyid
                                 FROM {competency_modulecomp} mc
@@ -269,7 +331,7 @@ final class classreport {
             ];
         }
 
-        return [array_slice($competencies, 0, self::MAX_COLUMNS, true), count($competencies)];
+        return $competencies;
     }
 
     /**
@@ -279,7 +341,7 @@ final class classreport {
      * `grade_scale::load_items()` does; each in two spellings: plain for a template's double stash, escaped for a
      * select option of the filter form, which prints its labels raw.
      *
-     * @param array $competencies The competencies, as {@see competencies()} returns them.
+     * @param array $competencies The competencies, as {@see catalogue()} and {@see chosen()} return them.
      * @param context $context The context the names are formatted in.
      * @return array Scale id => ['plain' => rating => name, 'escaped' => rating => name].
      */

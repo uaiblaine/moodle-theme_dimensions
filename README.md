@@ -269,6 +269,16 @@ Builder report: sort by the name or by any competency, filters on the name (and 
 see) and one per competency (a rating of its scale, or *Not rated*), pages, and download in Report Builder's formats.
 The activity selector keeps the columns of one activity's competencies.
 
+The report is drawn as a data report: above it a band of figures over the listed learners (*Learners*, *Ratings
+given*, *Proficient*, *Not rated yet*, and per shown competency how many learners are proficient), then a bar with the
+count, *Filters* (one per shown competency: its ratings and *Not rated*, each with the learners it would list),
+*Columns* (the competencies to show, at most 30 at once, *Default columns* and *Reset column widths*), *View*
+(automatic, a table or cards; cards on a narrow screen) and *Download*, and a search by name. The rows are a table
+whose heading and learner column stay in place while it scrolls, with columns a reader may sort and resize, and pages
+of 30, 50 or 100 learners. *Table view* (`index.php?id=<course>&view=table`) shows the same report in Moodle's own
+table, which is also what a browser without JavaScript gets; the filters on the name and the identity fields are set
+there.
+
 - **Who sees it**: whoever Moodle's page admits for a whole class, asked again by the report itself on every request
   and download: access to the course, `moodle/competency:coursecompetencyview` or
   `moodle/competency:coursecompetencymanage`, and `moodle/competency:usercompetencyview` in the course context.
@@ -279,10 +289,19 @@ The activity selector keeps the columns of one activity's competencies.
   (Moodle's page shows everybody to such a teacher); otherwise the chosen group, or everybody. The learner selector
   beside the report names only the learners the report lists, so it never offers a learner the report withholds.
 - **Rating**: a teacher holding `moodle/competency:competencygrade` in the course opens Moodle's rating dialogue
-  from a cell; when it closes, the report reads its rows again. Without JavaScript a cell links to Moodle's page of
+  from a cell; when it closes, the report reads its rows and its figures again. Without JavaScript a cell links to Moodle's page of
   that learner's competency in the course.
-- **At most 30 competency columns** are built per page, the first in the course's order; the page says so when the
-  course has more, and a learner's breakdown lists every one.
+- **At most 30 competency columns** are built per page: by default the first in the course's order; *Table view* says so
+  when the course has more and *Columns* when the limit is reached, and a learner's breakdown lists every one. A reader may choose which competencies are the
+  columns (always shown in the course's order), and give the columns their widths: the choice is kept per reader and per course (below),
+  and the page, its sorts and pages, its filters (there is one per shown competency) and the download follow it.
+- **Web services** for the report's client: `theme_dimensions_class_report_rows` (a page of learners with the column
+  catalogue, the cells as the report formats them, the filters and their counts), `theme_dimensions_class_report_summary`
+  (the figures over the same rows: learners, rated and proficient cells, learners with no rating, and per shown
+  competency its proficient, rated and unrated learners) and `theme_dimensions_set_class_report_preference` (the
+  columns and widths). Each asks the report's own rule first and then builds the report, so it lists exactly what the
+  page lists to that reader, group rule included; a group or a search it is given can only narrow the rows. The two
+  reads keep the session read-only.
 - Reading the report writes nothing (Moodle's own page creates a rating row for every competency of the learner it
   shows). The filter values a reader sets are kept by Moodle's report builder, below.
 
@@ -790,6 +809,13 @@ provider declares these rows: a data request exports them in the reader's user c
 reader may still open its class report, and a deletion request removes them; deleting the account removes them too,
 uninstalling the theme deletes its report builder reports with every reader's values, and deleting a course deletes
 the class report's report builder record of that course with the values stored on it.
+
+The competencies a reader chooses as the columns of a course's class report, and the widths they give the columns, are
+kept in one user preference per reader and course, `theme_dimensions_classreport_<course id>` (the competency ids in
+the course's order, at most 30, and the widths in pixels, as a short JSON value). It is kept until the reader goes back to the
+default columns (which removes it), the course is deleted (which removes every reader's choice on it), the account is
+deleted or the theme is uninstalled; a data request exports it as stored. Only the theme's web service writes it,
+after the class report's own access rule; Moodle's preference services refuse it.
 
 
 Capabilities

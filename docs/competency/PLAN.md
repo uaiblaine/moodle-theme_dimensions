@@ -258,10 +258,36 @@ columns are. Phase 6 is split in two pull requests:
   on close. The stored filter values are the theme's personal data (D146, `local\competency\reportpersistents`).
   Statements per page: constant in the learners, nothing per column beyond the subqueries (measured by
   `class_ratings_test::test_the_statements_of_a_page_are_bounded`).
-- **Part two (next): the data-report client** of `moodle-dev/docs/design-system/components/data-report.md` over
-  part one's report: the rows and summary web services (built from `class_ratings`, which keeps every rule), the
-  Columns menu choosing among the competencies (a preference read in `initialise()`, replacing the fixed first 30),
-  the band of figures, and core's table as the "Table view" and noscript fallback.
+- **Part two, server half (done, 2026100651): the services and the column preference.** The Columns choice is
+  `local\competency\classreportpreference`, one user preference per course (`theme_dimensions_classreport_<id>`,
+  JSON `{"c": [competency ids], "w": {key: px}}`), read in `class_ratings::initialise()` and re-validated against
+  the course's competencies on every read; `classreport::chosen()` keeps the catalogue's ids named, in the course's order whatever order they were posted in, the
+  first 30 when none is left, and filters exist for the shown columns only. Three services over
+  `local\competency\classreportengine` (copied from local_evidencehub's `reportengine`): `class_report_rows`
+  (courseid, moduleid, groupid with -1 for the page's choice, search, page, perpage 30/50/100, sort, dir,
+  countfacets), `class_report_summary` (courseid, moduleid, groupid, search) and `set_class_report_preference`
+  (courseid, usedefault, columns as `comp:<id>` keys, widths). Each runs `classreportengine::locate()` (the course,
+  `validate_context()`, no guest, competencies enabled, `classreport::may_view()`), then builds the report with the
+  group and the search as its own parameters (`class_ratings::PARAM_GROUP`, `PARAM_SEARCH`), so the group rule and
+  the search are the report's base conditions on every door, the download included. The page is two statements
+  (`reportbuilder\local\systemreports\class_ratings_table`), the facet counts and the summary conditional sums of
+  one statement each.
+- **Part two, client half (done, 2026100651): the data-report client** of `moodle-dev/docs/design-system/components/data-report.md`
+  over those services, in `js/esm/src/classreport/` over the shared parts copied from local_evidencehub
+  (`js/esm/src/datareport/`, class prefix `dim-comp-rview`, `scss/competencyreport.scss`). The shell
+  (`output\class_report_view`, `templates/competency_classreport_view.mustache`) is core's `{{#react}}` mount with
+  configuration and strings only (course, activity, the page's group, the report's id, page sizes, search minimum, the
+  column limit, the download formats and core's `reportbuilder/download.php`, the "Table view" address, the strings),
+  core's table inside `<noscript>`, and `?view=table` for part one's page whole. The grid (rows answer's `columns`,
+  `rows[].cells`; `rows[].ratings` for the cards' line), the Columns menu (catalogue keys, at most 30 shown, the last
+  one kept, written through `set_class_report_preference`, then the rows and the band read again), the band
+  (`class_report_summary`: four tiles and "By competency"), the filters panel (the rows answer's `filters`, written
+  through core's `core_reportbuilder_set_filters` with the report's parameters), the search (two characters, 300 ms),
+  the page's group posted on every read (never -1), the download through core's `reportbuilder/download.php` with the
+  report's parameters, search included. A grader's cell opens core's dialogue through `amd/src/classratings.js`, whose
+  close dispatches `theme_dimensions/classratings:rated` on the shell's root; the view reads its rows and band again.
+  Behat: the class report scenario of `theme_dimensions_competency.feature` drives the view, a column hidden, a rating
+  from a cell, and "Table view".
 
 ## Phases
 
@@ -276,7 +302,7 @@ columns are. Phase 6 is split in two pull requests:
 | 3 | Evidence page (done, 2026100649) | theme | 3 |
 | 4 | Course competencies, teacher and learner; done (2026100647) | theme | 3 |
 | 5 | A learner's competency in a course; done | theme | 2 |
-| 6 | Class report: spike, then the report. Part one (the server, core's table) done in 2026100650; part two (the data-report client, Columns, the band) next | theme | 3 |
+| 6 | Class report: spike, then the report. Part one (the server, core's table) done in 2026100650; part two (the services, the column preference, and the data-report client with Columns and the band) done in 2026100651 | theme | 3 |
 | C | "Journey" view of the plan overview | local_dimensions | 2 |
 
 Phase 0 carries only what stands on its own. The settings tab, the derived renderer and pattern E1 were
