@@ -516,8 +516,9 @@ body.path-report-competency [data-region="evidence-listing"] {
 }
 
 /* ---- Navigation panels: jump to a user, a competency, an activity ----------- */
-/* Core's float stays (float-end or float-sm-end, in the template) because the page beneath was
-   laid out around it; the panel is the theme's. The select is hidden by core's own
+/* Core's float stays from 576 px up (float-sm-end, in the template) because the page beneath was
+   laid out around it; under 576 px the panel is a full-width block and never wider than its container, so a phone
+   gains no sideways scroll; the panel is the theme's. The select is hidden by core's own
    .user-competency-course-navigation rule until form-autocomplete has enhanced it. */
 .dim-comp-nav {
     display: flex;
@@ -529,9 +530,30 @@ body.path-report-competency [data-region="evidence-listing"] {
     border-radius: var(--dim-ds-radius-md);
     background-color: var(--dimensions-surface-alt);
     color: var(--dimensions-ink);
+    max-width: 100%;
+    min-width: 0;
 
     .dim-comp-nav__group {
         margin: 0;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .dim-comp-nav__group select,
+    .dim-comp-nav__group input,
+    .dim-comp-nav__group .form-autocomplete-selection {
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    @media (max-width: 575.98px) {
+        float: none;
+        width: 100%;
+
+        .dim-comp-nav__group select,
+        .dim-comp-nav__group input {
+            width: 100%;
+        }
     }
 
     form {
@@ -539,6 +561,8 @@ body.path-report-competency [data-region="evidence-listing"] {
         flex-direction: column;
         gap: var(--dim-ds-space-xs);
         margin: 0;
+        max-width: 100%;
+        min-width: 0;
     }
 }
 
@@ -1562,6 +1586,14 @@ body.path-admin-tool-lp table.managecompetencies {
         }
     }
 
+    // Core sets word-break: break-all on .user-evidence-competencies (admin/tool/lp/styles.css), which its items inherit
+    // and which splits a name at any letter; a rule on the item itself ends the inheritance, so a name wraps at its
+    // words and splits mid-word only when one word alone is wider than the line.
+    .dim-comp-ev-feeds li {
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
+
     .dim-comp-ev-feeds {
         margin: 0;
         padding: 0;
@@ -2326,6 +2358,13 @@ body.path-admin-tool-lp table.managecompetencies {
             white-space: nowrap;
         }
     }
+}
+
+/* Core's dark mode underlines every link of #region-main but its own controls, at (1,6,1); the rating cell's link
+   is no prose, and its pill carries the meaning, so it keeps the light mode's none, at rest and on hover. The
+   selector's own weight wins, (1,6,2); the focus ring is the browser's and the link's own rule, untouched. */
+:root[data-bs-theme="dark"] body.path-report-competency #region-main .dim-comp-classreport a[href].dim-comp-classreport__cell {
+    text-decoration: none;
 }
 
 /* ---- Dark mode ------------------------------------------------------------ */

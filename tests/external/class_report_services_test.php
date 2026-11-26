@@ -902,6 +902,8 @@ final class class_report_services_test extends \advanced_testcase {
         $this->assertCount(classreport::MAX_COLUMNS, self::competency_filters($data));
         $this->assertSame('learner', $data['columns'][0]['key']);
         $this->assertTrue($data['columns'][0]['fixed']);
+        $this->assertSame(get_string('competency_classreport_learner', 'theme_dimensions'), $data['columns'][0]['title']);
+        $this->assertSame('Learner', $data['columns'][0]['title']);
 
         // Posted last-first: the report shows the course's order whatever order was posted.
         $stored = $this->answer(self::SET, ['courseid' => $this->course->id, 'columns' => [$lastkey, $firstkey]]);
