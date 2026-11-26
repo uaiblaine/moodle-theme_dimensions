@@ -24,6 +24,8 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   whose heading and learner column stay in place, sortable and resizable columns, and pages of 30, 50 or 100. Rating
   from a cell still opens Moodle's dialogue, and the row and the figures follow when it closes. *Table view*
   (`?view=table`) keeps Moodle's own table, which a browser without JavaScript also gets.
+- **Evidence page polish**: an idle competency no longer prints a lone "-" for a status, the detail sits beside the list
+  on a desktop, and the row's menu no longer covers the end of a long title.
 - **The competency breakdown report shows the class** (2026100650). Moodle's competency breakdown of a course
   (`report/competency/index.php`), opened without a learner, is now one row per learner and one column per course
   competency (the first 30, in the course's order), each cell the learner's rating by name on that competency's scale

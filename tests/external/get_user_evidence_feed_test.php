@@ -225,6 +225,32 @@ final class get_user_evidence_feed_test extends \advanced_testcase {
     }
 
     /**
+     * A disabled site does not tell a caller whether they could read that user: the stranger is refused for the
+     * feature being off, before the capability is asked; enabled, the same stranger gets core's nopermissions.
+     *
+     * @return void
+     */
+    public function test_disabled_competencies_are_refused_before_the_capability_is_asked(): void {
+        $this->resetAfterTest();
+        [$learner] = $this->learner_with_records();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        set_config('enabled', 1, 'core_competency');
+        $control = $this->ask((int) $learner->id);
+        $this->assertTrue($control['error']);
+        $this->assertSame(
+            'nopermissions',
+            $control['exception']->errorcode,
+            'Control: enabled, the stranger is refused for who they are.'
+        );
+
+        set_config('enabled', 0, 'core_competency');
+        $result = $this->ask((int) $learner->id);
+        $this->assertTrue($result['error']);
+        $this->assertSame('competenciesarenotenabled', $result['exception']->errorcode);
+    }
+
+    /**
      * The guest account is refused, with a real account beside it as the control.
      *
      * @return void

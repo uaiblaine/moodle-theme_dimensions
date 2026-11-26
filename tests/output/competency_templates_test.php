@@ -404,7 +404,7 @@ final class competency_templates_test extends \advanced_testcase {
                         "[@data-dim-firstpaint='1'][@data-dim-platform='1']",
                     "//*[@data-region='user-evidence-list']//ol[@data-region='dim-comp-ev-list']" .
                         "/li[@data-region='user-evidence-node'][@data-id='7'][@data-userid='3'][@data-dim-time='1792065600']" .
-                        "[@data-dim-comps='12 ']",
+                        "[@data-dim-comps='12 13 ']",
                     "//ol[@data-region='dim-comp-ev-list']/li[@data-region='dim-comp-ev-month']" .
                         "/h3[normalize-space(.)='October 2026']",
                     "//li[@data-id='7']//h4/a[@href='https://example.com/admin/tool/lp/user_evidence.php?id=7']" .
@@ -565,6 +565,30 @@ final class competency_templates_test extends \advanced_testcase {
     }
 
     /**
+     * A template's source without its {{#js}} blocks.
+     *
+     * A hook spelt in the markup is often spelt again in the script that reads it, so a literal found in the whole
+     * source may be only the script's selector.
+     *
+     * @param string $source The template source.
+     * @return string The source, every js block removed.
+     */
+    private static function without_js(string $source): string {
+        return (string) preg_replace('/\{\{#js\}\}.*?\{\{\/js\}\}/s', '', $source);
+    }
+
+    /**
+     * Hooks that must be in the markup itself, not only in the script's selector.
+     *
+     * @return array Template name => [literal, ...] each already listed in hooks().
+     */
+    private static function markup_hooks(): array {
+        return [
+            'tool_lp/user_competency_summary_in_course' => ['data-region-id="{{uniqid}}"'],
+        ];
+    }
+
+    /**
      * The normalised text of the first element an expression matches.
      *
      * @param \DOMXPath $xpath The parsed render.
@@ -647,6 +671,10 @@ final class competency_templates_test extends \advanced_testcase {
         foreach ($literals as $literal) {
             $this->assertStringContainsString($literal, $core, "{$literal} is not in core's {$name}: the table is wrong.");
             $this->assertStringContainsString($literal, $copy, "The theme's {$name} lost core's {$literal}.");
+        }
+        foreach (self::markup_hooks()[$name] ?? [] as $literal) {
+            $this->assertStringContainsString($literal, self::without_js($core), "{$literal} is not in core's {$name} markup.");
+            $this->assertStringContainsString($literal, self::without_js($copy), "The theme's {$name} markup lost {$literal}.");
         }
     }
 
@@ -820,6 +848,11 @@ final class competency_templates_test extends \advanced_testcase {
         foreach ($literals as $literal) {
             $this->assertStringContainsString($literal, $core, "{$literal} is not in core's evidence partial: the list is wrong.");
             $this->assertStringContainsString($literal, $copy, "The course summary lost the evidence partial's {$literal}.");
+        }
+        // The script's selectors spell the first and fourth again, so those two are read in the markup alone.
+        foreach ([$literals[0], $literals[3]] as $literal) {
+            $this->assertStringContainsString($literal, self::without_js($core), "{$literal} is not in core's partial markup.");
+            $this->assertStringContainsString($literal, self::without_js($copy), "The course summary markup lost {$literal}.");
         }
     }
 
