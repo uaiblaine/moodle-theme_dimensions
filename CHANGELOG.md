@@ -6,8 +6,8 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 ## Unreleased (v5.3-r1-dev)
 
 - **The class report's columns are a reader's choice, and its client has its web services** (2026100651). On a
-  course's class report of competency ratings a reader may choose which competencies are the columns (at most 30, in
-  the order chosen) and their widths; the choice is kept per reader and course in the user preference
+  course's class report of competency ratings a reader may choose which competencies are the columns (at most 30, shown
+  in the course's order) and their widths; the choice is kept per reader and course in the user preference
   `theme_dimensions_classreport_<course id>`, and the page, its sorts, pages, filters (one per shown competency) and
   download follow it. A competency the course no longer has, or an id of another course, is ignored. New web services
   for the report's client: `theme_dimensions_class_report_rows` (a page of learners in two statements, with the column
