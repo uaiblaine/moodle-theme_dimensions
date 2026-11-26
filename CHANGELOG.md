@@ -5,6 +5,10 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Evidence scope counts and phone navigation box** (2026100653). On the competency evidence page the scope's "Prior
+  learning" and "All" figures follow the filters and the period, so they add up to the count line; and under 576 px the
+  wrappers of the report's two navigation fields take the box's width (the activity filter's field keeps the width
+  core's script gives it from its placeholder, and is cut at the box's edge).
 - **Class report and evidence page polish** (2026100652). The class report's first column is titled "Learner", as in
   the page's own labels, not core's "Full name with link"; a competency card gives the competency's name the free width
   with the rating at the end of the line; the rating pill is no longer underlined in dark mode; the navigation box

@@ -613,12 +613,16 @@ const countOf = (ordered) => {
  * Write what the bar and the list's messages say without a string: the scope's counts and choice, the messages shown,
  * Filters' badge and the period's dot.
  *
+ * The scope's counts follow the filters and the period, whichever scope is chosen: the prior-learning figure is the
+ * nodes that pass priorPasses() and the platform figure is the service's total, already under the filters, so the
+ * three cells add up. They do not follow the search field, which reads the titles on the page only.
+ *
  * @param {HTMLElement} root The region.
  * @param {number} shown The titled items shown.
  * @param {number} filtered The filters in force.
  */
 const writeState = (root, shown, filtered) => {
-    const prior = root.querySelectorAll(SELECTORS.NODE).length;
+    const prior = [...root.querySelectorAll(SELECTORS.NODE)].filter(priorPasses).length;
     const loaded = state.nodes.size;
     const platform = Math.max(state.total, loaded);
     const noprior = root.querySelector(SELECTORS.NOPRIOR);
