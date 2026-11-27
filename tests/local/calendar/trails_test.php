@@ -585,6 +585,114 @@ final class trails_test extends \advanced_testcase {
     }
 
     /**
+     * Enrol an account in a trail as an editing teacher whose enrolment is suspended or has ended, and check the fixture
+     * is the one the rule is about: core still gives the account the capability the lapsed enrolment's role left behind.
+     *
+     * @param \stdClass $trail The trail course.
+     * @param bool $ended True for an enrolment whose end is in the past, false for a suspended one.
+     * @return \stdClass The account.
+     */
+    private function lapsed_editor(\stdClass $trail, bool $ended): \stdClass {
+        $user = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user(
+            $user->id,
+            $trail->id,
+            'editingteacher',
+            'manual',
+            0,
+            $ended ? time() - HOURSECS : 0,
+            $ended ? ENROL_USER_ACTIVE : ENROL_USER_SUSPENDED
+        );
+        $this->assertTrue(
+            has_capability('moodle/course:update', \core\context\course::instance($trail->id), $user),
+            'The role outlives the lapsed enrolment, so core alone would keep this account as staff.'
+        );
+        return $user;
+    }
+
+    /**
+     * An editing teacher whose own enrolment in the trail is suspended is not staff of it: with no way in the trail is
+     * hidden from them, as from any account. The controls: a trail with an open way in, and the same teacher active
+     * (a role with no enrolment at all is in {@see test_staff_are_shown_a_trail_with_no_way_in()}).
+     */
+    public function test_a_teacher_with_a_suspended_enrolment_is_not_staff_of_the_trail(): void {
+        $trail = $this->trail('Fechada', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $lapsed = $this->lapsed_editor($trail, false);
+
+        $this->become($lapsed);
+        $this->assertFalse($this->names($this->answer('2027-03'), (int) $trail->id), 'Suspended: no longer staff.');
+
+        $this->setAdminUser();
+        $this->enable_instance((int) $trail->id, 'self', ['customint6' => 1]);
+        $this->become($lapsed);
+        $this->assertTrue($this->names($this->answer('2027-03'), (int) $trail->id), 'Control: an open way in shows it.');
+
+        $active = self::getDataGenerator()->create_user();
+        $other = $this->trail('Outra', [$this->ref('Beta', self::at(3, 2), self::at(3, 20))], [], false);
+        self::getDataGenerator()->enrol_user($active->id, $other->id, 'editingteacher');
+        $this->become($active);
+        $this->assertTrue($this->names($this->answer('2027-03'), (int) $other->id), 'Control: active editing teacher.');
+    }
+
+    /**
+     * An editing teacher whose enrolment in the trail has ended is not staff of it either.
+     */
+    public function test_a_teacher_with_an_expired_enrolment_is_not_staff_of_the_trail(): void {
+        $trail = $this->trail('Fechada', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $lapsed = $this->lapsed_editor($trail, true);
+
+        $this->become($lapsed);
+        $this->assertFalse($this->names($this->answer('2027-03'), (int) $trail->id), 'Expired: no longer staff.');
+    }
+
+    /**
+     * An editing teacher whose only enrolment in the trail is on a disabled method (core refuses them the course as it
+     * refuses a suspended one) is not staff of it either.
+     */
+    public function test_a_teacher_enrolled_through_a_disabled_method_is_not_staff_of_the_trail(): void {
+        global $DB;
+        $trail = $this->trail('Fechada', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $context = \core\context\course::instance($trail->id);
+        $user = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($user->id, $trail->id, 'editingteacher', 'manual');
+        $DB->set_field('enrol', 'status', ENROL_INSTANCE_DISABLED, ['courseid' => $trail->id, 'enrol' => 'manual']);
+        $this->assertTrue(has_capability('moodle/course:update', $context, $user), 'The role outlives the method.');
+        $this->assertTrue(is_enrolled($context, $user, '', false), 'The row is still there.');
+        $this->assertFalse(is_enrolled($context, $user, '', true), 'Core refuses the course.');
+
+        $this->become($user);
+        $this->assertFalse($this->names($this->answer('2027-03'), (int) $trail->id), 'Disabled method: not staff.');
+    }
+
+    /**
+     * A lapsed enrolment ends staff status only where the role came from that enrolment: the capability held above the
+     * course (a category role), or a manager's view of the course, keeps the account staff though its own enrolment is
+     * suspended or ended.
+     */
+    public function test_a_lapsed_enrolment_does_not_end_staff_status_held_from_above_or_by_viewing(): void {
+        global $DB;
+        $trail = $this->trail('Fechada', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $context = \core\context\course::instance($trail->id);
+
+        $category = self::getDataGenerator()->create_user();
+        role_assign(
+            (int) $DB->get_field('role', 'id', ['shortname' => 'editingteacher']),
+            $category->id,
+            \core\context\coursecat::instance((int) $trail->category)->id
+        );
+        self::getDataGenerator()->enrol_user($category->id, $trail->id, null, 'manual', 0, 0, ENROL_USER_SUSPENDED);
+
+        $manager = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($manager->id, $trail->id, 'manager', 'manual', 0, time() - HOURSECS);
+
+        foreach (['category role, suspended' => $category, 'manager, ended' => $manager] as $name => $user) {
+            $this->assertTrue(has_capability('moodle/course:update', $context, $user), $name);
+            $this->become($user);
+            $this->assertTrue($this->names($this->answer('2027-03'), (int) $trail->id), $name);
+        }
+    }
+
+    /**
      * The rule's two lists are local_unlistedcourses' own, copied because the plugin keeps them private: the
      * relationships that keep an unlisted course discoverable and the next actions that let a viewer in. A change of
      * the plugin's reddens this before it parts the theme from the plugin.
