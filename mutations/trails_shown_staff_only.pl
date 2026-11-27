@@ -1,2 +1,2 @@
 # Every account counts as staff.
-s{has_capability\('moodle/course:update', \\core\\context\\course::instance\(\$courseid\), \$USER\)}{true};
+s{self::staff_of\(\$courseid, isset\(\$enrolments\[\$courseid\]\)\)}{true};

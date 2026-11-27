@@ -5,6 +5,10 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A lapsed teacher is not staff of a trail** (2026100654). Behaviour change: in the calendar's Trilhas view, a
+  teacher whose own enrolment in a trail's course is suspended, has ended, or sits on a disabled method no longer sees the trail through the
+  editing role that enrolment left behind; the trail is shown to them as to any account (public, or with a way in). An
+  editor with no enrolment, an active teacher, the capability held at the category and a manager stay staff.
 - **Evidence scope counts and phone navigation box** (2026100653). On the competency evidence page the scope's "Prior
   learning" and "All" figures follow the filters and the period, so they add up to the count line; and under 576 px the
   wrappers of the report's two navigation fields take the box's width (the activity filter's field keeps the width

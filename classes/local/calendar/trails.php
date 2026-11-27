@@ -343,9 +343,11 @@ final class trails {
      *    awaiting a decision, a waiting-list place. Read as the classifier folds local_unlistedcourses'
      *    {@see access::classify_enrolment()} into `type` ({@see classifier::enrolments()}), never re-derived. A
      *    suspended or expired enrolment counts for nothing here: such a trail goes on to the next steps.
-     * 2. Staff: whoever may edit the trail course, read as `moodle/course:update` at the
+     * 2. Staff ({@see staff_of()}): whoever may edit the trail course, read as `moodle/course:update` at the
      *    trail course's own context (a site administrator passes; the capability in another course does not), so a
-     *    manager can check the view. The contexts are preloaded with the candidates.
+     *    manager can check the view; except an account whose own enrolment in the trail is suspended, ended, or on a
+     *    disabled method, and whose capability comes from nothing but the role that enrolment left behind. The contexts are
+     *    preloaded with the candidates.
      * 3. A public trail ({@see publicaccess::are_public()}, the landing page's own predicate), shown to every account,
      *    asked once over the trails still undecided, so a public trail costs no next-action read.
      * 4. A route in: the plugin's next action ({@see access::get_next_actions()}, asked once over the trails still
@@ -363,8 +365,6 @@ final class trails {
      * @return array Map of course id => true for every trail shown, in the order given.
      */
     private static function shown_to(array $courseids, array $enrolments): array {
-        global $USER;
-
         $shown = [];
         $undecided = [];
         foreach ($courseids as $courseid) {
@@ -372,7 +372,7 @@ final class trails {
             $type = isset($enrolments[$courseid]) ? $enrolments[$courseid]->type : access::RELATIONSHIP_NONE;
             if (in_array($type, self::KEPT_RELATIONSHIPS, true)) {
                 $shown[$courseid] = true;
-            } else if (has_capability('moodle/course:update', \core\context\course::instance($courseid), $USER)) {
+            } else if (self::staff_of($courseid, isset($enrolments[$courseid]))) {
                 $shown[$courseid] = true;
             } else {
                 $undecided[$courseid] = $courseid;
@@ -392,6 +392,36 @@ final class trails {
             }
         }
         return array_intersect_key(array_fill_keys(array_map('intval', $courseids), true), $shown);
+    }
+
+    /**
+     * Whether the current user counts as staff of a trail: may edit the course, and is not an editor whose own enrolment
+     * has lapsed.
+     *
+     * Core keeps a role assignment after the enrolment that gave it is suspended, ends or sits on a disabled method, so
+     * `moodle/course:update` at the course stays true for such a teacher. Called only for an account whose enrolment
+     * does not count as enrolled or on the way ({@see KEPT_RELATIONSHIPS}), so holding an enrolment row at all means
+     * the row is lapsed (type suspended, expired, or none because of a disabled method or an inverted period). An
+     * account with no row (a role assigned with no enrolment) is not lapsed. A lapsed account is staff only when the
+     * capability does not depend on that role: it can view the course without being enrolled ({@see is_viewing()}, a
+     * manager), or holds the capability above the course. The row fact is checked before any parent context is read.
+     *
+     * @param int $courseid The trail course.
+     * @param bool $holdsrow Whether the account has an enrolment row in the course ({@see classifier::enrolments()}).
+     * @return bool
+     */
+    private static function staff_of(int $courseid, bool $holdsrow): bool {
+        global $USER;
+
+        $context = \core\context\course::instance($courseid);
+        if (!has_capability('moodle/course:update', $context, $USER)) {
+            return false;
+        }
+        if (!$holdsrow) {
+            return true;
+        }
+        return is_viewing($context, $USER)
+            || has_capability('moodle/course:update', $context->get_parent_context(), $USER);
     }
 
     /**

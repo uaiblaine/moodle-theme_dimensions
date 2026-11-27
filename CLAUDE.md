@@ -2030,7 +2030,9 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
     rows and options and for the landing page's "Ver no calendário" (`trails::offers()`, the candidates' statement
     narrowed to the course, then `display::many()`: no link to a trail whose every step is withheld from the reader,
     which the answer lists nowhere); the rule, the private `shown_to()`: a relationship counting as enrolled
-    or on the way (`classifier::enrolments()` `type`), then `moodle/course:update` at the trail, then
+    or on the way (`classifier::enrolments()` `type`), then staff (`staff_of()`: `moodle/course:update` at the trail,
+    unless the account holds an enrolment row there that is suspended, ended, or on a disabled method, and neither
+    `is_viewing()` nor the capability above the course holds; a role with no row stays staff), then
     `publicaccess::are_public()`, then `access::get_next_actions()` (open, guest, conditional), each batch over the
     trails still undecided, inside each page of candidates before the cap counts; every read is the current user's (a
     scope of another viewer is answered nothing), and a visitor is answered nothing before any read. The two lists copy
